@@ -4,6 +4,10 @@
 !.idea/modules.xml
 !.idea/vcs.xml
 !.idea/libraries/
+.idea/caches
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
 
 .gradle
 /build
@@ -16,3 +20,7 @@ local.properties
 
 # MacOS
 .DS_Store
+
+# VS Code settings
+.vscode/
+
