@@ -1,4 +1,4 @@
-package org.htwk.pacing.screens.theme
+package org.htwk.pacing.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

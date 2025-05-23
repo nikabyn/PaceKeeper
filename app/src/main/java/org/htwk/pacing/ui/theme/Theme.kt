@@ -1,4 +1,4 @@
-package org.htwk.pacing.screens.theme
+package org.htwk.pacing.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

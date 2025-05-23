@@ -13,7 +13,7 @@
         android:theme="@style/Theme.Pacing"
         tools:targetApi="31">
         <activity
-            android:name="org.htwk.pacing.screens.MainActivity"
+            android:name="org.htwk.pacing.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Pacing">
