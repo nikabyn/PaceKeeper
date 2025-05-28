@@ -1,0 +1,84 @@
+image: eclipse-temurin:17-jdk
+
+variables:
+  ANDROID_COMPILE_SDK: "35"
+  ANDROID_BUILD_TOOLS: "35.0.0"
+  ANDROID_SDK_TOOLS: "13114758"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+  GIT_DEPTH: 0
+
+before_script:
+  - apt-get update -qq && apt-get install -y wget tar unzip lib32stdc++6 lib32z1 curl
+  - export ANDROID_SDK_ROOT="${PWD}/android-home"
+  - mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+  - wget -q -O $ANDROID_SDK_ROOT/cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_SDK_TOOLS}_latest.zip"
+  - unzip -d $ANDROID_SDK_ROOT/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools.zip
+  - mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/tools || true
+  - export PATH=$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/:${ANDROID_SDK_ROOT}/platform-tools
+  - yes | sdkmanager --licenses || true
+  - sdkmanager --verbose "platforms;android-${ANDROID_COMPILE_SDK}" "platform-tools" "build-tools;${ANDROID_BUILD_TOOLS}" || true
+  - chmod +x ./gradlew
+
+stages:
+  - analyze
+  - test
+  - release
+
+lintDebug:
+  stage: analyze
+  script:
+    - ./gradlew -Pci --console=plain :app:lintDebug -PbuildDir=lint
+  artifacts:
+    paths:
+      - lint/reports/
+
+debugUnitTests:
+  stage: test
+  script:
+    - ./gradlew -Pci --console=plain :app:testDebugUnitTest
+  artifacts:
+    when: always
+    paths:
+      - app/build/test-results/testDebugUnitTest/
+      - app/build/reports/tests/testDebugUnitTest/
+
+#sonarqubeAnalysis:
+#  stage: analyze
+#  cache:
+#    policy: pull-push
+#    key: "sonar-cache-$CI_COMMIT_REF_SLUG"
+#    paths:
+#      - "${SONAR_USER_HOME}/cache"
+#      - sonar-scanner/
+#  script:
+#    - ./gradlew clean build --stacktrace
+#    - ./gradlew sonar -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+#  allow_failure: false
+#  artifacts:
+#    when: always
+#    paths:
+#      - build/reports/
+#      - app/build/reports/
+#      - app/build/test-results/
+#      - app/build/jacoco/
+
+assembleDebug:
+  stage: release
+  script:
+    - ./gradlew clean assembleDebug
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+      changes:
+        - '**/*'
+
+assembleRelease:
+  stage: release
+  script:
+    - ./gradlew clean assembleRelease
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - '**/*'
+  artifacts:
+    paths:
+      - app/build/outputs/
