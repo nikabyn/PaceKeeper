@@ -65,7 +65,7 @@ fun GraphCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(text = title)
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
             AnnotatedGraph(series, xSteps, xRange, ySteps, yRange)
         }
     }
@@ -88,21 +88,24 @@ fun AnnotatedGraph(
 ) {
     val yMin = yRange.start
     val yMax = yRange.endInclusive
-    val yLabels = (ySteps - 1u downTo 0u).map { step ->
-        val value = interpolate(yMin, yMax, step.toFloat() / (ySteps - 1u).toFloat())
+    val yLabels = (1u..ySteps).reversed().map { step ->
+        val value = interpolate(yMin, yMax, (step - 1u).toFloat() / ySteps.toFloat())
         "%.1f".format(value)
     }
 
     val xMin = xRange.start
     val xMax = xRange.endInclusive
-    val xLabels = (0u..xSteps - 1u).map { step ->
-        val value = interpolate(xMin, xMax, step.toFloat() / (xSteps - 1u).toFloat())
+    val xLabels = (1u..xSteps).map { step ->
+        val value = interpolate(xMin, xMax, (step - 1u).toFloat() / xSteps.toFloat())
         "%.1f".format(value)
     }
 
     val xAxisHeightPx = remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val xAxisHeightDp = with(density) { xAxisHeightPx.intValue.toDp() }
+
+    @Composable
+    fun Label(text: String) = Text(text, style = MaterialTheme.typography.labelLarge)
 
     Row(modifier = modifier) {
         Column(
@@ -112,7 +115,7 @@ fun AnnotatedGraph(
                 .fillMaxHeight()
                 .padding(bottom = xAxisHeightDp)
         ) {
-            yLabels.forEach { label -> Text(label) }
+            yLabels.forEach { Label(it) }
         }
 
         Column(modifier = Modifier.weight(1f)) {
@@ -135,7 +138,7 @@ fun AnnotatedGraph(
                         xAxisHeightPx.intValue = layoutCoordinates.size.height
                     }
             ) {
-                xLabels.forEach { label -> Text(label) }
+                xLabels.forEach { Label(it) }
             }
         }
     }
