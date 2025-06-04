@@ -1,6 +1,8 @@
 package org.htwk.pacing.math
 
-fun interpolate(a: Float, b: Float, t: Float): Float {
+import androidx.annotation.FloatRange
+
+fun interpolate(a: Float, b: Float, @FloatRange(from = 0.0, to = 1.0)t: Float): Float {
     return a + t * (b - a)
 }
 
