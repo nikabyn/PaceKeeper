@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pacing"
+    namespace = "org.htwk.pacing"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.pacing"
+        applicationId = "org.htwk.pacing"
         minSdk = 28
         targetSdk = 35
         versionCode = 1

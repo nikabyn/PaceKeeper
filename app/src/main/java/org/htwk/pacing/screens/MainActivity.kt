@@ -1,4 +1,4 @@
-package com.example.pacing
+package org.htwk.pacing.screens
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,7 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.pacing.ui.theme.PacingTheme
+import org.htwk.pacing.screens.theme.PacingTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

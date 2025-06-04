@@ -1,4 +1,4 @@
-package com.example.pacing.ui.theme
+package org.htwk.pacing.screens.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
