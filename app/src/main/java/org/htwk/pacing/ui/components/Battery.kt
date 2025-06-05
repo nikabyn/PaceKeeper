@@ -35,7 +35,7 @@ fun BatterieKomponente() {
                     .border(2.dp, Color.Black, RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
             )
         }
-        // unten Box
+        // unten
         Box(
             modifier = Modifier
                 .fillMaxWidth()
