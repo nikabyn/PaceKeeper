@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,8 @@ fun BatterieKomponente() {
         BatterieInhalt()
     }
 }
+
+
 @Composable
 fun BatterieInhalt() {
     val overlap = 18.dp
@@ -29,7 +32,7 @@ fun BatterieInhalt() {
     Box(
         modifier = Modifier.size(width = 100.dp, height = 200.dp)
     ) {
-        // oben
+        // rechter "Kopf"
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -43,17 +46,37 @@ fun BatterieInhalt() {
                     .border(2.dp, Color.Black, RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
             )
         }
-        // unten
+
+        // Batterie-Körper mit 6 Abschnitten
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .dynamicHeightMinus(overlap)
                 .offset(y = overlap)
                 .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
-        )
+                .padding(4.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                val Balken = listOf(
+                    Color.Green, Color.Green,
+                    Color.Yellow, Color.Yellow,
+                    Color.Red, Color.Red
+                )
+                val anteil = 1f / Balken.size
+                Balken.forEach { farbe ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(vertical = 1.dp)
+                            .border(1.dp, Color.Black, RoundedCornerShape(10.dp))
+                            .background(farbe, shape = RoundedCornerShape(10.dp))
+                    )
+                }
+            }
+        }
     }
 }
-
 
 fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
     layout { measurable, constraints ->
@@ -67,6 +90,7 @@ fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
         }
     }
 )
+
 
 @Preview
 @Composable
