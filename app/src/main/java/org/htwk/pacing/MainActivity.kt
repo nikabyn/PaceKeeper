@@ -55,6 +55,24 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+fun App() {
+    val navController = rememberNavController()
+    val startDestination = Destination.HOME
+    val selectedDestination =
+        rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
+
+    Scaffold(
+        bottomBar = { NavBar(navController, selectedDestination) },
+    ) { contentPadding ->
+        AppNavHost(
+            navController,
+            startDestination,
+            modifier = Modifier.padding(contentPadding)
+        )
+    }
+}
+
+@Composable
 fun NavBar(
     navController: NavHostController,
     selectedDestination: MutableState<Int>,
