@@ -20,8 +20,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -34,8 +36,6 @@ import kotlin.math.abs
 // TODO Override equals and hashCode to consider array content in the method.
 data class Series(val values: Array<Float>, val times: Array<Float>)
 
-private val defaultXSteps = 4u
-private val defaultYSteps = 3u
 private fun defaultRange(array: Array<Float>): ClosedRange<Float> {
     val min = array.minOrNull() ?: 0.0f
     val max = array.maxOrNull() ?: 0.0f
@@ -50,11 +50,9 @@ private val defaultStroke = Stroke(width = 5.0f, cap = StrokeCap.Round, join = S
 fun GraphCard(
     title: String,
     series: Series,
-    xSteps: UInt = defaultXSteps,
-    xRange: ClosedRange<Float> = defaultRange(series.times),
-    ySteps: UInt = defaultYSteps,
-    yRange: ClosedRange<Float> = defaultRange(series.values),
     modifier: Modifier = Modifier,
+    xConfig: AxisConfig = AxisConfig(),
+    yConfig: AxisConfig = AxisConfig(),
 ) {
     OutlinedCard(
         colors = CardDefaults.cardColors(
@@ -71,34 +69,44 @@ fun GraphCard(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
-            AnnotatedGraph(series, xSteps, xRange, ySteps, yRange)
+            AnnotatedGraph(
+                series = series,
+                xConfig = xConfig,
+                yConfig = yConfig,
+            )
         }
     }
 }
 
+data class AxisConfig(
+    val range: ClosedRange<Float>? = null,
+    val steps: UInt? = null,
+    val formatFunction: (value: Float) -> String = { value -> "%.1f".format(value) }
+)
+
 @Composable
 fun AnnotatedGraph(
     series: Series,
-    xSteps: UInt = defaultXSteps,
-    xRange: ClosedRange<Float> = defaultRange(series.times),
-    ySteps: UInt = defaultYSteps,
-    yRange: ClosedRange<Float> = defaultRange(series.values),
+    xConfig: AxisConfig = AxisConfig(),
+    yConfig: AxisConfig = AxisConfig(),
     color: Color = defaultColor(),
     stroke: Stroke = defaultStroke,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val yMin = yRange.start
-    val yMax = yRange.endInclusive
-    val yLabels = (ySteps - 1u downTo 0u).map { step ->
-        val value = interpolate(yMin, yMax, step.toFloat() / (ySteps - 1u).toFloat())
-        "%.1f".format(value)
+    val xRange = xConfig.range ?: defaultRange(series.times)
+    val xSteps = xConfig.steps ?: 3u;
+    val xLabels = (0u..<xSteps).map { step ->
+        val value =
+            interpolate(xRange.start, xRange.endInclusive, step.toFloat() / (xSteps - 1u).toFloat())
+        xConfig.formatFunction(value)
     }
 
-    val xMin = xRange.start
-    val xMax = xRange.endInclusive
-    val xLabels = (0u..xSteps - 1u).map { step ->
-        val value = interpolate(xMin, xMax, step.toFloat() / (xSteps - 1u).toFloat())
-        "%.1f".format(value)
+    val yRange = yConfig.range ?: defaultRange(series.values)
+    val ySteps = yConfig.steps ?: 3u;
+    val yLabels = (ySteps - 1u downTo 0u).map { step ->
+        val value =
+            interpolate(yRange.start, yRange.endInclusive, step.toFloat() / (ySteps - 1u).toFloat())
+        yConfig.formatFunction(value)
     }
 
     val xAxisHeightPx = remember { mutableIntStateOf(0) }
@@ -121,7 +129,7 @@ fun AnnotatedGraph(
 
         Column(modifier = Modifier.weight(1f)) {
             Graph(
-                series,
+                series = series,
                 yRange = yRange,
                 xRange = xRange,
                 color = color,
@@ -129,6 +137,7 @@ fun AnnotatedGraph(
                 modifier = Modifier
                     .padding(10.dp)
                     .weight(1f)
+                    .drawLines(ySteps),
             )
 
             Row(
@@ -143,6 +152,26 @@ fun AnnotatedGraph(
             }
         }
     }
+}
+
+private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
+    val path = Path();
+    for (i in 0u..<ySteps) {
+        val height = i.toFloat() / (ySteps.toFloat() - 1) * size.height
+        path.moveTo(0f, height);
+        path.lineTo(1f * size.width, height);
+    }
+    drawPath(
+        path,
+        color = Color.Gray,
+        style = Stroke(
+            width = 1.0f,
+            pathEffect = PathEffect.dashPathEffect(
+                // TODO: Figure out how to scale this properly based on screen size
+                floatArrayOf(20f, 8f)
+            )
+        )
+    )
 }
 
 @Composable

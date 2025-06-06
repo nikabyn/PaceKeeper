@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.Clock
 import org.htwk.pacing.randomHeartRate
+import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.Series
 
@@ -26,13 +27,13 @@ fun MeasurementsScreen(modifier: Modifier = Modifier) {
     var times = remember { mutableStateListOf<Float>() }
 
     LaunchedEffect(Unit) {
-        randomHeartRate().collect { (value, time) ->
+        randomHeartRate(avgDelayMs = 10).collect { (value, time) ->
             values.add(value)
             times.add((time - start).inWholeMilliseconds.toFloat())
 
             if (values.size > 50) {
-                values.removeAt(0);
-                times.removeAt(0);
+                values.removeAt(0)
+                times.removeAt(0)
             }
         }
     }
@@ -51,13 +52,15 @@ fun MeasurementsScreen(modifier: Modifier = Modifier) {
             GraphCard(
                 title = "Heart Rate [bpm]",
                 series = Series(values.toTypedArray(), times.toTypedArray()),
-                yRange = 0f..120f,
-                xSteps = 2u,
+                yConfig = AxisConfig(
+                    range = 0f..120f,
+                    steps = 3u,
+                    formatFunction = { value -> "%.0f".format(value) }),
             )
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",
                 series = Series(values.toTypedArray(), times.toTypedArray()),
-                xSteps = 2u,
+                yConfig = AxisConfig(steps = 4u),
             )
         }
     }
