@@ -6,6 +6,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +25,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 
@@ -50,8 +55,8 @@ fun GraphCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
-        border = BorderStroke(1.dp, Color.Black),
-        modifier = Modifier
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = modifier
             .fillMaxWidth()
             .height(300.dp)
     ) {
@@ -61,9 +66,8 @@ fun GraphCard(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(text = title)
-            AnnotatedGraph(series)
+            AnnotatedGraph(series, xSteps, xRange, ySteps, yRange)
         }
-
     }
 }
 
@@ -96,19 +100,22 @@ fun AnnotatedGraph(
         "%.1f".format(value)
     }
 
-    val height = 200.dp
+    val xAxisHeightPx = remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val xAxisHeightDp = with(density) { xAxisHeightPx.intValue.toDp() }
 
     Row(modifier = modifier) {
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End,
             modifier = Modifier
-                .height(height)
-            //.background(Color.Blue),
+                .fillMaxHeight()
+                .padding(bottom = xAxisHeightDp)
         ) {
             yLabels.forEach { label -> Text(label) }
         }
-        Column {
-            val graphPadding = 10.dp
+
+        Column(modifier = Modifier.weight(1f)) {
             Graph(
                 series,
                 yRange = yRange,
@@ -116,13 +123,17 @@ fun AnnotatedGraph(
                 color = color,
                 stroke = stroke,
                 modifier = Modifier
-                    // .background(Color.Green)
-                    .padding(graphPadding)
-                    .height(height - graphPadding * 2)
+                    .padding(10.dp)
+                    .weight(1f)
             )
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { layoutCoordinates ->
+                        xAxisHeightPx.intValue = layoutCoordinates.size.height
+                    }
             ) {
                 xLabels.forEach { label -> Text(label) }
             }
