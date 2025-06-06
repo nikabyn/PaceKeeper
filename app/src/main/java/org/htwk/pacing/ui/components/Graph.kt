@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import org.htwk.pacing.math.interpolate
 import kotlin.math.abs
 
 // TODO Override equals and hashCode to consider array content in the method.
@@ -35,7 +36,11 @@ data class Series(val values: Array<Float>, val times: Array<Float>)
 
 private val defaultXSteps = 4u
 private val defaultYSteps = 3u
-private fun defaultRange(array: Array<Float>) = array.min()..array.max()
+private fun defaultRange(array: Array<Float>): ClosedRange<Float> {
+    val min = array.minOrNull() ?: 0.0f
+    val max = array.maxOrNull() ?: 0.0f
+    return min..max
+}
 
 @Composable
 private fun defaultColor(): Color = if (isSystemInDarkTheme()) Color.White else Color.Black
@@ -71,10 +76,6 @@ fun GraphCard(
     }
 }
 
-fun interpolate(a: Float, b: Float, t: Float): Float {
-    return a + t * (b - a)
-}
-
 @Composable
 fun AnnotatedGraph(
     series: Series,
@@ -88,15 +89,15 @@ fun AnnotatedGraph(
 ) {
     val yMin = yRange.start
     val yMax = yRange.endInclusive
-    val yLabels = (1u..ySteps).reversed().map { step ->
-        val value = interpolate(yMin, yMax, (step - 1u).toFloat() / ySteps.toFloat())
+    val yLabels = (ySteps - 1u downTo 0u).map { step ->
+        val value = interpolate(yMin, yMax, step.toFloat() / (ySteps - 1u).toFloat())
         "%.1f".format(value)
     }
 
     val xMin = xRange.start
     val xMax = xRange.endInclusive
-    val xLabels = (1u..xSteps).map { step ->
-        val value = interpolate(xMin, xMax, (step - 1u).toFloat() / xSteps.toFloat())
+    val xLabels = (0u..xSteps - 1u).map { step ->
+        val value = interpolate(xMin, xMax, step.toFloat() / (xSteps - 1u).toFloat())
         "%.1f".format(value)
     }
 
@@ -161,14 +162,14 @@ fun Graph(
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
-        fun toGraphCoords(x: Float, y: Float): Pair<Float, Float> {
-            return Pair(x * size.width, (1.0f - y) * size.height)
-        }
+        fun toGraphCoords(x: Float, y: Float) = Pair(x * size.width, (1.0f - y) * size.height)
 
         val path = Path()
 
-        val start = toGraphCoords(relativeTimes.first(), relativeValues.first())
-        path.moveTo(start.first, start.second)
+        if (series.times.isNotEmpty() || series.values.isNotEmpty()) {
+            val start = toGraphCoords(relativeTimes.first(), relativeValues.first())
+            path.moveTo(start.first, start.second)
+        }
 
         for ((time, value) in relativeTimes.drop(1).zip(relativeValues.drop(1))) {
             val next = toGraphCoords(time, value)
