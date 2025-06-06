@@ -1,6 +1,7 @@
 package org.htwk.pacing.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
@@ -22,6 +28,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.randomHeartRate
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
+import org.htwk.pacing.ui.components.PathConfig
 import org.htwk.pacing.ui.components.Series
 
 @Composable
@@ -69,6 +76,21 @@ fun MeasurementsScreen(modifier: Modifier = Modifier) {
                     range = 0.0..120.0,
                     steps = 3u,
                 )
+            )
+            GraphCard(
+                title = "Heart Rate [bpm], Filled",
+                series = series,
+                xConfig = AxisConfig(formatFunction = ::formatTime),
+                yConfig = AxisConfig(range = 0.0..120.0),
+                pathConfig = PathConfig(
+                    color = if (isSystemInDarkTheme()) {
+                        lerp(Color.Red, Color.White, 0.5f)
+                    } else {
+                        Color.Red
+                    },
+                    stroke = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                    fill = Color.hsv(0.0f, 0.5f, 1.0f, 0.3f)
+                ),
             )
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",

@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -33,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import org.htwk.pacing.math.interpolate
 import kotlin.math.abs
 
-// TODO Override equals and hashCode to consider array content in the method.
 data class Series<C : Collection<Double>>(val x: C, val y: C)
 
 private fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
@@ -43,16 +43,13 @@ private fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
 }
 
 @Composable
-private fun defaultColor(): Color = if (isSystemInDarkTheme()) Color.White else Color.Black
-private val defaultStroke = Stroke(width = 5.0f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-
-@Composable
 fun <C : Collection<Double>> GraphCard(
     title: String,
     series: Series<C>,
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
+    pathConfig: PathConfig = PathConfig(),
 ) {
     OutlinedCard(
         colors = CardDefaults.cardColors(
@@ -73,6 +70,7 @@ fun <C : Collection<Double>> GraphCard(
                 series = series,
                 xConfig = xConfig,
                 yConfig = yConfig,
+                pathConfig = pathConfig,
             )
         }
     }
@@ -87,11 +85,10 @@ data class AxisConfig(
 @Composable
 fun <C : Collection<Double>> AnnotatedGraph(
     series: Series<C>,
+    modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
-    color: Color = defaultColor(),
-    stroke: Stroke = defaultStroke,
-    modifier: Modifier = Modifier,
+    pathConfig: PathConfig = PathConfig(),
 ) {
     val xRange = xConfig.range ?: defaultRange(series.x)
     val xSteps = xConfig.steps ?: 3u;
@@ -140,8 +137,7 @@ fun <C : Collection<Double>> AnnotatedGraph(
                 series = series,
                 yRange = yRange,
                 xRange = xRange,
-                color = color,
-                stroke = stroke,
+                pathConfig = pathConfig,
                 modifier = Modifier
                     .padding(10.dp)
                     .weight(1f)
@@ -182,15 +178,26 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
     )
 }
 
+data class PathConfig(
+    val color: Color? = null,
+    val stroke: Stroke? = null,
+    val fill: Color? = null,
+)
+
 @Composable
 fun <C : Collection<Double>> Graph(
     series: Series<C>,
+    modifier: Modifier = Modifier,
     xRange: ClosedRange<Double> = defaultRange(series.x),
     yRange: ClosedRange<Double> = defaultRange(series.y),
-    color: Color = defaultColor(),
-    stroke: Stroke = defaultStroke,
-    modifier: Modifier = Modifier
+    pathConfig: PathConfig = PathConfig(),
 ) {
+    val defaultColor = if (isSystemInDarkTheme()) Color.White else Color.Black
+    val defaultStroke = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+
+    val color = pathConfig.color ?: defaultColor
+    val stroke = pathConfig.stroke ?: defaultStroke
+
     val relativeX = series.x.map { xValue ->
         (xValue - xRange.start) / abs(xRange.endInclusive - xRange.start)
     }
@@ -198,21 +205,38 @@ fun <C : Collection<Double>> Graph(
         (yValue - yRange.start) / abs(yRange.endInclusive - yRange.start)
     }
 
-    Canvas(modifier = modifier.fillMaxSize()) {
-        fun toGraphCoords(x: Double, y: Double) = Pair(x * size.width, (1.0f - y) * size.height)
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+            .clipToBounds()
+    ) {
+        fun toGraphCoords(x: Double, y: Double) =
+            Pair((x * size.width).toFloat(), ((1.0f - y) * size.height).toFloat())
 
         val path = Path()
 
-        if (series.x.isNotEmpty() || series.y.isNotEmpty()) {
-            val start = toGraphCoords(relativeX.first(), relativeY.first())
-            path.moveTo(start.first.toFloat(), start.second.toFloat())
+        if (series.x.isEmpty() || series.y.isEmpty()) {
+            return@Canvas
         }
+
+        val start = toGraphCoords(relativeX.first(), relativeY.first())
+        path.moveTo(start.first, start.second)
 
         for ((time, value) in relativeX.drop(1).zip(relativeY.drop(1))) {
             val next = toGraphCoords(time, value)
-            path.lineTo(next.first.toFloat(), next.second.toFloat())
+            path.lineTo(next.first, next.second)
         }
 
         drawPath(path, color, style = stroke)
+
+        if (pathConfig.fill != null) {
+            val bottomRight = toGraphCoords(1.0, 0.0)
+            val bottomLeft = toGraphCoords(0.0, 0.0)
+            path.lineTo(bottomRight.first, bottomRight.second)
+            path.lineTo(bottomLeft.first, bottomLeft.second)
+            path.lineTo(start.first, start.second)
+
+            drawPath(path, color = pathConfig.fill)
+        }
     }
 }
