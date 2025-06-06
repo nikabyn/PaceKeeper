@@ -10,42 +10,30 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import org.htwk.pacing.math.remap
+import kotlinx.datetime.Clock
+import org.htwk.pacing.randomHeartRate
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.Series
-import kotlin.random.Random
-
 
 @Composable
 fun MeasurementsScreen(modifier: Modifier = Modifier) {
-    var series by remember { mutableStateOf(Series(emptyArray(), emptyArray())) }
-    val dataPoints = remember { mutableStateListOf<Pair<Float, Float>>() }
-    var time by remember { mutableFloatStateOf(0f) }
+    var start = Clock.System.now()
+    var values = remember { mutableStateListOf<Float>() }
+    var times = remember { mutableStateListOf<Float>() }
 
     LaunchedEffect(Unit) {
-        while (true) {
-            delay(50)
-            val value = remap(Random.nextFloat(), 0f, 1f, 55f, 107f)
-            time += 1f
+        randomHeartRate().collect { (value, time) ->
+            values.add(value)
+            times.add((time - start).inWholeMilliseconds.toFloat())
 
-            dataPoints.add(Pair(time, value))
-            if (dataPoints.size > 50) {
-                dataPoints.removeAt(0)
+            if (values.size > 50) {
+                values.removeAt(0);
+                times.removeAt(0);
             }
-
-            val values = dataPoints.map { it.second }.toTypedArray()
-            val times = dataPoints.map { it.first }.toTypedArray()
-
-            series = Series(values, times)
         }
     }
 
@@ -62,12 +50,14 @@ fun MeasurementsScreen(modifier: Modifier = Modifier) {
         ) {
             GraphCard(
                 title = "Heart Rate [bpm]",
-                series = series,
-                yRange = 0f..120f
+                series = Series(values.toTypedArray(), times.toTypedArray()),
+                yRange = 0f..120f,
+                xSteps = 2u,
             )
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",
-                series = series,
+                series = Series(values.toTypedArray(), times.toTypedArray()),
+                xSteps = 2u,
             )
         }
     }
