@@ -14,7 +14,11 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.randomHeartRate
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
@@ -22,44 +26,54 @@ import org.htwk.pacing.ui.components.Series
 
 @Composable
 fun MeasurementsScreen(modifier: Modifier = Modifier) {
-    var start = Clock.System.now()
-    var values = remember { mutableStateListOf<Float>() }
-    var times = remember { mutableStateListOf<Float>() }
+    var series = remember { Series(mutableStateListOf(), mutableStateListOf()) }
 
     LaunchedEffect(Unit) {
         randomHeartRate(avgDelayMs = 10).collect { (value, time) ->
-            values.add(value)
-            times.add((time - start).inWholeMilliseconds.toFloat())
-
-            if (values.size > 50) {
-                values.removeAt(0)
-                times.removeAt(0)
-            }
+            series.x.add(time.toEpochMilliseconds().toDouble())
+            series.y.add(value.toDouble())
         }
     }
 
     Box(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
-            .background(
-                MaterialTheme.colorScheme.background
-            )
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(30.dp),
             modifier = Modifier.padding(all = 40.dp)
         ) {
+            fun formatTime(value: Double): String {
+                val localTime =
+                    Instant.fromEpochMilliseconds(value.toLong())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                return "%02d:%02d".format(localTime.hour, localTime.minute)
+            }
+
             GraphCard(
                 title = "Heart Rate [bpm]",
-                series = Series(values.toTypedArray(), times.toTypedArray()),
+                series = series,
+                xConfig = AxisConfig(
+                    range = {
+                        val timeZone = TimeZone.currentSystemDefault()
+                        val start = LocalDateTime.parse("2025-01-01T00:00").toInstant(timeZone)
+                            .toEpochMilliseconds().toDouble()
+                        val end = LocalDateTime.parse("2025-01-01T23:59").toInstant(timeZone)
+                            .toEpochMilliseconds().toDouble()
+                        start..end
+                    }(),
+                    formatFunction = ::formatTime,
+                ),
                 yConfig = AxisConfig(
-                    range = 0f..120f,
+                    range = 0.0..120.0,
                     steps = 3u,
-                    formatFunction = { value -> "%.0f".format(value) }),
+                )
             )
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",
-                series = Series(values.toTypedArray(), times.toTypedArray()),
+                series = series,
+                xConfig = AxisConfig(formatFunction = ::formatTime),
                 yConfig = AxisConfig(steps = 4u),
             )
         }

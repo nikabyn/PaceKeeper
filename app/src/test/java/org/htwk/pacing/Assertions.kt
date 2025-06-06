@@ -9,3 +9,10 @@ fun assertFloat(value: Float, expected: Float, epsilon: Float) {
         abs(value - expected) <= epsilon,
     )
 }
+
+fun assertDouble(value: Double, expected: Double, epsilon: Double) {
+    assertTrue(
+        "Expected <${expected}> +-${epsilon}, actual <${value}>.",
+        abs(value - expected) <= epsilon,
+    )
+}
