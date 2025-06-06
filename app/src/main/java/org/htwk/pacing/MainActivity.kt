@@ -19,7 +19,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -85,12 +85,7 @@ fun NavBar(
                     navController.navigate(route = destination.route)
                     selectedDestination.value = index
                 },
-                icon = {
-                    Icon(
-                        destination.icon,
-                        contentDescription = destination.contentDescription
-                    )
-                },
+                icon = destination.icon,
                 label = { Text(destination.label) }
             )
         }
@@ -100,12 +95,14 @@ fun NavBar(
 enum class Destination(
     val route: String,
     val label: String,
-    val icon: ImageVector,
-    val contentDescription: String
+    val icon: @Composable () -> Unit,
 ) {
-    HOME("home", "Home", Icons.Rounded.Home, "Home"),
-    MEASUREMENTS("measurements", "Measurements", Icons.Rounded.Home, "Measurements"),
-    SETTINGS("settings", "Settings", Icons.Rounded.Settings, "Settings")
+    HOME("home", "Home", { Icon(Icons.Rounded.Home, "Home") }),
+    MEASUREMENTS(
+        "measurements",
+        "Measurements",
+        { Icon(painter = painterResource(R.drawable.rounded_show_chart_24), "Measurements") }),
+    SETTINGS("settings", "Settings", { Icon(Icons.Rounded.Settings, "Settings") })
 }
 
 @Composable
