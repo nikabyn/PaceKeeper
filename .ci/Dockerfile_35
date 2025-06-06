@@ -1,0 +1,48 @@
+FROM debian:bookworm-slim
+
+ARG ANDROID_API=35
+ARG BUILD_TOOLS=35.0.0
+ARG CMDLINE_TOOLS_PKG=commandlinetools-linux-13114758_latest
+
+ENV ANDROID_API=${ANDROID_API}
+ENV BUILD_TOOLS=${BUILD_TOOLS}
+ENV CMDLINE_TOOLS_PKG=${CMDLINE_TOOLS_PKG}
+ENV ANDROID_HOME=/opt/android
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        openjdk-17-jdk-headless \
+        wget unzip git bash ca-certificates \
+        libc6-i386 lib32stdc++6 lib32z1 libglu1-mesa libpulse0 \
+        android-sdk-platform-tools && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p "$ANDROID_HOME"
+
+WORKDIR /tmp
+RUN wget -qO cmdline-tools.zip \
+        "https://dl.google.com/android/repository/${CMDLINE_TOOLS_PKG}.zip" && \
+    mkdir -p "$ANDROID_HOME/cmdline-tools/latest" && \
+    unzip -q cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools/temp" && \
+    mv "$ANDROID_HOME/cmdline-tools/temp/cmdline-tools/"* "$ANDROID_HOME/cmdline-tools/latest/" && \
+    rm -rf cmdline-tools.zip "$ANDROID_HOME/cmdline-tools/temp"
+
+RUN yes | sdkmanager --licenses && \
+    yes | sdkmanager \
+        "platform-tools" \
+        "build-tools;${BUILD_TOOLS}" \
+        "platforms;android-${ANDROID_API}" \
+        "extras;android;m2repository" \
+        "extras;google;m2repository" \
+        "emulator" \
+        "system-images;android-${ANDROID_API};google_apis;x86_64" && \
+    yes | sdkmanager --update && \
+    echo "no" | avdmanager create avd \
+        -n default \
+        -k "system-images;android-${ANDROID_API};google_apis;x86_64" \
+        -d 17
+
+RUN rm -rf /tmp/*
+COPY start-default-emulator.sh /opt/
+RUN chmod +x /opt/start-default-emulator.sh
+CMD ["/opt/start-default-emulator.sh"]
