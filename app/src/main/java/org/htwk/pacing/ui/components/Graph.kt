@@ -1,7 +1,8 @@
-package org.htwk.pacing.componets
+package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,12 +23,29 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 
 // TODO Override equals and hashCode to consider array content in the method.
 data class Series(val values: Array<Float>, val times: Array<Float>)
 
+private val defaultXSteps = 4u
+private val defaultYSteps = 3u
+private fun defaultRange(array: Array<Float>) = array.min()..array.max()
+
 @Composable
-fun GraphCard(title: String, series: Series) {
+private fun defaultColor(): Color = if (isSystemInDarkTheme()) Color.White else Color.Black
+private val defaultStroke = Stroke(width = 5.0f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+
+@Composable
+fun GraphCard(
+    title: String,
+    series: Series,
+    xSteps: UInt = defaultXSteps,
+    xRange: ClosedRange<Float> = defaultRange(series.times),
+    ySteps: UInt = defaultYSteps,
+    yRange: ClosedRange<Float> = defaultRange(series.values),
+    modifier: Modifier = Modifier,
+) {
     OutlinedCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -49,35 +67,32 @@ fun GraphCard(title: String, series: Series) {
     }
 }
 
-fun lerp(a: Float, b: Float, t: Float): Float {
+fun interpolate(a: Float, b: Float, t: Float): Float {
     return a + t * (b - a)
 }
-
-val DefaultColor = Color.Black
-val DefaultStroke = Stroke(width = 5.0f, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
 @Composable
 fun AnnotatedGraph(
     series: Series,
-    color: Color = DefaultColor,
-    stroke: Stroke = DefaultStroke,
+    xSteps: UInt = defaultXSteps,
+    xRange: ClosedRange<Float> = defaultRange(series.times),
+    ySteps: UInt = defaultYSteps,
+    yRange: ClosedRange<Float> = defaultRange(series.values),
+    color: Color = defaultColor(),
+    stroke: Stroke = defaultStroke,
     modifier: Modifier = Modifier
 ) {
-    val ySteps = 4
-    val yMax = series.values.max()
-    val yMin = series.values.min()
-
-    val yLabels = (ySteps - 1 downTo 0).map { step ->
-        val value = lerp(yMin, yMax, step.toFloat() / (ySteps - 1).toFloat())
+    val yMin = yRange.start
+    val yMax = yRange.endInclusive
+    val yLabels = (ySteps - 1u downTo 0u).map { step ->
+        val value = interpolate(yMin, yMax, step.toFloat() / (ySteps - 1u).toFloat())
         "%.1f".format(value)
     }
 
-    val xSteps = 6
-    val xMax = series.times.max()
-    val xMin = series.times.min()
-
-    val xLabels = (0..xSteps - 1).map { step ->
-        val value = lerp(xMin, xMax, step.toFloat() / (xSteps - 1).toFloat())
+    val xMin = xRange.start
+    val xMax = xRange.endInclusive
+    val xLabels = (0u..xSteps - 1u).map { step ->
+        val value = interpolate(xMin, xMax, step.toFloat() / (xSteps - 1u).toFloat())
         "%.1f".format(value)
     }
 
@@ -96,8 +111,10 @@ fun AnnotatedGraph(
             val graphPadding = 10.dp
             Graph(
                 series,
-                color,
-                stroke,
+                yRange = yRange,
+                xRange = xRange,
+                color = color,
+                stroke = stroke,
                 modifier = Modifier
                     // .background(Color.Green)
                     .padding(graphPadding)
@@ -116,19 +133,30 @@ fun AnnotatedGraph(
 @Composable
 fun Graph(
     series: Series,
-    color: Color = DefaultColor,
-    stroke: Stroke = DefaultStroke,
+    xRange: ClosedRange<Float> = defaultRange(series.times),
+    yRange: ClosedRange<Float> = defaultRange(series.values),
+    color: Color = defaultColor(),
+    stroke: Stroke = defaultStroke,
     modifier: Modifier = Modifier
 ) {
+    val relativeValues = series.values.map { value ->
+        (value - yRange.start) / abs(yRange.endInclusive - yRange.start)
+    }
+    val relativeTimes = series.times.map { time ->
+        (time - xRange.start) / abs(xRange.endInclusive - xRange.start)
+    }
+
     Canvas(modifier = modifier.fillMaxSize()) {
         fun toGraphCoords(x: Float, y: Float): Pair<Float, Float> {
             return Pair(x * size.width, (1.0f - y) * size.height)
         }
 
         val path = Path()
-        val start = toGraphCoords(series.times.first(), series.values.first())
+
+        val start = toGraphCoords(relativeTimes.first(), relativeValues.first())
         path.moveTo(start.first, start.second)
-        for ((value, time) in series.values.drop(1).zip(series.times.drop(1))) {
+
+        for ((time, value) in relativeTimes.drop(1).zip(relativeValues.drop(1))) {
             val next = toGraphCoords(time, value)
             path.lineTo(next.first, next.second)
         }
