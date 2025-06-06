@@ -1,4 +1,4 @@
-image: "$CI_REGISTRY/pacing-app/ui/android-sdk:28-debian-bookworm-slim"
+image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
 
 variables:
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
@@ -21,7 +21,7 @@ lintDebug:
     - ./gradlew -Pci --console=plain :app:lintDebug -PbuildDir=lint
   artifacts:
     paths:
-      - lint/reports/
+      - app/lint/reports/
 
 #sonarqubeAnalysis:
 #  stage: analyze
@@ -60,9 +60,12 @@ debugUnitTests:
 .connected_tests_template:
   stage: test
   script:
-    - /opt/start-default-emulator.sh "$ANDROID_API"
-    - adb wait-for-device
+    - /opt/start-avds.sh
     - ./gradlew -Pci --console=plain :app:connectedDebugAndroidTest
+  after_script:
+    - echo "Kill emulator …"
+    - adb -s emulator-5554 emu kill || true
+    - pkill -f qemu-system 2>/dev/null || true
   artifacts:
     when: always
     paths:
@@ -77,12 +80,11 @@ debugUnitTests:
 connectedInstrumentationTests:
   extends: .connected_tests_template
   tags:
-    - kvm
-    - docker
+    - android
   parallel:
     matrix:
       - ANDROID_API: [ "28", "35" ]
-  image: "$CI_REGISTRY/pacing-app/ui/android-sdk:${ANDROID_API}-debian-bookworm-slim"
+  image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
 
 
 # -------------------------------------------------------------
