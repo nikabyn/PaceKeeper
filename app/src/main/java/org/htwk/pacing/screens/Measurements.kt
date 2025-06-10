@@ -30,6 +30,8 @@ import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.PathConfig
 import org.htwk.pacing.ui.components.Series
+import org.htwk.pacing.ui.components.withFill
+import org.htwk.pacing.ui.components.withStroke
 
 @Composable
 fun MeasurementsScreen(modifier: Modifier = Modifier) {
@@ -75,22 +77,25 @@ fun MeasurementsScreen(modifier: Modifier = Modifier) {
                 yConfig = AxisConfig(
                     range = 0.0..120.0,
                     steps = 3u,
-                )
+                ),
+                pathConfig = PathConfig.withStroke().withFill(),
             )
             GraphCard(
                 title = "Heart Rate [bpm], Filled",
                 series = series,
                 xConfig = AxisConfig(formatFunction = ::formatTime),
                 yConfig = AxisConfig(range = 0.0..120.0),
-                pathConfig = PathConfig(
-                    color = if (isSystemInDarkTheme()) {
-                        lerp(Color.Red, Color.White, 0.5f)
-                    } else {
-                        Color.Red
-                    },
-                    stroke = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                    fill = Color.hsv(0.0f, 0.5f, 1.0f, 0.3f)
-                ),
+                pathConfig = PathConfig
+                    .withStroke(
+                        color = if (isSystemInDarkTheme()) {
+                            lerp(Color.Red, Color.White, 0.5f)
+                        } else {
+                            Color.Red
+                        },
+                        style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                    ).withFill(
+                        color = Color.hsv(0.0f, 0.5f, 1.0f, 0.3f)
+                    ),
             )
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",

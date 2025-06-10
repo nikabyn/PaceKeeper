@@ -42,6 +42,22 @@ private fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
     return min..max
 }
 
+open class PathConfig(
+    internal val color: Color? = null,
+    internal val style: Stroke? = null,
+    internal val fill: Color? = null,
+    internal val hasStroke: Boolean = false,
+    internal val hasFill: Boolean = false,
+) {
+    companion object : PathConfig()
+}
+
+fun PathConfig.withStroke(color: Color? = null, style: Stroke? = null) =
+    PathConfig(color, style, this.fill, hasStroke = true, this.hasFill)
+
+fun PathConfig.withFill(color: Color? = null) =
+    PathConfig(this.color, this.style, color, this.hasStroke, hasFill = true)
+
 @Composable
 fun <C : Collection<Double>> GraphCard(
     title: String,
@@ -49,7 +65,7 @@ fun <C : Collection<Double>> GraphCard(
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
-    pathConfig: PathConfig = PathConfig(),
+    pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
     OutlinedCard(
         colors = CardDefaults.cardColors(
@@ -88,7 +104,7 @@ fun <C : Collection<Double>> AnnotatedGraph(
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
-    pathConfig: PathConfig = PathConfig(),
+    pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
     val xRange = xConfig.range ?: defaultRange(series.x)
     val xSteps = xConfig.steps ?: 3u;
@@ -178,25 +194,19 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
     )
 }
 
-data class PathConfig(
-    val color: Color? = null,
-    val stroke: Stroke? = null,
-    val fill: Color? = null,
-)
-
 @Composable
 fun <C : Collection<Double>> Graph(
     series: Series<C>,
     modifier: Modifier = Modifier,
     xRange: ClosedRange<Double> = defaultRange(series.x),
     yRange: ClosedRange<Double> = defaultRange(series.y),
-    pathConfig: PathConfig = PathConfig(),
+    pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
     val defaultColor = if (isSystemInDarkTheme()) Color.White else Color.Black
-    val defaultStroke = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    val defaultStyle = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    val defaultFill =
+        if (isSystemInDarkTheme()) Color(1.0f, 1.0f, 1.0f, 0.1f) else Color(0.0f, 0.0f, 0.0f, 0.1f)
 
-    val color = pathConfig.color ?: defaultColor
-    val stroke = pathConfig.stroke ?: defaultStroke
 
     val relativeX = series.x.map { xValue ->
         (xValue - xRange.start) / abs(xRange.endInclusive - xRange.start)
@@ -210,8 +220,9 @@ fun <C : Collection<Double>> Graph(
             .fillMaxSize()
             .clipToBounds()
     ) {
-        fun toGraphCoords(x: Double, y: Double) =
-            Pair((x * size.width).toFloat(), ((1.0f - y) * size.height).toFloat())
+        fun toXCoord(x: Double) = (x * size.width).toFloat()
+        fun toYCoord(y: Double) = ((1.0f - y) * size.height).toFloat()
+        fun toGraphCoords(x: Double, y: Double) = Pair(toXCoord(x), toYCoord(y))
 
         val path = Path()
 
@@ -222,21 +233,26 @@ fun <C : Collection<Double>> Graph(
         val start = toGraphCoords(relativeX.first(), relativeY.first())
         path.moveTo(start.first, start.second)
 
+        var end = start
         for ((time, value) in relativeX.drop(1).zip(relativeY.drop(1))) {
-            val next = toGraphCoords(time, value)
-            path.lineTo(next.first, next.second)
+            end = toGraphCoords(time, value)
+            path.lineTo(end.first, end.second)
         }
 
-        drawPath(path, color, style = stroke)
+        if (pathConfig.hasStroke) {
+            drawPath(
+                path,
+                color = pathConfig.color ?: defaultColor,
+                style = pathConfig.style ?: defaultStyle
+            )
+        }
 
-        if (pathConfig.fill != null) {
-            val bottomRight = toGraphCoords(1.0, 0.0)
-            val bottomLeft = toGraphCoords(0.0, 0.0)
-            path.lineTo(bottomRight.first, bottomRight.second)
-            path.lineTo(bottomLeft.first, bottomLeft.second)
+        if (pathConfig.hasFill) {
+            path.lineTo(end.first, toYCoord(0.0))
+            path.lineTo(start.first, toYCoord(0.0))
             path.lineTo(start.first, start.second)
 
-            drawPath(path, color = pathConfig.fill)
+            drawPath(path, color = pathConfig.fill ?: defaultFill)
         }
     }
 }
