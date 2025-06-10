@@ -38,7 +38,7 @@ fun MeasurementsScreen(modifier: Modifier = Modifier) {
     var series = remember { Series(mutableStateListOf(), mutableStateListOf()) }
 
     LaunchedEffect(Unit) {
-        randomHeartRate(avgDelayMs = 10).collect { (value, time) ->
+        randomHeartRate(averageDelayMs = 10).collect { (value, time) ->
             series.x.add(time.toEpochMilliseconds().toDouble())
             series.y.add(value.toDouble())
         }

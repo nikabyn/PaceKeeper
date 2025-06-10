@@ -34,14 +34,18 @@ import androidx.compose.ui.unit.dp
 import org.htwk.pacing.math.interpolate
 import kotlin.math.abs
 
+/**
+ * A series of values to be displayed by a graph component.
+ *
+ * User should ensure that values are sorted!
+ */
 data class Series<C : Collection<Double>>(val x: C, val y: C)
 
-private fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
-    val min = values.minOrNull() ?: 0.0
-    val max = values.maxOrNull() ?: 0.0
-    return min..max
-}
-
+/**
+ * Options for how the line graph should be drawn.
+ *
+ * User should change values based on dark/light theme!
+ */
 open class PathConfig(
     internal val color: Color? = null,
     internal val style: Stroke? = null,
@@ -52,12 +56,35 @@ open class PathConfig(
     companion object : PathConfig()
 }
 
+/**
+ * Draw lines between all points (linear, no special interpolation)
+ */
 fun PathConfig.withStroke(color: Color? = null, style: Stroke? = null) =
     PathConfig(color, style, this.fill, hasStroke = true, this.hasFill)
 
+/**
+ * Fill area under the graph with a flat color
+ */
 fun PathConfig.withFill(color: Color? = null) =
     PathConfig(this.color, this.style, color, this.hasStroke, hasFill = true)
 
+/**
+ * Options for displaying an axis (range, labels).
+ *
+ * @param range minimum and maximum values to be shown,
+ *              dynamic by default: minimum and maximum of entire series
+ * @param steps number of labels to be shown
+ * @param formatFunction how a labels text should be formatted
+ */
+data class AxisConfig(
+    val range: ClosedRange<Double>? = null,
+    val steps: UInt? = null,
+    val formatFunction: (value: Double) -> String = { value -> "%.1f".format(value) }
+)
+
+/**
+ * A Card with a title that displays a line graph with two labelled axes.
+ */
 @Composable
 fun <C : Collection<Double>> GraphCard(
     title: String,
@@ -92,12 +119,11 @@ fun <C : Collection<Double>> GraphCard(
     }
 }
 
-data class AxisConfig(
-    val range: ClosedRange<Double>? = null,
-    val steps: UInt? = null,
-    val formatFunction: (value: Double) -> String = { value -> "%.1f".format(value) }
-)
-
+/**
+ * A line graph with two labelled axes.
+ *
+ * User must set Modifier.height(...)!
+ */
 @Composable
 fun <C : Collection<Double>> AnnotatedGraph(
     series: Series<C>,
@@ -194,6 +220,11 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
     )
 }
 
+/**
+ * A line graph.
+ *
+ * User must set Modifier.height(...)!
+ */
 @Composable
 fun <C : Collection<Double>> Graph(
     series: Series<C>,
@@ -255,4 +286,10 @@ fun <C : Collection<Double>> Graph(
             drawPath(path, color = pathConfig.fill ?: defaultFill)
         }
     }
+}
+
+private fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
+    val min = values.minOrNull() ?: 0.0
+    val max = values.maxOrNull() ?: 0.0
+    return min..max
 }

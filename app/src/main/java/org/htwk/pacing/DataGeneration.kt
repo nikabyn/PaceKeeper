@@ -11,7 +11,12 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
-fun randomHeartRate(avgDelayMs: Int): Flow<Pair<Double, Instant>> = flow {
+/**
+ * Generates heart rate values with a random delay between each of them.
+ *
+ * @param averageDelayMs delays are in the range of this value
+ */
+fun randomHeartRate(averageDelayMs: Int): Flow<Pair<Double, Instant>> = flow {
     val timeZone = TimeZone.currentSystemDefault()
     val start = LocalDateTime.parse("2025-01-01T00:00").toInstant(timeZone)
     var time = start
@@ -20,7 +25,7 @@ fun randomHeartRate(avgDelayMs: Int): Flow<Pair<Double, Instant>> = flow {
         val value = Random.nextDouble(55.0, 107.0)
         emit(Pair(value, time))
         time += 15.minutes
-        val millis = Random.nextDouble(avgDelayMs * 0.5, avgDelayMs * 1.5)
+        val millis = Random.nextDouble(averageDelayMs * 0.5, averageDelayMs * 1.5)
         delay(millis.toLong())
     }
 }
