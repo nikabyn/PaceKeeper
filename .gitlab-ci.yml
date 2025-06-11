@@ -23,25 +23,25 @@ lintDebug:
     paths:
       - app/lint/reports/
 
-#sonarqubeAnalysis:
-#  stage: analyze
-#  cache:
-#    policy: pull-push
-#    key: "sonar-cache-$CI_COMMIT_REF_SLUG"
-#    paths:
-#      - "${SONAR_USER_HOME}/cache"
-#      - sonar-scanner/
-#  script:
-#    - ./gradlew clean build --stacktrace
-#    - ./gradlew sonar -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
-#  allow_failure: false
-#  artifacts:
-#    when: always
-#    paths:
-#      - build/reports/
-#      - app/build/reports/
-#      - app/build/test-results/
-#      - app/build/jacoco/
+sonarqubeAnalysis:
+  stage: analyze
+  cache:
+    policy: pull-push
+    key: "sonar-cache-$CI_COMMIT_REF_SLUG"
+    paths:
+      - "${SONAR_USER_HOME}/cache"
+      - sonar-scanner/
+  script:
+    - ./gradlew clean build --stacktrace
+    - ./gradlew sonar -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+  allow_failure: false
+  artifacts:
+    when: always
+    paths:
+      - build/reports/
+      - app/build/reports/
+      - app/build/test-results/
+      - app/build/jacoco/
 
 # -------------------------------------------------------------
 # Test
