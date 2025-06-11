@@ -1,4 +1,4 @@
-package org.htwk.pacing.screens
+package org.htwk.pacing.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text

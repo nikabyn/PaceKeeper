@@ -24,9 +24,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import org.htwk.pacing.screens.HomeScreen
-import org.htwk.pacing.screens.MeasurementsScreen
-import org.htwk.pacing.screens.SettingsScreen
+import org.htwk.pacing.ui.screens.HomeScreen
+import org.htwk.pacing.ui.screens.MeasurementsScreen
+import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.theme.PacingTheme
 
 class MainActivity : ComponentActivity() {

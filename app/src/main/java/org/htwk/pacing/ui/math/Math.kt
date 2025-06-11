@@ -1,4 +1,4 @@
-package org.htwk.pacing.math
+package org.htwk.pacing.ui.math
 
 import androidx.annotation.FloatRange
 

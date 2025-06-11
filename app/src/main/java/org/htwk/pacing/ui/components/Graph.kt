@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import org.htwk.pacing.math.interpolate
+import org.htwk.pacing.ui.math.interpolate
 import kotlin.math.abs
 
 /**
