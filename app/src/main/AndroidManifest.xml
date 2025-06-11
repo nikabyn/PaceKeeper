@@ -5,6 +5,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_BPM" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA" />
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
     <application
         android:name=".PacingApp"
         android:allowBackup="true"
@@ -43,4 +50,5 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
     </application>
+
 </manifest>
