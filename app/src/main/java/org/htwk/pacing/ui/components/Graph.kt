@@ -30,8 +30,9 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import org.htwk.pacing.math.interpolate
+import org.htwk.pacing.ui.math.interpolate
 import kotlin.math.abs
 
 /**
@@ -102,13 +103,18 @@ fun <C : Collection<Double>> GraphCard(
         modifier = modifier
             .fillMaxWidth()
             .height(300.dp)
+            .testTag("GraphCard")
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.testTag("GraphCardTitle"),
+            )
             AnnotatedGraph(
                 series = series,
                 xConfig = xConfig,
@@ -161,15 +167,20 @@ fun <C : Collection<Double>> AnnotatedGraph(
     val xAxisHeightDp = with(density) { xAxisHeightPx.intValue.toDp() }
 
     @Composable
-    fun Label(text: String) = Text(text, style = MaterialTheme.typography.labelLarge)
+    fun Label(text: String) = Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.testTag("AxisLabel")
+    )
 
-    Row(modifier = modifier) {
+    Row(modifier = modifier.testTag("AnnotatedGraph")) {
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.End,
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(bottom = xAxisHeightDp)
+                .testTag("yAxis")
         ) {
             yLabels.forEach { Label(it) }
         }
@@ -193,6 +204,7 @@ fun <C : Collection<Double>> AnnotatedGraph(
                     .onGloballyPositioned { layoutCoordinates ->
                         xAxisHeightPx.intValue = layoutCoordinates.size.height
                     }
+                    .testTag("xAxis")
             ) {
                 xLabels.forEach { Label(it) }
             }
@@ -250,6 +262,7 @@ fun <C : Collection<Double>> Graph(
         modifier = modifier
             .fillMaxSize()
             .clipToBounds()
+            .testTag("Graph")
     ) {
         fun toXCoord(x: Double) = (x * size.width).toFloat()
         fun toYCoord(y: Double) = ((1.0f - y) * size.height).toFloat()

@@ -1,4 +1,4 @@
-package org.htwk.pacing.screens
+package org.htwk.pacing.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -25,7 +25,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import org.htwk.pacing.mock.randomHeartRate
+import org.htwk.pacing.backend.mock.randomHeartRate
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.PathConfig
