@@ -1,4 +1,4 @@
-package org.htwk.pacing
+package org.htwk.pacing.mock
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
