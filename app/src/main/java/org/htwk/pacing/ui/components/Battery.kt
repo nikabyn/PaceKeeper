@@ -13,26 +13,77 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
+import kotlin.random.Random
+
+
+fun BalkenPerEnergie(): List<Int> { //errechnet wie viele Balken geleert werden müssen
+    var Energiebalken = listOf<Int>()
+
+    var x: Int = Random.nextInt(0, 100)
+    //Platzhalter  für den Energiepegel des Nutzers
+    //muss später ersetzt/importiert werden, wenn die Energie berechnet wird
+
+    when (x){
+        in 84..100 -> Energiebalken = listOf()
+        in 68..83 -> Energiebalken = listOf(0)
+        in 51..67 -> Energiebalken = listOf(0, 1)
+        in 34..50 -> Energiebalken = listOf(0, 1, 2)
+        in 17..33 -> Energiebalken = listOf(0, 1, 2, 3)
+        in 1..16 -> Energiebalken = listOf(0, 1, 2, 3, 4)
+           0 -> Energiebalken = listOf(0, 1, 2, 3, 4, 5)
+    }
+
+    return Energiebalken
+}
 
 @Composable
 fun BatterieKomponente() {
+
+ val balkenStand = BalkenPerEnergie()
+
+    val colors = createBatteryColors(6, overrideIndices = balkenStand)
+            //in der Liste von rechts nach links (0-5) Balken auswählen und grau färben
     Box(
         modifier = Modifier
             .graphicsLayer(rotationZ = 90f)
     ) {
-        BatterieInhalt()
+        BatterieInhalt(segmentColors = colors)
     }
 }
 
 
 @Composable
-fun BatterieInhalt() {
+fun BatterieInhalt(segmentColors: List<Color> = listOf()) {
+    val maxSegments = 6
     val overlap = 18.dp
+
+    // Fallback-Farben (wenn nichts übergeben wurde)
+    val defaultColors = listOf(
+        Color.Green, Color.Green,
+        Color.Yellow, Color.Yellow,
+        Color.Red, Color.Red
+    )
+
+    val farben = if (segmentColors.isNotEmpty()) segmentColors else defaultColors
+
 
     Box(
         modifier = Modifier.size(width = 100.dp, height = 200.dp)
     ) {
-        // rechter "Kopf"
+        // Körper mit Segmenten
+        fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
+            layout { measurable, constraints ->
+                val pxOffset = overlap.roundToPx()
+                val newHeight = constraints.maxHeight - pxOffset
+                val placeable = measurable.measure(
+                    constraints.copy(maxHeight = newHeight, minHeight = newHeight)
+                )
+                layout(placeable.width, constraints.maxHeight) {
+                    placeable.place(0, 0)
+                }
+            }
+        )
+        // Kopf
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -47,7 +98,6 @@ fun BatterieInhalt() {
             )
         }
 
-        // Batterie-Körper mit 6 Abschnitten
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -57,20 +107,15 @@ fun BatterieInhalt() {
                 .padding(4.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                val Balken = listOf(
-                    Color.Green, Color.Green,
-                    Color.Yellow, Color.Yellow,
-                    Color.Red, Color.Red
-                )
-                val anteil = 1f / Balken.size
-                Balken.forEach { farbe ->
+                for (i in 0 until maxSegments) {
+                    val segmentColor = if (i < farben.size) farben[i] else Color.White
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
                             .padding(vertical = 1.dp)
-                            .border(1.dp, Color.Black, RoundedCornerShape(10.dp))
-                            .background(farbe, shape = RoundedCornerShape(10.dp))
+                            .border(1.dp, Color.Black, RoundedCornerShape(7.dp))
+                            .background(segmentColor, RoundedCornerShape(7.dp))
                     )
                 }
             }
@@ -78,18 +123,30 @@ fun BatterieInhalt() {
     }
 }
 
-fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
-    layout { measurable, constraints ->
-        val pxOffset = overlap.roundToPx()
-        val newHeight = constraints.maxHeight - pxOffset
-        val placeable = measurable.measure(
-            constraints.copy(maxHeight = newHeight, minHeight = newHeight)
-        )
-        layout(placeable.width, constraints.maxHeight) {
-            placeable.place(0, 0)
-        }
+fun createBatteryColors(segments: Int, overrideIndices: List<Int> = emptyList()): List<Color> {
+    val baseColors = listOf(
+        Color.Green, Color.Green,
+        Color.Yellow, Color.Yellow,
+        Color.Red, Color.Red
+    )
+    return baseColors.mapIndexed { index, color ->
+        if (index in overrideIndices) Color.White else color
+    }.take(segments)          
+    //Color.[hier] um Farbe für umzufärbende Balken zu wählen
+    //Balken selbst werden in BatterieKomponente() ausgewählt
+}
+
+
+/*
+
+@Preview
+@Composable
+fun Balkentest(){
+    Box(modifier = Modifier.graphicsLayer(rotationZ = 90f))
+    {
+        BatterieInhalt(visibleSegments = 2)
     }
-)
+}
 
 
 @Preview
@@ -97,3 +154,5 @@ fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
 fun PreviewBatterieKomponente() {
     BatterieKomponente()
 }
+
+*/
