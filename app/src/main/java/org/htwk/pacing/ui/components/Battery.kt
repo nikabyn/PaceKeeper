@@ -14,6 +14,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
 import kotlin.random.Random
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.semantics
+
+val SegmentColorKey = SemanticsPropertyKey<Color>("segmentColor")
+var SemanticsPropertyReceiver.segmentColor by SegmentColorKey
+
 
 
 fun BalkenPerEnergie(): List<Int> { //errechnet wie viele Balken geleert werden müssen
@@ -116,6 +124,8 @@ fun BatterieInhalt(segmentColors: List<Color> = listOf()) {
                             .padding(vertical = 1.dp)
                             .border(1.dp, Color.Black, RoundedCornerShape(7.dp))
                             .background(segmentColor, RoundedCornerShape(7.dp))
+                            .testTag("segment_$i")
+                            .semantics { this.segmentColor = segmentColor }
                     )
                 }
             }
