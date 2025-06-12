@@ -74,8 +74,6 @@ debugUnitTests:
     - /opt/start-avds.sh
     - ./gradlew -Pci --console=plain :app:connectedDebugAndroidTest
   after_script:
-    - echo "Kill emulator …"
-    - adb -s emulator-5554 emu kill || true
     - pkill -f qemu-system 2>/dev/null || true
   artifacts:
     when: always
