@@ -42,7 +42,7 @@ fun BatterieKomponente() {
  val balkenStand = BalkenPerEnergie()
 
     val colors = createBatteryColors(6, overrideIndices = balkenStand)
-            //in der Liste von rechts nach links (0-5) Balken auswählen und grau färben
+
     Box(
         modifier = Modifier
             .graphicsLayer(rotationZ = 90f)
@@ -131,9 +131,7 @@ fun createBatteryColors(segments: Int, overrideIndices: List<Int> = emptyList())
     )
     return baseColors.mapIndexed { index, color ->
         if (index in overrideIndices) Color.White else color
-    }.take(segments)          
-    //Color.[hier] um Farbe für umzufärbende Balken zu wählen
-    //Balken selbst werden in BatterieKomponente() ausgewählt
+    }.take(segments)
 }
 
 
