@@ -11,6 +11,7 @@ before_script:
 stages:
   - analyze
   - test
+  - quality
   - release
 
 cache:
@@ -34,26 +35,6 @@ lintDebug:
     paths:
       - app/lint/reports/
 
-sonarqubeAnalysis:
-  stage: analyze
-  cache:
-    policy: pull-push
-    key: "sonar-cache-$CI_COMMIT_REF_SLUG"
-    paths:
-      - "${SONAR_USER_HOME}/cache"
-      - sonar-scanner/
-  script:
-    - ./gradlew clean build --stacktrace
-    - ./gradlew sonar -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
-  allow_failure: false
-  artifacts:
-    when: always
-    paths:
-      - build/reports/
-      - app/build/reports/
-      - app/build/test-results/
-      - app/build/jacoco/
-
 # -------------------------------------------------------------
 # Test
 # -------------------------------------------------------------
@@ -61,12 +42,14 @@ debugUnitTests:
   stage: test
   script:
     - ./gradlew -Pci --console=plain :app:testDebugUnitTest
+  rules:
+    - when: always
   artifacts:
     when: always
     paths:
       - app/build/test-results/testDebugUnitTest/
       - app/build/reports/tests/testDebugUnitTest/
-
+      - app/build/jacoco/
 
 .connected_tests_template:
   stage: test
@@ -80,6 +63,7 @@ debugUnitTests:
     paths:
       - app/build/reports/androidTests/connected/
       - app/build/outputs/androidTest-results/connected/
+      - app/build/jacoco/
   allow_failure: false
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
@@ -95,6 +79,38 @@ connectedInstrumentationTests:
       - ANDROID_API: [ "28", "35" ]
   image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
 
+# -------------------------------------------------------------
+# Quality
+# -------------------------------------------------------------
+
+sonarqubeUnit:
+  stage: quality
+  needs:
+    - debugUnitTests
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+  script:
+    - ./gradlew jacocoUnitTestReport
+    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+  artifacts:
+    when: always
+    paths:
+      - app/build/reports/
+
+sonarqubeMerged:
+  stage: quality
+  needs:
+    - debugUnitTests
+    - connectedInstrumentationTests
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+  script:
+    - ./gradlew jacocoMergedReport
+    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoMergedReport/jacocoMergedReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+  artifacts:
+    when: always
+    paths:
+      - app/build/reports/
 
 # -------------------------------------------------------------
 # Builds
