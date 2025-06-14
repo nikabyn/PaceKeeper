@@ -6,9 +6,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -30,14 +29,14 @@ interface HeartRateDao {
     @Query("select * from heart_rate where time between :begin and :end")
     suspend fun getEntriesInRange(begin: Instant, end: Instant): List<HeartRateEntry>
 
-    fun getLastEntriesLive(duration: Duration): Flow<List<HeartRateEntry>> = flow {
-        while (true) {
+    @Query("select null from heart_rate")
+    fun getChangeTrigger(): Flow<Int?>
+
+    fun getLastEntriesLive(duration: Duration): Flow<List<HeartRateEntry>> =
+        getChangeTrigger().map {
             val now = Clock.System.now()
-            val begin = now.minus(duration)
-            emit(getEntriesInRange(begin, now))
-            delay(250)
+            getEntriesInRange(now.minus(duration), now)
         }
-    }
 }
 
 @Entity(tableName = "heart_rate")
