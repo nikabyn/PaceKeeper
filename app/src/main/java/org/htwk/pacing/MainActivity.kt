@@ -33,42 +33,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            PacingTheme {
-                val navController = rememberNavController()
-                val startDestination = Destination.HOME
-                val selectedDestination =
-                    rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
-
-                Scaffold(
-                    bottomBar = { NavBar(navController, selectedDestination) },
-                ) { contentPadding ->
-                    AppNavHost(
-                        navController,
-                        startDestination,
-                        modifier = Modifier.padding(contentPadding)
-                    )
-                }
-            }
-        }
+        setContent { Main() }
     }
 }
 
 @Composable
-fun App() {
-    val navController = rememberNavController()
-    val startDestination = Destination.HOME
-    val selectedDestination =
-        rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
+fun Main() {
+    PacingTheme {
+        val navController = rememberNavController()
+        val startDestination = Destination.HOME
+        val selectedDestination =
+            rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
 
-    Scaffold(
-        bottomBar = { NavBar(navController, selectedDestination) },
-    ) { contentPadding ->
-        AppNavHost(
-            navController,
-            startDestination,
-            modifier = Modifier.padding(contentPadding)
-        )
+        Scaffold(
+            bottomBar = { NavBar(navController, selectedDestination) },
+        ) { contentPadding ->
+            AppNavHost(
+                navController,
+                startDestination,
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
     }
 }
 
