@@ -67,7 +67,7 @@ android {
     }
 
     room {
-        schemaDirectory("$projectDir/schemas")
+        schemaDirectory("$projectDir/app/schemas")
     }
 }
 
