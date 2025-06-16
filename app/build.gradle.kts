@@ -101,7 +101,6 @@ fun ConfigurableFileTree.excludeDefaults(): ConfigurableFileTree {
 }
 
 val coverageSourceDirs = listOf("src/main/java", "src/main/kotlin")
-
 tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
     dependsOn("testDebugUnitTest")
 
@@ -110,6 +109,9 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
 
     reports {
         xml.required.set(true)
+        xml.outputLocation.set(
+            file("${layout.buildDirectory.get()}/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml")
+        )
         html.required.set(true)
     }
 
@@ -121,7 +123,9 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
     )
 
     sourceDirectories.setFrom(files(coverageSourceDirs))
-    executionData.setFrom(file("${layout.buildDirectory.get()}/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+    executionData.setFrom(
+        file("${layout.buildDirectory.get()}/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+    )
 }
 
 tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
@@ -132,6 +136,9 @@ tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
 
     reports {
         xml.required.set(true)
+        xml.outputLocation.set(
+            file("${layout.buildDirectory.get()}/reports/jacoco/jacocoDebugAndroidTestReport/jacocoDebugAndroidTestReport.xml")
+        )
         html.required.set(true)
     }
 
@@ -145,7 +152,7 @@ tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
     sourceDirectories.setFrom(files(coverageSourceDirs))
 
     executionData.setFrom(
-        fileTree(
+        project.fileTree(
             layout.buildDirectory.dir("outputs/code_coverage/debugAndroidTest/connected")
                 .get().asFile
         ) {
@@ -153,5 +160,4 @@ tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
         }
     )
 }
-
 

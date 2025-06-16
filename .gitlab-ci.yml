@@ -45,13 +45,7 @@ sonarqubeUnit:
   script:
     - ./gradlew -Pci --console=plain :app:testDebugUnitTest
     - ./gradlew jacocoUnitTestReport
-    - ./gradlew sonar \
-      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml \
-      -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-      -Dsonar.projectName=$SONAR_PROJECT_NAME \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.token=$SONAR_TOKEN \
-      -Dsonar.qualitygate.wait=true
+    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
   artifacts:
     when: always
     paths:
@@ -72,13 +66,7 @@ sonarqubeAndroid:
   script:
     - /opt/start-avds.sh $ANDROID_API
     - ./gradlew jacocoAndroidTestReport
-    - ./gradlew sonar \
-      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugAndroidTestReport/jacocoDebugAndroidTestReport.xml \
-      -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-      -Dsonar.projectName=$SONAR_PROJECT_NAME \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.token=$SONAR_TOKEN \
-      -Dsonar.qualitygate.wait=true
+    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugAndroidTestReport/jacocoDebugAndroidTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
   after_script:
     - pkill -f qemu-system 2>/dev/null || true
   artifacts:
