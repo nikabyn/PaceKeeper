@@ -86,53 +86,82 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
+val coverageSourceDirs = listOf("src/main/java", "src/main/kotlin")
+
+val fileFilter = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*Test*.*",
+    "android/**/*.*"
+)
 
 tasks.register<JacocoReport>("jacocoUnitTestReport") {
-    group = "Reporting"
-    description = "Generates JaCoCo code coverage report for debug unit tests."
+    dependsOn("testDebugUnitTest")
 
-    //dependsOn("testDebugUnitTest")
+    group = "verification"
+    description = "Generates JaCoCo coverage report for unit tests."
 
-    executionData.from(
-        fileTree(layout.buildDirectory) {
-            include("jacoco/testDebugUnitTestCoverage.exec")
-            include("jacoco/testDebugUnitTest.exec")
-        }
-    )
+    val javaClasses =
+        fileTree("${project.layout.buildDirectory}/intermediates/javac/debug").excludeFilter()
+    val kotlinClasses =
+        fileTree("${project.layout.buildDirectory}/tmp/kotlin-classes/debug").excludeFilter()
 
-    classDirectories.from(
-        fileTree("${layout.buildDirectory}/tmp/kotlin-classes/debug")
-    )
-
-    sourceDirectories.from(
-        files(
-            "$projectDir/src/main/java",
-            "$projectDir/src/main/kotlin"
-        )
-    )
+    classDirectories.setFrom(files(javaClasses, kotlinClasses))
+    sourceDirectories.setFrom(files(coverageSourceDirs))
+    executionData.setFrom(file("${project.layout.buildDirectory}/jacoco/testDebugUnitTest.exec"))
 
     reports {
         xml.required.set(true)
         html.required.set(true)
     }
 }
+
 
 tasks.register<JacocoReport>("jacocoAndroidTestReport") {
-    group = "Reporting"
-    description = "Generates JaCoCo code coverage report for debug instrumented tests."
+    dependsOn("connectedDebugAndroidTest")
 
-    //dependsOn("createDebugCoverageReport")
+    group = "verification"
+    description = "Generates JaCoCo coverage report for Android instrumentation tests."
 
-    executionData.from(
-        fileTree(layout.buildDirectory) {
-            include("outputs/coverage/debugAndroidTest/connected/**/*.ec")
-        }
-    )
+    val javaClasses =
+        fileTree("${project.layout.buildDirectory}/intermediates/javac/debug").excludeFilter()
+    val kotlinClasses =
+        fileTree("${project.layout.buildDirectory}/tmp/kotlin-classes/debug").excludeFilter()
 
-    sourceDirectories.from(
+    classDirectories.setFrom(files(javaClasses, kotlinClasses))
+    sourceDirectories.setFrom(files(coverageSourceDirs))
+    executionData.setFrom(fileTree("${project.layout.buildDirectory}/outputs/code-coverage/connected") {
+        include("**/*.ec")
+    })
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+
+tasks.register<JacocoReport>("jacocoMergedReport") {
+    dependsOn("testDebugUnitTest", "connectedDebugAndroidTest")
+
+    group = "verification"
+    description = "Generates merged JaCoCo report from unit and instrumentation tests."
+
+    val javaClasses =
+        fileTree("${project.layout.buildDirectory}/intermediates/javac/debug").excludeFilter()
+    val kotlinClasses =
+        fileTree("${project.layout.buildDirectory}/tmp/kotlin-classes/debug").excludeFilter()
+
+    classDirectories.setFrom(files(javaClasses, kotlinClasses))
+    sourceDirectories.setFrom(files(coverageSourceDirs))
+    executionData.setFrom(
         files(
-            "$projectDir/src/main/java",
-            "$projectDir/src/main/kotlin"
+            "${project.layout.buildDirectory}/jacoco/testDebugUnitTest.exec",
+            fileTree("${project.layout.buildDirectory}/outputs/code-coverage/connected") {
+                include("**/*.ec")
+            }
         )
     )
 
@@ -142,31 +171,6 @@ tasks.register<JacocoReport>("jacocoAndroidTestReport") {
     }
 }
 
-tasks.register<JacocoReport>("jacocoMergedReport") {
-    group = "Reporting"
-    description =
-        "Generates a merged JaCoCo code coverage report for debug unit and instrumented tests."
-
-    //dependsOn("testDebugUnitTest", "createDebugCoverageReport")
-
-    executionData.from(
-        fileTree(layout.buildDirectory) {
-            include(
-                "jacoco/testDebugUnitTest.exec",
-                "outputs/coverage/debugAndroidTest/connected/**/*.ec"
-            )
-        }
-    )
-
-    sourceDirectories.from(
-        files(
-            "$projectDir/src/main/java",
-            "$projectDir/src/main/kotlin"
-        )
-    )
-
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-    }
+private fun ConfigurableFileTree.excludeFilter() {
+    exclude(fileFilter)
 }

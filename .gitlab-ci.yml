@@ -92,7 +92,7 @@ sonarqubeUnit:
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
   script:
     - ./gradlew jacocoUnitTestReport
-    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=$CI_PROJECT_DIR/app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
   artifacts:
     when: always
     paths:
@@ -100,6 +100,8 @@ sonarqubeUnit:
 
 sonarqubeMerged:
   stage: quality
+  tags:
+    - android
   needs:
     - debugUnitTests
     - connectedInstrumentationTests
@@ -107,7 +109,7 @@ sonarqubeMerged:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
   script:
     - ./gradlew jacocoMergedReport
-    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=$CI_PROJECT_DIR/app/build/reports/jacoco/jacocoMergedReport/jacocoMergedReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoMergedReport/jacocoMergedReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
   artifacts:
     when: always
     paths:
