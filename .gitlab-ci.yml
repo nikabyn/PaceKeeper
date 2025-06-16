@@ -46,7 +46,7 @@ sonarqubeUnit:
     - ./gradlew -Pci --console=plain :app:testDebugUnitTest
     - ./gradlew jacocoUnitTestReport
     - ./gradlew sonar \
-      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml \
+      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml \
       -Dsonar.projectKey=$SONAR_PROJECT_KEY \
       -Dsonar.projectName=$SONAR_PROJECT_NAME \
       -Dsonar.host.url=$SONAR_HOST_URL \
@@ -71,10 +71,9 @@ sonarqubeAndroid:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
   script:
     - /opt/start-avds.sh $ANDROID_API
-    - ./gradlew -Pci --console=plain :app:connectedDebugAndroidTest
     - ./gradlew jacocoAndroidTestReport
     - ./gradlew sonar \
-      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoAndroidTestReport/jacocoAndroidTestReport.xml \
+      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugAndroidTestReport/jacocoDebugAndroidTestReport.xml \
       -Dsonar.projectKey=$SONAR_PROJECT_KEY \
       -Dsonar.projectName=$SONAR_PROJECT_NAME \
       -Dsonar.host.url=$SONAR_HOST_URL \
