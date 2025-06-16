@@ -10,7 +10,6 @@ before_script:
 
 stages:
   - analyze
-  - test
   - quality
   - release
 
@@ -36,84 +35,59 @@ lintDebug:
       - app/lint/reports/
 
 # -------------------------------------------------------------
-# Test
+# Quality (inkl. Tests)
 # -------------------------------------------------------------
-debugUnitTests:
-  stage: test
+
+sonarqubeUnit:
+  stage: quality
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
   script:
     - ./gradlew -Pci --console=plain :app:testDebugUnitTest
-  rules:
-    - when: always
+    - ./gradlew jacocoUnitTestReport
+    - ./gradlew sonar \
+      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml \
+      -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+      -Dsonar.projectName=$SONAR_PROJECT_NAME \
+      -Dsonar.host.url=$SONAR_HOST_URL \
+      -Dsonar.token=$SONAR_TOKEN \
+      -Dsonar.qualitygate.wait=true
   artifacts:
     when: always
     paths:
+      - app/build/reports/
       - app/build/test-results/testDebugUnitTest/
-      - app/build/reports/tests/testDebugUnitTest/
       - app/build/jacoco/
 
-.connected_tests_template:
-  stage: test
+sonarqubeAndroid:
+  stage: quality
+  tags:
+    - android
+  image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
+  parallel:
+    matrix:
+      - ANDROID_API: [ "28", "35" ]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
   script:
-    - /opt/start-avds.sh
+    - /opt/start-avds.sh $ANDROID_API
     - ./gradlew -Pci --console=plain :app:connectedDebugAndroidTest
+    - ./gradlew jacocoAndroidTestReport
+    - ./gradlew sonar \
+      -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoAndroidTestReport/jacocoAndroidTestReport.xml \
+      -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+      -Dsonar.projectName=$SONAR_PROJECT_NAME \
+      -Dsonar.host.url=$SONAR_HOST_URL \
+      -Dsonar.token=$SONAR_TOKEN \
+      -Dsonar.qualitygate.wait=true
   after_script:
     - pkill -f qemu-system 2>/dev/null || true
   artifacts:
     when: always
     paths:
-      - app/build/reports/androidTests/connected/
-      - app/build/reports/coverage/androidTest/
+      - app/build/reports/
       - app/build/outputs/androidTest-results/connected/
       - app/build/jacoco/
-  allow_failure: false
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
-      when: always
-    - when: never
-
-connectedInstrumentationTests:
-  extends: .connected_tests_template
-  tags:
-    - android
-  parallel:
-    matrix:
-      - ANDROID_API: [ "28", "35" ]
-  image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
-
-# -------------------------------------------------------------
-# Quality
-# -------------------------------------------------------------
-
-sonarqubeUnit:
-  stage: quality
-  needs:
-    - debugUnitTests
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
-  script:
-    - ./gradlew jacocoUnitTestReport
-    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
-  artifacts:
-    when: always
-    paths:
-      - app/build/reports/
-
-sonarqubeMerged:
-  stage: quality
-  tags:
-    - android
-  needs:
-    - debugUnitTests
-    - connectedInstrumentationTests
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
-  script:
-    - ./gradlew jacocoMergedReport
-    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoMergedReport/jacocoMergedReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
-  artifacts:
-    when: always
-    paths:
-      - app/build/reports/
 
 # -------------------------------------------------------------
 # Builds
