@@ -17,8 +17,11 @@ abstract class PacingDatabase : RoomDatabase() {
         @Volatile
         private var instance: PacingDatabase? = null
 
+        /**
+         * Initializes database or gets existing instance.
+         */
         fun getInstance(context: Context): PacingDatabase {
-            return return instance ?: synchronized(this) {
+            return instance ?: synchronized(this) {
                 Room.databaseBuilder(context, PacingDatabase::class.java, "pacing.db")
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()

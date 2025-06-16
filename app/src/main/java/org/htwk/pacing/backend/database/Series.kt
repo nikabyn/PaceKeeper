@@ -29,6 +29,9 @@ interface HeartRateDao {
     @Query("select * from heart_rate where time between :begin and :end")
     suspend fun getEntriesInRange(begin: Instant, end: Instant): List<HeartRateEntry>
 
+    /**
+     * Emits `null` every time the data in the table changes.
+     */
     @Query("select null from heart_rate")
     fun getChangeTrigger(): Flow<Int?>
 

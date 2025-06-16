@@ -44,7 +44,7 @@ fun MeasurementsScreen(
     val series = viewModel.series.collectAsState().value
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .verticalScroll(rememberScrollState())
             .background(MaterialTheme.colorScheme.background)
     ) {

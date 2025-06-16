@@ -19,6 +19,9 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 
+/**
+ * Entry point for non UI related work.
+ */
 class PacingApp : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
@@ -31,6 +34,10 @@ class PacingApp : Application(), KoinComponent {
         enqueueRandomHeartRateWorker(wm)
     }
 
+    /**
+     * Replaces the default WorkManagerInitializer,
+     * which must be disabled in AndroidManifest.xml for this to work.
+     */
     fun initWorkManager(): WorkManager {
         val workerFactory = KoinWorkerFactory()
         val config = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -51,6 +58,11 @@ class PacingApp : Application(), KoinComponent {
     }
 }
 
+/**
+ * Queries and constructs workers using dependency injection with koin.
+ * Had to write this ourselves because the koin workmanager library does not
+ * properly query for the functions that create workers.
+ */
 class KoinWorkerFactory : WorkerFactory(), KoinComponent {
     override fun createWorker(
         appContext: Context,

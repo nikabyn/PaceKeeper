@@ -38,7 +38,7 @@ fun randomHeartRate(averageDelayMs: Int): Flow<Pair<Double, Instant>> = flow {
 class RandomHeartRateWorker(
     context: Context,
     workerParams: WorkerParameters,
-    private val heartRateDao: HeartRateDao
+    private val heartRateDao: HeartRateDao,
 ) : CoroutineWorker(context, workerParams) {
     @RequiresApi(Build.VERSION_CODES.Q)
     override suspend fun doWork(): Result {

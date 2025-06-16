@@ -25,6 +25,9 @@ val appModule = module {
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
 }
 
+/**
+ * Registers a function that has access to koin and constructs a ListenableWorker.
+ */
 inline fun <reified T : ListenableWorker> Module.worker(
     noinline createFun: Koin.(Context, WorkerParameters) -> T
 ) {
