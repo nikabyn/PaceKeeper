@@ -30,6 +30,8 @@ lintDebug:
   stage: analyze
   script:
     - ./gradlew -Pci --console=plain :app:lintDebug -PbuildDir=lint
+  rules:
+    - when: always
   artifacts:
     paths:
       - app/lint/reports/
