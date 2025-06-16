@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +42,6 @@ fun MeasurementsScreen(
     viewModel: MeasurementsViewModel = koinViewModel(),
 ) {
     val series = viewModel.series.collectAsState().value
-    Log.d("MeasurementsScreen", series.x.size.toString())
 
     Box(
         modifier = Modifier
@@ -116,7 +114,6 @@ class MeasurementsViewModel(
     init {
         viewModelScope.launch {
             heartRateDao.getLastEntriesLive(10.seconds).collect { entries ->
-                Log.d("MeasurementsViewModel", "Received entries: ${entries.size}")
                 val updated = Series(mutableListOf(), mutableListOf())
                 entries.forEach { (value, time) ->
                     updated.x.add(time.toEpochMilliseconds().toDouble())

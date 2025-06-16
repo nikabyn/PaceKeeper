@@ -44,9 +44,6 @@ class RandomHeartRateWorker(
     override suspend fun doWork(): Result {
         setForeground(ForegroundInfo(1, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC))
 
-        // TODO: Figure out how to properly reset db
-        heartRateDao.deleteAllEntries()
-
         randomHeartRate(100).collect { (value, time) ->
             heartRateDao.insert(HeartRateEntry(value, time))
         }
