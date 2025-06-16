@@ -12,6 +12,7 @@ navigationCompose = "2.9.0"
 kotlinxDatetime = "0.6.2"
 roomCompiler = "2.7.1"
 workRuntimeKtx = "2.10.1"
+koinAndroid = "4.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
