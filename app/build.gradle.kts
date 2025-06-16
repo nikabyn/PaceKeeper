@@ -65,6 +65,10 @@ android {
             )
         }
     }
+
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
 }
 
 dependencies {
@@ -77,6 +81,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Koin (dependency injection)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
 
     // Room (database)
     implementation(libs.androidx.room.runtime)
