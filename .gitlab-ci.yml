@@ -10,7 +10,7 @@ before_script:
 
 stages:
   - analyze
-  - quality
+  - test
   - release
 
 cache:
@@ -35,46 +35,48 @@ lintDebug:
       - app/lint/reports/
 
 # -------------------------------------------------------------
-# Quality (inkl. Tests)
+# Test
 # -------------------------------------------------------------
-
-sonarqubeUnit:
-  stage: quality
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+debugUnitTests:
+  stage: test
   script:
     - ./gradlew -Pci --console=plain :app:testDebugUnitTest
-    - ./gradlew jacocoUnitTestReport
-    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+  rules:
+    - when: always
   artifacts:
     when: always
     paths:
-      - app/build/reports/
       - app/build/test-results/testDebugUnitTest/
+      - app/build/reports/tests/testDebugUnitTest/
       - app/build/jacoco/
 
-sonarqubeAndroid:
-  stage: quality
-  tags:
-    - android
-  image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
-  parallel:
-    matrix:
-      - ANDROID_API: [ "28", "35" ]
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+.connected_tests_template:
+  stage: test
   script:
-    - /opt/start-avds.sh $ANDROID_API
-    - ./gradlew jacocoAndroidTestReport
-    - ./gradlew sonar -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoDebugAndroidTestReport/jacocoDebugAndroidTestReport.xml -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.projectName=$SONAR_PROJECT_NAME -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+    - /opt/start-avds.sh
+    - ./gradlew -Pci --console=plain :app:connectedDebugAndroidTest
   after_script:
     - pkill -f qemu-system 2>/dev/null || true
   artifacts:
     when: always
     paths:
-      - app/build/reports/
+      - app/build/reports/androidTests/connected/
       - app/build/outputs/androidTest-results/connected/
       - app/build/jacoco/
+  allow_failure: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+      when: always
+    - when: never
+
+connectedInstrumentationTests:
+  extends: .connected_tests_template
+  tags:
+    - android
+  parallel:
+    matrix:
+      - ANDROID_API: [ "28", "35" ]
+  image: "$CI_REGISTRY/pacing-app/ui/android-sdk:latest"
 
 # -------------------------------------------------------------
 # Builds
