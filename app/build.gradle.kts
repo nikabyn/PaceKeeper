@@ -125,7 +125,7 @@ tasks.register<JacocoReport>("jacocoAndroidTestReport") {
 
     executionData.from(
         fileTree(layout.buildDirectory) {
-            include("outputs/code_coverage/debugAndroidTest/connected/**/*.ec")
+            include("outputs/coverage/debugAndroidTest/connected/**/*.ec")
         }
     )
 
@@ -153,7 +153,7 @@ tasks.register<JacocoReport>("jacocoMergedReport") {
         fileTree(layout.buildDirectory) {
             include(
                 "jacoco/testDebugUnitTest.exec",
-                "outputs/code_coverage/debugAndroidTest/connected/**/*.ec"
+                "outputs/coverage/debugAndroidTest/connected/**/*.ec"
             )
         }
     )
