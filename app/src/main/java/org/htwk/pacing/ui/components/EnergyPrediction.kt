@@ -3,6 +3,7 @@ package org.htwk.pacing.ui.components
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -33,22 +35,30 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
 ) {
-    val current = Instant.fromEpochMilliseconds(series.x.last().toLong())
-    val start = (current - 12.hours).toEpochMilliseconds().toDouble()
-    val end = (current + 12.hours).toEpochMilliseconds().toDouble()
-
-    val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
-    val xConfig = AxisConfig(
-        range = start..end,
-        formatFunction = {
-            val localTime =
-                Instant.fromEpochMilliseconds(it.toLong())
-                    .toLocalDateTime(TimeZone.currentSystemDefault())
-            "%02d:%02d".format(localTime.hour, localTime.minute)
-        }
-    )
-
     CardWithTitle(title = "Energy Prediction") {
+        if (series.x.isEmpty()) {
+            Text(
+                "Currently no data available!",
+                modifier = Modifier.testTag("EnergyPredictionErrorText")
+            )
+            return@CardWithTitle
+        }
+
+        val current = Instant.fromEpochMilliseconds(series.x.last().toLong())
+        val start = (current - 12.hours).toEpochMilliseconds().toDouble()
+        val end = (current + 12.hours).toEpochMilliseconds().toDouble()
+
+        val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
+        val xConfig = AxisConfig(
+            range = start..end,
+            formatFunction = {
+                val localTime =
+                    Instant.fromEpochMilliseconds(it.toLong())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                "%02d:%02d".format(localTime.hour, localTime.minute)
+            }
+        )
+
         Annotation(
             series = series,
             xConfig = xConfig,
