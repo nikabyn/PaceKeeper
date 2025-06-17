@@ -21,9 +21,7 @@ class BatterieInhaltTest {
             BatterieInhalt(segmentColors = testColors)
         }
 
-        composeTestRule
-            .onNodeWithTag("segment_0")
-            .assertExists()
+        composeTestRule.onNodeWithTag("segment_0").assertExists()
             .assert(SemanticsMatcher.Companion.expectValue(SegmentColorKey, Color.Companion.White))
     }
 
@@ -36,9 +34,7 @@ class BatterieInhaltTest {
         }
 
         for (i in 0 until 6) {
-            composeTestRule
-                .onNodeWithTag("segment_$i")
-                .assertExists()
+            composeTestRule.onNodeWithTag("segment_$i").assertExists()
         }
     }
 }
