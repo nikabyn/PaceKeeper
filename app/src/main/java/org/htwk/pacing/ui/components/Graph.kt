@@ -29,7 +29,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import org.htwk.pacing.ui.lineTo
+import org.htwk.pacing.ui.math.Float2
 import org.htwk.pacing.ui.math.interpolate
+import org.htwk.pacing.ui.moveTo
 import kotlin.math.abs
 
 /**
@@ -210,11 +213,14 @@ fun <C : Collection<Double>> Annotation(
 }
 
 private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
-    val path = Path();
-    for (i in 0u..<ySteps) {
-        val height = i.toFloat() / (ySteps.toFloat() - 1) * size.height
-        path.moveTo(0f, height);
-        path.lineTo(1f * size.width, height);
+    val scope = this
+
+    val path = Path().apply {
+        for (i in 0u..<ySteps) {
+            val height = i.toFloat() / (ySteps.toFloat() - 1)
+            moveTo(scope, Float2(0f, height))
+            lineTo(scope, Float2(1f, height))
+        }
     }
     drawPath(
         path,
@@ -261,9 +267,11 @@ fun <C : Collection<Double>> Graph(
             .clipToBounds()
             .testTag("Graph")
     ) {
-        fun toXCoord(x: Double) = (x * size.width).toFloat()
-        fun toYCoord(y: Double) = ((1.0f - y) * size.height).toFloat()
-        fun toGraphCoords(x: Double, y: Double) = Pair(toXCoord(x), toYCoord(y))
+        val scope = this
+
+        fun toXCoord(x: Double) = x.toFloat()
+        fun toYCoord(y: Double) = (1.0f - y).toFloat()
+        fun toGraphCoords(x: Double, y: Double) = Float2(toXCoord(x), toYCoord(y))
 
         val path = Path()
 
@@ -272,12 +280,12 @@ fun <C : Collection<Double>> Graph(
         }
 
         val start = toGraphCoords(relativeX.first(), relativeY.first())
-        path.moveTo(start.first, start.second)
+        path.moveTo(scope, start)
 
         var end = start
         for ((time, value) in relativeX.drop(1).zip(relativeY.drop(1))) {
             end = toGraphCoords(time, value)
-            path.lineTo(end.first, end.second)
+            path.lineTo(scope, end)
         }
 
         if (pathConfig.hasStroke) {
@@ -289,9 +297,9 @@ fun <C : Collection<Double>> Graph(
         }
 
         if (pathConfig.hasFill) {
-            path.lineTo(end.first, toYCoord(0.0))
-            path.lineTo(start.first, toYCoord(0.0))
-            path.lineTo(start.first, start.second)
+            path.lineTo(scope, Float2(end.x, toYCoord(0.0)))
+            path.lineTo(scope, Float2(start.x, toYCoord(0.0)))
+            path.lineTo(scope, start)
 
             drawPath(path, color = pathConfig.fill ?: defaultFill)
         }

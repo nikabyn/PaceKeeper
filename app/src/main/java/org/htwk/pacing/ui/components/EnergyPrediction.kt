@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -15,7 +14,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2
+import org.htwk.pacing.ui.moveTo
+import org.htwk.pacing.ui.relativeLineTo
+import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
 
 @Composable
@@ -67,51 +70,55 @@ private fun Modifier.drawPrediction(
     avgPrediction: Float,
     maxPrediction: Float
 ): Modifier = this.drawBehind {
+    val scope = this
+
     val color = when {
         avgPrediction < 0.4f -> Color(0xFFF96B6B)
         avgPrediction < 0.6f -> Color(0xFFECC00A)
         else -> Color(0xFF8FE02A)
     }
 
-    val centerPath = Path()
-    centerPath.moveTo(0.5f * size.width, 0.0f)
-    centerPath.lineTo(0.5f * size.width, size.height)
+    val centerPath = Path().apply {
+        moveTo(scope, Float2(0.5f, 0f))
+        lineTo(scope, Float2(0.5f, 1f))
+    }
     drawPath(
         centerPath,
         color = Color.Gray,
         style = Stroke(
-            width = 3.0f,
+            width = 3f,
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(30f, 20f))
         ),
     )
 
-    val predictionArea = Path()
-    predictionArea.moveTo(1f * size.width, (1f - maxPrediction) * size.height)
-    predictionArea.lineTo(0.5f * size.width, 0.5f * size.height)
-    predictionArea.lineTo(1f * size.width, (1f - minPrediction) * size.height)
-    predictionArea.close()
+    val predictionArea = Path().apply {
+        moveTo(scope, Float2(1f, 1f - maxPrediction))
+        lineTo(scope, Float2(0.5f, 0.5f))
+        lineTo(scope, Float2(1f, 1f - minPrediction))
+        close()
+    }
     drawPath(
         predictionArea,
         brush = Brush.linearGradient(
-            0.0f to color.copy(alpha = 0.5f), 1.0f to color.copy(alpha = 0.0f),
-            start = Offset(x = 0.5f * size.width, y = 0.5f * size.height),
-            end = Offset(x = 1.0f * size.width, y = 0.5f * size.height),
-        ),
+            0f to color.copy(alpha = 0.5f),
+            1f to color.copy(alpha = 0.0f),
+            start = Float2(0.5f, 0.5f).toPx(size),
+            end = Float2(1f, 0.5f).toPx(size),
+        )
     )
 
-    val predictionDirection = Path()
-    predictionDirection.moveTo(0.5f * size.width, 0.5f * size.height)
-    val scale = 0.3f
-    val direction = Float2(0.5f, (0.5f - avgPrediction))
-    val scaledDirection = direction.normalize().scale(scale)
-    predictionDirection.relativeLineTo(
-        scaledDirection.x * size.width,
-        scaledDirection.y * size.height
-    )
-
+    val predictionDirection = Path().apply {
+        moveTo(scope, Float2(0.5f, 0.5f))
+        val scale = 0.3f
+        val direction = Float2(0.5f, 0.5f - avgPrediction)
+            .normalize()
+            .scale(scale)
+        relativeLineTo(scope, direction)
+    }
     drawPath(
         predictionDirection,
         color = color,
-        style = Stroke(5f),
+        style = Stroke(5f)
     )
 }
+
