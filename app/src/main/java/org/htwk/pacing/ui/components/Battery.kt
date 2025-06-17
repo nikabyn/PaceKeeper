@@ -59,7 +59,6 @@ fun BatterieKomponente() {
     }
 }
 
-
 @Composable
 fun BatterieInhalt(segmentColors: List<Color> = listOf()) {
     val maxSegments = 6
@@ -74,24 +73,10 @@ fun BatterieInhalt(segmentColors: List<Color> = listOf()) {
 
     val farben = if (segmentColors.isNotEmpty()) segmentColors else defaultColors
 
-
     Box(
         modifier = Modifier.size(width = 100.dp, height = 200.dp)
     ) {
-        // Körper mit Segmenten
-        fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
-            layout { measurable, constraints ->
-                val pxOffset = overlap.roundToPx()
-                val newHeight = constraints.maxHeight - pxOffset
-                val placeable = measurable.measure(
-                    constraints.copy(maxHeight = newHeight, minHeight = newHeight)
-                )
-                layout(placeable.width, constraints.maxHeight) {
-                    placeable.place(0, 0)
-                }
-            }
-        )
-        // Kopf
+        // Kopf (Batterieanschluss)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -106,10 +91,20 @@ fun BatterieInhalt(segmentColors: List<Color> = listOf()) {
             )
         }
 
+        // Batteriegehäuse mit Segmenten
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .dynamicHeightMinus(overlap)
+                .layout { measurable, constraints ->
+                    val pxOffset = overlap.roundToPx()
+                    val newHeight = constraints.maxHeight - pxOffset
+                    val placeable = measurable.measure(
+                        constraints.copy(maxHeight = newHeight, minHeight = newHeight)
+                    )
+                    layout(placeable.width, constraints.maxHeight) {
+                        placeable.place(0, 0)
+                    }
+                }
                 .offset(y = overlap)
                 .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
                 .padding(4.dp)
