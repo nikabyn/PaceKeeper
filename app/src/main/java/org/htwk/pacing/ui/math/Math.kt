@@ -43,12 +43,45 @@ fun remap(value: Double, lowIn: Double, highIn: Double, lowOut: Double, highOut:
     return lowOut + (value - lowIn) * (highOut - lowOut) / (highIn - lowIn)
 }
 
+/**
+ * A 2D vector with floating point coordinates.
+ *
+ * ## Examples
+ *
+ * ```kotlin
+ * val v = Float2(3f, 4f)
+ * val unit = v.normalize()
+ * val scaled = v.scale(2f)
+ * ```
+ */
 data class Float2(val x: Float, val y: Float) {
+    /**
+     * Returns a unit vector pointing in the same direction.
+     * If this vector is the zero vector (0, 0), it returns itself unchanged.
+     *
+     * ## Examples
+     *
+     * ```kotlin
+     * val v = Float2(3f, 4f)
+     * val unit = v.normalize() // length ≈ 1.0
+     * ```
+     */
     fun normalize(): Float2 {
         val length = sqrt(x * x + y * y)
         return if (length == 0f) this else Float2(x / length, y / length)
     }
 
+    /**
+     * Scales the vector by a scalar factor.
+     * Multiplies both x and y components by the given factor.
+     *
+     * ## Examples
+     *
+     * ```kotlin
+     * val v = Float2(1f, -2f)
+     * val doubled = v.scale(2f) // Float2(2f, -4f)
+     * ```
+     */
     fun scale(factor: Float): Float2 {
         return Float2(x * factor, y * factor)
     }
