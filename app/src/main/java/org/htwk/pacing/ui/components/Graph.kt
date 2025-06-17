@@ -1,19 +1,16 @@
 package org.htwk.pacing.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
@@ -95,33 +92,13 @@ fun <C : Collection<Double>> GraphCard(
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
-    OutlinedCard(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .testTag("GraphCard")
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.testTag("GraphCardTitle"),
-            )
-            AnnotatedGraph(
-                series = series,
-                xConfig = xConfig,
-                yConfig = yConfig,
-                pathConfig = pathConfig,
-            )
-        }
+    CardWithTitle(title = title, modifier = modifier.testTag("GraphCard")) {
+        AnnotatedGraph(
+            series = series,
+            xConfig = xConfig,
+            yConfig = yConfig,
+            pathConfig = pathConfig,
+        )
     }
 }
 
@@ -137,6 +114,28 @@ fun <C : Collection<Double>> AnnotatedGraph(
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
+) {
+    Annotation(series, modifier, xConfig, yConfig) { xRange, yRange ->
+        Graph(
+            series = series,
+            yRange = yRange,
+            xRange = xRange,
+            pathConfig = pathConfig,
+        )
+    }
+}
+
+/**
+ * Axis annotations, has a slot for a Graph or some other component.
+ */
+@Composable
+fun <C : Collection<Double>> Annotation(
+    series: Series<C>,
+    modifier: Modifier = Modifier,
+    xConfig: AxisConfig = AxisConfig(),
+    yConfig: AxisConfig = AxisConfig(),
+    slot: @Composable ((yRange: ClosedRange<Double>, xRange: ClosedRange<Double>) -> Unit) =
+        { _, _ -> Box(modifier = Modifier.fillMaxSize()) { } },
 ) {
     val xRange = xConfig.range ?: defaultRange(series.x)
     val xSteps = xConfig.steps ?: 3u;
@@ -186,16 +185,14 @@ fun <C : Collection<Double>> AnnotatedGraph(
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Graph(
-                series = series,
-                yRange = yRange,
-                xRange = xRange,
-                pathConfig = pathConfig,
+            Box(
                 modifier = Modifier
                     .padding(10.dp)
                     .weight(1f)
-                    .drawLines(ySteps),
-            )
+                    .drawLines(ySteps)
+            ) {
+                slot(xRange, yRange)
+            }
 
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,

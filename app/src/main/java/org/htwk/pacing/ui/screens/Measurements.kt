@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,8 @@ fun MeasurementsScreen(
                         .toLocalDateTime(TimeZone.currentSystemDefault())
                 return "%02d:%02d:%02d".format(localTime.hour, localTime.minute, localTime.second)
             }
+
+            Log.d("Graph", series.toString())
 
             GraphCard(
                 title = "Heart Rate [bpm]",

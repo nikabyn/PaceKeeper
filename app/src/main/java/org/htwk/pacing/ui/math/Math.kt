@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.math
 
 import androidx.annotation.FloatRange
+import kotlin.math.sqrt
 
 /**
  * Linearly interpolate between two floating point values.
@@ -40,4 +41,15 @@ fun remap(value: Double, lowIn: Double, highIn: Double, lowOut: Double, highOut:
         return 0.0
     }
     return lowOut + (value - lowIn) * (highOut - lowOut) / (highIn - lowIn)
+}
+
+data class Float2(val x: Float, val y: Float) {
+    fun normalize(): Float2 {
+        val length = sqrt(x * x + y * y)
+        return Float2(x / length, y / length)
+    }
+
+    fun scale(factor: Float): Float2 {
+        return Float2(x * factor, y * factor)
+    }
 }
