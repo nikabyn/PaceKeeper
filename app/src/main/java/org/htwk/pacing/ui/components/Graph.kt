@@ -142,26 +142,26 @@ fun <C : Collection<Double>> Annotation(
 ) {
     val xRange = xConfig.range ?: defaultRange(series.x)
     val xSteps = xConfig.steps ?: 3u;
-    val xLabels = (0u..<xSteps).map { step ->
-        val value =
-            interpolate(
-                xRange.start,
-                xRange.endInclusive,
-                step.toFloat() / (xSteps - 1u).toFloat()
-            )
-        xConfig.formatFunction(value)
+    val xLabels: List<String> = when (xSteps) {
+        0u -> emptyList()
+        1u -> listOf(xConfig.formatFunction(xRange.start))
+        else -> (0u..<xSteps).map { step ->
+            val t = step.toFloat() / (xSteps - 1u).toFloat()
+            val value = interpolate(xRange.start, xRange.endInclusive, t)
+            xConfig.formatFunction(value)
+        }
     }
 
     val yRange = yConfig.range ?: defaultRange(series.y)
     val ySteps = yConfig.steps ?: 3u;
-    val yLabels = (ySteps - 1u downTo 0u).map { step ->
-        val value =
-            interpolate(
-                yRange.start,
-                yRange.endInclusive,
-                step.toFloat() / (ySteps - 1u).toFloat()
-            )
-        yConfig.formatFunction(value)
+    val yLabels: List<String> = when (ySteps) {
+        0u -> emptyList()
+        1u -> listOf(yConfig.formatFunction(yRange.start))
+        else -> (0u..<ySteps).reversed().map { step ->
+            val t = step.toFloat() / (ySteps - 1u).toFloat()
+            val value = interpolate(yRange.start, yRange.endInclusive, t)
+            yConfig.formatFunction(value)
+        }
     }
 
     val xAxisHeightPx = remember { mutableIntStateOf(0) }

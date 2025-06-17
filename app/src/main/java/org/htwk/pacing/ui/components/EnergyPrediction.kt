@@ -21,6 +21,11 @@ import org.htwk.pacing.ui.relativeLineTo
 import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
 
+/**
+ * Shows a graph of the last 12 hours of the users energy level
+ * and a prediction for the next 12 hours.
+ * The last value in the series is used as the current time.
+ */
 @Composable
 fun <C : Collection<Double>> EnergyPredictionCard(
     series: Series<C>,
@@ -32,16 +37,16 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     val start = (current - 12.hours).toEpochMilliseconds().toDouble()
     val end = (current + 12.hours).toEpochMilliseconds().toDouble()
 
-    val yConfig = AxisConfig(range = 0.0..1.0)
-    val xConfig =
-        AxisConfig(
-            range = start..end,
-            formatFunction = {
-                val localTime =
-                    Instant.fromEpochMilliseconds(it.toLong())
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                "%02d:%02d".format(localTime.hour, localTime.minute)
-            })
+    val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
+    val xConfig = AxisConfig(
+        range = start..end,
+        formatFunction = {
+            val localTime =
+                Instant.fromEpochMilliseconds(it.toLong())
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+            "%02d:%02d".format(localTime.hour, localTime.minute)
+        }
+    )
 
     CardWithTitle(title = "Energy Prediction") {
         Annotation(
@@ -50,7 +55,12 @@ fun <C : Collection<Double>> EnergyPredictionCard(
             yConfig = yConfig,
         ) { _, yRange ->
             Row(
-                modifier = Modifier.drawPrediction(minPrediction, avgPrediction, maxPrediction)
+                modifier = Modifier.drawPrediction(
+                    series.y.lastOrNull()?.toFloat() ?: 0.5f,
+                    minPrediction,
+                    avgPrediction,
+                    maxPrediction
+                )
             ) {
                 Graph(
                     series = series,
@@ -66,17 +76,18 @@ fun <C : Collection<Double>> EnergyPredictionCard(
 }
 
 private fun Modifier.drawPrediction(
+    current: Float,
     minPrediction: Float,
     avgPrediction: Float,
     maxPrediction: Float
 ): Modifier = this.drawBehind {
     val scope = this
-
     val color = when {
         avgPrediction < 0.4f -> Color(0xFFF96B6B)
         avgPrediction < 0.6f -> Color(0xFFECC00A)
         else -> Color(0xFF8FE02A)
     }
+    val current = Float2(0.5f, 1f - current)
 
     val centerPath = Path().apply {
         moveTo(scope, Float2(0.5f, 0f))
@@ -93,7 +104,7 @@ private fun Modifier.drawPrediction(
 
     val predictionArea = Path().apply {
         moveTo(scope, Float2(1f, 1f - maxPrediction))
-        lineTo(scope, Float2(0.5f, 0.5f))
+        lineTo(scope, current)
         lineTo(scope, Float2(1f, 1f - minPrediction))
         close()
     }
@@ -102,13 +113,13 @@ private fun Modifier.drawPrediction(
         brush = Brush.linearGradient(
             0f to color.copy(alpha = 0.5f),
             1f to color.copy(alpha = 0.0f),
-            start = Float2(0.5f, 0.5f).toPx(size),
+            start = current.toPx(size),
             end = Float2(1f, 0.5f).toPx(size),
         )
     )
 
     val predictionDirection = Path().apply {
-        moveTo(scope, Float2(0.5f, 0.5f))
+        moveTo(scope, current)
         val scale = 0.3f
         val direction = Float2(0.5f, 0.5f - avgPrediction)
             .normalize()
