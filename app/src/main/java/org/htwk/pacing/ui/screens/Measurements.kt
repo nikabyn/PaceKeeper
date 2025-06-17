@@ -113,9 +113,9 @@ class MeasurementsViewModel(
 
     init {
         viewModelScope.launch {
-            heartRateDao.getLastEntriesLive(10.seconds).collect { entries ->
+            heartRateDao.getLastLive(10.seconds).collect { entries ->
                 val updated = Series(mutableListOf(), mutableListOf())
-                entries.forEach { (value, time) ->
+                entries.forEach { (time, value) ->
                     updated.x.add(time.toEpochMilliseconds().toDouble())
                     updated.y.add(value.toDouble())
                 }

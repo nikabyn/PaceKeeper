@@ -26,10 +26,10 @@ import kotlin.random.Random
  *
  * @param averageDelayMs delays are in the range of this value
  */
-fun randomHeartRate(averageDelayMs: Int): Flow<Pair<Double, Instant>> = flow {
+fun randomHeartRate(averageDelayMs: Int): Flow<Pair<Instant, Long>> = flow {
     while (true) {
-        val value = Random.nextDouble(55.0, 107.0)
-        emit(Pair(value, Clock.System.now()))
+        val value = Random.nextLong(55, 107)
+        emit(Pair(Clock.System.now(), value))
         val millis = Random.nextDouble(averageDelayMs * 0.5, averageDelayMs * 1.5)
         delay(millis.toLong())
     }
@@ -44,8 +44,8 @@ class RandomHeartRateWorker(
     override suspend fun doWork(): Result {
         setForeground(ForegroundInfo(1, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC))
 
-        randomHeartRate(100).collect { (value, time) ->
-            heartRateDao.insert(HeartRateEntry(value, time))
+        randomHeartRate(100).collect { (time, value) ->
+            heartRateDao.insert(HeartRateEntry(time, value))
         }
         return Result.success()
     }
