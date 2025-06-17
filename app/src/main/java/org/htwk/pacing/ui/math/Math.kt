@@ -54,7 +54,7 @@ fun remap(value: Double, lowIn: Double, highIn: Double, lowOut: Double, highOut:
  * val scaled = v.scale(2f)
  * ```
  */
-data class Float2(val x: Float, val y: Float) {
+data class Float2D(val x: Float, val y: Float) {
     /**
      * Returns a unit vector pointing in the same direction.
      * If this vector is the zero vector (0, 0), it returns itself unchanged.
@@ -66,9 +66,9 @@ data class Float2(val x: Float, val y: Float) {
      * val unit = v.normalize() // length ≈ 1.0
      * ```
      */
-    fun normalize(): Float2 {
+    fun normalize(): Float2D {
         val length = sqrt(x * x + y * y)
-        return if (length == 0f) this else Float2(x / length, y / length)
+        return if (length == 0f) this else Float2D(x / length, y / length)
     }
 
     /**
@@ -82,7 +82,7 @@ data class Float2(val x: Float, val y: Float) {
      * val doubled = v.scale(2f) // Float2(2f, -4f)
      * ```
      */
-    fun scale(factor: Float): Float2 {
-        return Float2(x * factor, y * factor)
+    fun scale(factor: Float): Float2D {
+        return Float2D(x * factor, y * factor)
     }
 }

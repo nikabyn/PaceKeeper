@@ -17,7 +17,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.ui.lineTo
-import org.htwk.pacing.ui.math.Float2
+import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.moveTo
 import org.htwk.pacing.ui.relativeLineTo
 import org.htwk.pacing.ui.toPx
@@ -97,11 +97,11 @@ private fun Modifier.drawPrediction(
         avgPrediction < 0.6f -> Color(0xFFECC00A)
         else -> Color(0xFF8FE02A)
     }
-    val current = Float2(0.5f, 1f - current)
+    val current = Float2D(0.5f, 1f - current)
 
     val centerPath = Path().apply {
-        moveTo(scope, Float2(0.5f, 0f))
-        lineTo(scope, Float2(0.5f, 1f))
+        moveTo(scope, Float2D(0.5f, 0f))
+        lineTo(scope, Float2D(0.5f, 1f))
     }
     drawPath(
         centerPath,
@@ -113,9 +113,9 @@ private fun Modifier.drawPrediction(
     )
 
     val predictionArea = Path().apply {
-        moveTo(scope, Float2(1f, 1f - maxPrediction))
+        moveTo(scope, Float2D(1f, 1f - maxPrediction))
         lineTo(scope, current)
-        lineTo(scope, Float2(1f, 1f - minPrediction))
+        lineTo(scope, Float2D(1f, 1f - minPrediction))
         close()
     }
     drawPath(
@@ -124,14 +124,14 @@ private fun Modifier.drawPrediction(
             0f to color.copy(alpha = 0.5f),
             1f to color.copy(alpha = 0.0f),
             start = current.toPx(size),
-            end = Float2(1f, 0.5f).toPx(size),
+            end = Float2D(1f, 0.5f).toPx(size),
         )
     )
 
     val predictionDirection = Path().apply {
         moveTo(scope, current)
         val scale = 0.3f
-        val direction = Float2(0.5f, 0.5f - avgPrediction)
+        val direction = Float2D(0.5f, 0.5f - avgPrediction)
             .normalize()
             .scale(scale)
         relativeLineTo(scope, direction)

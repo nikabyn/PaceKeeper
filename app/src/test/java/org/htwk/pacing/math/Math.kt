@@ -1,6 +1,6 @@
 package org.htwk.pacing.math
 
-import org.htwk.pacing.ui.math.Float2
+import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
 import org.htwk.pacing.ui.math.remap
 import org.junit.Assert.assertEquals
@@ -24,7 +24,7 @@ class Math {
         )
     }
 
-    private fun assertFloat2(actual: Float2, expected: Float2, epsilon: Float) {
+    private fun assertFloat2(actual: Float2D, expected: Float2D, epsilon: Float) {
         assertFloat(actual.x, expected.x, epsilon)
         assertFloat(actual.y, expected.y, epsilon)
     }
@@ -68,17 +68,17 @@ class Math {
     fun scale_scalesCorrectly() {
         val epsilon = 1e-5f
 
-        assertFloat2(Float2(1f, 0f).scale(2f), Float2(2f, 0f), epsilon)
-        assertFloat2(Float2(0f, 1f).scale(-1f), Float2(0f, -1f), epsilon)
-        assertFloat2(Float2(3f, 4f).scale(0.5f), Float2(1.5f, 2f), epsilon)
-        assertFloat2(Float2(0f, 0f).scale(100f), Float2(0f, 0f), epsilon)
+        assertFloat2(Float2D(1f, 0f).scale(2f), Float2D(2f, 0f), epsilon)
+        assertFloat2(Float2D(0f, 1f).scale(-1f), Float2D(0f, -1f), epsilon)
+        assertFloat2(Float2D(3f, 4f).scale(0.5f), Float2D(1.5f, 2f), epsilon)
+        assertFloat2(Float2D(0f, 0f).scale(100f), Float2D(0f, 0f), epsilon)
     }
 
     @Test
     fun normalize_returnsUnitVector() {
         val epsilon = 1e-5f
 
-        val normalized = Float2(3f, 4f).normalize()
+        val normalized = Float2D(3f, 4f).normalize()
         val length = sqrt(normalized.x * normalized.x + normalized.y * normalized.y)
         assertFloat(length, 1f, epsilon)
     }
@@ -87,7 +87,7 @@ class Math {
     fun normalize_preservesDirection() {
         val epsilon = 1e-5f
 
-        val original = Float2(2f, 2f)
+        val original = Float2D(2f, 2f)
         val normalized = original.normalize()
         val factor = original.x / normalized.x
         assertFloat2(normalized.scale(factor), original, epsilon)
@@ -97,7 +97,7 @@ class Math {
     fun normalize_zeroVector_noCrash() {
         val epsilon = 1e-5f
 
-        val zero = Float2(0f, 0f)
+        val zero = Float2D(0f, 0f)
         assertEquals(zero, zero.normalize())
     }
 }

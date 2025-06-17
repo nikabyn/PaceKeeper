@@ -30,7 +30,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.ui.lineTo
-import org.htwk.pacing.ui.math.Float2
+import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
 import org.htwk.pacing.ui.moveTo
 import kotlin.math.abs
@@ -218,8 +218,8 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
     val path = Path().apply {
         for (i in 0u..<ySteps) {
             val height = i.toFloat() / (ySteps.toFloat() - 1)
-            moveTo(scope, Float2(0f, height))
-            lineTo(scope, Float2(1f, height))
+            moveTo(scope, Float2D(0f, height))
+            lineTo(scope, Float2D(1f, height))
         }
     }
     drawPath(
@@ -271,7 +271,7 @@ fun <C : Collection<Double>> Graph(
 
         fun toXCoord(x: Double) = x.toFloat()
         fun toYCoord(y: Double) = (1.0f - y).toFloat()
-        fun toGraphCoords(x: Double, y: Double) = Float2(toXCoord(x), toYCoord(y))
+        fun toGraphCoords(x: Double, y: Double) = Float2D(toXCoord(x), toYCoord(y))
 
         val path = Path()
 
@@ -297,8 +297,8 @@ fun <C : Collection<Double>> Graph(
         }
 
         if (pathConfig.hasFill) {
-            path.lineTo(scope, Float2(end.x, toYCoord(0.0)))
-            path.lineTo(scope, Float2(start.x, toYCoord(0.0)))
+            path.lineTo(scope, Float2D(end.x, toYCoord(0.0)))
+            path.lineTo(scope, Float2D(start.x, toYCoord(0.0)))
             path.lineTo(scope, start)
 
             drawPath(path, color = pathConfig.fill ?: defaultFill)
