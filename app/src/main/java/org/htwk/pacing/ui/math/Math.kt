@@ -46,7 +46,7 @@ fun remap(value: Double, lowIn: Double, highIn: Double, lowOut: Double, highOut:
 data class Float2(val x: Float, val y: Float) {
     fun normalize(): Float2 {
         val length = sqrt(x * x + y * y)
-        return Float2(x / length, y / length)
+        return if (length == 0f) this else Float2(x / length, y / length)
     }
 
     fun scale(factor: Float): Float2 {
