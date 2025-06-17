@@ -1,19 +1,16 @@
 package org.htwk.pacing.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
@@ -32,7 +29,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import org.htwk.pacing.ui.lineTo
+import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
+import org.htwk.pacing.ui.moveTo
 import kotlin.math.abs
 
 /**
@@ -95,33 +95,13 @@ fun <C : Collection<Double>> GraphCard(
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
-    OutlinedCard(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .testTag("GraphCard")
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.testTag("GraphCardTitle"),
-            )
-            AnnotatedGraph(
-                series = series,
-                xConfig = xConfig,
-                yConfig = yConfig,
-                pathConfig = pathConfig,
-            )
-        }
+    CardWithTitle(title = title, modifier = modifier.testTag("GraphCard")) {
+        AnnotatedGraph(
+            series = series,
+            xConfig = xConfig,
+            yConfig = yConfig,
+            pathConfig = pathConfig,
+        )
     }
 }
 
@@ -138,28 +118,50 @@ fun <C : Collection<Double>> AnnotatedGraph(
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
+    Annotation(series, modifier, xConfig, yConfig) { xRange, yRange ->
+        Graph(
+            series = series,
+            yRange = yRange,
+            xRange = xRange,
+            pathConfig = pathConfig,
+        )
+    }
+}
+
+/**
+ * Axis annotations, has a slot for a Graph or some other component.
+ */
+@Composable
+fun <C : Collection<Double>> Annotation(
+    series: Series<C>,
+    modifier: Modifier = Modifier,
+    xConfig: AxisConfig = AxisConfig(),
+    yConfig: AxisConfig = AxisConfig(),
+    slot: @Composable ((yRange: ClosedRange<Double>, xRange: ClosedRange<Double>) -> Unit) =
+        { _, _ -> Box(modifier = Modifier.fillMaxSize()) { } },
+) {
     val xRange = xConfig.range ?: defaultRange(series.x)
     val xSteps = xConfig.steps ?: 3u;
-    val xLabels = (0u..<xSteps).map { step ->
-        val value =
-            interpolate(
-                xRange.start,
-                xRange.endInclusive,
-                step.toFloat() / (xSteps - 1u).toFloat()
-            )
-        xConfig.formatFunction(value)
+    val xLabels: List<String> = when (xSteps) {
+        0u -> emptyList()
+        1u -> listOf(xConfig.formatFunction(xRange.start))
+        else -> (0u..<xSteps).map { step ->
+            val t = step.toFloat() / (xSteps - 1u).toFloat()
+            val value = interpolate(xRange.start, xRange.endInclusive, t)
+            xConfig.formatFunction(value)
+        }
     }
 
     val yRange = yConfig.range ?: defaultRange(series.y)
     val ySteps = yConfig.steps ?: 3u;
-    val yLabels = (ySteps - 1u downTo 0u).map { step ->
-        val value =
-            interpolate(
-                yRange.start,
-                yRange.endInclusive,
-                step.toFloat() / (ySteps - 1u).toFloat()
-            )
-        yConfig.formatFunction(value)
+    val yLabels: List<String> = when (ySteps) {
+        0u -> emptyList()
+        1u -> listOf(yConfig.formatFunction(yRange.start))
+        else -> (0u..<ySteps).reversed().map { step ->
+            val t = step.toFloat() / (ySteps - 1u).toFloat()
+            val value = interpolate(yRange.start, yRange.endInclusive, t)
+            yConfig.formatFunction(value)
+        }
     }
 
     val xAxisHeightPx = remember { mutableIntStateOf(0) }
@@ -186,16 +188,14 @@ fun <C : Collection<Double>> AnnotatedGraph(
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Graph(
-                series = series,
-                yRange = yRange,
-                xRange = xRange,
-                pathConfig = pathConfig,
+            Box(
                 modifier = Modifier
                     .padding(10.dp)
                     .weight(1f)
-                    .drawLines(ySteps),
-            )
+                    .drawLines(ySteps)
+            ) {
+                slot(xRange, yRange)
+            }
 
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -213,11 +213,14 @@ fun <C : Collection<Double>> AnnotatedGraph(
 }
 
 private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
-    val path = Path();
-    for (i in 0u..<ySteps) {
-        val height = i.toFloat() / (ySteps.toFloat() - 1) * size.height
-        path.moveTo(0f, height);
-        path.lineTo(1f * size.width, height);
+    val scope = this
+
+    val path = Path().apply {
+        for (i in 0u..<ySteps) {
+            val height = i.toFloat() / (ySteps.toFloat() - 1)
+            moveTo(scope, Float2D(0f, height))
+            lineTo(scope, Float2D(1f, height))
+        }
     }
     drawPath(
         path,
@@ -264,9 +267,11 @@ fun <C : Collection<Double>> Graph(
             .clipToBounds()
             .testTag("Graph")
     ) {
-        fun toXCoord(x: Double) = (x * size.width).toFloat()
-        fun toYCoord(y: Double) = ((1.0f - y) * size.height).toFloat()
-        fun toGraphCoords(x: Double, y: Double) = Pair(toXCoord(x), toYCoord(y))
+        val scope = this
+
+        fun toXCoord(x: Double) = x.toFloat()
+        fun toYCoord(y: Double) = (1.0f - y).toFloat()
+        fun toGraphCoords(x: Double, y: Double) = Float2D(toXCoord(x), toYCoord(y))
 
         val path = Path()
 
@@ -275,12 +280,12 @@ fun <C : Collection<Double>> Graph(
         }
 
         val start = toGraphCoords(relativeX.first(), relativeY.first())
-        path.moveTo(start.first, start.second)
+        path.moveTo(scope, start)
 
         var end = start
         for ((time, value) in relativeX.drop(1).zip(relativeY.drop(1))) {
             end = toGraphCoords(time, value)
-            path.lineTo(end.first, end.second)
+            path.lineTo(scope, end)
         }
 
         if (pathConfig.hasStroke) {
@@ -292,9 +297,9 @@ fun <C : Collection<Double>> Graph(
         }
 
         if (pathConfig.hasFill) {
-            path.lineTo(end.first, toYCoord(0.0))
-            path.lineTo(start.first, toYCoord(0.0))
-            path.lineTo(start.first, start.second)
+            path.lineTo(scope, Float2D(end.x, toYCoord(0.0)))
+            path.lineTo(scope, Float2D(start.x, toYCoord(0.0)))
+            path.lineTo(scope, start)
 
             drawPath(path, color = pathConfig.fill ?: defaultFill)
         }

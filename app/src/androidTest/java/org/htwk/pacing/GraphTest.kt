@@ -36,7 +36,7 @@ class GraphTest {
             GraphCard(title, series, modifier = Modifier.height(300.dp))
         }
 
-        composeTestRule.onNodeWithTag("GraphCardTitle")
+        composeTestRule.onNodeWithTag("CardTitle")
             .assertIsDisplayed()
             .assertTextEquals(title)
 
