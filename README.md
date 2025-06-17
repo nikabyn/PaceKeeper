@@ -20,6 +20,7 @@ Jetpack Compose app for user interactions, collection of wearable data and inter
   - androidTest: tests that run on an android emulator
   - test: tests that run on a local machine/server
   - build.gradle.kts: packages to compile app with
+- app/schemas: Full database schemas exported from room (seperate file for each version)
 - gradle
   - libs.version.toml: external package list + versions
   - wrapper: current gradle executable
