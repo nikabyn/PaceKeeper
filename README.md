@@ -22,6 +22,7 @@ results.
     - test: tests that run on a local machine/server
     - build.gradle.kts: packages to compile app with
 - app/schemas: Full database schemas exported from room (separate file for each version)
+- docs: Project documentation, tutorials on how to use specific components
 - gradle
     - libs.version.toml: external package list + versions
     - wrapper: current gradle executable
