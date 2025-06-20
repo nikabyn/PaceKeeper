@@ -48,7 +48,8 @@ object HealthConnectHelper {
 
                         for (record in allRecords) {
                             val origin = record.metadata.dataOrigin.packageName
-                            val samples = record.samples.joinToString(", ") { "${it.beatsPerMinute} bpm" }
+                            val samples =
+                                record.samples.joinToString(", ") { "${it.beatsPerMinute} bpm" }
                             Log.d(TAG, "Samples: [$samples] @ ${record.startTime} von $origin")
                         }
                     }
@@ -76,4 +77,6 @@ object HealthConnectHelper {
             }
         }
     }
+
+    fun getRequiredPermissions() = permissions
 }
