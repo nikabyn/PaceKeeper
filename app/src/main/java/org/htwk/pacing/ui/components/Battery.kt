@@ -1,138 +1,88 @@
 package org.htwk.pacing.ui.components
 
+import androidx.annotation.FloatRange
 import androidx.compose.foundation.background
-import androidx.compose.runtime.Composable
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.tooling.preview.Preview
-import kotlin.random.Random
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.SemanticsPropertyKey
-import androidx.compose.ui.semantics.SemanticsPropertyReceiver
-import androidx.compose.ui.semantics.semantics
-
-val SegmentColorKey = SemanticsPropertyKey<Color>("segmentColor")
-var SemanticsPropertyReceiver.segmentColor by SegmentColorKey
-
-
-fun BalkenPerEnergie(): List<Int> { //errechnet wie viele Balken geleert werden müssen
-    var Energiebalken = listOf<Int>()
-    var x: Int = Random.nextInt(0, 100)
-    //Platzhalter  für den Energiepegel des Nutzers
-    //muss später ersetzt/importiert werden, wenn die Energie berechnet wird
-
-    when (x) {
-        in 84..100 -> Energiebalken = listOf()
-        in 68..83 -> Energiebalken = listOf(0)
-        in 51..67 -> Energiebalken = listOf(0, 1)
-        in 34..50 -> Energiebalken = listOf(0, 1, 2)
-        in 17..33 -> Energiebalken = listOf(0, 1, 2, 3)
-        in 1..16 -> Energiebalken = listOf(0, 1, 2, 3, 4)
-        0 -> Energiebalken = listOf(0, 1, 2, 3, 4, 5)
-    }
-
-    return Energiebalken
-}
+import androidx.compose.ui.unit.dp
+import org.htwk.pacing.ui.math.remap
+import kotlin.math.ceil
 
 @Composable
-fun BatterieKomponente() {
-    val balkenStand = BalkenPerEnergie()
-    val colors = createBatteryColors(6, overrideIndices = balkenStand)
-
-    Box(
-        modifier = Modifier.graphicsLayer(rotationZ = 90f)
-    ) {
-        BatterieInhalt(segmentColors = colors)
-    }
-}
-
-@Composable
-fun BatterieInhalt(segmentColors: List<Color> = listOf()) {
-    val maxSegments = 6
-    val overlap = 18.dp
-
-    // Fallback-Farben (wenn nichts übergeben wurde)
-    val defaultColors = listOf(
-        Color.Green, Color.Green, Color.Yellow, Color.Yellow, Color.Red, Color.Red
-    )
-
-    val farben = if (segmentColors.isNotEmpty()) segmentColors else defaultColors
-
-    Box(
-        modifier = Modifier.size(width = 100.dp, height = 200.dp)
-    ) {
-        // Kopf (Batterieanschluss)
-        Box(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(0.5f).height(20.dp)
-                    .border(2.dp, Color.Black, RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
-            )
+fun BatteryCard(
+    @FloatRange(from = 0.0, to = 1.0) energy: Double,
+    modifier: Modifier = Modifier,
+) {
+    fun lerpThreeColors(color1: Color, color2: Color, color3: Color): Color = when {
+        energy <= 0.5 -> {
+            val t = remap(energy, 0.0, 0.5, 0.0, 1.0).toFloat()
+            lerp(color1, color2, t)
         }
 
-        // Batteriegehäuse mit Segmenten
-        Box(
-            modifier = Modifier.fillMaxWidth().layout { measurable, constraints ->
-                val pxOffset = overlap.roundToPx()
-                val newHeight = constraints.maxHeight - pxOffset
-                val placeable = measurable.measure(
-                    constraints.copy(maxHeight = newHeight, minHeight = newHeight)
-                )
-                layout(placeable.width, constraints.maxHeight) {
-                    placeable.place(0, 0)
+        else -> {
+            val t = remap(energy, 0.5, 1.0, 0.0, 1.0).toFloat()
+            lerp(color2, color3, t)
+        }
+    }
+
+    val red = Color(0xFFEC4242)
+    val yellow = Color(0xFFE1C508)
+    val green = Color(0xFF72D207)
+    val color = lerpThreeColors(red, yellow, green)
+
+    val emptyOutlineColor = MaterialTheme.colorScheme.outline
+    val emptyBackgroundColor =
+        if (isSystemInDarkTheme()) {
+            lerp(MaterialTheme.colorScheme.surfaceVariant, Color.White, 0.2f)
+        } else {
+            lerp(MaterialTheme.colorScheme.surfaceVariant, Color.Black, 0.15f)
+        }
+
+    CardWithTitle(
+        "Current Energy", modifier = modifier
+            .height(200.dp)
+            .testTag("BatteryCard")
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val numActiveBars = if (energy == 0.0) {
+                1
+            } else {
+                ceil(energy * 6.0).toInt()
+            }
+
+            for (i in 0..5) {
+                val shape = RoundedCornerShape(8.dp)
+                val isActive = i < numActiveBars
+                val outlineColor = if (isActive) color else emptyOutlineColor
+                val backgroundColor = if (isActive) {
+                    color.copy(alpha = 0.4f)
+                } else {
+                    emptyBackgroundColor
                 }
-            }.offset(y = overlap).border(2.dp, Color.Black, RoundedCornerShape(16.dp)).padding(4.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                for (i in 0 until maxSegments) {
-                    val segmentColor = if (i < farben.size) farben[i] else Color.White
-                    Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(vertical = 1.dp)
-                            .border(1.dp, Color.Black, RoundedCornerShape(7.dp))
-                            .background(segmentColor, RoundedCornerShape(7.dp))
-                            .testTag("segment_$i").semantics { this.segmentColor = segmentColor })
-                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(shape)
+                        .background(backgroundColor)
+                        .border(width = 1.dp, color = outlineColor, shape = shape)
+                        .testTag("BatteryCardBar")
+                ) {}
             }
         }
     }
 }
-
-fun createBatteryColors(segments: Int, overrideIndices: List<Int> = emptyList()): List<Color> {
-    val baseColors = listOf(
-        Color.Green, Color.Green, Color.Yellow, Color.Yellow, Color.Red, Color.Red
-    )
-    return baseColors.mapIndexed { index, color ->
-        if (index in overrideIndices) Color.White else color
-    }.take(segments)
-}
-
-
-/*
-
-@Preview
-@Composable
-fun Balkentest(){
-    Box(modifier = Modifier.graphicsLayer(rotationZ = 90f))
-    {
-        BatterieInhalt(visibleSegments = 2)
-    }
-}
-
-
-@Preview
-@Composable
-fun PreviewBatterieKomponente() {
-    BatterieKomponente()
-}
-
-*/
