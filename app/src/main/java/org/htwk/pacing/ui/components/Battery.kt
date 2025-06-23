@@ -1,40 +1,66 @@
 package org.htwk.pacing.ui.components
-//package org.htwk.pacing
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
 
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
+@Composable
+fun BatterieKomponente() {
+    val overlap = 18.dp
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            SimpleRectangle()
+    Box(
+        modifier = Modifier.size(width = 100.dp, height = 200.dp)
+    ) {
+
+
+        // oben
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(20.dp)
+                    .border(2.dp, Color.Black, RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+            )
         }
+        // unten
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .dynamicHeightMinus(overlap)
+                .offset(y = overlap)
+                .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
+        )
     }
 }
 
+fun Modifier.dynamicHeightMinus(overlap: Dp) = this.then(
+    layout { measurable, constraints ->
+        val pxOffset = overlap.roundToPx()
+        val newHeight = constraints.maxHeight - pxOffset
+        val placeable = measurable.measure(
+            constraints.copy(maxHeight = newHeight, minHeight = newHeight)
+        )
+        layout(placeable.width, constraints.maxHeight) {
+            placeable.place(0, 0)
+        }
+    }
+)
 
-@Composable
-fun SimpleRectangle(){
-    Box(
-        modifier = Modifier
-            .size(width = 200.dp, height = 100.dp)
-            .background(Color.Blue)
-    )
-}
 @Preview
 @Composable
-fun PreviewSimpleRectangle(){
-    SimpleRectangle()
+fun PreviewBatterieKomponente() {
+    BatterieKomponente()
 }
