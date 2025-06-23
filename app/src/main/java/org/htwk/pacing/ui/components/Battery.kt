@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import org.htwk.pacing.ui.math.remap
 import kotlin.math.ceil
 
+/**
+ * Shows the current energy level using 1 to 6 colored bars (a battery).
+ */
 @Composable
 fun BatteryCard(
     @FloatRange(from = 0.0, to = 1.0) energy: Double,
