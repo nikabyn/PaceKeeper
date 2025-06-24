@@ -46,8 +46,8 @@ fun BatteryCard(
     val green = Color(0xFF72D207)
     val color = lerpThreeColors(red, yellow, green)
 
-    val emptyOutlineColor = MaterialTheme.colorScheme.outline
-    val emptyBackgroundColor =
+    val incativeOutlineColor = MaterialTheme.colorScheme.outline
+    val inactiveBackgroundColor =
         if (isSystemInDarkTheme()) {
             lerp(MaterialTheme.colorScheme.surfaceVariant, Color.White, 0.2f)
         } else {
@@ -69,11 +69,11 @@ fun BatteryCard(
             for (i in 0..5) {
                 val shape = RoundedCornerShape(8.dp)
                 val isActive = i < numActiveBars
-                val outlineColor = if (isActive) color else emptyOutlineColor
+                val outlineColor = if (isActive) color else inactiveOutlineColor
                 val backgroundColor = if (isActive) {
                     color.copy(alpha = 0.4f)
                 } else {
-                    emptyBackgroundColor
+                    inactiveBackgroundColor
                 }
 
                 Box(
