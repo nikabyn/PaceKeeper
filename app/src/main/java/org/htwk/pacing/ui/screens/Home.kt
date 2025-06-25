@@ -15,6 +15,5 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Text("Home Screen")
-        HeartRateScreen()
     }
 }
