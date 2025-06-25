@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "org.htwk.pacing"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.htwk.pacing"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -82,6 +82,11 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.fragment.ktx)
+
+    // Health Connect
+    implementation(libs.androidx.connect.client)
 
     // Koin (dependency injection)
     implementation(libs.koin.android)

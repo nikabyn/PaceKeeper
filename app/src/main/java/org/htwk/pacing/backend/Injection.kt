@@ -18,6 +18,7 @@ import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
+import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -41,6 +42,7 @@ val appModule = module {
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
 
     viewModel { MeasurementsViewModel(get()) }
+    viewModel { SettingsViewModel(androidContext()) }
 
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
 }
