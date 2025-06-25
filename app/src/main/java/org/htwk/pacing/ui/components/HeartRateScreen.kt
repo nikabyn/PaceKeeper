@@ -1,18 +1,16 @@
 package org.htwk.pacing.ui.components
 
-import android.content.pm.PackageManager
 import android.util.Log
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -23,17 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.ZonedDateTime
-
-private const val HEALTH_CONNECT_PACKAGE = "com.google.android.apps.healthdata"
-
-fun isHealthConnectInstalled(context: android.content.Context): Boolean {
-    return try {
-        context.packageManager.getPackageInfo(HEALTH_CONNECT_PACKAGE, 0)
-        true
-    } catch (e: PackageManager.NameNotFoundException) {
-        false
-    }
-}
 
 @Composable
 fun HeartRateScreen() {
@@ -103,48 +90,28 @@ fun HeartRateScreen() {
         }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        PermissionController.createRequestPermissionResultContract()
-    ) { granted ->
-        if (granted.containsAll(permissions)) {
-            queryData()
-        } else {
-            Toast.makeText(
-                context,
-                "Health Connect Berechtigung nicht erteilt",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        /*Button(onClick = {
-            if (isHealthConnectInstalled(context)) {
-                permissionLauncher.launch(permissions)
-            } else {
-                Toast.makeText(
-                    context,
-                    "Health Connect ist nicht installiert!",
-                    Toast.LENGTH_LONG
-                ).show()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+            .padding(10.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Text("⌀ Herzfrequenz (24h): ${avgHeartRate?.toInt() ?: "-"} bpm")
+            Spacer(Modifier.height(8.dp))
+
+            Text("Herzfrequenz-Samples:")
+            heartRateByTime.take(10).forEach { (time, bpm) ->
+                Text(" - $time: $bpm bpm")
             }
-        }) {
-            Text("Datenzugriff anfragen")
-        }*/
 
-        Spacer(Modifier.height(24.dp))
-
-        Text("⌀ Herzfrequenz (24h): ${avgHeartRate?.toInt() ?: "-"} bpm")
-        Spacer(Modifier.height(8.dp))
-
-        Text("Herzfrequenz-Samples:")
-        heartRateByTime.take(10).forEach { (time, bpm) ->
-            Text(" - $time: $bpm bpm")
+            Spacer(Modifier.height(16.dp))
+            Text("Schritte gestern: ${yesterdaySteps ?: "-"}")
+            Text("Schritte heute: ${todaySteps ?: "-"}")
         }
-
-        Spacer(Modifier.height(16.dp))
-        Text("Schritte gestern: ${yesterdaySteps ?: "-"}")
-        Text("Schritte heute: ${todaySteps ?: "-"}")
     }
 
     LaunchedEffect(Unit) {
