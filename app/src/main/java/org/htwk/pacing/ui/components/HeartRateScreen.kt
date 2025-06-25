@@ -88,13 +88,15 @@ fun HeartRateScreen() {
                 )
                 yesterdaySteps = stepsYesterdayAgg[StepsRecord.COUNT_TOTAL]?.toLong()
 
-                val stepsTodayAgg = client.aggregate(
-                    AggregateRequest(
-                        metrics = setOf(StepsRecord.COUNT_TOTAL),
+                val stepsTodayRecords = client.readRecords(
+                    request = ReadRecordsRequest(
+                        recordType = StepsRecord::class,
                         timeRangeFilter = TimeRangeFilter.between(todayStart, now.toInstant())
                     )
                 )
-                todaySteps = stepsTodayAgg[StepsRecord.COUNT_TOTAL]?.toLong()
+                todaySteps = stepsTodayRecords.records.sumOf{it.count}
+
+
             } catch (e: Exception) {
                 Log.e("HeartRateScreen", "Fehler beim Lesen von Daten", e)
             }
@@ -116,7 +118,7 @@ fun HeartRateScreen() {
     }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Button(onClick = {
+        /*Button(onClick = {
             if (isHealthConnectInstalled(context)) {
                 permissionLauncher.launch(permissions)
             } else {
@@ -128,7 +130,7 @@ fun HeartRateScreen() {
             }
         }) {
             Text("Datenzugriff anfragen")
-        }
+        }*/
 
         Spacer(Modifier.height(24.dp))
 
