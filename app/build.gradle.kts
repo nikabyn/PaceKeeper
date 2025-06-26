@@ -106,6 +106,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation("androidx.health.connect:connect-client:1.1.0-alpha08")
+    implementation("com.github.doyaaaaaken:kotlin-csv-jvm:1.8.0")
 
 }
 
