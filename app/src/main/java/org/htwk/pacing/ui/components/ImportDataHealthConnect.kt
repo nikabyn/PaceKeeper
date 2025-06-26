@@ -21,11 +21,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-/**
- * Testdaten für Import:
- * http://uni.pixelpioniere.de/Softwareprojekt/HR4.csv
- */
-
 @Composable
 fun ImportDataHealthConnect() {
     val context = LocalContext.current
@@ -43,7 +38,7 @@ fun ImportDataHealthConnect() {
 
     Column(
         modifier = Modifier
-            .padding(top=16.dp)
+            .padding(16.dp)
             .fillMaxWidth()
             .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
@@ -73,11 +68,6 @@ fun ImportDataHealthConnect() {
 
                         val lines = reader.readLines()
 
-
-
-                        val batchSize = 500
-
-
                         lines.drop(1).forEach { line ->
                             val parts = line.split(",")
                             if (parts.size < 5) return@forEach
@@ -101,8 +91,8 @@ fun ImportDataHealthConnect() {
                                         )
                                     )
                                 )
-                                if (batch.size >= batchSize) {
-                                    client.insertRecords(batch.toList())
+                                if (batch.size >= 500) {
+                                    client.insertRecords(batch)
                                     total += batch.size
                                     batch.clear()
                                 }
@@ -112,17 +102,9 @@ fun ImportDataHealthConnect() {
                         }
 
                         if (batch.isNotEmpty()) {
-                            for (record in batch) {
-                                try {
-                                    client.insertRecords(listOf(record))
-                                    Log.i("HealthInsert", "OK: ${record}")
-                                } catch (e: Exception) {
-                                    Log.e("HealthInsert", "Fehler bei Record: ${record} => ${e.message}")
-                                }
-                            }
+                            client.insertRecords(batch)
                             total += batch.size
                         }
-
                         status = "Import: $total Werte"
                     } catch (e: Exception) {
                         status = "Fehler: ${e.localizedMessage}"

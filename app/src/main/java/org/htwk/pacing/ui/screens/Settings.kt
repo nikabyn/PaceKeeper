@@ -23,6 +23,8 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.*
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.htwk.pacing.ui.components.HeartRateScreen
+import org.htwk.pacing.ui.components.ImportDataHealthConnect
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
