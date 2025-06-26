@@ -23,10 +23,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.*
 import org.htwk.pacing.ui.components.HeartRateScreen
+import org.htwk.pacing.ui.components.ImportDataHealthConnect
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
-    HealthPermission.getReadPermission(HeartRateRecord::class)
+    HealthPermission.getReadPermission(HeartRateRecord::class),
+    HealthPermission.getWritePermission(HeartRateRecord::class) //für schreiben des csv imports
 )
 
 @Composable
@@ -114,4 +116,7 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
 
     }
     HeartRateScreen()
+    ImportDataHealthConnect()
 }
+
+
