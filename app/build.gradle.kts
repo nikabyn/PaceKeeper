@@ -107,6 +107,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //CSV Parsing
+    implementation(libs.kotlin.csv.jvm)
+
 }
 
 val exclusions = listOf(
