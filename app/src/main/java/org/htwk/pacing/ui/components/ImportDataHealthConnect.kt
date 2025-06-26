@@ -68,6 +68,11 @@ fun ImportDataHealthConnect() {
 
                         val lines = reader.readLines()
 
+
+
+                        val batchSize = 500
+
+
                         lines.drop(1).forEach { line ->
                             val parts = line.split(",")
                             if (parts.size < 5) return@forEach
@@ -91,8 +96,8 @@ fun ImportDataHealthConnect() {
                                         )
                                     )
                                 )
-                                if (batch.size >= 500) {
-                                    client.insertRecords(batch)
+                                if (batch.size >= batchSize) {
+                                    client.insertRecords(batch.toList())
                                     total += batch.size
                                     batch.clear()
                                 }
@@ -105,6 +110,7 @@ fun ImportDataHealthConnect() {
                             client.insertRecords(batch)
                             total += batch.size
                         }
+
                         status = "Import: $total Werte"
                     } catch (e: Exception) {
                         status = "Fehler: ${e.localizedMessage}"

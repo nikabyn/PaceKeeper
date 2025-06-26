@@ -81,15 +81,13 @@ fun HeartRateScreen() {
                         timeRangeFilter = TimeRangeFilter.between(todayStart, now.toInstant())
                     )
                 )
-                todaySteps = stepsTodayRecords.records.sumOf{it.count}
-
+                todaySteps = stepsTodayRecords.records.sumOf { it.count }
 
             } catch (e: Exception) {
                 Log.e("HeartRateScreen", "Fehler beim Lesen von Daten", e)
             }
         }
     }
-
 
     Box(
         modifier = Modifier
@@ -99,7 +97,6 @@ fun HeartRateScreen() {
             .padding(10.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
             Text("⌀ Herzfrequenz (24h): ${avgHeartRate?.toInt() ?: "-"} bpm")
             Spacer(Modifier.height(8.dp))
 
