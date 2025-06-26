@@ -1,9 +1,11 @@
 package org.htwk.pacing.ui
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
@@ -19,8 +21,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import org.htwk.pacing.R
+import org.htwk.pacing.ui.components.SymptomScreen
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
@@ -30,18 +35,23 @@ import org.htwk.pacing.ui.theme.PacingTheme
 fun Main() {
     PacingTheme {
         val navController = rememberNavController()
-        val startDestination = Destination.HOME
-        val selectedDestination =
-            rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
+        val navBackStackEntry = navController.currentBackStackEntryAsState()
+        val parentRoute = navBackStackEntry?.value?.destination?.parent?.route
+        val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
 
-        Scaffold(
-            bottomBar = { NavBar(navController, selectedDestination) },
-        ) { contentPadding ->
-            AppNavHost(
-                navController,
-                startDestination,
-                modifier = Modifier.padding(contentPadding)
-            )
+        if (parentRoute == "main_nav") {
+            Scaffold(
+                bottomBar = { NavBar(navController, selectedDestination) },
+            ) { contentPadding ->
+                AppNavHost(
+                    navController,
+                    modifier = Modifier
+                        .padding(contentPadding)
+                        .fillMaxSize()
+                )
+            }
+        } else {
+            AppNavHost(navController, modifier = Modifier.fillMaxSize())
         }
     }
 }
@@ -52,7 +62,7 @@ fun NavBar(
     selectedDestination: MutableState<Int>,
 ) {
     NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
-        Destination.entries.forEachIndexed { index, destination ->
+        NavBarEntries.entries.forEachIndexed { index, destination ->
             NavigationBarItem(
                 selected = selectedDestination.value == index,
                 onClick = {
@@ -66,41 +76,54 @@ fun NavBar(
     }
 }
 
-enum class Destination(
+enum class NavBarEntries(
     val route: String,
     val label: String,
     val icon: @Composable () -> Unit,
 ) {
-    HOME("home", "Home", { Icon(Icons.Rounded.Home, "Home") }),
+    HOME(
+        Route.Home,
+        "Home",
+        { Icon(Icons.Rounded.Home, "Home") },
+    ),
     MEASUREMENTS(
-        "measurements",
+        Route.Measurements,
         "Measurements",
-        { Icon(painter = painterResource(R.drawable.rounded_show_chart_24), "Measurements") }),
-    SETTINGS("settings", "Settings", { Icon(Icons.Rounded.Settings, "Settings") })
+        { Icon(painter = painterResource(R.drawable.rounded_show_chart_24), "Measurements") },
+    ),
+    SETTINGS(
+        Route.Settings,
+        "Settings",
+        { Icon(Icons.Rounded.Settings, "Settings") },
+    )
 }
 
+object Route {
+    val Home = "home"
+    val Symptoms = "symptoms"
+    val Measurements = "measurements"
+    val Settings = "settings"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    startDestination: Destination,
     modifier: Modifier,
 ) {
     NavHost(
         navController,
-        startDestination = startDestination.route,
+        startDestination = "main_nav",
         modifier = modifier
     ) {
-        Destination.entries.forEach { destination ->
-            composable(destination.route) {
-                when (destination) {
-                    Destination.HOME -> HomeScreen()
-                    Destination.MEASUREMENTS -> MeasurementsScreen()
-                    Destination.SETTINGS -> SettingsScreen()
-                }
-            }
+        navigation(route = "main_nav", startDestination = Route.Home) {
+            composable(route = Route.Home) { HomeScreen(navController) }
+            composable(route = Route.Measurements) { MeasurementsScreen() }
+            composable(route = Route.Settings) { SettingsScreen() }
         }
-//        composable("symptoms") {
-//            SymptomScreen()
-//        }
+
+        composable(route = Route.Symptoms) {
+            SymptomScreen(navController)
+        }
     }
 }

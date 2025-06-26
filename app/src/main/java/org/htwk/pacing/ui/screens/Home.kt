@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import kotlinx.datetime.Clock
 import org.htwk.pacing.ui.components.BatteryCard
 import org.htwk.pacing.ui.components.EnergyPredictionCard
@@ -18,7 +19,7 @@ import org.htwk.pacing.ui.components.SymptomSelectionCard
 import kotlin.time.Duration.Companion.hours
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
     val now = Clock.System.now()
     val energySeries = Series(
         listOf(
