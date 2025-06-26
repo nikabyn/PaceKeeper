@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -40,9 +39,8 @@ class RandomHeartRateWorker(
     workerParams: WorkerParameters,
     private val heartRateDao: HeartRateDao,
 ) : CoroutineWorker(context, workerParams) {
-    @RequiresApi(Build.VERSION_CODES.Q)
     override suspend fun doWork(): Result {
-        setForeground(ForegroundInfo(1, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC))
+        setForeground(getForegroundInfo())
 
         randomHeartRate(100).collect { (time, value) ->
             heartRateDao.insert(HeartRateEntry(time, value))
@@ -64,5 +62,14 @@ class RandomHeartRateWorker(
             .setContentTitle("Generating heart data…")
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .build()
+    }
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(1, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(1, createNotification())
+        }
+
     }
 }
