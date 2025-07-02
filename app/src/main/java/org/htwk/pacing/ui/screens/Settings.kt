@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.screens
 
-import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.*
@@ -29,6 +28,13 @@ val requiredPermissions = setOf(
     HealthPermission.getReadPermission(HeartRateRecord::class)
 )
 
+/**
+ * Verwaltet die Verbindung zu Health Connect.
+ * Prüft beim Start und bei `ON_RESUME`, ob alle Berechtigungen vorhanden sind.
+ * Bietet eine Möglichkeit, die Health Connect App zu öffnen oder Berechtigungen anzufordern.
+ * Nutzt `HealthConnectItem` als UI-Eintrag.
+ * Startet `HeartRateScreen` zur Anzeige der Daten.
+ */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -40,7 +46,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     ) { granted ->
         Log.d("HealthConnectDebug", "Permission activity result: $granted")
     }
-
+    // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
     suspend fun updateConnectionState() {
         val client = HealthConnectClient.getOrCreate(context)
         val granted = client.permissionController.getGrantedPermissions()
@@ -92,6 +98,11 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Zeigt Verbindungsstatus ("Connected"/"Not connected") an.
+ * Button „Edit“ öffnet Health Connect oder fordert Rechte an.
+ * Ruft `HeartRateScreen()` zur Anzeige von Gesundheitsdaten auf.
+ */
 @Composable
 fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     Row(
