@@ -38,7 +38,7 @@ fun ImportDataHealthConnect() {
 
     Column(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(top=16.dp)
             .fillMaxWidth()
             .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
@@ -107,7 +107,14 @@ fun ImportDataHealthConnect() {
                         }
 
                         if (batch.isNotEmpty()) {
-                            client.insertRecords(batch)
+                            for (record in batch) {
+                                try {
+                                    client.insertRecords(listOf(record))
+                                    Log.i("HealthInsert", "OK: ${record}")
+                                } catch (e: Exception) {
+                                    Log.e("HealthInsert", "Fehler bei Record: ${record} => ${e.message}")
+                                }
+                            }
                             total += batch.size
                         }
 
