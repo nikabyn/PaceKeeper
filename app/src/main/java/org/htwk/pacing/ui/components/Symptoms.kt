@@ -52,26 +52,26 @@ fun SymptomSelectionCard(navController: NavController) {
         ) {
             IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
                 Icon(
-                    painter = painterResource(R.drawable.baseline_thumb_down_24),
-                    "thumbs down"
+                    painter = painterResource(R.drawable.very_sad),
+                    "very sad"
                 )
             }
-            IconButton(onClick = {}) {
+            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
                 Icon(
-                    painter = painterResource(R.drawable.baseline_thumb_down_24),
-                    "thumbs down"
+                    painter = painterResource(R.drawable.sad),
+                    "sad"
                 )
             }
-            IconButton(onClick = {}) {
+            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
                 Icon(
-                    painter = painterResource(R.drawable.baseline_thumb_down_24),
-                    "thumbs down"
+                    painter = painterResource(R.drawable.happy),
+                    "happy"
                 )
             }
-            IconButton(onClick = {}) {
+            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
                 Icon(
-                    painter = painterResource(R.drawable.baseline_thumb_down_24),
-                    "thumbs down"
+                    painter = painterResource(R.drawable.very_happy),
+                    "very happy"
                 )
             }
         }
