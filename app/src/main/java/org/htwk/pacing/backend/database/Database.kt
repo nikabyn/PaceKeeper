@@ -15,6 +15,7 @@ import kotlinx.datetime.Instant
         EnergyLevelEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
+        ManualSymptomsDao::class,
         MenstruationPeriodEntry::class,
         OxygenSaturationEntry::class,
         SkinTemperatureEntry::class,
@@ -30,15 +31,16 @@ import kotlinx.datetime.Instant
 abstract class PacingDatabase : RoomDatabase() {
     abstract fun distanceDao(): DistanceDao
     abstract fun elevationGainedDao(): ElevationGainedDao
-    abstract fun energyLevelDao(): EnergyLevelDao
     abstract fun heartRateDao(): HeartRateDao
     abstract fun heartRateVariabilityDao(): HeartRateVariabilityDao
+    abstract fun manualSymptomsDao(): ManualSymptomsDao
     abstract fun menstruationPeriodDao(): MenstruationPeriodDao
     abstract fun oxygenSaturationDao(): OxygenSaturationDao
     abstract fun skinTemperatureDao(): SkinTemperatureDao
     abstract fun sleepSessionsDao(): SleepSessionDao
     abstract fun speedDao(): SpeedDao
     abstract fun stepsDao(): StepsDao
+    abstract fun energyLevelDao(): EnergyLevelDao
 
     companion object {
         @Volatile
@@ -95,4 +97,10 @@ class Converters {
 
     @TypeConverter
     fun toTemperature(value: Double): Temperature = Temperature.celsius(value)
+
+    @TypeConverter
+    fun fromFeeling(value: Feeling): Int = value.level
+
+    @TypeConverter
+    fun toFeeling(value: Int): Feeling = Feeling.entries.first { it.level == value }
 }
