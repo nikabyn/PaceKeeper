@@ -1,8 +1,6 @@
 package org.htwk.pacing.math
 
 import org.htwk.pacing.assertDouble
-import org.htwk.pacing.ui.math.interpolate
-import org.htwk.pacing.ui.math.remap
 import org.junit.Test
 
 class Math {
