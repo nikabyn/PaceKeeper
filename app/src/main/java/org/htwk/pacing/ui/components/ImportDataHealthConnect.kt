@@ -21,6 +21,11 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+/**
+ * Testdaten für Import:
+ * http://uni.pixelpioniere.de/Softwareprojekt/HR4.csv
+ */
+
 @Composable
 fun ImportDataHealthConnect() {
     val context = LocalContext.current
