@@ -3,15 +3,19 @@ package org.htwk.pacing.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -86,7 +90,7 @@ fun SymptomScreen(navController: NavController) {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
                 title = {
                     Row(horizontalArrangement = Arrangement.SpaceBetween) {
@@ -98,7 +102,6 @@ fun SymptomScreen(navController: NavController) {
                             )
                         }
                     }
-
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigate(Route.Home) }) {
@@ -109,9 +112,13 @@ fun SymptomScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    Button(onClick = { navController.navigate(Route.Home) }) {
-                        Text("Apply")
+                    Button(
+                        onClick = { navController.navigate(Route.Home) },
+                        contentPadding = PaddingValues(all = 0.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Check, contentDescription = "Apply")
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
                 }
             )
         },
