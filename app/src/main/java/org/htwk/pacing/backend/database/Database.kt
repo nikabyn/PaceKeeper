@@ -13,16 +13,19 @@ import kotlinx.datetime.Instant
         DistanceEntry::class,
         ElevationGainedEntry::class,
         EnergyLevelEntry::class,
+        FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
-        ManualSymptomsDao::class,
         MenstruationPeriodEntry::class,
         OxygenSaturationEntry::class,
         SkinTemperatureEntry::class,
         SleepSessionEntry::class,
         SpeedEntry::class,
         StepsEntry::class,
+        Symptom::class,
+        SymptomForFeeling::class,
     ],
+
     version = 1,
     exportSchema = false,
 )
@@ -33,7 +36,7 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun elevationGainedDao(): ElevationGainedDao
     abstract fun heartRateDao(): HeartRateDao
     abstract fun heartRateVariabilityDao(): HeartRateVariabilityDao
-    abstract fun manualSymptomsDao(): ManualSymptomsDao
+    abstract fun manualSymptomDao(): ManualSymptomDao
     abstract fun menstruationPeriodDao(): MenstruationPeriodDao
     abstract fun oxygenSaturationDao(): OxygenSaturationDao
     abstract fun skinTemperatureDao(): SkinTemperatureDao
