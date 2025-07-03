@@ -18,8 +18,8 @@ import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
-import org.htwk.pacing.ui.components.SymptomsViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
+import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
