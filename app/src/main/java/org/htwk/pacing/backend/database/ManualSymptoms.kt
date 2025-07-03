@@ -19,11 +19,22 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-enum class Feeling(@IntRange(from = 0, to = 3) val level: Int) {
-    VeryBad(3),
-    Bad(2),
-    Good(1),
-    VeryGood(0),
+enum class Feeling(val level: Int) {
+    VeryBad(0),
+    Bad(1),
+    Good(2),
+    VeryGood(3);
+
+    companion object {
+        fun fromInt(@IntRange(from = 0, to = 3) level: Int): Feeling =
+            when (level) {
+                0 -> VeryBad
+                1 -> Bad
+                2 -> Good
+                3 -> VeryGood
+                else -> throw RuntimeException("Invalid Feeling level $level")
+            }
+    }
 }
 
 @Entity(tableName = "symptom")

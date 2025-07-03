@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.Route
 
 @Composable
@@ -29,7 +30,7 @@ fun FeelingSelectionCard(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
+            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.VeryBad)) }) {
                 Icon(
                     painter = painterResource(R.drawable.very_sad),
                     contentDescription = "very sad",
@@ -37,7 +38,7 @@ fun FeelingSelectionCard(navController: NavController) {
                     modifier = background(red),
                 )
             }
-            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
+            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.Bad)) }) {
                 Icon(
                     painter = painterResource(R.drawable.sad),
                     "sad",
@@ -45,7 +46,7 @@ fun FeelingSelectionCard(navController: NavController) {
                     modifier = background(orange),
                 )
             }
-            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
+            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.Good)) }) {
                 Icon(
                     painter = painterResource(R.drawable.happy),
                     "happy",
@@ -53,7 +54,7 @@ fun FeelingSelectionCard(navController: NavController) {
                     modifier = background(yellow),
                 )
             }
-            IconButton(onClick = { navController.navigate(Route.Symptoms) }) {
+            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.VeryGood)) }) {
                 Icon(
                     painter = painterResource(R.drawable.very_happy),
                     "very happy",
