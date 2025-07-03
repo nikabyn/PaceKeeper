@@ -19,16 +19,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import org.htwk.pacing.R
-import org.htwk.pacing.ui.components.SymptomScreen
+import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
+import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.theme.PacingTheme
 
 @Composable
@@ -81,28 +84,28 @@ enum class NavBarEntries(
     val label: String,
     val icon: @Composable () -> Unit,
 ) {
-    HOME(
-        Route.Home,
+    Home(
+        Route.HOME,
         "Home",
         { Icon(Icons.Rounded.Home, "Home") },
     ),
-    MEASUREMENTS(
-        Route.Measurements,
+    Measurements(
+        Route.MEASUREMENTS,
         "Measurements",
         { Icon(painter = painterResource(R.drawable.rounded_show_chart_24), "Measurements") },
     ),
-    SETTINGS(
-        Route.Settings,
+    Settings(
+        Route.SETTINGS,
         "Settings",
         { Icon(Icons.Rounded.Settings, "Settings") },
     )
 }
 
 object Route {
-    val Home = "home"
-    val Symptoms = "symptoms"
-    val Measurements = "measurements"
-    val Settings = "settings"
+    const val HOME = "home"
+    const val MEASUREMENTS = "measurements"
+    const val SETTINGS = "settings"
+    fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,14 +119,19 @@ fun AppNavHost(
         startDestination = "main_nav",
         modifier = modifier
     ) {
-        navigation(route = "main_nav", startDestination = Route.Home) {
-            composable(route = Route.Home) { HomeScreen(navController) }
-            composable(route = Route.Measurements) { MeasurementsScreen() }
-            composable(route = Route.Settings) { SettingsScreen() }
+        navigation(route = "main_nav", startDestination = Route.HOME) {
+            composable(route = Route.HOME) { HomeScreen(navController) }
+            composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
+            composable(route = Route.SETTINGS) { SettingsScreen() }
         }
 
-        composable(route = Route.Symptoms) {
-            SymptomScreen(navController)
+        composable(
+            route = "symptoms/{feeling}",
+            arguments = listOf(navArgument("feeling") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
+            val feeling = Feeling.fromInt(feelingLevel)
+            SymptomScreen(navController, feeling)
         }
     }
 }

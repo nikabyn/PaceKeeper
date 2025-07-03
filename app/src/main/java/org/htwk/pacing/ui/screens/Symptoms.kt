@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,56 +48,30 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import org.htwk.pacing.backend.database.Feeling
+import org.htwk.pacing.backend.database.FeelingEntry
 import org.htwk.pacing.backend.database.ManualSymptomDao
+import org.htwk.pacing.backend.database.ManualSymptomEntry
 import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SymptomScreen(
     navController: NavController,
+    feeling: Feeling,
     viewModel: SymptomsViewModel = koinViewModel(),
 ) {
     var openDialog by remember { mutableStateOf(false) }
     val symptoms by viewModel.symptoms.collectAsState()
+    val selected = remember { mutableStateListOf<String>() }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-                title = {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text("Select Symptoms", style = MaterialTheme.typography.titleLarge)
-                            Text(
-                                "Why are you feeling really bad?",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigate(Route.Home) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                actions = {
-                    Button(
-                        onClick = { navController.navigate(Route.Home) },
-                        contentPadding = PaddingValues(all = 0.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = "Apply")
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                }
-            )
+            TopBar(navController, feeling, onApply = {
+                viewModel.storeEntry(feeling, selected.map { Symptom(it) }.toList())
+            })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { openDialog = true }) {
@@ -109,7 +85,17 @@ fun SymptomScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            symptoms.forEach { SymptomCheckBox(it.name) }
+            symptoms.forEach {
+                SymptomCheckBox(
+                    it.name,
+                    onChange = { checked, name ->
+                        if (checked && !selected.contains(name)) {
+                            selected.add(name)
+                            return@SymptomCheckBox
+                        }
+                        selected.remove(name)
+                    })
+            }
         }
 
         if (openDialog) {
@@ -119,28 +105,60 @@ fun SymptomScreen(
                 },
                 onConfirm = { newSymptom ->
                     openDialog = false
-                    viewModel.addSymptom(newSymptom)
+                    viewModel.storeSymptom(newSymptom)
                 })
         }
     }
 }
 
-class SymptomsViewModel(
-    private val manualSymptomDao: ManualSymptomDao
-) : ViewModel() {
-    val symptoms: StateFlow<List<Symptom>> = manualSymptomDao
-        .getAllSymptoms()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    fun addSymptom(name: String) {
-        viewModelScope.launch {
-            manualSymptomDao.insertSymptom(Symptom(name))
-        }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) {
+    val questionBasedOnFeeling = when (feeling) {
+        Feeling.VeryBad -> "Why are you feeling really bad?"
+        Feeling.Bad -> "Why are you feeling bad?"
+        Feeling.Good -> "Are you still feeling some symptoms?"
+        Feeling.VeryGood -> "I am not forcing you to select anything ;)"
     }
+
+    TopAppBar(
+        // TODO For much later: Maybe change the color based on the selected feeling?
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+        title = {
+            Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Select Symptoms", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        questionBasedOnFeeling,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                }
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = { navController.navigateUp() }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                )
+            }
+        },
+        actions = {
+            Button(
+                onClick = {
+                    onApply()
+                    navController.navigate(Route.HOME)
+                },
+                contentPadding = PaddingValues(all = 0.dp)
+            ) {
+                Icon(imageVector = Icons.Default.Check, contentDescription = "Apply")
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+    )
 }
 
 @Composable
@@ -187,19 +205,51 @@ fun AddSymptomDialog(
 }
 
 @Composable
-fun SymptomCheckBox(title: String) {
+fun SymptomCheckBox(name: String, onChange: (state: Boolean, name: String) -> Unit) {
     var checked by remember { mutableStateOf(false) }
+
+    fun update(newChecked: Boolean) {
+        checked = newChecked
+        onChange(checked, name)
+        Log.d("SymptomCheckBox", "$checked")
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clickable(onClick = { checked = !checked })
+            .clickable(onClick = { update(!checked) })
             .fillMaxWidth()
     ) {
         Checkbox(
             checked = checked,
-            onCheckedChange = { checked = it }
+            onCheckedChange = { update(it) }
         )
-        Text(title)
+        Text(name)
+    }
+}
+
+class SymptomsViewModel(
+    private val manualSymptomDao: ManualSymptomDao
+) : ViewModel() {
+    val symptoms: StateFlow<List<Symptom>> = manualSymptomDao
+        .getAllSymptoms()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun storeSymptom(name: String) {
+        viewModelScope.launch {
+            manualSymptomDao.insertSymptom(Symptom(name))
+        }
+    }
+
+    fun storeEntry(feeling: Feeling, symptoms: List<Symptom>) {
+        viewModelScope.launch {
+            val now = Clock.System.now()
+            val entry = ManualSymptomEntry(feeling = FeelingEntry(now, feeling), symptoms)
+            manualSymptomDao.insertManualSymptomEntry(entry)
+        }
     }
 }
