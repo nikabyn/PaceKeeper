@@ -115,10 +115,10 @@ fun SymptomScreen(
 @Composable
 fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) {
     val questionBasedOnFeeling = when (feeling) {
-        Feeling.VeryBad -> "Why are you feeling really bad?"
-        Feeling.Bad -> "Why are you feeling bad?"
-        Feeling.Good -> "Are you still feeling some symptoms?"
-        Feeling.VeryGood -> "I am not forcing you to select anything ;)"
+        Feeling.VeryBad -> "Feeling really bad?"
+        Feeling.Bad -> "Feeling bad?"
+        Feeling.Good -> "Feeling good?"
+        Feeling.VeryGood -> "Feeling really good?"
     }
 
     TopAppBar(
