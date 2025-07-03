@@ -14,10 +14,7 @@ import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.time.Duration
 
 enum class Feeling(val level: Int) {
     VeryBad(0),
@@ -90,7 +87,7 @@ data class ManualSymptomEntry(
 )
 
 @Dao
-interface ManualSymptomDao {
+interface ManualSymptomDao : TimedSeries<ManualSymptomEntry> {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSymptom(symptom: Symptom)
 
@@ -112,17 +109,11 @@ interface ManualSymptomDao {
 
     @Transaction
     @Query("select * from feeling where time between :begin and :end")
-    fun getInRange(begin: Instant, end: Instant): List<ManualSymptomEntry>
+    override suspend fun getInRange(begin: Instant, end: Instant): List<ManualSymptomEntry>
 
     /**
      * Emits `null` every time the data in the table changes.
      */
     @Query("select null from feeling")
-    fun getChangeTrigger(): Flow<Int?>
-
-    fun getLastLive(duration: Duration): Flow<List<ManualSymptomEntry>> =
-        getChangeTrigger().map {
-            val now = Clock.System.now()
-            getInRange(now.minus(duration), now)
-        }
+    override fun getChangeTrigger(): Flow<Int?>
 }

@@ -18,10 +18,10 @@ data class StepsEntry(
 @Dao
 interface StepsDao : TimedSeries<StepsEntry> {
     @Query("delete from steps")
-    override suspend fun deleteAll()
+    suspend fun deleteAll()
 
     @Query("select * from steps")
-    override suspend fun getAll(): List<StepsEntry>
+    suspend fun getAll(): List<StepsEntry>
 
     @Query("""select * from steps where "start" <= :end and "end" >= :begin""")
     override suspend fun getInRange(begin: Instant, end: Instant): List<StepsEntry>

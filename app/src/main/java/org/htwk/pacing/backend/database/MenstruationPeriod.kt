@@ -17,10 +17,10 @@ data class MenstruationPeriodEntry(
 @Dao
 interface MenstruationPeriodDao : TimedSeries<MenstruationPeriodEntry> {
     @Query("delete from menstruation_period")
-    override suspend fun deleteAll()
+    suspend fun deleteAll()
 
     @Query("select * from menstruation_period")
-    override suspend fun getAll(): List<MenstruationPeriodEntry>
+    suspend fun getAll(): List<MenstruationPeriodEntry>
 
     @Query("""select * from menstruation_period where "start" <= :end and "end" >= :begin""")
     override suspend fun getInRange(begin: Instant, end: Instant): List<MenstruationPeriodEntry>

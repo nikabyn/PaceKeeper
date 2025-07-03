@@ -17,10 +17,10 @@ data class SpeedEntry(
 @Dao
 interface SpeedDao : TimedSeries<SpeedEntry> {
     @Query("delete from speed")
-    override suspend fun deleteAll()
+    suspend fun deleteAll()
 
     @Query("select * from speed")
-    override suspend fun getAll(): List<SpeedEntry>
+    suspend fun getAll(): List<SpeedEntry>
 
     @Query("select * from speed where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<SpeedEntry>
