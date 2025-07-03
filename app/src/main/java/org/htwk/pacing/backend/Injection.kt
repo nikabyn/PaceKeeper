@@ -43,7 +43,7 @@ val appModule = module {
     single<SpeedDao> { get<PacingDatabase>().speedDao() }
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
 
-    viewModel { MeasurementsViewModel(get()) }
+    viewModel { MeasurementsViewModel(get(), get()) }
     viewModel { SymptomsViewModel(get()) }
 
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }

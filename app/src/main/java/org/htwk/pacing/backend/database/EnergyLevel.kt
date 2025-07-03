@@ -17,10 +17,10 @@ data class EnergyLevelEntry(
 @Dao
 interface EnergyLevelDao : TimedSeries<EnergyLevelEntry> {
     @Query("delete from energy_level")
-    override suspend fun deleteAll()
+    suspend fun deleteAll()
 
     @Query("select * from energy_level")
-    override suspend fun getAll(): List<EnergyLevelEntry>
+    suspend fun getAll(): List<EnergyLevelEntry>
 
     @Query("select * from energy_level where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<EnergyLevelEntry>

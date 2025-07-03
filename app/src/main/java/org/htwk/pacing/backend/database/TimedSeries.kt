@@ -1,8 +1,6 @@
 package org.htwk.pacing.backend.database
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
@@ -11,16 +9,6 @@ import kotlin.time.Duration
 
 @Dao
 interface TimedSeries<E> {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(entry: E)
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertMany(entries: List<E>)
-
-    suspend fun deleteAll()
-
-    suspend fun getAll(): List<E>
-
     suspend fun getInRange(begin: Instant, end: Instant): List<E>
 
     /**
