@@ -127,7 +127,6 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         TextButton(onClick = onClick) {
             Text("Edit")
         }
-
     }
     HeartRateCard()
     ImportDataHealthConnect()

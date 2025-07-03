@@ -19,61 +19,8 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
-
-/**
- * Hilfsklasse zur Kapselung von Health Connect-Funktionen.
- * Vermeidet Duplikation beim Abruf und Aggregation von Daten.
- */
-object HealthConnectHelper {
-
-    suspend fun readAvgHeartRate(client: HealthConnectClient, from: Instant, to: Instant): Double? {
-        val result = client.aggregate(
-            AggregateRequest(
-                metrics = setOf(HeartRateRecord.BPM_AVG),
-                timeRangeFilter = TimeRangeFilter.between(from, to)
-            )
-        )
-        return result[HeartRateRecord.BPM_AVG]?.toDouble()
-    }
-
-    suspend fun readHeartRateSamples(client: HealthConnectClient, from: Instant, to: Instant): List<Pair<String, Long>> {
-        val records = client.readRecords(
-            ReadRecordsRequest(
-                recordType = HeartRateRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(from, to)
-            )
-        )
-        return records.records.flatMap { record ->
-            record.samples.map {
-                val t = record.startTime.atZone(ZoneId.systemDefault()).toLocalTime().toString()
-                t to it.beatsPerMinute
-            }
-        }
-    }
-
-    suspend fun readStepsCount(client: HealthConnectClient, from: Instant, to: Instant): Long? {
-        val result = client.aggregate(
-            AggregateRequest(
-                metrics = setOf(StepsRecord.COUNT_TOTAL),
-                timeRangeFilter = TimeRangeFilter.between(from, to)
-            )
-        )
-        return result[StepsRecord.COUNT_TOTAL]
-    }
-
-    suspend fun readTodaySteps(client: HealthConnectClient, from: Instant, to: Instant): Long {
-        val records = client.readRecords(
-            ReadRecordsRequest(
-                recordType = StepsRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(from, to)
-            )
-        )
-        return records.records.sumOf { it.count }
-    }
-}
 
 /**
  * Zeigt:

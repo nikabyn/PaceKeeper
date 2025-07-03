@@ -1,7 +1,10 @@
 package org.htwk.pacing.ui.components
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,26 +18,25 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.HeartRateRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.*
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /**
  * Testdaten für Import:
- * http://uni.pixelpioniere.de/Softwareprojekt/HR4.csv
+ * Beispieldaten unter res/raw/hr4.csv
  */
-
 @Composable
 fun ImportDataHealthConnect() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var uri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var uri by remember { mutableStateOf<Uri?>(null) }
     var name by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
+
     val launcher = rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+        contract = ActivityResultContracts.OpenDocument(),
         onResult = {
             uri = it
             name = it?.lastPathSegment ?: ""
@@ -43,9 +45,9 @@ fun ImportDataHealthConnect() {
 
     Column(
         modifier = Modifier
-            .padding(top=16.dp)
+            .padding(top = 16.dp)
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
             .padding(16.dp)
     ) {
@@ -59,74 +61,7 @@ fun ImportDataHealthConnect() {
         Button(
             onClick = {
                 scope.launch(Dispatchers.IO) {
-                    val selected = uri ?: run {
-                        status = "Keine Datei ausgewählt"
-                        return@launch
-                    }
-                    try {
-                        val stream = context.contentResolver.openInputStream(selected)
-                            ?: throw Exception("Datei nicht lesbar")
-                        val reader = BufferedReader(InputStreamReader(stream))
-                        val client = HealthConnectClient.getOrCreate(context)
-                        val batch = mutableListOf<HeartRateRecord>()
-                        var total = 0
-
-                        val lines = reader.readLines()
-
-
-
-                        val batchSize = 500
-
-
-                        lines.drop(1).forEach { line ->
-                            val parts = line.split(",")
-                            if (parts.size < 5) return@forEach
-                            try {
-                                val date = parts[2].trim()
-                                val time = parts[3].trim().replace("\"", "")
-                                val bpm = parts[4].trim().toLong()
-                                val ts = try {
-                                    ZonedDateTime.parse("${date}T$time")
-                                } catch (_: Exception) {
-                                    LocalDateTime.parse("${date}T$time").atZone(ZoneId.systemDefault())
-                                }
-                                batch.add(
-                                    HeartRateRecord(
-                                        startTime = ts.toInstant(),
-                                        startZoneOffset = ts.offset,
-                                        endTime = ts.toInstant(),
-                                        endZoneOffset = ts.offset,
-                                        samples = listOf(
-                                            HeartRateRecord.Sample(ts.toInstant(), bpm)
-                                        )
-                                    )
-                                )
-                                if (batch.size >= batchSize) {
-                                    client.insertRecords(batch.toList())
-                                    total += batch.size
-                                    batch.clear()
-                                }
-                            } catch (e: Exception) {
-                                Log.e("CSV", "Zeile fehlerhaft: ${e.message}")
-                            }
-                        }
-
-                        if (batch.isNotEmpty()) {
-                            for (record in batch) {
-                                try {
-                                    client.insertRecords(listOf(record))
-                                    Log.i("HealthInsert", "OK: ${record}")
-                                } catch (e: Exception) {
-                                    Log.e("HealthInsert", "Fehler bei Record: ${record} => ${e.message}")
-                                }
-                            }
-                            total += batch.size
-                        }
-
-                        status = "Import: $total Werte"
-                    } catch (e: Exception) {
-                        status = "Fehler: ${e.localizedMessage}"
-                    }
+                    status = importHeartRateData(context, uri)
                 }
             },
             enabled = uri != null
@@ -135,4 +70,77 @@ fun ImportDataHealthConnect() {
         }
         if (status.isNotEmpty()) Text(status, Modifier.padding(top = 12.dp))
     }
+}
+
+// ------------------------------------------------------------
+// Importfunktion ausgelagert in saubere Methoden
+// ------------------------------------------------------------
+
+suspend fun importHeartRateData(context: Context, uri: Uri?): String {
+    if (uri == null) return "Keine Datei ausgewählt"
+
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+            ?: return "Datei nicht lesbar"
+        val reader = BufferedReader(InputStreamReader(inputStream))
+        val lines = reader.readLines().drop(1)
+
+        val records = parseHeartRateRecords(lines)
+        val total = insertHeartRateRecords(context, records)
+
+        "Import: $total Werte"
+    } catch (e: IOException) {
+        "Fehler beim Lesen: ${e.localizedMessage}"
+    } catch (e: Exception) {
+        "Unbekannter Fehler: ${e.localizedMessage}"
+    }
+}
+
+fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
+    return lines.mapNotNull { line ->
+        val parts = line.split(",")
+        if (parts.size < 5) return@mapNotNull null
+
+        try {
+            val date = parts[2].trim()
+            val time = parts[3].trim().replace("\"", "")
+            val bpm = parts[4].trim().toLong()
+
+            val ts = try {
+                ZonedDateTime.parse("${date}T$time")
+            } catch (_: Exception) {
+                LocalDateTime.parse("${date}T$time").atZone(ZoneId.systemDefault())
+            }
+
+            HeartRateRecord(
+                startTime = ts.toInstant(),
+                startZoneOffset = ts.offset,
+                endTime = ts.toInstant(),
+                endZoneOffset = ts.offset,
+                samples = listOf(
+                    HeartRateRecord.Sample(ts.toInstant(), bpm)
+                )
+            )
+        } catch (e: Exception) {
+            Log.e("CSV", "Fehler beim Parsen: ${e.message}")
+            null
+        }
+    }
+}
+
+suspend fun insertHeartRateRecords(context: Context, records: List<HeartRateRecord>): Int {
+    val client = HealthConnectClient.getOrCreate(context)
+    val batchSize = 500
+    var totalInserted = 0
+
+    records.chunked(batchSize).forEach { batch ->
+        try {
+            client.insertRecords(batch)
+            totalInserted += batch.size
+        } catch (e: Exception) {
+            Log.e("HealthInsert", "Fehler beim Batch Insert: ${e.message}")
+        }
+    }
+
+    return totalInserted
 }
