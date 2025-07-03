@@ -99,5 +99,8 @@ fun AppNavHost(
                 }
             }
         }
+//        composable("symptoms") {
+//            SymptomScreen()
+//        }
     }
 }
