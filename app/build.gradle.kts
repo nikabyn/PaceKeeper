@@ -104,15 +104,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    // Tensorflow
-    // For using the TensorFlow Lite Interpreter
-    implementation("org.tensorflow:tensorflow-lite:2.17.0") // Or the latest version
-    // For GPU Delegate (optional, for hardware acceleration)
-    implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0") // Or the latest version
-    // For NNAPI Delegate (optional, for hardware acceleration)
-    implementation("org.tensorflow:tensorflow-lite-support:0.5.0") // Or the latest version
-
 }
 
 val exclusions = listOf(
