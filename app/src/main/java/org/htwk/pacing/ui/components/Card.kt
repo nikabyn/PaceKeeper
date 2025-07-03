@@ -26,7 +26,6 @@ fun CardWithTitle(title: String, modifier: Modifier = Modifier, inner: @Composab
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = modifier
             .fillMaxWidth()
-            .height(300.dp)
             .testTag("Card")
     ) {
         Column(
