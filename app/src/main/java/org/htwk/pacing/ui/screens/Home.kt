@@ -14,8 +14,8 @@ import androidx.navigation.NavController
 import kotlinx.datetime.Clock
 import org.htwk.pacing.ui.components.BatteryCard
 import org.htwk.pacing.ui.components.EnergyPredictionCard
+import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.Series
-import org.htwk.pacing.ui.components.SymptomSelectionCard
 import kotlin.time.Duration.Companion.hours
 
 @Composable
@@ -51,7 +51,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 modifier = Modifier.height(300.dp)
             )
             BatteryCard(energy = currentEnergy)
-            SymptomSelectionCard()
+            FeelingSelectionCard(navController)
         }
     }
 }
