@@ -96,6 +96,9 @@ dependencies {
     // Datetime
     implementation(libs.kotlinx.datetime)
 
+    // Health Connect
+    implementation(libs.androidx.health.connect)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -105,10 +108,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation("androidx.health.connect:connect-client:1.1.0-alpha08")
-
-
-    implementation("androidx.health.connect:connect-client:1.1.0-alpha08")
 
 }
 
