@@ -2,11 +2,22 @@ package org.htwk.pacing.backend.database
 
 import androidx.annotation.IntRange
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.Insert
+import androidx.room.Junction
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Relation
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
 
 enum class Feeling(@IntRange(from = 0, to = 3) val level: Int) {
     VeryBad(3),
@@ -15,26 +26,92 @@ enum class Feeling(@IntRange(from = 0, to = 3) val level: Int) {
     VeryGood(0),
 }
 
-@Entity(tableName = "manual_symptoms")
-data class ManualSymptomsEntry(
+@Entity(tableName = "symptom")
+data class Symptom(
+    @PrimaryKey
+    val name: String
+)
+
+@Entity(tableName = "feeling")
+data class FeelingEntry(
     @PrimaryKey
     val time: Instant,
     val feeling: Feeling,
-    val symptoms: Array<String>,
+)
+
+@Entity(
+    tableName = "symptom_for_feeling",
+    primaryKeys = ["entryTime", "symptomName"],
+    foreignKeys = [
+        ForeignKey(
+            entity = FeelingEntry::class,
+            parentColumns = ["time"],
+            childColumns = ["entryTime"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Symptom::class,
+            parentColumns = ["name"],
+            childColumns = ["symptomName"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["entryTime"]), Index(value = ["symptomName"])]
+)
+data class SymptomForFeeling(
+    val entryTime: Instant,
+    val symptomName: String
+)
+
+data class ManualSymptomEntry(
+    @Embedded val feeling: FeelingEntry,
+
+    @Relation(
+        parentColumn = "time",
+        entityColumn = "name",
+        associateBy = Junction(
+            value = SymptomForFeeling::class,
+            parentColumn = "entryTime",
+            entityColumn = "symptomName"
+        )
+    )
+    val symptoms: List<Symptom>
 )
 
 @Dao
-interface ManualSymptomsDao : TimedSeries<ManualSymptomsEntry> {
-    @Query("delete from energy_level")
-    override suspend fun deleteAll()
+interface ManualSymptomDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSymptom(symptom: Symptom)
 
-    @Query("select * from energy_level")
-    override suspend fun getAll(): List<ManualSymptomsEntry>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFeelingEntry(entry: FeelingEntry)
 
-    @Query("select * from energy_level where time between :begin and :end")
-    override suspend fun getInRange(begin: Instant, end: Instant): List<ManualSymptomsEntry>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSymptomForEntry(relation: SymptomForFeeling)
 
+    suspend fun insertManualSymptomEntry(entry: ManualSymptomEntry) {
+        insertFeelingEntry(entry.feeling)
+        for (symptom in entry.symptoms) {
+            insertSymptomForEntry(SymptomForFeeling(entry.feeling.time, symptom.name))
+        }
+    }
 
-    @Query("select null from energy_level")
-    override fun getChangeTrigger(): Flow<Int?>
+    @Query("select * from symptom")
+    fun getAllSymptoms(): Flow<List<Symptom>>
+
+    @Transaction
+    @Query("select * from feeling where time between :begin and :end")
+    fun getInRange(begin: Instant, end: Instant): List<ManualSymptomEntry>
+
+    /**
+     * Emits `null` every time the data in the table changes.
+     */
+    @Query("select null from feeling")
+    fun getChangeTrigger(): Flow<Int?>
+
+    fun getLastLive(duration: Duration): Flow<List<ManualSymptomEntry>> =
+        getChangeTrigger().map {
+            val now = Clock.System.now()
+            getInRange(now.minus(duration), now)
+        }
 }

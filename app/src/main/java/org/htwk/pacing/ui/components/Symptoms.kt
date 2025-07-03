@@ -33,6 +33,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,13 +43,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.ManualSymptomDao
+import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SymptomSelectionCard(navController: NavController) {
-
     val red = if (isSystemInDarkTheme()) Color(0xFFEF9A9A) else Color(0xFFEF5350)
     val orange = if (isSystemInDarkTheme()) Color(0xFFFFCC80) else Color(0xFFEC9C29)
     val yellow = if (isSystemInDarkTheme()) Color(0xFFE6EE9C) else Color(0xFFA8B90C)
@@ -99,10 +108,12 @@ fun SymptomSelectionCard(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SymptomScreen(navController: NavController) {
+fun SymptomScreen(
+    navController: NavController,
+    viewModel: SymptomsViewModel = koinViewModel(),
+) {
     var openDialog by remember { mutableStateOf(false) }
-
-    var symptoms = remember { mutableListOf("Headache", "Exhaustion", "Nausea", "Back pain") }
+    val symptoms by viewModel.symptoms.collectAsState()
 
     Scaffold(
         topBar = {
@@ -142,9 +153,7 @@ fun SymptomScreen(navController: NavController) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { openDialog = true },
-            ) {
+            FloatingActionButton(onClick = { openDialog = true }) {
                 Icon(Icons.Filled.Add, "Floating action button.")
             }
         }) { contentPadding ->
@@ -155,7 +164,7 @@ fun SymptomScreen(navController: NavController) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            symptoms.forEach { SymptomCheckBox(it) }
+            symptoms.forEach { SymptomCheckBox(it.name) }
         }
 
         if (openDialog) {
@@ -165,8 +174,26 @@ fun SymptomScreen(navController: NavController) {
                 },
                 onConfirm = { newSymptom ->
                     openDialog = false
-                    symptoms.add(newSymptom)
+                    viewModel.addSymptom(newSymptom)
                 })
+        }
+    }
+}
+
+class SymptomsViewModel(
+    private val manualSymptomDao: ManualSymptomDao
+) : ViewModel() {
+    val symptoms: StateFlow<List<Symptom>> = manualSymptomDao
+        .getAllSymptoms()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun addSymptom(name: String) {
+        viewModelScope.launch {
+            manualSymptomDao.insertSymptom(Symptom(name))
         }
     }
 }
@@ -185,9 +212,7 @@ fun SymptomCheckBox(title: String) {
             checked = checked,
             onCheckedChange = { checked = it }
         )
-        Text(
-            title
-        )
+        Text(title)
     }
 }
 
@@ -222,10 +247,14 @@ fun AddSymptomDialog(
                 if (isEmpty) return@Button
                 onConfirm(newSymptom.trim())
                 newSymptom = ""
-            }) { Text("Confirm") }
+            }) {
+                Text("Confirm")
+            }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) { Text("Dismiss") }
+            TextButton(onClick = onCancel) {
+                Text("Dismiss")
+            }
         }
     )
 }

@@ -9,6 +9,7 @@ import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.EnergyLevelDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
+import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
@@ -17,6 +18,7 @@ import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
+import org.htwk.pacing.ui.components.SymptomsViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
@@ -33,6 +35,7 @@ val appModule = module {
     single<EnergyLevelDao> { get<PacingDatabase>().energyLevelDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
     single<HeartRateVariabilityDao> { get<PacingDatabase>().heartRateVariabilityDao() }
+    single<ManualSymptomDao> { get<PacingDatabase>().manualSymptomDao() }
     single<MenstruationPeriodDao> { get<PacingDatabase>().menstruationPeriodDao() }
     single<OxygenSaturationDao> { get<PacingDatabase>().oxygenSaturationDao() }
     single<SkinTemperatureDao> { get<PacingDatabase>().skinTemperatureDao() }
@@ -41,6 +44,7 @@ val appModule = module {
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
 
     viewModel { MeasurementsViewModel(get()) }
+    viewModel { SymptomsViewModel(get()) }
 
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
 }
