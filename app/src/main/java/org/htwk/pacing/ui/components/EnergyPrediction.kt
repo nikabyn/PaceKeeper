@@ -13,9 +13,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.htwk.pacing.R
 import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.moveTo
@@ -36,10 +38,10 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
     modifier: Modifier = Modifier,
 ) {
-    CardWithTitle(title = "Energy Prediction", modifier) {
+    CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
         if (series.x.isEmpty()) {
             Text(
-                "Currently no data available!",
+                stringResource(R.string.currently_no_data_available),
                 modifier = Modifier.testTag("EnergyPredictionErrorText")
             )
             return@CardWithTitle

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
@@ -80,7 +82,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Heart Rate [bpm], Filled",
+                title = stringResource(R.string.heart_rate_bpm_filled),
                 series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
@@ -101,7 +103,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Heart Rate [bpm], Dynamic Range",
+                title = stringResource(R.string.heart_rate_bpm_dynamic_range),
                 series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,

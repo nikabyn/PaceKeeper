@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">pacing</string>
+
+    <string name="current_energy">Aktuelles Energielevel</string>
+    <string name="energy_prediction">Energieprognose</string>
+    <string name="currently_no_data_available">Aktuell keine Daten vorhanden!</string>
+    <string name="heart_rate_bpm_filled">Herzrate [bpm], Gefüllt</string>
+    <string name="heart_rate_bpm_dynamic_range">Herzrate [bpm], dynamischer Bereich</string>
+    <string name="home">Home</string>
+    <string name="measurements">Messungen</string>
+    <string name="settings">Einstellungen</string>
+    <string name="heart_rate_generation">Herzratengenerator</string>
+    <string name="worker_generating_heart_data">Generiere Herzratendaten…</string>
+</resources>

@@ -17,7 +17,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import org.htwk.pacing.R
 import org.htwk.pacing.ui.math.remap
 import kotlin.math.ceil
 
@@ -55,7 +57,7 @@ fun BatteryCard(
         }
 
     CardWithTitle(
-        "Current Energy", modifier = modifier
+        stringResource(R.string.current_energy), modifier = modifier
             .height(200.dp)
             .testTag("BatteryCard")
     ) {
