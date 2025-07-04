@@ -21,7 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.*
-import org.htwk.pacing.ui.components.HeartRateScreen
+import org.htwk.pacing.ui.components.HeartRateCard
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
@@ -124,5 +124,5 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         }
 
     }
-    HeartRateScreen()
+    HeartRateCard()
 }

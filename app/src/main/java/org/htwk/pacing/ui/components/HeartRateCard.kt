@@ -19,8 +19,61 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
+
+/**
+ * Hilfsklasse zur Kapselung von Health Connect-Funktionen.
+ * Vermeidet Duplikation beim Abruf und Aggregation von Daten.
+ */
+object HealthConnectHelper {
+
+    suspend fun readAvgHeartRate(client: HealthConnectClient, from: Instant, to: Instant): Double? {
+        val result = client.aggregate(
+            AggregateRequest(
+                metrics = setOf(HeartRateRecord.BPM_AVG),
+                timeRangeFilter = TimeRangeFilter.between(from, to)
+            )
+        )
+        return result[HeartRateRecord.BPM_AVG]?.toDouble()
+    }
+
+    suspend fun readHeartRateSamples(client: HealthConnectClient, from: Instant, to: Instant): List<Pair<String, Long>> {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = HeartRateRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(from, to)
+            )
+        )
+        return records.records.flatMap { record ->
+            record.samples.map {
+                val t = record.startTime.atZone(ZoneId.systemDefault()).toLocalTime().toString()
+                t to it.beatsPerMinute
+            }
+        }
+    }
+
+    suspend fun readStepsCount(client: HealthConnectClient, from: Instant, to: Instant): Long? {
+        val result = client.aggregate(
+            AggregateRequest(
+                metrics = setOf(StepsRecord.COUNT_TOTAL),
+                timeRangeFilter = TimeRangeFilter.between(from, to)
+            )
+        )
+        return result[StepsRecord.COUNT_TOTAL]
+    }
+
+    suspend fun readTodaySteps(client: HealthConnectClient, from: Instant, to: Instant): Long {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = StepsRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(from, to)
+            )
+        )
+        return records.records.sumOf { it.count }
+    }
+}
 
 /**
  * Zeigt:
@@ -31,7 +84,7 @@ import java.time.ZonedDateTime
  * Verpackt UI in `Box` mit Border und abgerundeten Ecken.
  */
 @Composable
-fun HeartRateScreen() {
+fun HeartRateCard() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val permissions = setOf(
@@ -43,66 +96,31 @@ fun HeartRateScreen() {
     var heartRateByTime by remember { mutableStateOf<List<Pair<String, Long>>>(emptyList()) }
     var yesterdaySteps by remember { mutableStateOf<Long?>(null) }
     var todaySteps by remember { mutableStateOf<Long?>(null) }
+
     /**
      * Lädt Herzfrequenz- und Schrittzahlen-Daten der letzten 24h.
      * Führt sowohl Aggregationen als auch Einzelabfragen aus.
      * Nur aufrufbar, wenn Health Connect-Berechtigungen erteilt wurden.
      */
     suspend fun queryData() {
-        scope.launch(Dispatchers.IO) {
-            try {
-                val client = HealthConnectClient.getOrCreate(context)
+        try {
+            val client = HealthConnectClient.getOrCreate(context)
 
-                val now = ZonedDateTime.now()
-                val zone = now.zone
-                val todayStart = now.toLocalDate().atStartOfDay(zone).toInstant()
-                val yesterdayStart = now.minusDays(1).toLocalDate().atStartOfDay(zone).toInstant()
-                val yesterdayEnd = todayStart
+            val now = ZonedDateTime.now()
+            val zone = now.zone
+            val todayStart = now.toLocalDate().atStartOfDay(zone).toInstant()
+            val yesterdayStart = now.minusDays(1).toLocalDate().atStartOfDay(zone).toInstant()
+            val yesterdayEnd = todayStart
 
-                val heartResponse = client.readRecords(
-                    ReadRecordsRequest(
-                        recordType = HeartRateRecord::class,
-                        timeRangeFilter = TimeRangeFilter.between(yesterdayEnd, now.toInstant())
-                    )
-                )
-                heartRateByTime = heartResponse.records.flatMap { record ->
-                    record.samples.map {
-                        val t = record.startTime.atZone(ZoneId.systemDefault()).toLocalTime().toString()
-                        t to it.beatsPerMinute
-                    }
-                }
+            heartRateByTime = HealthConnectHelper.readHeartRateSamples(client, yesterdayEnd, now.toInstant())
+            avgHeartRate = HealthConnectHelper.readAvgHeartRate(client, yesterdayEnd, now.toInstant())
+            yesterdaySteps = HealthConnectHelper.readStepsCount(client, yesterdayStart, yesterdayEnd)
+            todaySteps = HealthConnectHelper.readTodaySteps(client, todayStart, now.toInstant())
 
-                val heartAgg = client.aggregate(
-                    AggregateRequest(
-                        metrics = setOf(HeartRateRecord.BPM_AVG),
-                        timeRangeFilter = TimeRangeFilter.between(yesterdayEnd, now.toInstant())
-                    )
-                )
-                avgHeartRate = heartAgg[HeartRateRecord.BPM_AVG]?.toDouble()
-
-                val stepsYesterdayAgg = client.aggregate(
-                    AggregateRequest(
-                        metrics = setOf(StepsRecord.COUNT_TOTAL),
-                        timeRangeFilter = TimeRangeFilter.between(yesterdayStart, yesterdayEnd)
-                    )
-                )
-                yesterdaySteps = stepsYesterdayAgg[StepsRecord.COUNT_TOTAL]
-
-                val stepsTodayRecords = client.readRecords(
-                    request = ReadRecordsRequest(
-                        recordType = StepsRecord::class,
-                        timeRangeFilter = TimeRangeFilter.between(todayStart, now.toInstant())
-                    )
-                )
-                todaySteps = stepsTodayRecords.records.sumOf{it.count}
-
-
-            } catch (e: Exception) {
-                Log.e("HeartRateScreen", "Fehler beim Lesen von Daten", e)
-            }
+        } catch (e: Exception) {
+            Log.e("HeartRateScreen", "Fehler beim Lesen von Daten", e)
         }
     }
-
 
     Box(
         modifier = Modifier
@@ -126,7 +144,8 @@ fun HeartRateScreen() {
             Text("Schritte heute: ${todaySteps ?: "-"}")
         }
     }
-    //triggert Datenabfrage beim ersten Render, wenn Berechtigungen vorhanden sind.
+
+    // Triggert Datenabfrage beim ersten Render, wenn Berechtigungen vorhanden sind.
     LaunchedEffect(Unit) {
         val client = HealthConnectClient.getOrCreate(context)
         val granted = client.permissionController.getGrantedPermissions()
