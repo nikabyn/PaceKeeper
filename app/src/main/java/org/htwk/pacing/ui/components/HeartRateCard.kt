@@ -103,24 +103,22 @@ fun HeartRateCard() {
      * Nur aufrufbar, wenn Health Connect-Berechtigungen erteilt wurden.
      */
     suspend fun queryData() {
-        scope.launch(Dispatchers.IO) {
-            try {
-                val client = HealthConnectClient.getOrCreate(context)
+        try {
+            val client = HealthConnectClient.getOrCreate(context)
 
-                val now = ZonedDateTime.now()
-                val zone = now.zone
-                val todayStart = now.toLocalDate().atStartOfDay(zone).toInstant()
-                val yesterdayStart = now.minusDays(1).toLocalDate().atStartOfDay(zone).toInstant()
-                val yesterdayEnd = todayStart
+            val now = ZonedDateTime.now()
+            val zone = now.zone
+            val todayStart = now.toLocalDate().atStartOfDay(zone).toInstant()
+            val yesterdayStart = now.minusDays(1).toLocalDate().atStartOfDay(zone).toInstant()
+            val yesterdayEnd = todayStart
 
-                heartRateByTime = HealthConnectHelper.readHeartRateSamples(client, yesterdayEnd, now.toInstant())
-                avgHeartRate = HealthConnectHelper.readAvgHeartRate(client, yesterdayEnd, now.toInstant())
-                yesterdaySteps = HealthConnectHelper.readStepsCount(client, yesterdayStart, yesterdayEnd)
-                todaySteps = HealthConnectHelper.readTodaySteps(client, todayStart, now.toInstant())
+            heartRateByTime = HealthConnectHelper.readHeartRateSamples(client, yesterdayEnd, now.toInstant())
+            avgHeartRate = HealthConnectHelper.readAvgHeartRate(client, yesterdayEnd, now.toInstant())
+            yesterdaySteps = HealthConnectHelper.readStepsCount(client, yesterdayStart, yesterdayEnd)
+            todaySteps = HealthConnectHelper.readTodaySteps(client, todayStart, now.toInstant())
 
-            } catch (e: Exception) {
-                Log.e("HeartRateScreen", "Fehler beim Lesen von Daten", e)
-            }
+        } catch (e: Exception) {
+            Log.e("HeartRateScreen", "Fehler beim Lesen von Daten", e)
         }
     }
 
