@@ -36,9 +36,9 @@ class DataExportService(private val db: PacingDatabase) {
                 }
             }
 
-            exportEntityToCsv("hrv.csv", zipOut) {
+            exportEntityToCsv("heartRateVariability.csv", zipOut) {
                 db.heartRateVariabilityDao().getAll().map {
-                    CsvRow(it.time.toEpochMilliseconds(), mapOf("hrv" to it.variability.toString()))
+                    CsvRow(it.time.toEpochMilliseconds(), mapOf("heartRateVariability" to it.variability.toString()))
                 }
             }
 
