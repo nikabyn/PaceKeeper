@@ -68,7 +68,7 @@ fun MeasurementsScreen(
             }
 
             GraphCard(
-                title = "Heart Rate [bpm]",
+                title = stringResource(R.string.heart_rate_bpm),
                 series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,

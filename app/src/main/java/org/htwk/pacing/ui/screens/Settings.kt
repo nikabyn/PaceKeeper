@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
@@ -44,6 +45,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
@@ -116,7 +118,7 @@ fun SettingsScreen(
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(modifier = Modifier.padding(40.dp)) {
-            SectionTitle("Connections and Services")
+            SectionTitle(stringResource(R.string.connections_and_services))
 
             HealthConnectItem(
                 connected = isConnected,
@@ -191,15 +193,18 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Health Connect", style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = if (connected) "Connected" else "Not connected",
+                stringResource(R.string.health_connect),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = if (connected) stringResource(R.string.connected) else stringResource(R.string.not_connected),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         TextButton(onClick = onClick) {
-            Text("Edit")
+            Text(stringResource(R.string.edit))
         }
 
     }
