@@ -75,7 +75,7 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
             ) {
                 Graph(
                     series = series,
-                    xRange = start..current.toEpochMilliseconds().toDouble(),
+                    xRange = (current - 24.hours).toEpochMilliseconds().toDouble()..current.toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
                 )
@@ -84,7 +84,7 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
 
                 Graph(
                     series = seriesPredicted,
-                    xRange = start..current.toEpochMilliseconds().toDouble(),
+                    xRange = (current - 6.hours).toEpochMilliseconds().toDouble()..(current + 6.hours).toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
                     pathConfig = pc
