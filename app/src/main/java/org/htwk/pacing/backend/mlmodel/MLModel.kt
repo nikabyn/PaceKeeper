@@ -16,7 +16,7 @@ class MLModel(context: Context) {
 
     init {
         // Load the TensorFlow Lite model
-        val model = FileUtil.loadMappedFile(context, "assets/hr_prediction_model/model.tflite");
+        val model = FileUtil.loadMappedFile(context, "hr_prediction_model/model.tflite");
         interpreter = Interpreter(model)
     }
 
