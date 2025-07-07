@@ -10,6 +10,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import org.htwk.pacing.R
@@ -25,12 +26,17 @@ fun FeelingSelectionCard(navController: NavController) {
 
     fun background(color: Color) = Modifier.background(color.copy(alpha = 0.3f))
 
-    CardWithTitle("Track Symptoms") {
+    CardWithTitle(
+        "Track Symptoms",
+        modifier = Modifier.testTag("FeelingSelectionCard")
+    ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.VeryBad)) }) {
+            IconButton(
+                modifier = Modifier.testTag("VeryBadButton"),
+                onClick = { navController.navigate(Route.symptoms(Feeling.VeryBad)) }) {
                 Icon(
                     painter = painterResource(R.drawable.very_sad),
                     contentDescription = "very sad",
@@ -38,7 +44,9 @@ fun FeelingSelectionCard(navController: NavController) {
                     modifier = background(red),
                 )
             }
-            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.Bad)) }) {
+            IconButton(
+                modifier = Modifier.testTag("BadButton"),
+                onClick = { navController.navigate(Route.symptoms(Feeling.Bad)) }) {
                 Icon(
                     painter = painterResource(R.drawable.sad),
                     "sad",
@@ -46,7 +54,9 @@ fun FeelingSelectionCard(navController: NavController) {
                     modifier = background(orange),
                 )
             }
-            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.Good)) }) {
+            IconButton(
+                modifier = Modifier.testTag("GoodButton"),
+                onClick = { navController.navigate(Route.symptoms(Feeling.Good)) }) {
                 Icon(
                     painter = painterResource(R.drawable.happy),
                     "happy",
@@ -54,7 +64,9 @@ fun FeelingSelectionCard(navController: NavController) {
                     modifier = background(yellow),
                 )
             }
-            IconButton(onClick = { navController.navigate(Route.symptoms(Feeling.VeryGood)) }) {
+            IconButton(
+                modifier = Modifier.testTag("VeryGoodButton"),
+                onClick = { navController.navigate(Route.symptoms(Feeling.VeryGood)) }) {
                 Icon(
                     painter = painterResource(R.drawable.very_happy),
                     "very happy",

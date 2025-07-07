@@ -16,6 +16,9 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
+/**
+ * How a user feels at a specific point in time.
+ */
 enum class Feeling(val level: Int) {
     VeryBad(0),
     Bad(1),
@@ -111,7 +114,10 @@ interface ManualSymptomDao : TimedSeries<ManualSymptomEntry> {
     }
 
     @Query("select * from symptom")
-    fun getAllSymptoms(): Flow<List<Symptom>>
+    fun getAllSymptoms(): List<Symptom>
+
+    @Query("select * from symptom")
+    fun getAllSymptomsLive(): Flow<List<Symptom>>
 
     @Query("delete from feeling")
     override suspend fun deleteAll()

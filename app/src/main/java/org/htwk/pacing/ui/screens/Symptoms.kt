@@ -40,12 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -68,13 +68,17 @@ fun SymptomScreen(
     val selected = remember { mutableStateListOf<String>() }
 
     Scaffold(
+        modifier = Modifier.testTag("SymptomsScreen"),
         topBar = {
             TopBar(navController, feeling, onApply = {
                 viewModel.storeEntry(feeling, selected.map { Symptom(it) }.toList())
             })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { openDialog = true }) {
+            FloatingActionButton(
+                onClick = { openDialog = true },
+                modifier = Modifier.testTag("SymptomsScreenAddButton")
+            ) {
                 Icon(Icons.Filled.Add, "Floating action button.")
             }
         }) { contentPadding ->
@@ -84,6 +88,7 @@ fun SymptomScreen(
                 .padding(contentPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .testTag("SymptomsScreenCheckboxes")
         ) {
             symptoms.forEach {
                 SymptomCheckBox(
@@ -139,7 +144,10 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
             }
         },
         navigationIcon = {
-            IconButton(onClick = { navController.navigateUp() }) {
+            IconButton(
+                onClick = { navController.navigateUp() },
+                modifier = Modifier.testTag("SymptomsScreenBackButton")
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
@@ -152,6 +160,7 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
                     onApply()
                     navController.navigate(Route.HOME)
                 },
+                modifier = Modifier.testTag("SymptomsScreenApplyButton"),
                 contentPadding = PaddingValues(all = 0.dp)
             ) {
                 Icon(imageVector = Icons.Default.Check, contentDescription = "Apply")
@@ -170,11 +179,13 @@ fun AddSymptomDialog(
     var isEmpty by remember { mutableStateOf(true) }
 
     AlertDialog(
+        modifier = Modifier.testTag("AddSymptomDialog"),
         onDismissRequest = onCancel,
         title = { Text(text = "Add symptom") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 TextField(
+                    modifier = Modifier.testTag("AddSymptomTextField"),
                     value = newSymptom,
                     onValueChange = {
                         if (it.endsWith("\n")) return@TextField
@@ -188,11 +199,14 @@ fun AddSymptomDialog(
             }
         },
         confirmButton = {
-            Button(onClick = {
-                if (isEmpty) return@Button
-                onConfirm(newSymptom.trim())
-                newSymptom = ""
-            }) {
+            Button(
+                onClick = {
+                    if (isEmpty) return@Button
+                    onConfirm(newSymptom.trim())
+                    newSymptom = ""
+                },
+                modifier = Modifier.testTag("AddSymptomConfirmButton")
+            ) {
                 Text("Confirm")
             }
         },
@@ -231,8 +245,8 @@ fun SymptomCheckBox(name: String, onChange: (state: Boolean, name: String) -> Un
 class SymptomsViewModel(
     private val manualSymptomDao: ManualSymptomDao
 ) : ViewModel() {
-    val symptoms: StateFlow<List<Symptom>> = manualSymptomDao
-        .getAllSymptoms()
+    val symptoms = manualSymptomDao
+        .getAllSymptomsLive()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
