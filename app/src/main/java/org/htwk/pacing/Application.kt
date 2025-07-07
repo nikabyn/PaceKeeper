@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
+import org.htwk.pacing.backend.mlmodel.MLModelWorker
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
@@ -32,6 +33,7 @@ class PacingApp : Application(), KoinComponent {
 
         val wm = initWorkManager()
         enqueueRandomHeartRateWorker(wm)
+        enqueueMLModelWorker(wm)
     }
 
     /**
@@ -55,6 +57,18 @@ class PacingApp : Application(), KoinComponent {
             workRequest
         )
         Log.d("PacingApp", "Enqueued RandomHeartRateWorker")
+    }
+
+    fun enqueueMLModelWorker(wm: WorkManager) {
+        val workRequest = OneTimeWorkRequestBuilder<MLModelWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+        wm.enqueueUniqueWork(
+            "MLModelWorker",
+            ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+        Log.d("PacingApp", "Enqueued MLModelWorker")
     }
 }
 

@@ -21,6 +21,8 @@ import kotlinx.datetime.Instant
         SleepSessionEntry::class,
         SpeedEntry::class,
         StepsEntry::class,
+
+        PredictedHeartRateEntry::class
     ],
     version = 1,
     exportSchema = false,

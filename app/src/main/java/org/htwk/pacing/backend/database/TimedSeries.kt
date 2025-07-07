@@ -11,10 +11,10 @@ import kotlin.time.Duration
 
 @Dao
 interface TimedSeries<E> {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: E)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMany(entries: List<E>)
 
     suspend fun deleteAll()

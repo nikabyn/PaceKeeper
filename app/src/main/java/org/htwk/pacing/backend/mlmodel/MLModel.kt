@@ -56,7 +56,7 @@ class MLModel(context: Context) {
             val timePoint = endTime.minus(Duration.ofMinutes((i * 10).toLong()));
             val (day, week) = encodeTimeFeatures(timePoint);
             val (day_sin, day_cos) = day;
-            val (week_sin, week_cos) = day;
+            val (week_sin, week_cos) = week;
 
             inputBuffer.put(day_sin.toFloat())
             inputBuffer.put(day_cos.toFloat())
