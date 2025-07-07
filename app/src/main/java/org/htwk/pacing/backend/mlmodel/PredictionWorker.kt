@@ -10,33 +10,29 @@ import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.HeartRateDao
+import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
+import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.energyheuristics.energyLevelFromHeartRate
-import org.htwk.pacing.backend.mlmodel.PredictionWorker.Companion.ALERT_CHANNEL_ID
-import org.htwk.pacing.backend.mlmodel.PredictionWorker.Companion.ALERT_NOTIFICATION_ID_BASE
-import org.htwk.pacing.backend.mlmodel.PredictionWorker.Companion.WARNING_TRIGGER_THRESHOLD
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
-/**
- * Generates heart rate values with a random delay between each of them.
- *
- * @param averageDelayMs delays are in the range of this value
- */
-fun randomHeartRate(averageDelayMs: Int): Flow<Pair<Instant, Long>> = flow {
-    while (true) {
-        val value = Random.nextLong(55, 107)
-        emit(Pair(Clock.System.now(), value))
-        val millis = Random.nextDouble(averageDelayMs * 0.5, averageDelayMs * 1.5)
-        delay(millis.toLong())
+private fun generateInterpolatedInstants(now: kotlinx.datetime.Instant, hourCount: Int, direction: Boolean): List<kotlinx.datetime.Instant> {
+    //decide whether we're generating past or future time points
+    val begin = if (direction) now else now - hourCount.hours
+
+    //linearly interpolate the time points from start to end
+    return List(hourCount * 6) {i ->
+        begin + (i * 10).minutes;
     }
 }
 
@@ -46,8 +42,26 @@ class PredictionWorker(
     private val mlModel : MLModel,
     private val heartRateDao: HeartRateDao,
     private val predictedHeartRateDao: PredictedHeartRateDao,
-    private val predictedEnergyRateDao: PredictedEnergyLevelDao
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
+
+    companion object {
+        const val WORK_NAME = "PredictionWorker" // For unique work
+
+        // Notification Channel and ID for the Foreground Service
+        private const val FOREGROUND_CHANNEL_ID = "model_execution_foreground_channel"
+        //private const val FOREGROUND_NOTIFICATION_ID = 101 // Unique for this worker's FG notification
+
+        // Notification Channel and ID for Prediction Alerts
+        private const val ALERT_CHANNEL_ID = "model_prediction_alert_channel"
+        private const val ALERT_NOTIFICATION_ID_BASE = 200 // Base ID for alerts, can increment if needed
+
+        // Prediction constants
+        private const val PREDICTION_INTERVAL_MS = 60_000L * 5 // Predict every 5 minutes (adjustable)
+        private const val WARNING_TRIGGER_THRESHOLD = 0.8 // Example threshold
+        private const val DATA_POINTS_REQUIRED_FOR_PREDICTION = 144 * 2// 2 days in 10 minute intervals
+    }
+
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
 
@@ -57,10 +71,35 @@ class PredictionWorker(
         val now = Clock.System.now()
         val predictionOutput = mlModel.predict(hrModelInput, now.toJavaInstant())
 
-        //overwrite HR and Energy Level prediction
+        //delete previous HR and Energy Level prediction
         predictedHeartRateDao.deleteAll();
-        predictedEnergyRateDao.deleteAll();
-        predictedHeartRateDao.insertMany(predictionOutput)
+        predictedEnergyLevelDao.deleteAll();
+
+        //generate future time points for predictions (Model only returns bpm values)
+        val predictionFutureTimePoints = generateInterpolatedInstants(now, 6, true);
+
+        //store predictions in database
+        predictedHeartRateDao.insertMany(
+            List(predictionOutput.size) { i ->
+            PredictedHeartRateEntry(
+                predictionFutureTimePoints[i],
+                predictionOutput[i].toLong())
+            }
+        )
+
+        //higher-order function for energy-> hr calculation
+        val energyHeuristic: (Double) -> Percentage = { hr: Double ->
+            Percentage(energyLevelFromHeartRate(hr))
+        }
+
+        predictedEnergyLevelDao.insertMany(
+            List(predictionOutput.size) { i ->
+                PredictedEnergyLevelEntry(
+                    predictionFutureTimePoints[i],
+                    Percentage(energyLevelFromHeartRate(predictionOutput[i].toDouble()))
+                )
+            }
+        )
 
         //get value in the middle of predictions as relevant value for warning trigger
         val futureHeartRateGlimpse = predictionOutput[predictionOutput.size / 2].toDouble();
@@ -106,15 +145,13 @@ class PredictionWorker(
         val notificationManager =
             applicationContext.getSystemService(NotificationManager::class.java)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                ALERT_CHANNEL_ID,
-                "Model Prediction Alerts",
-                NotificationManager.IMPORTANCE_HIGH // High importance for alerts
-            )
-            channel.description = "Shows alerts when model predictions cross defined thresholds."
-            notificationManager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(
+            ALERT_CHANNEL_ID,
+            "Model Prediction Alerts",
+            NotificationManager.IMPORTANCE_HIGH // High importance for alerts
+        )
+        channel.description = "Shows alerts when model predictions cross defined thresholds."
+        notificationManager.createNotificationChannel(channel)
 
         // Using a unique ID for each alert or a fixed one if you want to overwrite
         val alertNotificationId =
