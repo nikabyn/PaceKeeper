@@ -23,7 +23,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import org.htwk.pacing.R
@@ -35,9 +34,8 @@ import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.theme.PacingTheme
 
 @Composable
-fun Main() {
+fun Main(navController: NavHostController) {
     PacingTheme {
-        val navController = rememberNavController()
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val parentRoute = navBackStackEntry?.value?.destination?.parent?.route
         val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
