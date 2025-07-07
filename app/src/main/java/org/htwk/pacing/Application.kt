@@ -64,7 +64,7 @@ class PacingApp : Application(), KoinComponent {
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
         wm.enqueueUniqueWork(
-            "MLModelWorker",
+            "PredictionWorker",
             ExistingWorkPolicy.REPLACE,
             workRequest
         )

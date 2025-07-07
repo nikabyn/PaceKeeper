@@ -35,6 +35,7 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.mlmodel.MLModel
 import org.htwk.pacing.ui.components.AxisConfig
+import org.htwk.pacing.ui.components.Graph
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.HeartRatePredictionCard
 import org.htwk.pacing.ui.components.PathConfig
@@ -42,8 +43,12 @@ import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.components.withFill
 import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun MeasurementsScreen(
     modifier: Modifier = Modifier,
@@ -114,6 +119,8 @@ fun MeasurementsScreen(
                 yConfig = AxisConfig(steps = 4u),
             )
 
+            val now = Clock.System.now()
+
             HeartRatePredictionCard(
                 /*series = Series(
                     inputX.map { it.toEpochMilliseconds().toDouble() },
@@ -122,8 +129,20 @@ fun MeasurementsScreen(
                 seriesPredicted = Series(
                     predictionsX.map { it.toEpochMilliseconds().toDouble() },
                     predictionsY),*/
+                /*series = Series(
+                    listOf(
+                        now - 12.hours,
+                        now - 11.hours,
+                        now - 10.hours,
+                        now - 6.hours,
+                        now - 4.hours,
+                        now - 2.hours,
+                        now
+                    ).map { it.toEpochMilliseconds().toDouble() },
+                    listOf(0.8, 0.82, 0.7, 0.65, 0.67, 0.45, 0.4),
+                ),*/
                 series = heartRateSeries,
-                seriesPredicted = predictedHeartRateSeries,
+                seriesPredicted = Series(predictedHeartRateSeries.x, predictedHeartRateSeries.y),
                 minPrediction = 0.1f,
                 avgPrediction = 0.35f,
                 maxPrediction = 0.4f,

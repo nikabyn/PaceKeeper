@@ -22,6 +22,7 @@ import org.htwk.pacing.ui.moveTo
 import org.htwk.pacing.ui.relativeLineTo
 import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Shows a graph of the last 12 hours of the users energy level
@@ -49,7 +50,7 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
         val start = (current - 12.hours).toEpochMilliseconds().toDouble()
         val end = (current + 12.hours).toEpochMilliseconds().toDouble()
 
-        val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
+        val yConfig = AxisConfig(range = 0.0..180.0, steps = 0u)
         val xConfig = AxisConfig(
             range = start..end,
             formatFunction = {
@@ -75,7 +76,7 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
             ) {
                 Graph(
                     series = series,
-                    xRange = (current - 24.hours).toEpochMilliseconds().toDouble()..current.toEpochMilliseconds().toDouble(),
+                    xRange = (current - 1.minutes).toEpochMilliseconds().toDouble()..(current - 0.hours).toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
                 )
@@ -84,7 +85,7 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
 
                 Graph(
                     series = seriesPredicted,
-                    xRange = (current - 6.hours).toEpochMilliseconds().toDouble()..(current + 6.hours).toEpochMilliseconds().toDouble(),
+                    xRange = (current - 0.hours).toEpochMilliseconds().toDouble()..(current + 6.hours).toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
                     pathConfig = pc
