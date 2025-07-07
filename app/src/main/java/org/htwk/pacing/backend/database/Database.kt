@@ -22,9 +22,10 @@ import kotlinx.datetime.Instant
         SpeedEntry::class,
         StepsEntry::class,
 
-        PredictedHeartRateEntry::class
+        PredictedHeartRateEntry::class,
+        PredictedEnergyLevelEntry::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 
@@ -41,6 +42,9 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun sleepSessionsDao(): SleepSessionDao
     abstract fun speedDao(): SpeedDao
     abstract fun stepsDao(): StepsDao
+
+    abstract fun predictedHeartRateDao(): PredictedHeartRateDao
+    abstract fun predictedEnergyLevelDao(): PredictedEnergyLevelDao
 
     companion object {
         @Volatile
