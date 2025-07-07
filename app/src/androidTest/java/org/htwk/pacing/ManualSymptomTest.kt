@@ -6,8 +6,10 @@ import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildAt
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.printToLog
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.database.Feeling
@@ -29,6 +31,8 @@ class ManualSymptomTest : KoinComponent {
     @Test
     fun select_feeling_and_symptoms() {
         composeTestRule.setContent { Main() }
+
+        composeTestRule.onRoot().printToLog("UI_TREE")
 
         composeTestRule.waitUntil(5000) {
             composeTestRule.onNodeWithTag("FeelingSelectionCard").isDisplayed()
