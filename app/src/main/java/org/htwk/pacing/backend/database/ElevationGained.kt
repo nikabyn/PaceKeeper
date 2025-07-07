@@ -18,10 +18,10 @@ data class ElevationGainedEntry(
 @Dao
 interface ElevationGainedDao : TimedSeries<ElevationGainedEntry> {
     @Query("delete from elevation_gained")
-    suspend fun deleteAll()
+    override suspend fun deleteAll()
 
     @Query("select * from elevation_gained")
-    suspend fun getAll(): List<ElevationGainedEntry>
+    override suspend fun getAll(): List<ElevationGainedEntry>
 
     @Query("""select * from elevation_gained where "start" <= :end and "end" >= :begin""")
     override suspend fun getInRange(begin: Instant, end: Instant): List<ElevationGainedEntry>

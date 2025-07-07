@@ -18,10 +18,10 @@ data class DistanceEntry(
 @Dao
 interface DistanceDao : TimedSeries<DistanceEntry> {
     @Query("delete from distance")
-    suspend fun deleteAll()
+    override suspend fun deleteAll()
 
     @Query("select * from distance")
-    suspend fun getAll(): List<DistanceEntry>
+    override suspend fun getAll(): List<DistanceEntry>
 
     @Query("""select * from distance where "start" <= :end and "end" >= :begin""")
     override suspend fun getInRange(begin: Instant, end: Instant): List<DistanceEntry>
