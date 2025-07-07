@@ -96,6 +96,9 @@ dependencies {
     // Datetime
     implementation(libs.kotlinx.datetime)
 
+    // Health Connect
+    implementation(libs.androidx.health.connect)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
