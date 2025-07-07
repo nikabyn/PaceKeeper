@@ -2,12 +2,12 @@ package org.htwk.pacing
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildAt
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.database.Feeling
@@ -19,7 +19,6 @@ import org.junit.runner.RunWith
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-
 @RunWith(AndroidJUnit4::class)
 class ManualSymptomTest : KoinComponent {
     @get:Rule
@@ -29,9 +28,7 @@ class ManualSymptomTest : KoinComponent {
 
     @Test
     fun select_feeling_and_symptoms() {
-        composeTestRule.setContent {
-            Main(rememberNavController())
-        }
+        composeTestRule.setContent { Main() }
 
         composeTestRule.onNodeWithTag("FeelingSelectionCard")
             .assertIsDisplayed()
@@ -52,7 +49,8 @@ class ManualSymptomTest : KoinComponent {
         val symptomConfirmButton = composeTestRule.onNodeWithTag("AddSymptomConfirmButton")
 
         for (feelingButton in feelingButtons) {
-            feelingButton.assertIsDisplayed().performClick()
+            composeTestRule.waitUntil(1000) { feelingButton.isDisplayed() }
+            feelingButton.performClick()
             symptomsScreen.assertIsDisplayed()
             backButton.performClick()
             symptomsScreen.assertIsNotDisplayed()
@@ -60,6 +58,7 @@ class ManualSymptomTest : KoinComponent {
 
         for (indexed in feelingButtons.withIndex()) {
             val feelingButton = indexed.value
+            composeTestRule.waitUntil(1000) { feelingButton.isDisplayed() }
             feelingButton.performClick()
             addButton.performClick()
             symptomTextField.performTextInput("Symptom ${indexed.index}")
