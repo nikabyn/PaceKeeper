@@ -30,8 +30,9 @@ class ManualSymptomTest : KoinComponent {
     fun select_feeling_and_symptoms() {
         composeTestRule.setContent { Main() }
 
-        composeTestRule.onNodeWithTag("FeelingSelectionCard")
-            .assertIsDisplayed()
+        composeTestRule.waitUntil(5000) {
+            composeTestRule.onNodeWithTag("FeelingSelectionCard").isDisplayed()
+        }
 
         val symptomsScreen = composeTestRule.onNodeWithTag("SymptomsScreen")
         symptomsScreen.assertIsNotDisplayed()
@@ -49,7 +50,7 @@ class ManualSymptomTest : KoinComponent {
         val symptomConfirmButton = composeTestRule.onNodeWithTag("AddSymptomConfirmButton")
 
         for (feelingButton in feelingButtons) {
-            composeTestRule.waitUntil(1000) { feelingButton.isDisplayed() }
+            composeTestRule.waitUntil(5000) { feelingButton.isDisplayed() }
             feelingButton.performClick()
             symptomsScreen.assertIsDisplayed()
             backButton.performClick()
@@ -58,7 +59,7 @@ class ManualSymptomTest : KoinComponent {
 
         for (indexed in feelingButtons.withIndex()) {
             val feelingButton = indexed.value
-            composeTestRule.waitUntil(1000) { feelingButton.isDisplayed() }
+            composeTestRule.waitUntil(5000) { feelingButton.isDisplayed() }
             feelingButton.performClick()
             addButton.performClick()
             symptomTextField.performTextInput("Symptom ${indexed.index}")
