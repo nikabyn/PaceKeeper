@@ -17,10 +17,10 @@ data class SkinTemperatureEntry(
 @Dao
 interface SkinTemperatureDao : TimedSeries<SkinTemperatureEntry> {
     @Query("delete from skin_temperature")
-    suspend fun deleteAll()
+    override suspend fun deleteAll()
 
     @Query("select * from skin_temperature")
-    suspend fun getAll(): List<SkinTemperatureEntry>
+    override suspend fun getAll(): List<SkinTemperatureEntry>
 
     @Query("select * from skin_temperature where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<SkinTemperatureEntry>

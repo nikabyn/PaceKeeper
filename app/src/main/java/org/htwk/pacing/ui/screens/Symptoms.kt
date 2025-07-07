@@ -249,7 +249,7 @@ class SymptomsViewModel(
         viewModelScope.launch {
             val now = Clock.System.now()
             val entry = ManualSymptomEntry(feeling = FeelingEntry(now, feeling), symptoms)
-            manualSymptomDao.insertManualSymptomEntry(entry)
+            manualSymptomDao.insert(entry)
         }
     }
 }

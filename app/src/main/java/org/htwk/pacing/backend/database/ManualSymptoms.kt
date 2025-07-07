@@ -89,23 +89,36 @@ data class ManualSymptomEntry(
 @Dao
 interface ManualSymptomDao : TimedSeries<ManualSymptomEntry> {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSymptom(symptom: Symptom)
+    fun insertSymptom(symptom: Symptom)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertFeelingEntry(entry: FeelingEntry)
+    fun insertFeelingEntry(entry: FeelingEntry)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSymptomForEntry(relation: SymptomForFeeling)
+    fun insertSymptomForEntry(relation: SymptomForFeeling)
 
-    suspend fun insertManualSymptomEntry(entry: ManualSymptomEntry) {
+    override fun insert(entry: ManualSymptomEntry) {
         insertFeelingEntry(entry.feeling)
         for (symptom in entry.symptoms) {
             insertSymptomForEntry(SymptomForFeeling(entry.feeling.time, symptom.name))
         }
     }
 
+    override fun insertMany(entries: List<ManualSymptomEntry>) {
+        for (entry in entries) {
+            insert(entry)
+        }
+    }
+
     @Query("select * from symptom")
     fun getAllSymptoms(): Flow<List<Symptom>>
+
+    @Query("delete from feeling")
+    override suspend fun deleteAll()
+
+    @Transaction
+    @Query("select * from feeling")
+    override suspend fun getAll(): List<ManualSymptomEntry>
 
     @Transaction
     @Query("select * from feeling where time between :begin and :end")

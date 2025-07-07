@@ -20,10 +20,10 @@ data class SleepSessionEntry(
 @Dao
 interface SleepSessionDao : TimedSeries<SleepSessionEntry> {
     @Query("delete from sleep_session")
-    suspend fun deleteAll()
+    override suspend fun deleteAll()
 
     @Query("select * from sleep_session")
-    suspend fun getAll(): List<SleepSessionEntry>
+    override suspend fun getAll(): List<SleepSessionEntry>
 
     @Query("""select * from sleep_session where "start" <= :end and "end" >= :begin""")
     override suspend fun getInRange(begin: Instant, end: Instant): List<SleepSessionEntry>

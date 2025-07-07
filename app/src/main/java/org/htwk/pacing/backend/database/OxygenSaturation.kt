@@ -17,10 +17,10 @@ data class OxygenSaturationEntry(
 @Dao
 interface OxygenSaturationDao : TimedSeries<OxygenSaturationEntry> {
     @Query("delete from oxygen_saturation")
-    suspend fun deleteAll()
+    override suspend fun deleteAll()
 
     @Query("select * from oxygen_saturation")
-    suspend fun getAll(): List<OxygenSaturationEntry>
+    override suspend fun getAll(): List<OxygenSaturationEntry>
 
     @Query("select * from oxygen_saturation where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<OxygenSaturationEntry>

@@ -17,10 +17,10 @@ data class HeartRateVariabilityEntry(
 @Dao
 interface HeartRateVariabilityDao : TimedSeries<HeartRateVariabilityEntry> {
     @Query("delete from heart_rate_variability")
-    suspend fun deleteAll()
+    override suspend fun deleteAll()
 
     @Query("select * from heart_rate_variability")
-    suspend fun getAll(): List<HeartRateVariabilityEntry>
+    override suspend fun getAll(): List<HeartRateVariabilityEntry>
 
     @Query("select * from heart_rate_variability where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<HeartRateVariabilityEntry>
