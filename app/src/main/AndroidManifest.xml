@@ -9,11 +9,12 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE_BPM" />
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA" />
+
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
     </queries>
     <application
-        android:name=".PacingApp"
+        android:name=".ProductionApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -35,15 +36,15 @@
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/>
-                <category android:name="android.intent.category.HEALTH_PERMISSIONS"/>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/>
-                <category android:name="android.intent.category.HEALTH_PERMISSIONS"/>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity>
 

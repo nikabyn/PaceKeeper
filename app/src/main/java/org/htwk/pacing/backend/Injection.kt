@@ -2,6 +2,7 @@ package org.htwk.pacing.backend
 
 import android.content.Context
 import android.util.Log
+import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.database.DistanceDao
@@ -28,8 +29,24 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.ext.getFullName
 
+val testModule = module {
+    single<PacingDatabase> {
+        Room.inMemoryDatabaseBuilder(androidContext(), PacingDatabase::class.java)
+            .allowMainThreadQueries()
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
+}
+
+val productionModule = module {
+    single<PacingDatabase> {
+        Room.databaseBuilder(androidContext(), PacingDatabase::class.java, "pacing.db")
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
+}
+
 val appModule = module {
-    single<PacingDatabase> { PacingDatabase.getInstance(androidContext()) }
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
     single<EnergyLevelDao> { get<PacingDatabase>().energyLevelDao() }
