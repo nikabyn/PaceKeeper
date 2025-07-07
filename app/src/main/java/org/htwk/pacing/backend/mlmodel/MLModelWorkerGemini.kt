@@ -24,7 +24,7 @@ import kotlin.collections.takeLast
 import kotlin.collections.toFloatArray
 import kotlin.time.toJavaInstant
 
-class PredictionWorker(
+class ___PredictionWorker(
     val appContext: Context, // Renamed for clarity, it's the applicationContext
     workerParams: WorkerParameters,
     // Dependencies should ideally be injected (e.g., via a custom WorkerFactory or Hilt)
@@ -111,10 +111,24 @@ class PredictionWorker(
         }
     }
 
+    private fun generateInstants(hourCount: Int, direction: Boolean): List<kotlinx.datetime.Instant> {
+        val now = Clock.System.now();
+
+        //decide whether we're generating past or future time points
+        val begin = if (direction) now else now - hourCount.hours
+
+        //linearly interpolate the time points from start to end
+        return List(hourCount * 6) { i ->
+            begin + (i * 10).minutes;
+        }
+    }
+
     override suspend fun doWork(): Result {
         // Promote the worker to a foreground service.
         // This is crucial for long-running tasks.
         setForeground(getForegroundInfo()) // awaitForegroundInfo() ensures it runs before proceeding
+
+        var isActive = true;
 
         try {
             while (isActive) { // Loop as long as the coroutine is active (handles cancellation)
@@ -219,18 +233,6 @@ class PredictionWorker(
 }
 
 /*
-
-fun generateInstants(h: Int, direction: Boolean): List<kotlinx.datetime.Instant> {
-    val now = Clock.System.now();
-
-    //decide whether we're generating past or future time points
-    val begin = if (direction) now else now - h.hours
-
-    //linearly interpolate the time points from start to end
-    return List(h * 6) { i ->
-        begin + (i * 10).minutes;
-    }
-}
 
 var offset = remember {0};
 

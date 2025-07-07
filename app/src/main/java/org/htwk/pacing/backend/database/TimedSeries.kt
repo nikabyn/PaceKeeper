@@ -33,4 +33,10 @@ interface TimedSeries<E> {
             val now = Clock.System.now()
             getInRange(now.minus(duration), now)
         }
+
+    // TODO / REVIEW: is this ok?
+    fun getAllLive(): Flow<List<E>> =
+        getChangeTrigger().map {
+            getAll()
+        }
 }

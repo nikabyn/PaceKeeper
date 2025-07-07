@@ -17,7 +17,6 @@ import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.mlmodel.MLModel
-import org.htwk.pacing.backend.mlmodel.MLModelWorker
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
@@ -43,10 +42,12 @@ val appModule = module {
     single<SpeedDao> { get<PacingDatabase>().speedDao() }
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
 
-    viewModel { MeasurementsViewModel(get()) }
+    single<MLModel> { MLModel(get()) }
+
+    viewModel { MeasurementsViewModel(get(), get(), get()) }
 
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
-    worker { context, params -> PredictionWorker(context, params, get(), get(), get()) }
+    worker { context, params -> PredictionWorker(context, params, get(), get(), get(), get()) }
 }
 
 /**

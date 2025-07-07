@@ -31,7 +31,8 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.backend.database.HeartRateDao
-import org.htwk.pacing.backend.database.PredictedEnergyDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.mlmodel.MLModel
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
@@ -48,21 +49,9 @@ fun MeasurementsScreen(
     modifier: Modifier = Modifier,
     viewModel: MeasurementsViewModel = koinViewModel(),
 ) {
-    val seriesHR = viewModel.series.collectAsState().value
-
-    //val lastTime = Instant.parse("2025-07-05T15:54:00Z")
-
-    val context = LocalContext.current
-    val mlModel = remember { MLModel(context) }
-
-    val predictionsX = remember { mutableStateListOf<kotlinx.datetime.Instant>() }
-    val predictionsY = remember { mutableStateListOf<Double>() }
-
-    //have mlmodelworker return both model input and output data on request
-    /*val inputX = generateInstants(48, false).takeLast(144 * 2);
-    //val inputY = DoubleArray(inputX.size) { i -> sin(i * 0.5) }
-    val inputY = hr_arr0.map{(it - hr_arr0.min()) / 100}.takeLast(144 * 2);*/
-
+    val heartRateSeries = viewModel.heartRateSeries.collectAsState().value
+    val predictedHeartRateSeries = viewModel.predictedHeartRateSeries.collectAsState().value
+    val predictedEnergyLevelSeries = viewModel.predictedEnergySeries.collectAsState().value
 
     Box(
         modifier = modifier
@@ -80,11 +69,11 @@ fun MeasurementsScreen(
                 return "%02d:%02d:%02d".format(localTime.hour, localTime.minute, localTime.second)
             }
 
-            Log.d("Graph", seriesHR.toString())
+            Log.d("Graph", heartRateSeries.toString())
 
             GraphCard(
                 title = "Heart Rate [bpm]",
-                series = seriesHR,
+                series = heartRateSeries,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
                     steps = 2u,
@@ -97,7 +86,7 @@ fun MeasurementsScreen(
             )
             GraphCard(
                 title = "Heart Rate [bpm], Filled",
-                series = seriesHR,
+                series = heartRateSeries,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
                     steps = 2u,
@@ -117,7 +106,7 @@ fun MeasurementsScreen(
             )
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",
-                series = seriesHR,
+                series = heartRateSeries,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
                     steps = 2u,
@@ -126,13 +115,15 @@ fun MeasurementsScreen(
             )
 
             HeartRatePredictionCard(
-                series = Series(
+                /*series = Series(
                     inputX.map { it.toEpochMilliseconds().toDouble() },
                     inputY.toList(),
                 ),
                 seriesPredicted = Series(
                     predictionsX.map { it.toEpochMilliseconds().toDouble() },
-                    predictionsY),
+                    predictionsY),*/
+                series = heartRateSeries,
+                seriesPredicted = predictedHeartRateSeries,
                 minPrediction = 0.1f,
                 avgPrediction = 0.35f,
                 maxPrediction = 0.4f,
@@ -143,8 +134,12 @@ fun MeasurementsScreen(
 
 class MeasurementsViewModel(
     private val heartRateDao: HeartRateDao,
-    private val predictedEnergyDao: PredictedEnergyDao
+    private val predictedHeartRateDao: PredictedHeartRateDao,
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : ViewModel() {
+    private val predictedHeartRateSeriesMut = MutableStateFlow(Series(mutableListOf(), mutableListOf()))
+    val predictedHeartRateSeries = predictedHeartRateSeriesMut.asStateFlow()
+
     private val predictedEnergySeriesMut = MutableStateFlow(Series(mutableListOf(), mutableListOf()))
     val predictedEnergySeries = predictedEnergySeriesMut.asStateFlow()
 
@@ -163,7 +158,20 @@ class MeasurementsViewModel(
             }
         }
         viewModelScope.launch {
-            predictedEnergyDao. (10.seconds).collect { entries ->
+            //TODO / REVIEW: is this ok? (see TimedSeries Interface change: getAllLive)
+            predictedHeartRateDao.getAllLive().collect { entries ->
+                val updated = Series(mutableListOf(), mutableListOf())
+                entries.forEach { (time, value) ->
+                    updated.x.add(time.toEpochMilliseconds().toDouble())
+                    updated.y.add(value.toDouble())
+                }
+                predictedHeartRateSeriesMut.value = updated
+            }
+        }
+
+        viewModelScope.launch {
+            //TODO / REVIEW: is this ok? (see TimedSeries Interface change: getAllLive)
+            predictedEnergyLevelDao.getAllLive().collect { entries ->
                 val updated = Series(mutableListOf(), mutableListOf())
                 entries.forEach { (time, value) ->
                     updated.x.add(time.toEpochMilliseconds().toDouble())
