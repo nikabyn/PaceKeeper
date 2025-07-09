@@ -3,10 +3,12 @@ package org.htwk.pacing
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onChildAt
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToLog
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,7 +35,14 @@ class ManualSymptomTest : KoinComponent {
 
         composeTestRule.onRoot().printToLog("UI_TREE")
 
-        composeTestRule.onNodeWithTag("FeelingSelectionCard").assertIsDisplayed()
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithTag("FeelingSelectionCard", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule
+            .onNodeWithTag("FeelingSelectionCard", useUnmergedTree = true)
+            .performScrollTo()
+            .assertIsDisplayed()
 
         val symptomsScreen = composeTestRule.onNodeWithTag("SymptomsScreen")
         symptomsScreen.assertIsNotDisplayed()
