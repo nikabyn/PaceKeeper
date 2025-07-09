@@ -1,4 +1,4 @@
-package org.htwk.pacing.backend.data
+package org.htwk.pacing.backend.data_collection
 
 import android.content.Context
 import android.util.Log
