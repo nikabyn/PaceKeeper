@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.data.HealthConnectHelper
+import org.htwk.pacing.backend.data_collection.HealthConnectHelper
 import java.time.ZonedDateTime
 
 /**

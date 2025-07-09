@@ -18,6 +18,7 @@ import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
+import org.htwk.pacing.backend.data_collection.HealthConnectWorkerScheduler
 
 /**
  * Entry point for non UI related work.
@@ -32,6 +33,7 @@ class PacingApp : Application(), KoinComponent {
 
         val wm = initWorkManager()
         enqueueRandomHeartRateWorker(wm)
+        HealthConnectWorkerScheduler.scheduleHealthSync(this)
     }
 
     /**
