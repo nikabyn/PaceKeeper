@@ -10,6 +10,8 @@ ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-too
 ENV DEBIAN_FRONTEND=noninteractive
 
 COPY start-avds.sh /opt/
+COPY stop-avds.sh /opt/
+
 WORKDIR /tmp
 
 RUN apt-get update; \

@@ -55,11 +55,13 @@ debugUnitTests:
 
 .connected_tests_template:
   stage: test
+  variables:
+    EMULATOR_UUID: "$CI_JOB_ID"
   script:
-    - /opt/start-avds.sh
+    - /opt/start-avds.sh "$EMULATOR_UUID"
     - ./gradlew -Pci --console=plain :app:connectedDebugAndroidTest
   after_script:
-    - pkill -f qemu-system 2>/dev/null || true
+    - /opt/stop-avds.sh "$EMULATOR_UUID"
   artifacts:
     when: always
     paths:
