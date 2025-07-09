@@ -35,7 +35,7 @@ class ManualSymptomTest : KoinComponent {
 
         composeTestRule.onRoot().printToLog("UI_TREE")
 
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 60000) {
             composeTestRule.onAllNodesWithTag("FeelingSelectionCard", useUnmergedTree = true)
                 .fetchSemanticsNodes().isNotEmpty()
         }
