@@ -135,7 +135,7 @@ fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
                 )
             )
         } catch (e: Exception) {
-            Log.e("CSV", "Fehler beim Parsen: ${e.message}")
+            //Log.e("CSV", "Fehler beim Parsen: ${e.message}")
             null
         }
     }
@@ -151,7 +151,7 @@ suspend fun insertHeartRateRecords(context: Context, records: List<HeartRateReco
             client.insertRecords(batch)
             totalInserted += batch.size
         } catch (e: Exception) {
-            Log.e("HealthInsert", "Fehler beim Batch Insert: ${e.message}")
+            //Log.e("HealthInsert", "Fehler beim Batch Insert: ${e.message}")
         }
     }
 
