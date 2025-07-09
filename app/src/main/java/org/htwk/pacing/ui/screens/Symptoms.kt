@@ -57,6 +57,10 @@ import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
 import org.koin.androidx.compose.koinViewModel
 
+/**
+ * Overlay screen that allows the user to select and create new symptoms
+ * to be associated with how they feel at a point in time.
+ */
 @Composable
 fun SymptomScreen(
     navController: NavController,
@@ -170,6 +174,10 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
     )
 }
 
+/**
+ * Dialog for creating a new symptom.
+ * Only accepts non empty strings.
+ */
 @Composable
 fun AddSymptomDialog(
     onCancel: () -> Unit,
