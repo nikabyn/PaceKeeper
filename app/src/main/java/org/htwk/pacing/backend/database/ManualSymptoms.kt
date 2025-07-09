@@ -74,6 +74,9 @@ data class SymptomForFeeling(
     val symptomName: String
 )
 
+/**
+ * How a user feels at a point in time, with associated symptoms.
+ */
 data class ManualSymptomEntry(
     @Embedded val feeling: FeelingEntry,
 

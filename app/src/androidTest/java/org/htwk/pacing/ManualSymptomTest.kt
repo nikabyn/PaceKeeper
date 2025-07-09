@@ -2,7 +2,6 @@ package org.htwk.pacing
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
-import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildAt
 import androidx.compose.ui.test.onNodeWithTag
@@ -34,9 +33,7 @@ class ManualSymptomTest : KoinComponent {
 
         composeTestRule.onRoot().printToLog("UI_TREE")
 
-        composeTestRule.waitUntil(5000) {
-            composeTestRule.onNodeWithTag("FeelingSelectionCard").isDisplayed()
-        }
+        composeTestRule.onNodeWithTag("FeelingSelectionCard").assertIsDisplayed()
 
         val symptomsScreen = composeTestRule.onNodeWithTag("SymptomsScreen")
         symptomsScreen.assertIsNotDisplayed()
@@ -54,7 +51,7 @@ class ManualSymptomTest : KoinComponent {
         val symptomConfirmButton = composeTestRule.onNodeWithTag("AddSymptomConfirmButton")
 
         for (feelingButton in feelingButtons) {
-            composeTestRule.waitUntil(5000) { feelingButton.isDisplayed() }
+            feelingButton.assertIsDisplayed()
             feelingButton.performClick()
             symptomsScreen.assertIsDisplayed()
             backButton.performClick()
@@ -63,7 +60,7 @@ class ManualSymptomTest : KoinComponent {
 
         for (indexed in feelingButtons.withIndex()) {
             val feelingButton = indexed.value
-            composeTestRule.waitUntil(5000) { feelingButton.isDisplayed() }
+            feelingButton.assertIsDisplayed()
             feelingButton.performClick()
             addButton.performClick()
             symptomTextField.performTextInput("Symptom ${indexed.index}")
