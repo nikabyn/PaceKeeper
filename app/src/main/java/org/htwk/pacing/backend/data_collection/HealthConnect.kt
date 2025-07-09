@@ -11,7 +11,6 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Instant
 import java.time.ZoneId
-import java.time.ZonedDateTime
 
 /**
  * Zentrale Hilfsklasse zum Zugriff auf Health Connect-Daten.
