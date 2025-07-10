@@ -7,8 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -92,34 +93,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         onDispose { lifecycle.removeObserver(observer) }
     }
 
-    Box(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Column(modifier = Modifier.padding(40.dp)) {
-            Text(
-                text = "Connections and Services",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            HealthConnectItem(
-                connected = isConnected,
-                onClick = {
-                    val launchIntent =
-                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-                    if (launchIntent != null) {
-                        context.startActivity(launchIntent)
-                    } else {
-                        Log.w("HealthConnectDebug", "Health Connect not installed.")
-                    }
-
-                    if (!isConnected) {
-                        requestPermissionsActivity.launch(requiredPermissions)
-                    }
-                },
-            )
-        }
-    }
-
     // CsvExportManager mit Kontext initialisieren
     val db = remember { PacingDatabase.getInstance(context) }
 
@@ -137,21 +110,46 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
     var showDialog by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Button(onClick = { showDialog = true }) {
-            Text("Daten exportieren")
+    Box(modifier = modifier.verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.padding(40.dp)) {
+            SectionTitle("Connections and Services")
+
+            HealthConnectItem(
+                connected = isConnected,
+                onClick = {
+                    val launchIntent =
+                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+                    if (launchIntent != null) {
+                        context.startActivity(launchIntent)
+                    } else {
+                        Log.w("HealthConnectDebug", "Health Connect not installed.")
+                    }
+
+                    if (!isConnected) {
+                        requestPermissionsActivity.launch(requiredPermissions)
+                    }
+                },
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HeartRateCard()
+
+            Spacer(modifier = Modifier.height(20.dp))
+            SectionTitle("Stored Data")
+
+            Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Export data to ZIP-archive")
+            }
         }
     }
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Datenschutz-Hinweis") },
+            title = { Text("Data protection notice") },
             text = {
-                Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
+                // TODO german: Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
+                Text("Personalised data will be stored by exporting. Please consent to the processing.")
             },
             confirmButton = {
                 TextButton(
@@ -160,17 +158,25 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                         launcher.launch("pacing_export.zip")
                     }
                 ) {
-                    Text("Zustimmen")
+                    Text("Agree")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Abbrechen")
+                    Text("Cancel")
                 }
             }
         )
     }
 }
+
+@Composable
+fun SectionTitle(title: String) = Text(
+    text = title,
+    style = MaterialTheme.typography.titleMedium,
+    fontWeight = FontWeight.Bold,
+    modifier = Modifier.padding(vertical = 10.dp)
+)
 
 /**
  * Zeigt Verbindungsstatus ("Connected"/"Not connected") an.
@@ -180,9 +186,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 @Composable
 fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -198,5 +202,4 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         }
 
     }
-    HeartRateCard()
 }
