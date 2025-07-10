@@ -44,8 +44,6 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
-import java.time.LocalDateTime
-import java.io.FileOutputStream
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 
 val requiredPermissions = setOf(
@@ -83,9 +81,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) {
         updateConnectionState()
     }
-
-    // CsvExportManager mit Kontext initialisieren
-    val csvExportManager = remember { CsvExportManager(context) }
 
     DisposableEffect(Unit) {
         val observer = LifecycleEventObserver { _, event ->
