@@ -2,6 +2,7 @@ package org.htwk.pacing.ui.components
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,11 +51,22 @@ fun ImportDataHealthConnect() {
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
-        onResult = {
-            uri = it
-            name = it?.lastPathSegment ?: ""
+        onResult = { resultUri ->
+            if (resultUri != null) {
+                val fileName = getFileName(context, resultUri)
+                if (!fileName.endsWith(".csv", ignoreCase = true)) {
+                    status = "Bitte eine .csv-Datei auswählen!"
+                    uri = null
+                    name = ""
+                } else {
+                    uri = resultUri
+                    name = fileName
+                    status = ""
+                }
+            }
         }
     )
+
 
     Column(
         modifier = Modifier
@@ -66,7 +78,7 @@ fun ImportDataHealthConnect() {
     ) {
         Text("Importiere Herzfrequenzdaten (.csv)", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(12.dp))
-        Button(onClick = { launcher.launch(arrayOf("text/csv")) }) {
+        Button(onClick = { launcher.launch(arrayOf("text/*")) }) {
             Text("Datei auswählen")
         }
         if (name.isNotEmpty()) Text(name, Modifier.padding(top = 8.dp))
@@ -135,7 +147,7 @@ fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
                 )
             )
         } catch (e: Exception) {
-            //Log.e("CSV", "Fehler beim Parsen: ${e.message}")
+            Log.e("CSV", "Fehler beim Parsen: ${e.message}")
             null
         }
     }
@@ -151,9 +163,21 @@ suspend fun insertHeartRateRecords(context: Context, records: List<HeartRateReco
             client.insertRecords(batch)
             totalInserted += batch.size
         } catch (e: Exception) {
-            //Log.e("HealthInsert", "Fehler beim Batch Insert: ${e.message}")
+            Log.e("HealthInsert", "Fehler beim Batch Insert: ${e.message}")
         }
     }
 
     return totalInserted
+}
+
+fun getFileName(context: Context, uri: Uri): String {
+    var name = ""
+    val cursor = context.contentResolver.query(uri, null, null, null, null)
+    cursor?.use {
+        if (it.moveToFirst()) {
+            val index = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0) name = it.getString(index)
+        }
+    }
+    return name
 }
