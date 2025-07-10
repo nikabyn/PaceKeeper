@@ -47,8 +47,9 @@ echo "$PORT" > "$TMPDIR/port"
 echo "$EMULATOR_ID" > "$TMPDIR/id"
 
 echo "Starting emulator $CLONE_AVD on port $PORT..."
-"$ANDROID_SDK_ROOT"/emulator/emulator @"$CLONE_AVD" \
-  -no-window -no-audio -gpu swiftshader_indirect -no-snapshot -no-boot-anim \
+xvfb-run --server-args="-screen 0 1280x1024x24" \
+  "$ANDROID_SDK_ROOT"/emulator/emulator @"$CLONE_AVD" \
+  -no-audio -gpu swiftshader_indirect -no-snapshot -no-boot-anim \
   -port "$PORT" \
   2>&1 &
 

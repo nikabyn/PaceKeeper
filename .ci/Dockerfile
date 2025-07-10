@@ -25,6 +25,12 @@ RUN apt-get update; \
         libglu1-mesa \
         libpulse0 \
         openjdk-17-jdk-headless \
+        bridge-utils \
+        xauth \
+        xvfb \
+        libxi6 \
+        libxrender1 \
+        mesa-utils \
         unzip \
         wget; \
     rm -rf /var/lib/apt/lists/*
