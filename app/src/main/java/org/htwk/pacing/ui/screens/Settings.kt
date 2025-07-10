@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -133,7 +134,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         )
     }
 
-    // Launcher für das Speichern der CSV-Datei
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
@@ -147,18 +147,44 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         }
     }
 
+    var showDialog by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Button(
-            onClick = {
-                // Dateiname mit Zeitstempel
-                launcher.launch("fitness_data_${System.currentTimeMillis()}.csv")
-            }
+            onClick = { showDialog = true }
         ) {
             Text("Daten exportieren")
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Datenschutz-Hinweis") },
+            text = {
+                Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDialog = false
+                        launcher.launch("fitness_data_${System.currentTimeMillis()}.csv")
+                    }
+                ) {
+                    Text("Zustimmen")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDialog = false }
+                ) {
+                    Text("Abbrechen")
+                }
+            }
+        )
     }
 }
 
