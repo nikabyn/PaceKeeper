@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -95,7 +96,12 @@ fun <C : Collection<Double>> GraphCard(
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
-    CardWithTitle(title = title, modifier = modifier.testTag("GraphCard")) {
+    CardWithTitle(
+        title = title,
+        modifier = modifier
+            .height(300.dp)
+            .testTag("GraphCard")
+    ) {
         AnnotatedGraph(
             series = series,
             xConfig = xConfig,
