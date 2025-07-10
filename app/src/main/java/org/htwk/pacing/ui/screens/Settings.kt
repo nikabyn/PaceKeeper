@@ -12,18 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,9 +30,9 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.DataExporter
-import org.htwk.pacing.backend.FitnessData
+import org.htwk.pacing.backend.export.CsvExportManager
 import org.htwk.pacing.ui.components.HeartRateCard
+import java.time.LocalDateTime
 import java.io.FileOutputStream
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 
@@ -70,6 +60,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     ) { granted ->
         Log.d("HealthConnectDebug", "Permission activity result: $granted")
     }
+
     // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
     suspend fun updateConnectionState() {
         val client = HealthConnectClient.getOrCreate(context)
@@ -80,6 +71,9 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) {
         updateConnectionState()
     }
+
+    // CsvExportManager mit Kontext initialisieren
+    val csvExportManager = remember { CsvExportManager(context) }
 
     DisposableEffect(Unit) {
         val observer = LifecycleEventObserver { _, event ->
@@ -139,9 +133,11 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     ) { uri: Uri? ->
         uri?.let {
             context.contentResolver.openFileDescriptor(it, "w")?.use { descriptor ->
-                FileOutputStream(descriptor.fileDescriptor).use { stream ->
-                    val exporter = DataExporter()
-                    exporter.exportToCsv(exampleData, stream)
+                descriptor.fileDescriptor.let { fd ->
+                    android.os.ParcelFileDescriptor.AutoCloseOutputStream(descriptor)
+                        .use { stream ->
+                            csvExportManager.exportAllData(stream)
+                        }
                 }
             }
         }
@@ -171,7 +167,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 TextButton(
                     onClick = {
                         showDialog = false
-                        launcher.launch("fitness_data_${System.currentTimeMillis()}.csv")
+                        launcher.launch("fitness_data_export_${System.currentTimeMillis()}.csv")
                     }
                 ) {
                     Text("Zustimmen")
