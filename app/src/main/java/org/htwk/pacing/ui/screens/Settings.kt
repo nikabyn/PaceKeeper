@@ -1,14 +1,18 @@
 package org.htwk.pacing.ui.screens
 
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,7 +39,10 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.htwk.pacing.backend.DataExporter
+import org.htwk.pacing.backend.FitnessData
 import org.htwk.pacing.ui.components.HeartRateCard
+import java.io.FileOutputStream
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 
 val requiredPermissions = setOf(
@@ -112,6 +119,47 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             )
         }
     }
+
+    // Beispielhafte Fitnessdaten (kann durch echte Daten ersetzt werden)
+    val exampleData = remember {
+        listOf(
+            FitnessData(
+                timestamp = LocalDateTime.now(),
+                activityType = "Laufen",
+                durationMinutes = 30,
+                calories = 300,
+                heartRate = 140
+            )
+        )
+    }
+
+    // Launcher für das Speichern der CSV-Datei
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.openFileDescriptor(it, "w")?.use { descriptor ->
+                FileOutputStream(descriptor.fileDescriptor).use { stream ->
+                    val exporter = DataExporter()
+                    exporter.exportToCsv(exampleData, stream)
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(
+            onClick = {
+                // Dateiname mit Zeitstempel
+                launcher.launch("fitness_data_${System.currentTimeMillis()}.csv")
+            }
+        ) {
+            Text("Daten exportieren")
+        }
+    }
 }
 
 /**
@@ -138,6 +186,7 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         TextButton(onClick = onClick) {
             Text("Edit")
         }
+
     }
     HeartRateCard()
     ImportDataHealthConnect()
