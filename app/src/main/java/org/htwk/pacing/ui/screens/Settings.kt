@@ -41,7 +41,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.htwk.pacing.backend.export.DataExportService
+import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
 
 val requiredPermissions = setOf(
@@ -122,7 +122,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
     // CsvExportManager mit Kontext initialisieren
     val db = remember { PacingDatabase.getInstance(context) }
-    val exporter = remember { DataExportService(db) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
@@ -130,7 +129,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         uri?.let {
             context.contentResolver.openOutputStream(it)?.let { stream ->
                 CoroutineScope(Dispatchers.IO).launch {
-                    exporter.exportAllAsZip(stream)
+                    exportAllAsZip(db, stream)
                 }
             }
         }
