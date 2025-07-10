@@ -1,7 +1,6 @@
 package org.htwk.pacing.backend.heuristics
 
 /**
- * Berechnet die Wahrscheinlichkeit für PEM basierend auf beobachteten Symptomen.
  *
  * @param symptoms Liste der beobachteten Symptome
  * @param pPEM A-priori-Wahrscheinlichkeit für PEM (z. B. 0.7)
