@@ -1,12 +1,28 @@
 package org.htwk.pacing.ui.screens
 
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.layout.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -20,8 +36,14 @@ import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.htwk.pacing.backend.DataExporter
+import org.htwk.pacing.backend.FitnessData
 import org.htwk.pacing.ui.components.HeartRateCard
+import java.io.FileOutputStream
+import java.time.LocalDateTime
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
@@ -46,6 +68,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     ) { granted ->
         Log.d("HealthConnectDebug", "Permission activity result: $granted")
     }
+
     // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
     suspend fun updateConnectionState() {
         val client = HealthConnectClient.getOrCreate(context)
@@ -82,7 +105,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             HealthConnectItem(
                 connected = isConnected,
                 onClick = {
-                    val launchIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+                    val launchIntent =
+                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
                     if (launchIntent != null) {
                         context.startActivity(launchIntent)
                     } else {
@@ -94,6 +118,47 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     }
                 },
             )
+        }
+    }
+
+    // Beispielhafte Fitnessdaten (kann durch echte Daten ersetzt werden)
+    val exampleData = remember {
+        listOf(
+            FitnessData(
+                timestamp = LocalDateTime.now(),
+                activityType = "Laufen",
+                durationMinutes = 30,
+                calories = 300,
+                heartRate = 140
+            )
+        )
+    }
+
+    // Launcher für das Speichern der CSV-Datei
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.openFileDescriptor(it, "w")?.use { descriptor ->
+                FileOutputStream(descriptor.fileDescriptor).use { stream ->
+                    val exporter = DataExporter()
+                    exporter.exportToCsv(exampleData, stream)
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(
+            onClick = {
+                // Dateiname mit Zeitstempel
+                launcher.launch("fitness_data_${System.currentTimeMillis()}.csv")
+            }
+        ) {
+            Text("Daten exportieren")
         }
     }
 }
