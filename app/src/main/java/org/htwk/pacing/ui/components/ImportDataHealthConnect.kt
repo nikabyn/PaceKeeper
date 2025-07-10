@@ -146,8 +146,7 @@ fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
                     HeartRateRecord.Sample(ts.toInstant(), bpm)
                 )
             )
-        } catch (e: Exception) {
-            Log.e("CSV", "Fehler beim Parsen: ${e.message}")
+        } catch (_: Exception) {
             null
         }
     }
