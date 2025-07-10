@@ -13,6 +13,8 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
+import org.htwk.pacing.backend.productionModule
+import org.htwk.pacing.backend.testModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -23,14 +25,10 @@ import org.htwk.pacing.backend.data_collection.HealthConnectWorkerScheduler
 /**
  * Entry point for non UI related work.
  */
-class PacingApp : Application(), KoinComponent {
+open class ProductionApplication : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
-        startKoin {
-            androidContext(this@PacingApp)
-            modules(appModule)
-        }
-
+        startInjection()
         val wm = initWorkManager()
         enqueueRandomHeartRateWorker(wm)
         HealthConnectWorkerScheduler.scheduleHealthSync(this)
@@ -57,6 +55,30 @@ class PacingApp : Application(), KoinComponent {
             workRequest
         )
         Log.d("PacingApp", "Enqueued RandomHeartRateWorker")
+    }
+
+    open fun startInjection() {
+        startKoin {
+            androidContext(this@ProductionApplication)
+            modules(productionModule, appModule)
+        }
+        Log.d("ProductionApplication", "Started Koin for production")
+    }
+}
+
+
+class TestApplication : ProductionApplication() {
+    override fun onCreate() {
+        super.onCreate()
+        Log.d("TestApplication", "TestApplication onCreate called")
+    }
+
+    override fun startInjection() {
+        startKoin {
+            androidContext(this@TestApplication)
+            modules(testModule, appModule)
+        }
+        Log.d("TestApplication", "Started Koin for testing")
     }
 }
 
