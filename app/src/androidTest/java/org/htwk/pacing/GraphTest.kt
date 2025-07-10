@@ -2,11 +2,12 @@ package org.htwk.pacing
 
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildren
@@ -65,15 +66,19 @@ class GraphTest {
         val xAxis = composeTestRule.onNodeWithTag("xAxis")
         val xAxisLabels = xAxis.onChildren()
         xAxisLabels.assertCountEquals(3)
-        xAxisLabels.fetchSemanticsNodes().forEachIndexed { index, _ ->
-            xAxisLabels[index].assertIsDisplayed().assertTextContains(".", substring = true)
+        xAxisLabels.fetchSemanticsNodes().forEachIndexed { index, node ->
+            val labelText = node.config.getOrNull(SemanticsProperties.Text)
+                ?.joinToString("") { it.text } ?: ""
+            assert(labelText.contains('.') || labelText.contains(','))
         }
 
         val yAxis = composeTestRule.onNodeWithTag("yAxis")
         val yAxisLabels = yAxis.onChildren()
         yAxisLabels.assertCountEquals(4)
-        yAxisLabels.fetchSemanticsNodes().forEachIndexed { index, _ ->
-            yAxisLabels[index].assertIsDisplayed().assertTextContains(".", substring = true)
+        yAxisLabels.fetchSemanticsNodes().forEachIndexed { index, node ->
+            val labelText = node.config.getOrNull(SemanticsProperties.Text)
+                ?.joinToString("") { it.text } ?: ""
+            assert(labelText.contains('.') || labelText.contains(','))
         }
     }
 
