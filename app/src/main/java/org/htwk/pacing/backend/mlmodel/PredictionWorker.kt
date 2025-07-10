@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.HeartRate10MinDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
@@ -46,7 +47,7 @@ class PredictionWorker(
     context: Context,
     workerParams: WorkerParameters,
     private val mlModel : MLModel,
-    private val heartRateDao: HeartRateDao,
+    private val heartRate10MinDao: HeartRate10MinDao,
     private val predictedHeartRateDao: PredictedHeartRateDao,
     private val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
@@ -63,54 +64,7 @@ class PredictionWorker(
         private const val ALERT_NOTIFICATION_ID_BASE = 200 // Base ID for alerts, can increment if needed
 
         // Prediction constants
-        private const val PREDICTION_INTERVAL_MS = 60_000L * 5 // Predict every 5 minutes (adjustable)
         private const val WARNING_TRIGGER_THRESHOLD = 0.8 // Example threshold
-        private const val DATA_POINTS_REQUIRED_FOR_PREDICTION = 144 * 2// 2 days in 10 minute intervals
-    }
-
-    //cache for 10-minute-interval resampled data
-    //fill on first run, then only append with new data
-    private var hr10minCache = mutableListOf<HeartRateEntry>()
-
-    //remember when hr10minCache was last updated from heartRateDao
-    private var lastProcessedTimestamp : kotlinx.datetime.Instant? = null
-
-    private suspend fun updateHr10minCache() {
-        val windowEnd = Clock.System.now();
-        val windowStart = if(lastProcessedTimestamp == null) {
-            windowEnd - 2.days
-        }
-        else {
-            //if we processed before, only use the range since processing
-            maxOf(windowEnd - 2.days, lastProcessedTimestamp!!)
-        }
-
-        val newEntries = heartRateDao.getInRange(windowStart, windowEnd)
-        val newEntriesResampled = resampleHRTo10MinIntervals(newEntries)
-
-        //delete aged entries in cache
-        hr10minCache.removeAll{ it.time < windowStart }
-
-        //add new entries
-        hr10minCache.addAll(newEntriesResampled)
-
-        //overwrite last cache entry with current 10 min average
-        hr10minCache.removeAt(hr10minCache.lastIndex);
-
-        //calculate average bpm of last 10 minutes on the fly
-        val last10minEntries = heartRateDao.getInRange(windowEnd - 10.minutes, windowEnd);
-        val last10minAverage = (
-                last10minEntries.sumOf{ it.bpm.toDouble() } / last10minEntries.size
-                ).toLong();
-        hr10minCache.add(
-            HeartRateEntry(
-                time = truncateTo10Minutes(windowEnd),
-                bpm = last10minAverage
-            )
-        )
-
-        //finally remember when we last started processing
-        lastProcessedTimestamp = windowEnd;
     }
 
     override suspend fun doWork(): Result {
@@ -118,23 +72,21 @@ class PredictionWorker(
 
         try {
             while (true) {
-                updateHr10minCache()
-
-                val heartRateDataFromDao = hr10minCache.map { it.bpm.toFloat() }.toFloatArray()
-                //take average of last 10 minutes of Data from heartRateDao
+                var availableHeartRateData = heartRate10MinDao.getAll().map { it.bpm.toFloat() }.toFloatArray()
 
                 //if we don't have enough data yet, augment with constant value based on first available value
-                val howManyPointsMissing =
-                    DATA_POINTS_REQUIRED_FOR_PREDICTION - heartRateDataFromDao.size
+                val modelInputSize = MLModel::INPUT_SIZE.get() // 2 days in 10 minute intervals
+
+                val howManyPointsMissing = modelInputSize - availableHeartRateData.size
                 //expand fill with constant extrapolation value
                 val heartRateModelInputData =
-                    FloatArray(howManyPointsMissing) { heartRateDataFromDao.first() }.plus(
-                        heartRateDataFromDao
+                    FloatArray(howManyPointsMissing.toInt()) { availableHeartRateData.first() }.plus(
+                        availableHeartRateData
                     )
 
                 val now = Clock.System.now()
                 val predictionOutput = mlModel.predict(
-                    heartRateModelInputData.takeLast(DATA_POINTS_REQUIRED_FOR_PREDICTION)
+                    heartRateModelInputData.takeLast(modelInputSize.toInt())
                         .toFloatArray(), now.toJavaInstant()
                 )
 

@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.EnergyLevelDao
+import org.htwk.pacing.backend.database.HeartRate10MinDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
@@ -37,6 +38,7 @@ val appModule = module {
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
     single<EnergyLevelDao> { get<PacingDatabase>().energyLevelDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
+    single<HeartRate10MinDao> { get<PacingDatabase>().heartRate10MinDao() }
     single<HeartRateVariabilityDao> { get<PacingDatabase>().heartRateVariabilityDao() }
     single<MenstruationPeriodDao> { get<PacingDatabase>().menstruationPeriodDao() }
     single<OxygenSaturationDao> { get<PacingDatabase>().oxygenSaturationDao() }

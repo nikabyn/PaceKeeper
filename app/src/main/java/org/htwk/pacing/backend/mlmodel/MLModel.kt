@@ -10,6 +10,7 @@ import java.time.Instant
 import java.time.Duration
 import java.time.ZoneId
 import kotlin.math.*
+import kotlin.time.Duration.Companion.minutes
 
 class MLModel(context: Context) {
     private val interpreter: Interpreter
@@ -18,6 +19,14 @@ class MLModel(context: Context) {
         // Load the TensorFlow Lite model
         val model = FileUtil.loadMappedFile(context, "hr_prediction_model/model.tflite");
         interpreter = Interpreter(model)
+    }
+
+    companion object {
+        const val TIME_RESOLUTION_MINUTES = 10
+        const val INPUT_DAYS : Long = 2;
+        const val INPUT_SIZE : Long = INPUT_DAYS * 24 * 6; // = 2 days in 10min timestept = 288
+        private const val OUTPUT_SIZE : Long = 6 * 6 // 6 hours in 30 minutes timesteps = 36
+        private const val FEATURE_COUNT : Long = 5;
     }
 
     private fun encodeTimeFeatures(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): Pair<Pair<Double, Double>, Pair<Double, Double>> {
@@ -41,33 +50,27 @@ class MLModel(context: Context) {
         return (daySin to dayCos) to (weekSin to weekCos)
     }
 
-    fun predict(input: FloatArray, endTime: Instant): FloatArray {
-        val INPUT_DAYS = 2;
-        val TIMESTEPS = INPUT_DAYS * 24 * 6; // 10 minute timesteps
-        val FEATURE_COUNT = 5;
-        assert(input.size == TIMESTEPS); // for now
+    fun predict(input: FloatArray, endTime: Instant ): FloatArray {
+        assert(input.size == INPUT_SIZE); // for now, catch wrong usage
 
-        //TODO: how to deal with calculations happening in beetween the 10min steps
-
-        val inputBuffer = FloatBuffer.allocate(TIMESTEPS * FEATURE_COUNT);
-        for(i in 0..<TIMESTEPS) {
+        val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT);
+        for(i in 0..<INPUT_SIZE) {
             inputBuffer.put(input[i])
 
             val timePoint = endTime.minus(Duration.ofMinutes((i * 10).toLong()));
             val (day, week) = encodeTimeFeatures(timePoint);
-            val (day_sin, day_cos) = day;
-            val (week_sin, week_cos) = week;
+            val (daySin, dayCos) = day;
+            val (weekSin, weekCos) = week;
 
-            inputBuffer.put(day_sin.toFloat())
-            inputBuffer.put(day_cos.toFloat())
-            inputBuffer.put(week_sin.toFloat())
-            inputBuffer.put(week_cos.toFloat())
+            inputBuffer.put(daySin.toFloat())
+            inputBuffer.put(dayCos.toFloat())
+            inputBuffer.put(weekSin.toFloat())
+            inputBuffer.put(weekCos.toFloat())
         }
 
         inputBuffer.rewind()
 
-        val PRED_STEPS = 36
-        val outputBuffer = FloatBuffer.allocate(PRED_STEPS)
+        val outputBuffer = FloatBuffer.allocate(OUTPUT_SIZE)
         outputBuffer.rewind();
 
         //run inference
@@ -75,7 +78,7 @@ class MLModel(context: Context) {
         outputBuffer.rewind();
 
         //convert to return format (FloatArray instead of FloatBuffer)
-        val predictions = FloatArray(PRED_STEPS);
+        val predictions = FloatArray(OUTPUT_SIZE);
         outputBuffer.get(predictions);
 
         //val inputTensor = TensorBuffer.createFixedSize(intArrayOf(1, input.size), DataType.FLOAT32)
