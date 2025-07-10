@@ -12,8 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,9 +40,9 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.export.CsvExportManager
+import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.export.DataExportService
 import org.htwk.pacing.ui.components.HeartRateCard
-import java.time.LocalDateTime
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
@@ -68,9 +78,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) {
         updateConnectionState()
     }
-
-    // CsvExportManager mit Kontext initialisieren
-    val csvExportManager = remember { CsvExportManager(context) }
 
     DisposableEffect(Unit) {
         val observer = LifecycleEventObserver { _, event ->
@@ -113,29 +120,17 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    // Beispielhafte Fitnessdaten (kann durch echte Daten ersetzt werden)
-    val exampleData = remember {
-        listOf(
-            FitnessData(
-                timestamp = LocalDateTime.now(),
-                activityType = "Laufen",
-                durationMinutes = 30,
-                calories = 300,
-                heartRate = 140
-            )
-        )
-    }
+    // CsvExportManager mit Kontext initialisieren
+    val db = remember { PacingDatabase.getInstance(context) }
+    val exporter = remember { DataExportService(db) }
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv")
+        contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri: Uri? ->
         uri?.let {
-            context.contentResolver.openFileDescriptor(it, "w")?.use { descriptor ->
-                descriptor.fileDescriptor.let { fd ->
-                    android.os.ParcelFileDescriptor.AutoCloseOutputStream(descriptor)
-                        .use { stream ->
-                            csvExportManager.exportAllData(stream)
-                        }
+            context.contentResolver.openOutputStream(it)?.let { stream ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    exporter.exportAllAsZip(stream)
                 }
             }
         }
@@ -147,9 +142,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Button(
-            onClick = { showDialog = true }
-        ) {
+        Button(onClick = { showDialog = true }) {
             Text("Daten exportieren")
         }
     }
@@ -165,16 +158,14 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 TextButton(
                     onClick = {
                         showDialog = false
-                        launcher.launch("fitness_data_export_${System.currentTimeMillis()}.csv")
+                        launcher.launch("pacing_export.zip")
                     }
                 ) {
                     Text("Zustimmen")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showDialog = false }
-                ) {
+                TextButton(onClick = { showDialog = false }) {
                     Text("Abbrechen")
                 }
             }
