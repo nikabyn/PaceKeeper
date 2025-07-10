@@ -18,7 +18,7 @@
         <package android:name="com.google.android.apps.healthdata" />
     </queries>
     <application
-        android:name=".PacingApp"
+        android:name="org.htwk.pacing.ProductionApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
