@@ -62,45 +62,36 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.days
 
 object Permissions {
-    val readDistance = HealthPermission.getReadPermission(DistanceRecord::class)
-    val readElevationGained = HealthPermission.getReadPermission(ElevationGainedRecord::class)
-    val readHeartRate = HealthPermission.getReadPermission(HeartRateRecord::class)
-    val readHeartRateVariability =
-        HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class)
-    val readMenstruationPeriod = HealthPermission.getReadPermission(MenstruationPeriodRecord::class)
-    val readOxygenSaturation = HealthPermission.getReadPermission(OxygenSaturationRecord::class)
-    val readSkinTemperature = HealthPermission.getReadPermission(SkinTemperatureRecord::class)
-    val readSleepSession = HealthPermission.getReadPermission(SleepSessionRecord::class)
-    val readSpeed = HealthPermission.getReadPermission(SpeedRecord::class)
-    val readSteps = HealthPermission.getReadPermission(StepsRecord::class)
+    inline fun <reified T : Record> read() = HealthPermission.getReadPermission<T>()
+    inline fun <reified T : Record> write() = HealthPermission.getWritePermission<T>()
 
+    val records = setOf(
+        DistanceRecord::class,
+        ElevationGainedRecord::class,
+        HeartRateRecord::class,
+        HeartRateVariabilityRmssdRecord::class,
+        MenstruationPeriodRecord::class,
+        OxygenSaturationRecord::class,
+        SkinTemperatureRecord::class,
+        SleepSessionRecord::class,
+        SpeedRecord::class,
+        StepsRecord::class,
+    )
 
     val wanted = setOf(
-        readDistance,
-        readElevationGained,
-        readHeartRate,
-        readHeartRateVariability,
-        readMenstruationPeriod,
-        readOxygenSaturation,
-        readSkinTemperature,
-        readSleepSession,
-        readSpeed,
-        readSteps,
+        read<DistanceRecord>(),
+        read<ElevationGainedRecord>(),
+        read<HeartRateRecord>(),
+        read<HeartRateVariabilityRmssdRecord>(),
+        read<MenstruationPeriodRecord>(),
+        read<OxygenSaturationRecord>(),
+        read<SkinTemperatureRecord>(),
+        read<SleepSessionRecord>(),
+        read<SpeedRecord>(),
+        read<StepsRecord>(),
+        HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
     )
 }
-
-val wantedRecords = setOf(
-    DistanceRecord::class,
-    ElevationGainedRecord::class,
-    HeartRateRecord::class,
-    HeartRateVariabilityRmssdRecord::class,
-    MenstruationPeriodRecord::class,
-    OxygenSaturationRecord::class,
-    SkinTemperatureRecord::class,
-    SleepSessionRecord::class,
-    SpeedRecord::class,
-    StepsRecord::class,
-)
 
 class HealthConnectWorker(
     context: Context,
@@ -130,7 +121,7 @@ class HealthConnectWorker(
         while (true) {
             val grantedPermissions = client.permissionController.getGrantedPermissions()
 
-            for (recordType in wantedRecords) {
+            for (recordType in Permissions.records) {
                 val permission = HealthPermission.getReadPermission(recordType)
 
                 if (grantedPermissions.contains(permission)) {
