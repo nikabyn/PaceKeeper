@@ -16,16 +16,13 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.HeartRate10MinDao
-import org.htwk.pacing.backend.database.HeartRateDao
-import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
-import org.htwk.pacing.backend.energyheuristics.energyLevelFromHeartRate
+import org.htwk.pacing.backend.heuristics.energyLevelFromHeartRate
 import kotlin.collections.map
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 

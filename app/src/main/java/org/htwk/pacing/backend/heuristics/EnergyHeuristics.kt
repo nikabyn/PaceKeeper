@@ -1,4 +1,4 @@
-package org.htwk.pacing.backend.energyheuristics
+package org.htwk.pacing.backend.heuristics
 
 import kotlin.math.max
 import kotlin.math.min
@@ -12,7 +12,7 @@ fun energyLevelFromHRZones(/* calculate from heart rate history/future, aka. a t
 }
 
 // dummy calculation, to be replaced by scientific model
-fun energyLevelFromHeartRate(heartRate: Double): Double {
+fun energyLevelFromHeartRate(heartRate: Double, /*liste von symptomen*/): Double {
     val heartRateClipped = min(50.0, max(heartRate, 150.0) - 50.0);
     return (100.0 - heartRateClipped) / 100.0;
 }
