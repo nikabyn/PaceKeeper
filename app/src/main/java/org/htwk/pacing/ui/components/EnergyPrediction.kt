@@ -34,8 +34,9 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
+    modifier: Modifier = Modifier,
 ) {
-    CardWithTitle(title = "Energy Prediction") {
+    CardWithTitle(title = "Energy Prediction", modifier) {
         if (series.x.isEmpty()) {
             Text(
                 "Currently no data available!",

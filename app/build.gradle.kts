@@ -108,6 +108,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    //CSV Parsing
+    implementation(libs.kotlin.csv.jvm)
 
 }
 
