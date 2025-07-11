@@ -20,6 +20,7 @@ import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
+import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
@@ -62,7 +63,9 @@ val appModule = module {
 
     viewModel { MeasurementsViewModel(get(), get()) }
     viewModel { SymptomsViewModel(get()) }
-
+    viewModel {
+        SettingsViewModel(get())
+    }
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
 }
 
