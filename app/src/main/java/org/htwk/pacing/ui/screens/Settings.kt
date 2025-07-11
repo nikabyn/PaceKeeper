@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.screens
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -38,6 +39,8 @@ import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,6 +48,7 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.koin.androidx.compose.koinViewModel
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
@@ -60,7 +64,10 @@ val requiredPermissions = setOf(
  * Startet `HeartRateScreen` zur Anzeige der Daten.
  */
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = koinViewModel()
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalContext.current as LifecycleOwner
     var isConnected by remember { mutableStateOf(false) }
@@ -95,17 +102,12 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         onDispose { lifecycle.removeObserver(observer) }
     }
 
-    // CsvExportManager mit Kontext initialisieren
-    val db = remember { PacingDatabase.getInstance(context) }
-
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
         uri?.let {
-            context.contentResolver.openOutputStream(it)?.let { stream ->
-                CoroutineScope(Dispatchers.IO).launch {
-                    exportAllAsZip(db, stream)
-                }
+            CoroutineScope(Dispatchers.IO).launch {
+                viewModel.exportDataToZip(context, it)
             }
         }
     }
@@ -119,7 +121,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             HealthConnectItem(
                 connected = isConnected,
                 onClick = {
-                    val launchIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+                    val launchIntent =
+                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
                     if (launchIntent != null) {
                         context.startActivity(launchIntent)
                     } else {
@@ -157,8 +160,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     onClick = {
                         showDialog = false
                         launcher.launch("pacing_export.zip")
-                    }
-                ) {
+                    }) {
                     Text("Agree")
                 }
             },
@@ -166,8 +168,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 TextButton(onClick = { showDialog = false }) {
                     Text("Cancel")
                 }
-            }
-        )
+            })
     }
 }
 
@@ -187,8 +188,7 @@ fun SectionTitle(title: String) = Text(
 @Composable
 fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text("Health Connect", style = MaterialTheme.typography.bodyLarge)
@@ -205,4 +205,27 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     }
     HeartRateCard()
     ImportDataHealthConnect()
+}
+
+class SettingsViewModel(
+    private val db: PacingDatabase
+) : ViewModel() {
+
+    /**
+     * Starts export as background thread.
+     *
+     * @param context The application context to retrieve the contentresolver
+     * @param uri the target uri for the zip-file which is coming from ActivityResultLauncher
+     */
+    fun exportDataToZip(context: Context, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    exportAllAsZip(db, outputStream)
+                }
+            } catch (e: Exception) {
+                Log.e("ExportError", "Failed to export data", e)
+            }
+        }
+    }
 }
