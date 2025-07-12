@@ -14,7 +14,7 @@ roomCompiler = "2.7.1"
 workRuntimeKtx = "2.10.2"
 koinAndroid = "4.1.0"
 healthConnectClient = "1.1.0-alpha08"
-kotlinCsvJvm = "1.8.0"
+kotlinCsvJvm = "1.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
