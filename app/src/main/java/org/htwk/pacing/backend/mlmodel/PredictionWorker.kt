@@ -71,10 +71,10 @@ class PredictionWorker(
 
     private suspend fun prepareModelInput() : FloatArray? {
         val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes)
-        val INPUT_SIZE = MLModel::INPUT_SIZE.get().toInt()
-        var sumArray = FloatArray(INPUT_SIZE)
-        var countArray = FloatArray(INPUT_SIZE)
-        var averageArray = FloatArray(INPUT_SIZE)
+        val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
+        var sumArray = FloatArray(modelInputSize)
+        var countArray = FloatArray(modelInputSize)
+        var averageArray = FloatArray(modelInputSize)
 
         //get raw heart rate data in input interval, ensure it is sorted by time
         val heartRateData = heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min).sortedBy { it.time }
@@ -82,7 +82,7 @@ class PredictionWorker(
         // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
         // TODO: is the index10min calculation really safe?
         for ((index, hrEntry) in heartRateData.withIndex()) {
-            val index10min = (INPUT_SIZE - 1 - (now10min - roundInstantToResolution(hrEntry.time, 10.minutes)).inWholeMinutes / 10).toInt()
+            val index10min = (modelInputSize - 1 - (now10min - roundInstantToResolution(hrEntry.time, 10.minutes)).inWholeMinutes / 10).toInt()
             sumArray[index10min] += hrEntry.bpm.toFloat()
             countArray[index10min]++
         }
@@ -95,7 +95,7 @@ class PredictionWorker(
 
         //now we can forward-fill any missing ranges
         var currentValidAverage = firstValidAverage
-        for(i in firstValidIndex until INPUT_SIZE) {
+        for(i in firstValidIndex until modelInputSize) {
             if(sumArray[i] != 0.0f) {
                 currentValidAverage = sumArray[i].toFloat() / countArray[i].toFloat()
             }

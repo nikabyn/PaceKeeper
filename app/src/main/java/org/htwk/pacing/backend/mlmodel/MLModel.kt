@@ -23,10 +23,10 @@ class MLModel(context: Context) {
 
     companion object {
         const val TIME_RESOLUTION_MINUTES = 10
-        const val INPUT_DAYS : Long = 2;
-        const val INPUT_SIZE : Long = INPUT_DAYS * 24 * 6; // = 2 days in 10min timestept = 288
-        private const val OUTPUT_SIZE : Long = 6 * 6 // 6 hours in 30 minutes timesteps = 36
-        private const val FEATURE_COUNT : Long = 5;
+        const val INPUT_DAYS : Int = 2;
+        const val INPUT_SIZE : Int = INPUT_DAYS * 24 * 6; // = 2 days in 10min timestept = 288
+        private const val OUTPUT_SIZE : Int = 6 * 6 // 6 hours in 30 minutes timesteps = 36
+        private const val FEATURE_COUNT : Int = 5;
     }
 
     private fun encodeTimeFeatures(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): Pair<Pair<Double, Double>, Pair<Double, Double>> {
@@ -54,7 +54,7 @@ class MLModel(context: Context) {
         assert(input.size == INPUT_SIZE); // for now, catch wrong usage
 
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT);
-        for(i in 0..<INPUT_SIZE) {
+        for(i in 0 until INPUT_SIZE) {
             inputBuffer.put(input[i])
 
             val timePoint = endTime.minus(Duration.ofMinutes((i * 10).toLong()));

@@ -7,7 +7,6 @@ import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.EnergyLevelDao
-import org.htwk.pacing.backend.database.HeartRate10MinDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao

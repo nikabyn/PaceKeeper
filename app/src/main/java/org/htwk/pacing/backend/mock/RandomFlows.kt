@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.database.HeartRate10MinDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.mlmodel.MLModel

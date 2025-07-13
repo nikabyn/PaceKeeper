@@ -14,7 +14,6 @@ import kotlinx.datetime.Instant
         ElevationGainedEntry::class,
         EnergyLevelEntry::class,
         HeartRateEntry::class,
-        HeartRate10MinEntry::class,
         HeartRateVariabilityEntry::class,
         MenstruationPeriodEntry::class,
         OxygenSaturationEntry::class,
