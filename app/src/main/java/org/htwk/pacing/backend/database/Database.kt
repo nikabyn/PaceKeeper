@@ -36,7 +36,6 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun elevationGainedDao(): ElevationGainedDao
     abstract fun energyLevelDao(): EnergyLevelDao
     abstract fun heartRateDao(): HeartRateDao
-    abstract fun heartRate10MinDao(): HeartRate10MinDao
     abstract fun heartRateVariabilityDao(): HeartRateVariabilityDao
     abstract fun menstruationPeriodDao(): MenstruationPeriodDao
     abstract fun oxygenSaturationDao(): OxygenSaturationDao

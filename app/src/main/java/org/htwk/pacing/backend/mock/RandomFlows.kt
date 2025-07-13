@@ -46,7 +46,6 @@ class RandomHeartRateWorker(
     context: Context,
     workerParams: WorkerParameters,
     private val heartRateDao: HeartRateDao,
-    private val heartRate10MinDao: HeartRate10MinDao,
 ) : CoroutineWorker(context, workerParams) {
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
@@ -55,44 +54,7 @@ class RandomHeartRateWorker(
             heartRateDao.insert(HeartRateEntry(time, value))
         }
 
-        updateHeartRate10Min();
-
         return Result.success()
-    }
-
-    private suspend fun updateHeartRate10Min() {
-        val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes)
-
-        //clear aged values
-        heartRate10MinDao.deleteBefore(now10min - (MLModel::INPUT_DAYS).get().days)
-
-        //get most recent entry to determine where we left off
-        val mostRecentEntryTime = heartRate10MinDao.getMostRecent().firstOrNull()?.time
-
-        var windowStart = if (mostRecentEntryTime != null) {
-            mostRecentEntryTime + 10.minutes
-        } else {
-            // If there's no most recent entry, start processing from 2 days ago
-            now10min - (MLModel::INPUT_DAYS).get().days
-        }
-
-        //TODO: weighted resampling, because incoming HR data points are probably unevenly spaced
-
-        //create new 10min average samples until we reach the present
-        while(windowStart < now10min) {
-            val entriesInInterval = heartRateDao.getInRange(windowStart, windowStart + 10.minutes).toList()
-            if (entriesInInterval.isNotEmpty()) {
-                val averageBpm = entriesInInterval.sumOf { it.bpm.toDouble() } / entriesInInterval.size.toDouble()
-                heartRate10MinDao.insert(HeartRateEntry(windowStart, averageBpm.toLong()))
-            }
-            windowStart += 10.minutes
-        }
-
-        val now = Clock.System.now()
-        val realTimeLast10Minutes = heartRate10MinDao.getInRange(now - 10.minutes, now).toList()
-        val realtime10MinAverage = realTimeLast10Minutes.sumOf { it.bpm.toDouble() } / realTimeLast10Minutes.size.toDouble()
-
-        heartRate10MinDao.updateMostRecentBpm(realtime10MinAverage.toFloat())
     }
 
     private fun createNotification(): Notification {

@@ -12,17 +12,22 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.database.HeartRate10MinDao
+import org.htwk.pacing.backend.database.HeartRateDao
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.heuristics.energyLevelFromHeartRate
+import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.collections.map
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
@@ -44,7 +49,7 @@ class PredictionWorker(
     context: Context,
     workerParams: WorkerParameters,
     private val mlModel : MLModel,
-    private val heartRate10MinDao: HeartRate10MinDao,
+    private val heartRateDao: HeartRateDao,
     private val predictedHeartRateDao: PredictedHeartRateDao,
     private val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
@@ -63,6 +68,56 @@ class PredictionWorker(
         // Prediction constants
         private const val WARNING_TRIGGER_THRESHOLD = 0.8 // Example threshold
     }
+
+    private suspend fun heartRateAverage(heartRateData : List<HeartRateEntry>) : Double {
+
+        //return heartRateData.sumOf { it.bpm.toDouble() } / heartRateData.size.toDouble()
+    }
+
+    private suspend fun calculateHeartRateAverage() : FloatArray? {
+        val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes)
+        val INPUT_SIZE = MLModel::INPUT_SIZE.get().toInt()
+        var sumArray = FloatArray(INPUT_SIZE)
+        var countArray = FloatArray(INPUT_SIZE)
+        var averageArray = FloatArray(INPUT_SIZE)
+
+        //get raw heart rate data in input interval, ensure it is sorted by time
+        val heartRateData = heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min).sortedBy { it.time }
+
+        var windowStart = if (heartRateData.isNotEmpty()) {
+            roundInstantToResolution(heartRateData.first().time, 10.minutes)
+        } else {
+            return null
+        }
+
+        //create new 10min average samples until we reach the present
+
+        // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
+        for ((index, hrEntry) in heartRateData.withIndex()) {
+            val index10min = (INPUT_SIZE - 1 - (now10min - roundInstantToResolution(hrEntry.time, 10.minutes)).inWholeMinutes / 10).toInt()
+            sumArray[index10min] += hrEntry.bpm
+            countArray[index10min]++
+        }
+        while(windowStart < now10min) {
+            val entriesInInterval = heartRateDao.getInRange(windowStart, windowStart + 10.minutes).toList()
+            if (entriesInInterval.isNotEmpty()) {
+                currentAverage = heartRateAverage(
+                    heartRateData.takeWhile {
+                        heartRateData.first().time - 10.minutes <= it.time &&
+                        heartRateData.first().time <= it.time
+                })
+                heartRate10MinDao.insert(HeartRateEntry(windowStart, averageBpm.toLong()))
+            }
+            windowStart += 10.minutes
+        }
+
+        val now = Clock.System.now()
+        val realTimeLast10Minutes = heartRate10MinDao.getInRange(now - 10.minutes, now).toList()
+        val realtime10MinAverage = realTimeLast10Minutes.sumOf { it.bpm.toDouble() } / realTimeLast10Minutes.size.toDouble()
+
+        heartRate10MinDao.updateMostRecentBpm(realtime10MinAverage.toFloat())
+    }
+
 
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())

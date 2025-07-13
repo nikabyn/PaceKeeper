@@ -38,7 +38,6 @@ val appModule = module {
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
     single<EnergyLevelDao> { get<PacingDatabase>().energyLevelDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
-    single<HeartRate10MinDao> { get<PacingDatabase>().heartRate10MinDao() }
     single<HeartRateVariabilityDao> { get<PacingDatabase>().heartRateVariabilityDao() }
     single<MenstruationPeriodDao> { get<PacingDatabase>().menstruationPeriodDao() }
     single<OxygenSaturationDao> { get<PacingDatabase>().oxygenSaturationDao() }
