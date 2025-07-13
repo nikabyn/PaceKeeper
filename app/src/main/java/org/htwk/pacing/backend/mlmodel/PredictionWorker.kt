@@ -69,12 +69,7 @@ class PredictionWorker(
         private const val WARNING_TRIGGER_THRESHOLD = 0.8 // Example threshold
     }
 
-    private suspend fun heartRateAverage(heartRateData : List<HeartRateEntry>) : Double {
-
-        //return heartRateData.sumOf { it.bpm.toDouble() } / heartRateData.size.toDouble()
-    }
-
-    private suspend fun calculateHeartRateAverage() : FloatArray? {
+    private suspend fun prepareModelInput() : FloatArray? {
         val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes)
         val INPUT_SIZE = MLModel::INPUT_SIZE.get().toInt()
         var sumArray = FloatArray(INPUT_SIZE)
@@ -84,38 +79,30 @@ class PredictionWorker(
         //get raw heart rate data in input interval, ensure it is sorted by time
         val heartRateData = heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min).sortedBy { it.time }
 
-        var windowStart = if (heartRateData.isNotEmpty()) {
-            roundInstantToResolution(heartRateData.first().time, 10.minutes)
-        } else {
-            return null
-        }
-
-        //create new 10min average samples until we reach the present
-
         // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
+        // TODO: is the index10min calculation really safe?
         for ((index, hrEntry) in heartRateData.withIndex()) {
             val index10min = (INPUT_SIZE - 1 - (now10min - roundInstantToResolution(hrEntry.time, 10.minutes)).inWholeMinutes / 10).toInt()
-            sumArray[index10min] += hrEntry.bpm
+            sumArray[index10min] += hrEntry.bpm.toFloat()
             countArray[index10min]++
         }
-        while(windowStart < now10min) {
-            val entriesInInterval = heartRateDao.getInRange(windowStart, windowStart + 10.minutes).toList()
-            if (entriesInInterval.isNotEmpty()) {
-                currentAverage = heartRateAverage(
-                    heartRateData.takeWhile {
-                        heartRateData.first().time - 10.minutes <= it.time &&
-                        heartRateData.first().time <= it.time
-                })
-                heartRate10MinDao.insert(HeartRateEntry(windowStart, averageBpm.toLong()))
+
+        val firstValidIndex = sumArray.indexOfFirst { f -> f != 0.0f }
+        val firstValidAverage = sumArray[firstValidIndex] / countArray[firstValidIndex]
+
+        //fill up possibly missing range in the beginning of the array
+        averageArray.fill(firstValidAverage, 0, firstValidIndex)
+
+        //now we can forward-fill any missing ranges
+        var currentValidAverage = firstValidAverage
+        for(i in firstValidIndex until INPUT_SIZE) {
+            if(sumArray[i] != 0.0f) {
+                currentValidAverage = sumArray[i].toFloat() / countArray[i].toFloat()
             }
-            windowStart += 10.minutes
+            averageArray[i] = currentValidAverage
         }
 
-        val now = Clock.System.now()
-        val realTimeLast10Minutes = heartRate10MinDao.getInRange(now - 10.minutes, now).toList()
-        val realtime10MinAverage = realTimeLast10Minutes.sumOf { it.bpm.toDouble() } / realTimeLast10Minutes.size.toDouble()
-
-        heartRate10MinDao.updateMostRecentBpm(realtime10MinAverage.toFloat())
+        return averageArray
     }
 
 
@@ -124,22 +111,11 @@ class PredictionWorker(
 
         try {
             while (true) {
-                var availableHeartRateData = heartRate10MinDao.getAll().map { it.bpm.toFloat() }.toFloatArray()
+                val modelInput = prepareModelInput()!!
 
-                //if we don't have enough data yet, augment with constant value based on first available value
-                val modelInputSize = MLModel::INPUT_SIZE.get() // 2 days in 10 minute intervals
-
-                val howManyPointsMissing = modelInputSize - availableHeartRateData.size
-                //expand fill with constant extrapolation value
-                val heartRateModelInputData =
-                    FloatArray(howManyPointsMissing.toInt()) { availableHeartRateData.first() }.plus(
-                        availableHeartRateData
-                    )
-
-                val now = Clock.System.now()
+                val now10min = Clock.System.now()
                 val predictionOutput = mlModel.predict(
-                    heartRateModelInputData.takeLast(modelInputSize.toInt())
-                        .toFloatArray(), now.toJavaInstant()
+                    modelInput, now10min.toJavaInstant()
                 )
 
                 //delete previous HR and Energy Level prediction
@@ -147,7 +123,7 @@ class PredictionWorker(
                 predictedEnergyLevelDao.deleteAll()
 
                 //generate future time points for predictions (Model only returns bpm values)
-                val predictionFutureTimePoints = interpolateHoursFromInstant(now, 6, true)
+                val predictionFutureTimePoints = interpolateHoursFromInstant(now10min, 6, true)
 
                 //store predictions in database
                 predictedHeartRateDao.insertMany(
