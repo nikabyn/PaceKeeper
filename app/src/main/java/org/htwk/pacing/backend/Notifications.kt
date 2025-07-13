@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
@@ -16,122 +15,145 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
+import java.util.concurrent.TimeUnit
 
-//This is the only function you call from MainActivity
+const val Notification_Channel_ID = "Energy_Notification_ID"
+const val Energy_Warning_Notification_Id = 2
+
 fun initNotificationSystem(activity: ComponentActivity) {
-    val sharedPrefs: SharedPreferences =
-        activity.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
+    val sharedPrefs = activity.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
 
-    val alreadyRequested = sharedPrefs.contains("notifications_allowed")
-    val allowedBefore = sharedPrefs.getBoolean("notifications_allowed", false)
-
-    val permissionGranted = ContextCompat.checkSelfPermission(
-        activity,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) == PackageManager.PERMISSION_GRANTED
-
-
-    //Define the launcher INSIDE the backend
     val requestPermissionLauncher = activity.registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        sharedPrefs.edit().putBoolean("notifications_allowed", isGranted).apply()
-        if (isGranted) {
-            showNotification(activity)
-        } else {
+        sharedPrefs.edit { putBoolean("notifications_allowed", isGranted) }
+        if (!isGranted) {
             Toast.makeText(activity, "Notification permission denied", Toast.LENGTH_SHORT).show()
         }
     }
 
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
 
-    //Permission logic
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || permissionGranted) {
-        sharedPrefs.edit().putBoolean("notifications_allowed", true).apply()
-        showNotification(activity)
+        //No runtime permission needed before API 33
+        sharedPrefs.edit { putBoolean("notifications_allowed", true) }
     } else {
-        if (!alreadyRequested || !allowedBefore) {
-            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+        //Only reference the constant if API >= 33
+        val permissionGranted = ContextCompat.checkSelfPermission(
+            activity,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (permissionGranted) {
+            sharedPrefs.edit { putBoolean("notifications_allowed", true) }
         } else {
-            Log.d("notification", "Permission previously denied, asking again...")
             requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }
 
-// Create Notification
 fun createNotificationChannel(context: Context) {
-    val channelId = "my_channel_id"
-    val channelName = "My Channel"
-    val importance = NotificationManager.IMPORTANCE_DEFAULT
-    val channel = NotificationChannel(channelId, channelName, importance).apply {
-        description = "My notification channel description"
-    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // Create channel ONLY on API 26+
+        val channelId = Notification_Channel_ID
+        val channelName = "Energy Notification Channel"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel(channelId, channelName, importance).apply {
+            description =
+                "Sends a Push-Notification if the Energy level falls below a certain Percentage"
+        }
 
-    val notificationManager: NotificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.createNotificationChannel(channel)
+        val notificationManager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
 }
 
-//Shows Notification
 fun showNotification(context: Context) {
     createNotificationChannel(context)
 
-    val channelId = "my_channel_id"
-
-    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-        != PackageManager.PERMISSION_GRANTED
-    ) {
-        Log.d("notification", "Permissions for notifications not granted")
-        return
+    // Check permission only if API 33+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d("notification", "Permissions for notifications not granted")
+            return
+        }
     }
+
+    val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
+    prefs.edit().putBoolean("notification_shown", true).apply()
 
     val intent = Intent(context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        action = "OPENED_FROM_NOTIFICATION"
     }
 
     val pendingIntent: PendingIntent = PendingIntent.getActivity(
         context, 0, intent, PendingIntent.FLAG_IMMUTABLE
     )
 
-    val builder = NotificationCompat.Builder(context, channelId)
+    val builder = NotificationCompat.Builder(context, Notification_Channel_ID)
         .setContentTitle("WARNING!")
-        .setContentText("Your Energy level is below 20%. Please Rest immediately")
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setContentText(context.getString(R.string.energy_warning_text))
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setContentIntent(pendingIntent)
-        .setSmallIcon(R.drawable.ic_launcher_background)
+        .setSmallIcon(R.drawable.rounded_show_chart_24)
         .setAutoCancel(true)
 
     val notificationManager = NotificationManagerCompat.from(context)
-    notificationManager.notify(2, builder.build())
+    notificationManager.notify(Energy_Warning_Notification_Id, builder.build())
 
     Log.d("NotificationTest", "showNotification() called")
-
 }
 
-
-class MyBackgroundWorker(
+class NotificationsBackgroundWorker(
     context: Context,
     workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val prefs: SharedPreferences =
+        val prefs =
             applicationContext.getSharedPreferences("energy_prefs", Context.MODE_PRIVATE)
-        val energy = prefs.getInt("energy", 100) // Default: 100%
-        Log.d("MyBackgroundWorker", "Energy level is $energy")
+
+        prefs.edit { putInt("energy", 15) }
+
+        val energy = prefs.getInt("energy", 100) //if energy undefined = 100
+
+        Log.d("NotificationsBackgroundWorker", "Energy level is $energy")
 
         if (energy < 20) {
-            Log.d("MyBackgroundWorker", "Energy is low, showing notification")
+            Log.d("NotificationsBackgroundWorker", "Energy is low, showing notification")
             showNotification(applicationContext)
         } else {
-            Log.d("MyBackgroundWorker", "Energy is sufficient, no notification")
+            Log.d("NotificationsBackgroundWorker", "Energy is sufficient, no notification")
         }
-
         return Result.success()
     }
+}
 
+fun scheduleEnergyCheckWorker(context: Context) {
+    val workRequest =
+        PeriodicWorkRequestBuilder<NotificationsBackgroundWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            )
+            .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "EnergyCheckWorker",
+        ExistingPeriodicWorkPolicy.KEEP,
+        workRequest
+    )
 }

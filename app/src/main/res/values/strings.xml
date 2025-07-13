@@ -54,4 +54,5 @@
     <string name="should_not_be_empty">Should not be empty</string>
     <string name="confirm">Confirm</string>
     <string name="dismiss">Dismiss</string>
+    <string name="energy_warning_text">"Your Energy level is low. Please take a rest!"</string>
 </resources>
