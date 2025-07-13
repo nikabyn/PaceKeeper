@@ -137,14 +137,11 @@ fun SettingsScreen(
                 },
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
-            HeartRateCard()
-
             Spacer(modifier = Modifier.height(20.dp))
-            SectionTitle("Stored Data")
+            SectionTitle(stringResource(R.string.stored_data))
 
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("Export data to ZIP-archive")
+                Text(stringResource(R.string.export_data_to_zip_archive))
             }
         }
     }
@@ -152,10 +149,10 @@ fun SettingsScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Data protection notice") },
+            title = { Text(stringResource(R.string.data_protection_notice)) },
             text = {
                 // TODO german: Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
-                Text("Personalised data will be stored by exporting. Please consent to the processing.")
+                Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
             },
             confirmButton = {
                 TextButton(
@@ -163,12 +160,12 @@ fun SettingsScreen(
                         showDialog = false
                         launcher.launch("pacing_export.zip")
                     }) {
-                    Text("Agree")
+                    Text(stringResource(R.string.agree))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             })
     }

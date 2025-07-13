@@ -54,9 +54,12 @@ fun HeartRateCard() {
             val yesterdayStart = now.minusDays(1).toLocalDate().atStartOfDay(zone).toInstant()
             val yesterdayEnd = todayStart
 
-            heartRateByTime = HealthConnectHelper.readHeartRateSamples(context, yesterdayEnd, now.toInstant())
-            avgHeartRate = HealthConnectHelper.readAvgHeartRate(context, yesterdayEnd, now.toInstant())
-            yesterdaySteps = HealthConnectHelper.readStepsCount(context, yesterdayStart, yesterdayEnd)
+            heartRateByTime =
+                HealthConnectHelper.readHeartRateSamples(context, yesterdayEnd, now.toInstant())
+            avgHeartRate =
+                HealthConnectHelper.readAvgHeartRate(context, yesterdayEnd, now.toInstant())
+            yesterdaySteps =
+                HealthConnectHelper.readStepsCount(context, yesterdayStart, yesterdayEnd)
             todaySteps = HealthConnectHelper.readStepsSum(context, todayStart, now.toInstant())
 
         } catch (e: Exception) {
@@ -78,7 +81,7 @@ fun HeartRateCard() {
 
             Text(stringResource(R.string.heart_rate_samples))
             heartRateByTime.take(10).forEach { (time, bpm) ->
-                Text(" - $time: $bpm bpm")
+                Text(stringResource(R.string.bpm_at_given_time, time, bpm))
             }
 
             Spacer(Modifier.height(16.dp))

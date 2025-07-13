@@ -25,11 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.HeartRateRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.htwk.pacing.R
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -55,7 +57,7 @@ fun ImportDataHealthConnect() {
             if (resultUri != null) {
                 val fileName = getFileName(context, resultUri)
                 if (!fileName.endsWith(".csv", ignoreCase = true)) {
-                    status = "Bitte eine .csv-Datei auswählen!"
+                    status = context.getString(R.string.select_csv_file)
                     uri = null
                     name = ""
                 } else {
@@ -76,10 +78,13 @@ fun ImportDataHealthConnect() {
             .clip(RoundedCornerShape(8.dp))
             .padding(16.dp)
     ) {
-        Text("Importiere Herzfrequenzdaten (.csv)", style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.import_heart_rate_data_csv),
+            style = MaterialTheme.typography.titleMedium
+        )
         Spacer(Modifier.height(12.dp))
         Button(onClick = { launcher.launch(arrayOf("text/*")) }) {
-            Text("Datei auswählen")
+            Text(stringResource(R.string.select_file))
         }
         if (name.isNotEmpty()) Text(name, Modifier.padding(top = 8.dp))
         Spacer(Modifier.height(16.dp))
@@ -91,7 +96,7 @@ fun ImportDataHealthConnect() {
             },
             enabled = uri != null
         ) {
-            Text("Import starten")
+            Text(stringResource(R.string.import_start))
         }
         if (status.isNotEmpty()) Text(status, Modifier.padding(top = 12.dp))
     }
@@ -102,24 +107,25 @@ fun ImportDataHealthConnect() {
 // ------------------------------------------------------------
 
 suspend fun importHeartRateData(context: Context, uri: Uri?): String {
-    if (uri == null) return "Keine Datei ausgewählt"
+    if (uri == null) return context.getString(R.string.no_file_selected)
 
     return try {
         val inputStream = context.contentResolver.openInputStream(uri)
-            ?: return "Datei nicht lesbar"
+            ?: return context.getString(R.string.file_not_readable)
         val reader = BufferedReader(InputStreamReader(inputStream))
         val lines = reader.readLines().drop(1)
 
         val records = parseHeartRateRecords(lines)
         val total = insertHeartRateRecords(context, records)
 
-        "Import: $total Werte"
+        context.getString(R.string.import_success, total)
     } catch (e: IOException) {
-        "Fehler beim Lesen: ${e.localizedMessage}"
+        context.getString(R.string.error_reading, e.localizedMessage)
     } catch (e: Exception) {
-        "Unbekannter Fehler: ${e.localizedMessage}"
+        context.getString(R.string.unknown_error, e.localizedMessage)
     }
 }
+
 
 fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
     return lines.mapNotNull { line ->

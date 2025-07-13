@@ -113,7 +113,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Feeling, Manual Symptoms",
+                title = stringResource(R.string.feeling_manual_symptoms),
                 series = feelingLevels,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
@@ -129,8 +129,8 @@ fun MeasurementsScreen(
 }
 
 class MeasurementsViewModel(
-    private val heartRateDao: HeartRateDao,
-    private val manualSymptomDao: ManualSymptomDao
+    heartRateDao: HeartRateDao,
+    manualSymptomDao: ManualSymptomDao
 ) : ViewModel() {
     val feelingLevels = manualSymptomDao
         .getLastLive(1.days)

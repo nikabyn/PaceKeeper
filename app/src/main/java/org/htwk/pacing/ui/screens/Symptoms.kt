@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -49,6 +50,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.FeelingEntry
 import org.htwk.pacing.backend.database.ManualSymptomDao
@@ -124,10 +126,10 @@ fun SymptomScreen(
 @Composable
 fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) {
     val questionBasedOnFeeling = when (feeling) {
-        Feeling.VeryBad -> "Feeling really bad?"
-        Feeling.Bad -> "Feeling bad?"
-        Feeling.Good -> "Feeling good?"
-        Feeling.VeryGood -> "Feeling really good?"
+        Feeling.VeryBad -> stringResource(R.string.feeling_really_bad)
+        Feeling.Bad -> stringResource(R.string.feeling_bad)
+        Feeling.Good -> stringResource(R.string.feeling_good)
+        Feeling.VeryGood -> stringResource(R.string.feeling_really_good)
     }
 
     TopAppBar(
@@ -139,7 +141,10 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
         title = {
             Row(horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("Select Symptoms", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        stringResource(R.string.select_symptoms),
+                        style = MaterialTheme.typography.titleLarge
+                    )
                     Text(
                         questionBasedOnFeeling,
                         style = MaterialTheme.typography.titleSmall
@@ -154,7 +159,7 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                 )
             }
         },
@@ -167,7 +172,10 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
                 modifier = Modifier.testTag("SymptomsScreenApplyButton"),
                 contentPadding = PaddingValues(all = 0.dp)
             ) {
-                Icon(imageVector = Icons.Default.Check, contentDescription = "Apply")
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = stringResource(R.string.apply)
+                )
             }
             Spacer(modifier = Modifier.width(10.dp))
         }
@@ -189,7 +197,7 @@ fun AddSymptomDialog(
     AlertDialog(
         modifier = Modifier.testTag("AddSymptomDialog"),
         onDismissRequest = onCancel,
-        title = { Text(text = "Add symptom") },
+        title = { Text(text = stringResource(R.string.add_symptom)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 TextField(
@@ -202,7 +210,10 @@ fun AddSymptomDialog(
                     }
                 )
                 if (isEmpty) {
-                    Text("Should not be empty", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.should_not_be_empty),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         },
@@ -215,12 +226,12 @@ fun AddSymptomDialog(
                 },
                 modifier = Modifier.testTag("AddSymptomConfirmButton")
             ) {
-                Text("Confirm")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onCancel) {
-                Text("Dismiss")
+                Text(stringResource(R.string.dismiss))
             }
         }
     )
