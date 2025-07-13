@@ -1,5 +1,5 @@
 package org.htwk.pacing.backend.heuristics
-
+import org.htwk.pacing.backend.heuristics.DavenportData
 /**
  *
  * @param symptoms Liste der beobachteten Symptome
