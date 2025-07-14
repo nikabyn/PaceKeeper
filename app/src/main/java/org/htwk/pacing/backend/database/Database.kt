@@ -1,8 +1,6 @@
 package org.htwk.pacing.backend.database
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
@@ -13,6 +11,7 @@ import kotlinx.datetime.Instant
         DistanceEntry::class,
         ElevationGainedEntry::class,
         EnergyLevelEntry::class,
+        FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
         MenstruationPeriodEntry::class,
@@ -21,11 +20,14 @@ import kotlinx.datetime.Instant
         SleepSessionEntry::class,
         SpeedEntry::class,
         StepsEntry::class,
+        Symptom::class,
+        SymptomForFeeling::class,
 
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class
     ],
-    version = 2,
+
+    version = 1,
     exportSchema = false,
 )
 
@@ -36,6 +38,7 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun energyLevelDao(): EnergyLevelDao
     abstract fun heartRateDao(): HeartRateDao
     abstract fun heartRateVariabilityDao(): HeartRateVariabilityDao
+    abstract fun manualSymptomDao(): ManualSymptomDao
     abstract fun menstruationPeriodDao(): MenstruationPeriodDao
     abstract fun oxygenSaturationDao(): OxygenSaturationDao
     abstract fun skinTemperatureDao(): SkinTemperatureDao
@@ -45,24 +48,6 @@ abstract class PacingDatabase : RoomDatabase() {
 
     abstract fun predictedHeartRateDao(): PredictedHeartRateDao
     abstract fun predictedEnergyLevelDao(): PredictedEnergyLevelDao
-
-    companion object {
-        @Volatile
-        private var instance: PacingDatabase? = null
-
-        /**
-         * Initializes database or gets existing instance.
-         */
-        fun getInstance(context: Context): PacingDatabase {
-            return instance ?: synchronized(this) {
-                Room.databaseBuilder(context, PacingDatabase::class.java, "pacing.db")
-                    .fallbackToDestructiveMigration(dropAllTables = true)
-                    .build()
-            }.also { newInstance ->
-                instance = newInstance
-            }
-        }
-    }
 }
 
 class Converters {
@@ -101,4 +86,10 @@ class Converters {
 
     @TypeConverter
     fun toTemperature(value: Double): Temperature = Temperature.celsius(value)
+
+    @TypeConverter
+    fun fromFeeling(value: Feeling): Int = value.level
+
+    @TypeConverter
+    fun toFeeling(value: Int): Feeling = Feeling.entries.first { it.level == value }
 }

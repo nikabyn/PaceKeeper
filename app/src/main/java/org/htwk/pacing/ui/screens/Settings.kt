@@ -1,12 +1,31 @@
 package org.htwk.pacing.ui.screens
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.layout.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -20,12 +39,21 @@ import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import kotlinx.coroutines.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
+import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.koin.androidx.compose.koinViewModel
 
 val requiredPermissions = setOf(
     HealthPermission.getReadPermission(StepsRecord::class),
-    HealthPermission.getReadPermission(HeartRateRecord::class)
+    HealthPermission.getReadPermission(HeartRateRecord::class),
+    HealthPermission.getWritePermission(HeartRateRecord::class) //für schreiben des csv imports
 )
 
 /**
@@ -36,7 +64,10 @@ val requiredPermissions = setOf(
  * Startet `HeartRateScreen` zur Anzeige der Daten.
  */
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = koinViewModel()
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalContext.current as LifecycleOwner
     var isConnected by remember { mutableStateOf(false) }
@@ -46,6 +77,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     ) { granted ->
         Log.d("HealthConnectDebug", "Permission activity result: $granted")
     }
+
     // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
     suspend fun updateConnectionState() {
         val client = HealthConnectClient.getOrCreate(context)
@@ -70,19 +102,27 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         onDispose { lifecycle.removeObserver(observer) }
     }
 
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri: Uri? ->
+        uri?.let {
+            CoroutineScope(Dispatchers.IO).launch {
+                viewModel.exportDataToZip(context, it)
+            }
+        }
+    }
+
+    var showDialog by remember { mutableStateOf(false) }
+
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(modifier = Modifier.padding(40.dp)) {
-            Text(
-                text = "Connections and Services",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            SectionTitle("Connections and Services")
 
             HealthConnectItem(
                 connected = isConnected,
                 onClick = {
-                    val launchIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+                    val launchIntent =
+                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
                     if (launchIntent != null) {
                         context.startActivity(launchIntent)
                     } else {
@@ -94,9 +134,51 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     }
                 },
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HeartRateCard()
+
+            Spacer(modifier = Modifier.height(20.dp))
+            SectionTitle("Stored Data")
+
+            Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Export data to ZIP-archive")
+            }
         }
     }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Data protection notice") },
+            text = {
+                // TODO german: Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
+                Text("Personalised data will be stored by exporting. Please consent to the processing.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDialog = false
+                        launcher.launch("pacing_export.zip")
+                    }) {
+                    Text("Agree")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Cancel")
+                }
+            })
+    }
 }
+
+@Composable
+fun SectionTitle(title: String) = Text(
+    text = title,
+    style = MaterialTheme.typography.titleMedium,
+    fontWeight = FontWeight.Bold,
+    modifier = Modifier.padding(vertical = 10.dp)
+)
 
 /**
  * Zeigt Verbindungsstatus ("Connected"/"Not connected") an.
@@ -106,10 +188,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 @Composable
 fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text("Health Connect", style = MaterialTheme.typography.bodyLarge)
@@ -125,4 +204,28 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
 
     }
     HeartRateCard()
+    ImportDataHealthConnect()
+}
+
+class SettingsViewModel(
+    private val db: PacingDatabase
+) : ViewModel() {
+
+    /**
+     * Starts export as background thread.
+     *
+     * @param context The application context to retrieve the contentresolver
+     * @param uri the target uri for the zip-file which is coming from ActivityResultLauncher
+     */
+    fun exportDataToZip(context: Context, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    exportAllAsZip(db, outputStream)
+                }
+            } catch (e: Exception) {
+                Log.e("ExportError", "Failed to export data", e)
+            }
+        }
+    }
 }

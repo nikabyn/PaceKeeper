@@ -1,5 +1,7 @@
 package org.htwk.pacing
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -38,7 +40,8 @@ class EnergyPredictionTest {
                 series,
                 minPrediction = 0.1f,
                 avgPrediction = 0.3f,
-                maxPrediction = 0.6f
+                maxPrediction = 0.6f,
+                modifier = Modifier.height(300.dp),
             )
         }
 
@@ -60,7 +63,8 @@ class EnergyPredictionTest {
                 series,
                 minPrediction = 0f,
                 avgPrediction = 0.5f,
-                maxPrediction = 1f
+                maxPrediction = 1f,
+                modifier = Modifier.height(300.dp),
             )
         }
 

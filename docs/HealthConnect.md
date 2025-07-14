@@ -2,7 +2,7 @@
 
 ## Zweck
 
-Diese Komponenten integrieren Google Health Connect in eine Compose-basierte Android-App. Sie ermöglichen das Abrufen und Anzeigen von Herzfrequenz- und Schrittzahl-Daten und verwalten die nötigen Berechtigungen.
+Diese Komponenten integrieren Google Health Connect in eine Compose-basierte Android-App. Der Zugriff auf Gesundheitsdaten erfolgt zentral über eine gekapselte Hilfsklasse (HeathConnectHelper) die per Worker stündlich aktuslisiert werden. Die Komponenten verwaltet die nötigen Berechtigungen, zeigen aggregierte und rohe Herzfrequenz- und Schrittzahldaten an und unterstützten optional den CSV-Import.
 
 ---
 
@@ -10,6 +10,7 @@ Diese Komponenten integrieren Google Health Connect in eine Compose-basierte And
 
 - Health Connect App (`com.google.android.apps.healthdata`) installiert
 - `HeartRateRecord`- und `StepsRecord`-Leseberechtigungen
+- Schreibberechtigung für `HeartRateRecord` nur bei CSV-Import notwendig
 - Android 10+ empfohlen
 
 ---

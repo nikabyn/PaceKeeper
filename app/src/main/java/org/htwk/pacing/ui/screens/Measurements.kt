@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -24,13 +24,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateDao
+import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.mlmodel.MLModel
@@ -43,6 +45,7 @@ import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.components.withFill
 import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
@@ -54,7 +57,9 @@ fun MeasurementsScreen(
     modifier: Modifier = Modifier,
     viewModel: MeasurementsViewModel = koinViewModel(),
 ) {
-    val heartRateSeries = viewModel.heartRateSeries.collectAsState().value
+    val series by viewModel.heartRate.collectAsState()
+    val feelingLevels by viewModel.feelingLevels.collectAsState()
+
     val predictedHeartRateSeries = viewModel.predictedHeartRateSeries.collectAsState().value
     val predictedEnergyLevelSeries = viewModel.predictedEnergySeries.collectAsState().value
 
@@ -74,11 +79,9 @@ fun MeasurementsScreen(
                 return "%02d:%02d:%02d".format(localTime.hour, localTime.minute, localTime.second)
             }
 
-            Log.d("Graph", heartRateSeries.toString())
-
             GraphCard(
                 title = "Heart Rate [bpm]",
-                series = heartRateSeries,
+                series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
                     steps = 2u,
@@ -89,9 +92,10 @@ fun MeasurementsScreen(
                 ),
                 pathConfig = PathConfig.withStroke().withFill(),
             )
+
             GraphCard(
                 title = "Heart Rate [bpm], Filled",
-                series = heartRateSeries,
+                series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
                     steps = 2u,
@@ -109,9 +113,10 @@ fun MeasurementsScreen(
                         color = Color.hsv(0.0f, 0.5f, 1.0f, 0.3f)
                     ),
             )
+
             GraphCard(
                 title = "Heart Rate [bpm], Dynamic Range",
-                series = heartRateSeries,
+                series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
                     steps = 2u,
@@ -122,11 +127,24 @@ fun MeasurementsScreen(
             val now = Clock.System.now()
 
             HeartRatePredictionCard(
-                series = heartRateSeries,
+                series = series,
                 seriesPredicted = Series(predictedHeartRateSeries.x, predictedHeartRateSeries.y),
                 minPrediction = 0.1f,
                 avgPrediction = 0.35f,
                 maxPrediction = 0.4f,
+            )
+
+            GraphCard(
+                title = "Feeling, Manual Symptoms",
+                series = feelingLevels,
+                xConfig = AxisConfig(
+                    formatFunction = ::formatTime,
+                    steps = 2u,
+                ),
+                yConfig = AxisConfig(
+                    formatFunction = { Feeling.fromInt(it.toInt()).name },
+                    steps = 4u,
+                ),
             )
         }
     }
@@ -135,30 +153,43 @@ fun MeasurementsScreen(
 class MeasurementsViewModel(
     private val heartRateDao: HeartRateDao,
     private val predictedHeartRateDao: PredictedHeartRateDao,
-    private val predictedEnergyLevelDao: PredictedEnergyLevelDao
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val manualSymptomDao: ManualSymptomDao
 ) : ViewModel() {
-    private val predictedHeartRateSeriesMut = MutableStateFlow(Series(mutableListOf(), mutableListOf()))
-    val predictedHeartRateSeries = predictedHeartRateSeriesMut.asStateFlow()
-
-    private val predictedEnergySeriesMut = MutableStateFlow(Series(mutableListOf(), mutableListOf()))
-    val predictedEnergySeries = predictedEnergySeriesMut.asStateFlow()
-
-    private val heartRateSeriesMut = MutableStateFlow(Series(mutableListOf(), mutableListOf()))
-    val heartRateSeries = heartRateSeriesMut.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            heartRateDao.getLastLive(10.seconds).collect { entries ->
-                val updated = Series(mutableListOf(), mutableListOf())
-                entries.forEach { (time, value) ->
-                    updated.x.add(time.toEpochMilliseconds().toDouble())
-                    updated.y.add(value.toDouble())
-                }
-                heartRateSeriesMut.value = updated
+    val feelingLevels = manualSymptomDao
+        .getLastLive(1.days)
+        .map {
+            val updated = Series(mutableListOf(), mutableListOf())
+            it.forEach { (feelingEntry, _) ->
+                updated.x.add(feelingEntry.time.toEpochMilliseconds().toDouble())
+                updated.y.add(feelingEntry.feeling.level.toDouble())
             }
+            updated
         }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
 
-        viewModelScope.launch {
+    val heartRate = heartRateDao
+        .getLastLive(10.seconds)
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
+            }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
+
+    //TODO: put into new form after merge
+    /*
+    * viewModelScope.launch {
             //TODO / REVIEW: is this ok? (see TimedSeries Interface change: getAllLive)
             predictedHeartRateDao.getAllLive().collect { entries ->
                 val updated = Series(mutableListOf(), mutableListOf())
@@ -180,6 +211,6 @@ class MeasurementsViewModel(
                 }
                 predictedEnergySeriesMut.value = updated
             }
-        }
+        } */
     }
 }

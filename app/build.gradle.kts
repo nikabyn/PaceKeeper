@@ -115,6 +115,8 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0") // Or the latest version
     // For NNAPI Delegate (optional, for hardware acceleration)
     implementation("org.tensorflow:tensorflow-lite-support:0.5.0") // Or the latest version
+    //CSV Parsing
+    implementation(libs.kotlin.csv.jvm)
 
 }
 
