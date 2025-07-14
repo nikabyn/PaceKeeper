@@ -55,4 +55,10 @@
     <string name="should_not_be_empty">Should not be empty</string>
     <string name="confirm">Confirm</string>
     <string name="dismiss">Dismiss</string>
+    <string name="energy_prediction_alert_channel">Warnings about predicted energy Level</string>
+    <string name="energy_prediction_alert">Warning about predicted energy level</string>
+    <string name="energy_prediction_running_channel">Output of energy predictions</string>
+    <string name="energy_prediction_running">Energy prediction running…</string>
+    <string name="energy_prediction_alert_channel_description">Shows alerts when energy predictions reach critical levels</string>
+    <string name="energy_prediction_alert_content">Energy prediction of %.2f falls under threshold of %.2f</string>
 </resources>

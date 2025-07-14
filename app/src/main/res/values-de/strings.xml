@@ -56,4 +56,10 @@
     <string name="should_not_be_empty">Darf nicht leer sein</string>
     <string name="confirm">Bestätigen</string>
     <string name="dismiss">Verwerfen</string>
+    <string name="energy_prediction_alert_channel">Warnungen zu vorhergesagtem Energielevel</string>
+    <string name="energy_prediction_alert">Warnung zu vorhergesagtem Energielevel</string>
+    <string name="energy_prediction_running_channel">Ausgabe von Energieprognosen</string>
+    <string name="energy_prediction_running">Energieprognose läuft…</string>
+    <string name="energy_prediction_alert_channel_description">Zeigt Warnungen an, wenn kritisches Energielevel prognostiziert wird</string>
+    <string name="energy_prediction_alert_content">Energieprognose fällt von %.2f unter die Schwelle von %.2f</string>
 </resources>

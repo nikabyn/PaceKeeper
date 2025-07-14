@@ -16,6 +16,8 @@ koinAndroid = "4.1.0"
 healthConnectClient = "1.1.0-alpha08"
 kotlinCsvJvm = "1.10.0"
 coreSplashScreen = "1.0.1"
+tensorflow-lite = "2.17.0"
+tensorflow-lite-support = "0.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +46,9 @@ koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", versi
 androidx-health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnectClient" }
 kotlin-csv-jvm = { module = "com.github.doyaaaaaken:kotlin-csv-jvm", version.ref = "kotlinCsvJvm" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashScreen" }
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow-lite" }
+tensorflow-lite-gpu = { module = "org.tensorflow:tensorflow-lite-gpu", version.ref = "tensorflow-lite" }
+tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflow-lite-support" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

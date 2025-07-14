@@ -59,7 +59,7 @@ class PredictionWorker(
     }
 
     /**
-     * Prepares the input data for the machine learning model.
+     * Prepares the input data for the machine learning unter die Schwelle vonmodel.
      *
      * This function takes a list of heart rate entries and a target timestamp rounded to the
      * last 10 minute mark (`now10min`) and transforms it into a `FloatArray` of 10-minute-averages
@@ -172,21 +172,25 @@ class PredictionWorker(
      */
     private fun energyExceededCheck(predictionOutput: FloatArray) {
         //get value in the middle of predictions as relevant value for warning trigger
-        //TODO: rethink after MVP
+        //TODO: rethink after MVP which datapoint(s) we should use to check threshold crossing
         val futureHeartRateGlimpse = predictionOutput[predictionOutput.size / 2].toDouble()
         val futureEnergyGlimpse = energyHeuristic(futureHeartRateGlimpse).toDouble()
 
         //trigger warning notification if energy is predicted to fall below threshold
         if (futureEnergyGlimpse < WARNING_TRIGGER_THRESHOLD) {
             sendPredictionAlertNotification(
-                "Prediction Alert",
-                "Model prediction ("
-                        + "%.2f".format(futureEnergyGlimpse)
-                        + ") fell below threshold ($WARNING_TRIGGER_THRESHOLD)."
+                applicationContext.getString(
+                    R.string.energy_prediction_alert_content,
+                    futureEnergyGlimpse,
+                    WARNING_TRIGGER_THRESHOLD
+                )
             )
         }
     }
 
+    /**
+     * Main loop for the worker, continuously fetching data, making predictions, and updating the DB.
+     */
     private suspend fun workerMainLoop() {
         while (true) {
             //TODO: should we consider data that came in after the most recent 10 minute mark?
@@ -214,6 +218,10 @@ class PredictionWorker(
         }
     }
 
+    /**
+     * Executes the worker's main logic, creates foreground notification and attempts restart
+     * in case of exception in main loop
+     */
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
 
@@ -239,13 +247,13 @@ class PredictionWorker(
         val channel =
             NotificationChannel(
                 channelId,
-                "Energy Level Prediction",
+                applicationContext.getString(R.string.energy_prediction_running_channel),
                 NotificationManager.IMPORTANCE_LOW
             )
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
         return NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle("Predicting Energy Level…")
+            .setContentTitle(applicationContext.getString(R.string.energy_prediction_running))
             .setSmallIcon(R.drawable.rounded_show_chart_24)
             .build()
     }
@@ -263,23 +271,24 @@ class PredictionWorker(
 
     }
 
-    private fun sendPredictionAlertNotification(title: String, message: String) {
+    private fun sendPredictionAlertNotification(message: String) {
         val notificationManager =
             applicationContext.getSystemService(NotificationManager::class.java)
 
         val channel = NotificationChannel(
             ALERT_CHANNEL_ID,
-            "Model Prediction Alerts",
+            applicationContext.getString(R.string.energy_prediction_alert_channel),
             NotificationManager.IMPORTANCE_HIGH // High importance for alerts
         )
-        channel.description = "Shows alerts when model predictions cross defined thresholds."
+        channel.description =
+            applicationContext.getString(R.string.energy_prediction_alert_channel_description)
         notificationManager.createNotificationChannel(channel)
 
         // Using a unique ID for each alert or a fixed one if you want to overwrite
         val alertNotificationId =
             ALERT_NOTIFICATION_ID_BASE // Or System.currentTimeMillis().toInt() for unique
         val notification = NotificationCompat.Builder(applicationContext, ALERT_CHANNEL_ID)
-            .setContentTitle(title)
+            .setContentTitle(applicationContext.getString(R.string.energy_prediction_alert))
             .setContentText(message)
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
