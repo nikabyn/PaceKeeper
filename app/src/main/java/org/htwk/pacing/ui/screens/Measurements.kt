@@ -11,7 +11,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +28,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -43,7 +53,7 @@ import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.components.withFill
 import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
-import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
@@ -59,6 +69,26 @@ fun MeasurementsScreen(
     val feelingLevels by viewModel.feelingLevels.collectAsState()
     val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
     val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
+
+    var timeNow by remember { mutableStateOf(Clock.System.now()) }
+    var time7daysAgo by remember { mutableStateOf(timeNow - 7.days) }
+    var time12hoursAgo by remember { mutableStateOf(timeNow - 12.hours) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            timeNow = Clock.System.now()
+            time7daysAgo = timeNow - 7.days
+            time12hoursAgo = timeNow - 12.hours
+        }
+    }
+
+    val pathConfig = PathConfig
+        .withStroke(
+            color = if (isSystemInDarkTheme()) lerp(Color.Red, Color.White, 0.5f) else Color.Red,
+            style = Stroke(width = 1.5f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        ).withFill(
+            color = Color.hsv(0.0f, 0.5f, 1.0f, 0.3f)
+        )
 
     Box(
         modifier = modifier
@@ -77,51 +107,54 @@ fun MeasurementsScreen(
             }
 
             GraphCard(
-                title = stringResource(R.string.heart_rate_bpm),
+                title = stringResource(R.string.heart_rate_last_7_days),
+                modifier = Modifier.height(200.dp),
                 series = series,
                 xConfig = AxisConfig(
-                    formatFunction = ::formatTime,
+                    formatFunction = {
+                        val localTime = Instant.fromEpochMilliseconds(it.toLong())
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        "%02d.%02d.%02d".format(
+                            localTime.dayOfMonth,
+                            localTime.monthNumber,
+                            localTime.year
+                        )
+                    },
+                    range = time7daysAgo.toEpochMilliseconds().toDouble()
+                            ..timeNow.toEpochMilliseconds().toDouble(),
                     steps = 2u,
                 ),
                 yConfig = AxisConfig(
-                    range = 0.0..120.0,
-                    steps = 4u,
+                    range = 0.0..160.0,
+                    steps = 3u,
                 ),
-                pathConfig = PathConfig.withStroke().withFill(),
+                pathConfig = pathConfig,
             )
 
             GraphCard(
-                title = stringResource(R.string.heart_rate_bpm_filled),
+                title = stringResource(R.string.heart_rate_last_12_hours),
                 series = series,
                 xConfig = AxisConfig(
-                    formatFunction = ::formatTime,
+                    formatFunction = {
+                        val localTime = Instant.fromEpochMilliseconds(it.toLong())
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        "%02d:%02d:%02d".format(
+                            localTime.hour,
+                            localTime.minute,
+                            localTime.second
+                        )
+                    },
+                    range = time12hoursAgo.toEpochMilliseconds().toDouble()
+                            ..timeNow.toEpochMilliseconds().toDouble(),
                     steps = 2u,
                 ),
-                yConfig = AxisConfig(range = 0.0..120.0),
-                pathConfig = PathConfig
-                    .withStroke(
-                        color = if (isSystemInDarkTheme()) {
-                            lerp(Color.Red, Color.White, 0.5f)
-                        } else {
-                            Color.Red
-                        },
-                        style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                    ).withFill(
-                        color = Color.hsv(0.0f, 0.5f, 1.0f, 0.3f)
-                    ),
-            )
-
-            GraphCard(
-                title = stringResource(R.string.heart_rate_bpm_dynamic_range),
-                series = series,
-                xConfig = AxisConfig(
-                    formatFunction = ::formatTime,
-                    steps = 2u,
+                yConfig = AxisConfig(
+                    range = 40.0..160.0
                 ),
-                yConfig = AxisConfig(steps = 4u),
+                pathConfig = pathConfig,
             )
 
-            val now = Clock.System.now()
+            val now = kotlin.time.Clock.System.now()
 
             HeartRatePredictionCard(
                 title = stringResource(R.string.heart_rate_prediction),
@@ -181,7 +214,7 @@ class MeasurementsViewModel(
         )
 
     val heartRate = heartRateDao
-        .getLastLive(12.hours)
+        .getLastLive(30.days)
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
             entries.forEach { (time, value) ->

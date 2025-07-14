@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
@@ -149,6 +150,7 @@ fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
                 startZoneOffset = ts.offset,
                 endTime = ts.toInstant(),
                 endZoneOffset = ts.offset,
+                metadata = Metadata.unknownRecordingMethod(),
                 samples = listOf(
                     HeartRateRecord.Sample(ts.toInstant(), bpm)
                 )

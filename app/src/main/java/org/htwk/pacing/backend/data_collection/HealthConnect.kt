@@ -32,8 +32,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -55,11 +53,10 @@ import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.Temperature
-import org.htwk.pacing.backend.database.TimedEntry
-import org.htwk.pacing.backend.database.TimedSeries
 import org.htwk.pacing.backend.database.Velocity
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 
 object Permissions {
     inline fun <reified T : Record> read() = HealthPermission.getReadPermission<T>()
@@ -96,7 +93,7 @@ object Permissions {
 class HealthConnectWorker(
     context: Context,
     workerParams: WorkerParameters,
-    private val db: PacingDatabase,
+    db: PacingDatabase,
 ) : CoroutineWorker(context, workerParams) {
     companion object {
         private const val TAG = "HealthConnectWorker"
@@ -114,17 +111,45 @@ class HealthConnectWorker(
     private val speedDao = db.speedDao()
     private val stepsDao = db.stepsDao()
 
+    private suspend fun grantedPermissions() =
+        client.permissionController.getGrantedPermissions()
+
+    val daoOfRecord = mapOf(
+        DistanceRecord::class to distanceDao,
+        ElevationGainedRecord::class to elevationGainedDao,
+        HeartRateRecord::class to heartRateDao,
+        HeartRateVariabilityRmssdRecord::class to heartRateVariabilityDao,
+        MenstruationPeriodRecord::class to menstruationPeriodDao,
+        OxygenSaturationRecord::class to oxygenSaturationDao,
+        SkinTemperatureRecord::class to skinTemperatureDao,
+        SleepSessionRecord::class to sleepSessionsDao,
+        SpeedRecord::class to speedDao,
+        StepsRecord::class to stepsDao,
+    )
+
     override suspend fun doWork(): Result {
         setForegroundAsync(getForegroundInfo())
 
+        for ((recordType, dao) in daoOfRecord) {
+            val readPermission = HealthPermission.getReadPermission(recordType)
+            if (!grantedPermissions().contains(readPermission)) {
+                Log.d(TAG, "Skipped reading history for $recordType")
+                continue
+            }
+
+            val since = dao.getLatest()?.end ?: Clock.System.now().minus(30.days)
+            val records = getHistory(recordType, since)
+            for (record in records) {
+                storeRecord(record)
+            }
+        }
+
         val jobs = mutableMapOf<KClass<out Record>, Job>()
         while (true) {
-            val grantedPermissions = client.permissionController.getGrantedPermissions()
-
             for (recordType in Permissions.records) {
                 val permission = HealthPermission.getReadPermission(recordType)
 
-                if (grantedPermissions.contains(permission)) {
+                if (grantedPermissions().contains(permission)) {
                     if (jobs.contains(recordType)) continue
 
                     val job = CoroutineScope(Dispatchers.IO).launch {
@@ -150,7 +175,6 @@ class HealthConnectWorker(
         return Result.retry()
     }
 
-
     private suspend inline fun syncChanges(recordType: KClass<out Record>) {
         var changesToken = client.getChangesToken(
             ChangesTokenRequest(setOf(recordType))
@@ -158,6 +182,7 @@ class HealthConnectWorker(
         while (true) {
             val changesResponse = client.getChanges(changesToken)
             val newRecords = changesResponse.changes.mapNotNull {
+                Log.d(TAG, "Change: $it")
                 if (it is UpsertionChange) it.record else null
             }
             if (newRecords.isNotEmpty()) {
@@ -167,7 +192,7 @@ class HealthConnectWorker(
                 storeRecord(record)
             }
             changesToken = changesResponse.nextChangesToken
-            delay(5_000)
+            delay(1.minutes.inWholeMilliseconds)
         }
     }
 
@@ -177,15 +202,15 @@ class HealthConnectWorker(
             is ElevationGainedRecord -> storeElevationGained(record)
             is HeartRateRecord -> storeHeartRate(record)
             is HeartRateVariabilityRmssdRecord -> storeHeartRateVariability(record)
-            is MenstruationPeriodRecord -> storemenstruationPeriod(record)
+            is MenstruationPeriodRecord -> storeMenstruationPeriod(record)
             is OxygenSaturationRecord -> storeOxygenSaturation(record)
             is SkinTemperatureRecord -> storeSkinTemperature(record)
             is SleepSessionRecord -> storeSleepSession(record)
             is SpeedRecord -> storeSpeed(record)
             is StepsRecord -> storeSteps(record)
+            else -> throw Exception("Unknown record type ${record::class}")
         }
     }
-
 
     private suspend fun storeDistance(record: DistanceRecord) {
         distanceDao.insert(
@@ -226,7 +251,7 @@ class HealthConnectWorker(
         )
     }
 
-    private suspend fun storemenstruationPeriod(record: MenstruationPeriodRecord) {
+    private suspend fun storeMenstruationPeriod(record: MenstruationPeriodRecord) {
         menstruationPeriodDao.insert(
             MenstruationPeriodEntry(
                 record.startTime.toKotlinInstant(),
@@ -284,25 +309,35 @@ class HealthConnectWorker(
         )
     }
 
-    private suspend fun <E : TimedEntry> endTimeLastEntry(dao: TimedSeries<E>) =
-        dao.getLatest()?.end ?: Clock.System.now().minus(30.days)
-
-    private inline fun <reified T : Record> recordFlow(start: Instant): Flow<T> = flow {
+    private suspend inline fun getHistory(
+        recordType: KClass<out Record>, since: Instant,
+    ): List<Record> {
+        val history = mutableListOf<Record>()
         var nextPageToken: String? = null
+        val pageSize = 1000
 
         do {
             val request = ReadRecordsRequest(
-                recordType = T::class,
+                recordType = recordType,
                 timeRangeFilter = TimeRangeFilter.between(
-                    start.toJavaInstant(),
+                    since.toJavaInstant(),
                     Clock.System.now().toJavaInstant()
                 ),
+                pageSize = pageSize,
                 pageToken = nextPageToken
             )
             val response = client.readRecords(request)
-            response.records.forEach { emit(it) }
+            history.addAll(response.records)
+            Log.d(TAG, "History: ${response.records}")
+
+            if (response.records.size < pageSize)
+                break
+
             nextPageToken = response.pageToken
+            Log.d(TAG, "Next: $nextPageToken")
         } while (nextPageToken != null)
+
+        return history.toList()
     }
 
     private fun createNotification(): Notification {
