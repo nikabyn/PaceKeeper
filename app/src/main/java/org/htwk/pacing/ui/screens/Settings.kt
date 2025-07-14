@@ -151,7 +151,6 @@ fun SettingsScreen(
             onDismissRequest = { showDialog = false },
             title = { Text(stringResource(R.string.data_protection_notice)) },
             text = {
-                // TODO german: Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
                 Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
             },
             confirmButton = {
