@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Entity(tableName = "predicted_heart_rate")
@@ -29,4 +30,9 @@ interface PredictedHeartRateDao : TimedSeries<PredictedHeartRateEntry> {
 
     @Query("select null from predicted_heart_rate")
     override fun getChangeTrigger(): Flow<Int?>
+
+    fun getAllLive(): Flow<List<PredictedHeartRateEntry>> =
+        getChangeTrigger().map {
+            getAll()
+        }
 }

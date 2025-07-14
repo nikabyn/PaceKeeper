@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Entity(tableName = "predicted_energy_level")
@@ -27,4 +28,9 @@ interface PredictedEnergyLevelDao : TimedSeries<PredictedEnergyLevelEntry> {
 
     @Query("select null from predicted_energy_level")
     override fun getChangeTrigger(): Flow<Int?>
+
+    fun getAllLive(): Flow<List<PredictedEnergyLevelEntry>> =
+        getChangeTrigger().map {
+            getAll()
+        }
 }

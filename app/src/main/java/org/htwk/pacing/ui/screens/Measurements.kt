@@ -59,9 +59,7 @@ fun MeasurementsScreen(
 ) {
     val series by viewModel.heartRate.collectAsState()
     val feelingLevels by viewModel.feelingLevels.collectAsState()
-
-    val predictedHeartRateSeries = viewModel.predictedHeartRateSeries.collectAsState().value
-    val predictedEnergyLevelSeries = viewModel.predictedEnergySeries.collectAsState().value
+    val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
 
     Box(
         modifier = modifier
@@ -128,7 +126,7 @@ fun MeasurementsScreen(
 
             HeartRatePredictionCard(
                 series = series,
-                seriesPredicted = Series(predictedHeartRateSeries.x, predictedHeartRateSeries.y),
+                seriesPredicted = predictedHeartRate,
                 minPrediction = 0.1f,
                 avgPrediction = 0.35f,
                 maxPrediction = 0.4f,
@@ -187,30 +185,33 @@ class MeasurementsViewModel(
             initialValue = Series(emptyList(), emptyList())
         )
 
-    //TODO: put into new form after merge
-    /*
-    * viewModelScope.launch {
-            //TODO / REVIEW: is this ok? (see TimedSeries Interface change: getAllLive)
-            predictedHeartRateDao.getAllLive().collect { entries ->
-                val updated = Series(mutableListOf(), mutableListOf())
-                entries.forEach { (time, value) ->
-                    updated.x.add(time.toEpochMilliseconds().toDouble())
-                    updated.y.add(value.toDouble())
-                }
-                predictedHeartRateSeriesMut.value = updated
+    val predictedHeartRate = predictedHeartRateDao
+        .getAllLive()
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
             }
-        }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
 
-        viewModelScope.launch {
-            //TODO / REVIEW: is this ok? (see TimedSeries Interface change: getAllLive)
-            predictedEnergyLevelDao.getAllLive().collect { entries ->
-                val updated = Series(mutableListOf(), mutableListOf())
-                entries.forEach { (time, value) ->
-                    updated.x.add(time.toEpochMilliseconds().toDouble())
-                    updated.y.add(value.toDouble())
-                }
-                predictedEnergySeriesMut.value = updated
+    val predictedEnergyLevel = predictedEnergyLevelDao
+        .getAllLive()
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
             }
-        } */
-    }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
 }
