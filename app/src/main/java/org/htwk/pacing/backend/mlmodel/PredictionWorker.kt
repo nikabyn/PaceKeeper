@@ -179,7 +179,8 @@ class PredictionWorker(
             Log.i(WORK_NAME, "$WORK_NAME is stopping.")
         }
 
-        return Result.success()
+        //try to restart if an exception caused a loop exit
+        return Result.retry()
     }
 
     private fun createNotification(): Notification {
