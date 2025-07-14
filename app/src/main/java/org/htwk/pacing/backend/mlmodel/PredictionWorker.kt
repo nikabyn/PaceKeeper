@@ -67,7 +67,7 @@ class PredictionWorker(
         private const val ALERT_NOTIFICATION_ID_BASE = 200 // Base ID for alerts, can increment if needed
 
         // Prediction constants
-        private const val WARNING_TRIGGER_THRESHOLD = 0.8 // Example threshold
+        private const val WARNING_TRIGGER_THRESHOLD = 0.3 // Example threshold
     }
 
     private suspend fun prepareModelInput() : FloatArray? {
@@ -145,7 +145,7 @@ class PredictionWorker(
                     List(predictionOutput.size) { i ->
                         PredictedEnergyLevelEntry(
                             predictionFutureTimePoints[i],
-                            Percentage(energyLevelFromHeartRate(predictionOutput[i].toDouble()))
+                            energyHeuristic(predictionOutput[i].toDouble())
                         )
                     }
                 )
