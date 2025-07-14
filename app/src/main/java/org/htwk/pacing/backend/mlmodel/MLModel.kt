@@ -1,16 +1,16 @@
 package org.htwk.pacing.backend.mlmodel
 
 import android.content.Context
+import kotlinx.datetime.Instant
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
 import java.nio.FloatBuffer
-import java.time.Instant
-import java.time.ZoneId
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 
 class MLModel(context: Context) {
     // create tensor flow lite interpreter for model at TFLITE_MODEL_FILE_PATH
@@ -23,12 +23,13 @@ class MLModel(context: Context) {
 
         //useful for outside access when preparing model input, getting output
         const val TIME_RESOLUTION_MINUTES = 10
-        const val INPUT_DAYS: Int = 2;
-        const val INPUT_SIZE: Int = INPUT_DAYS * 24 * 6; // = 2 days in 10min timesteps = 288
+        val TIME_UNIT_10_MINUTES = 10.minutes
+        const val INPUT_DAYS: Int = 2
+        const val INPUT_SIZE: Int = INPUT_DAYS * 24 * 6 // = 2 days in 10min timesteps = 288
         const val OUTPUT_SIZE: Int = 6 * 6 // 6 hours in 30 minutes timesteps = 36
 
         //doesn't need to be visible to outside for now
-        private const val FEATURE_COUNT: Int = 5;
+        private const val FEATURE_COUNT: Int = 5
     }
 
     /**
@@ -67,20 +68,16 @@ class MLModel(context: Context) {
      * @see CyclicalTimepointRepresentation
      */
     private fun encodeTimeToCyclicalFeature(
-        instant: Instant,
-        zone: ZoneId = ZoneId.systemDefault()
+        instant: Instant
     ): CyclicalTimepointRepresentation {
-        val zonedDateTime = instant.atZone(zone)
-
         val secondsInDay = 1.days.inWholeSeconds
         val secondsInWeek = 7.days.inWholeSeconds
 
-        val secondsSinceMidnight = zonedDateTime.toLocalTime().toSecondOfDay()
-        val dayOfWeekIndex =
-            (zonedDateTime.dayOfWeek.value % 7) * secondsInDay + secondsSinceMidnight
+        val secondsSinceMidnight = instant.epochSeconds % secondsInDay
+        val secondsSinceWeekBegin = instant.epochSeconds % secondsInWeek
 
         val dayRatio = secondsSinceMidnight.toDouble() / secondsInDay
-        val weekRatio = dayOfWeekIndex.toDouble() / secondsInWeek
+        val weekRatio = secondsSinceWeekBegin.toDouble() / secondsInWeek
 
         return CyclicalTimepointRepresentation(
             daySin = sin(2 * PI * dayRatio),
@@ -108,7 +105,6 @@ class MLModel(context: Context) {
         val standardDeviation: Float
     )
 
-<<<<<<< Updated upstream
     /**
      * Normalizes the input data, returns the normalized form and the stochastic properties for
      * later denormalization
@@ -125,7 +121,7 @@ class MLModel(context: Context) {
             if (standardDeviationNonSafe == 0.0f) 0.000001f else standardDeviationNonSafe
 
         val normalized = input.map { x -> (x - mean) / standardDeviationSafe }.toFloatArray()
-        return Pair(normalized, StochasticProperties(mean, standardDeviationSafe));
+        return Pair(normalized, StochasticProperties(mean, standardDeviationSafe))
     }
 
     /**
@@ -161,13 +157,13 @@ class MLModel(context: Context) {
         inputNormalized: FloatArray,
         endTime: Instant
     ): FloatBuffer {
-        val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT);
+        val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT)
 
         for (i in 0 until INPUT_SIZE) {
             inputBuffer.put(inputNormalized[i])
 
-            val timePoint = endTime - 10.minutes * i
-            val cyclicalTime = encodeTimeToCyclicalFeature(timePoint);
+            val timePoint = endTime - TIME_UNIT_10_MINUTES * i
+            val cyclicalTime = encodeTimeToCyclicalFeature(timePoint)
 
             inputBuffer.put(cyclicalTime.daySin.toFloat())
             inputBuffer.put(cyclicalTime.dayCos.toFloat())

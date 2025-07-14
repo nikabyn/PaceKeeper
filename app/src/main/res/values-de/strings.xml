@@ -6,6 +6,7 @@
     <string name="energy_prediction">Energieprognose</string>
     <string name="currently_no_data_available">Aktuell keine Daten vorhanden!</string>
     <string name="heart_rate_bpm_filled">Herzfrequenz [bpm], Gefüllt</string>
+    <string name="heart_rate_prediction">Herzfrequenz [bpm], Vorhersage</string>
     <string name="heart_rate_bpm_dynamic_range">Herzfrequenz [bpm], dynamischer Bereich</string>
     <string name="home">Home</string>
     <string name="measurements">Messungen</string>

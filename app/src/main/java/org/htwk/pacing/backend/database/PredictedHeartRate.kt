@@ -2,8 +2,6 @@ package org.htwk.pacing.backend.database
 
 import androidx.room.Dao
 import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +29,8 @@ interface PredictedHeartRateDao : TimedSeries<PredictedHeartRateEntry> {
     @Query("select null from predicted_heart_rate")
     override fun getChangeTrigger(): Flow<Int?>
 
+    /* normally, accessing the whole table as a live flow should not be done as it's too slow for
+    large amounts of data, but it's fine here as the prediction table is just MLModel::INPUT_Size */
     fun getAllLive(): Flow<List<PredictedHeartRateEntry>> =
         getChangeTrigger().map {
             getAll()

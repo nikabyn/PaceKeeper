@@ -13,7 +13,6 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
@@ -121,6 +120,21 @@ class PredictionWorker(
         return averageArray
     }
 
+    /**
+     * Updates database with ml model prediction.
+     *
+     * This function takes the raw prediction output from the model (`predictionOutput`),
+     * which is expected to be a `FloatArray` of predicted heart rates, and the reference
+     * timestamp (`now10min`) indicating the start of the prediction window.
+     *
+     * **Step-by-Step:**
+     * 1. **Delete Previous Predictions:** Clear out previous predictions in DB
+     * 2. **Store Predicted Heart Rates and Energy levels:** Store predicted heart rate and energy level. Energy level is based on the predicted heart rate, using energyHeuristic.
+     *
+     * @param predictionOutput A `FloatArray` containing the predicted HR values to be stored
+     * @param now10min The timestamp of the start of the prediction window, rounded to last 10-minute mark.
+     * @see energyHeuristic
+     */
     private suspend fun updateDBWithPredictionOutput(
         predictionOutput: FloatArray,
         now10min: kotlinx.datetime.Instant
@@ -149,10 +163,17 @@ class PredictionWorker(
         )
     }
 
+    /**
+     * Checks if the predicted energy level exceeds a predefined warning threshold and sends a notification if it does.
+     *
+     * Uses a heart Rate value in the middle of the predicted energy output to decide whether we should send a warning.
+     *
+     * @param predictionOutput A `FloatArray` containing the predicted heart rate values.
+     */
     private fun energyExceededCheck(predictionOutput: FloatArray) {
         //get value in the middle of predictions as relevant value for warning trigger
         //TODO: rethink after MVP
-        val futureHeartRateGlimpse = predictionOutput[predictionOutput.size / 2].toDouble();
+        val futureHeartRateGlimpse = predictionOutput[predictionOutput.size / 2].toDouble()
         val futureEnergyGlimpse = energyHeuristic(futureHeartRateGlimpse).toDouble()
 
         //trigger warning notification if energy is predicted to fall below threshold
@@ -166,34 +187,38 @@ class PredictionWorker(
         }
     }
 
+    private suspend fun workerMainLoop() {
+        while (true) {
+            //TODO: should we consider data that came in after the most recent 10 minute mark?
+            val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
+
+            val timeSortedHeartRateData =
+                heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min)
+                    .sortedBy { it.time }
+            if (timeSortedHeartRateData.isEmpty()) {
+                delay(1000)
+                continue
+            }
+
+            val modelInput = prepareModelInput(timeSortedHeartRateData, now10min)
+
+            val predictionOutput = mlModel.predict(
+                modelInput, now10min
+            )
+
+            updateDBWithPredictionOutput(predictionOutput, now10min)
+
+            energyExceededCheck(predictionOutput)
+
+            delay(1000)
+        }
+    }
+
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
 
         try {
-            while (true) {
-                //TODO: should we consider data that came in after the most recent 10 minute mark?
-                val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
-
-                val timeSortedHeartRateData =
-                    heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min)
-                        .sortedBy { it.time }
-                if (timeSortedHeartRateData.isEmpty()) {
-                    delay(1000)
-                    continue
-                }
-
-                val modelInput = prepareModelInput(timeSortedHeartRateData, now10min)
-
-                val predictionOutput = mlModel.predict(
-                    testHeartRateData, now10min.toJavaInstant()
-                )
-
-                updateDBWithPredictionOutput(predictionOutput, now10min)
-
-                energyExceededCheck(predictionOutput)
-
-                delay(1000)
-            }
+            workerMainLoop()
         } catch (e: Exception) {
             Log.e(WORK_NAME, "Error in prediction worker execution loop", e)
             // If an unrecoverable error occurs, return failure. WorkManager might retry based on policy.

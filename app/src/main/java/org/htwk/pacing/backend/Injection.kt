@@ -7,7 +7,6 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
-import org.htwk.pacing.backend.database.EnergyLevelDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
@@ -16,7 +15,6 @@ import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
-import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.database.SkinTemperatureDao
 import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
@@ -55,7 +53,6 @@ val productionModule = module {
 val appModule = module {
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
-    single<EnergyLevelDao> { get<PacingDatabase>().energyLevelDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
     single<HeartRateVariabilityDao> { get<PacingDatabase>().heartRateVariabilityDao() }
     single<ManualSymptomDao> { get<PacingDatabase>().manualSymptomDao() }
@@ -71,7 +68,7 @@ val appModule = module {
 
     single<MLModel> { MLModel(get()) }
 
-    viewModel { MeasurementsViewModel(get(), get(), get(), get()) }
+    viewModel { MeasurementsViewModel(get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
 

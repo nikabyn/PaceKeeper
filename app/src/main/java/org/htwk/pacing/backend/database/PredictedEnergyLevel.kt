@@ -29,6 +29,8 @@ interface PredictedEnergyLevelDao : TimedSeries<PredictedEnergyLevelEntry> {
     @Query("select null from predicted_energy_level")
     override fun getChangeTrigger(): Flow<Int?>
 
+    /* normally, accessing the whole table as a live flow should not be done as it's too slow for
+    large amounts of data, but it's fine here as the prediction table is just MLModel::INPUT_Size */
     fun getAllLive(): Flow<List<PredictedEnergyLevelEntry>> =
         getChangeTrigger().map {
             getAll()
