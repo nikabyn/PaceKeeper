@@ -12,11 +12,10 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
-import org.htwk.pacing.backend.data_collection.HealthConnectWorker
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
-import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.backend.productionModule
 import org.htwk.pacing.backend.testModule
+import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -32,7 +31,6 @@ open class ProductionApplication : Application(), KoinComponent {
         startInjection()
         val wm = initWorkManager()
         enqueueHealthConnectWorker(wm)
-        HealthConnectWorkerScheduler.scheduleHealthSync(this)
         enqueuePredictionWorker(wm)
     }
 
