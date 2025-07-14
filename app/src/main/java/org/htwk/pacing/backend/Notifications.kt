@@ -62,36 +62,40 @@ fun initNotificationSystem(activity: ComponentActivity) {
 }
 
 fun createNotificationChannel(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // Create channel ONLY on API 26+
-        val channelId = Notification_Channel_ID
-        val channelName = "Energy Notification Channel"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel(channelId, channelName, importance).apply {
-            description =
-                "Sends a Push-Notification if the Energy level falls below a certain Percentage"
-        }
-
-        val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
+    // Create channel ONLY on API 26+
+    val channelId = Notification_Channel_ID
+    val channelName = "Energy Notification Channel"
+    val importance = NotificationManager.IMPORTANCE_DEFAULT
+    val channel = NotificationChannel(channelId, channelName, importance).apply {
+        description =
+            "Sends a Push-Notification if the Energy level falls below a certain Percentage"
     }
+
+    val notificationManager: NotificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    notificationManager.createNotificationChannel(channel)
 }
 
 fun showNotification(context: Context) {
     createNotificationChannel(context)
 
-    // Check permission only if API 33+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.d("notification", "Permissions for notifications not granted")
-            return
-        }
+    val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
+
+    val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(
+            context, Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true
     }
 
-    val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
-    prefs.edit().putBoolean("notification_shown", true).apply()
+    prefs.edit { putBoolean("notification_shown", true) }
+    Log.d("Notification", "notification_shown Flag gesetzt: true")
+
+    if (!permissionGranted) {
+        Log.d("Notification", "Permission fehlt – Notification wird nicht gezeigt")
+        return
+    }
 
     val intent = Intent(context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -113,8 +117,9 @@ fun showNotification(context: Context) {
     val notificationManager = NotificationManagerCompat.from(context)
     notificationManager.notify(Energy_Warning_Notification_Id, builder.build())
 
-    Log.d("NotificationTest", "showNotification() called")
+    Log.d("Notification", "Notification wurde ausgelöst")
 }
+
 
 class NotificationsBackgroundWorker(
     context: Context,
