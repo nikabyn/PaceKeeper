@@ -53,9 +53,14 @@ class MLModel(context: Context) {
     fun predict(input: FloatArray, endTime: Instant ): FloatArray {
         assert(input.size == INPUT_SIZE); // for now, catch wrong usage
 
+        //normalize input array
+        val mean = input.average().toFloat()
+        val standardDeviation = input.map { x -> (x - mean).pow(2) }.average().pow(0.5).toFloat()
+        val normalized = input.map { x -> (x - mean) / standardDeviation }.toFloatArray()
+
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT);
         for(i in 0 until INPUT_SIZE) {
-            inputBuffer.put(input[i])
+            inputBuffer.put(normalized[i])
 
             val timePoint = endTime.minus(Duration.ofMinutes((i * 10).toLong()));
             val (day, week) = encodeTimeFeatures(timePoint);
@@ -84,6 +89,9 @@ class MLModel(context: Context) {
         //val inputTensor = TensorBuffer.createFixedSize(intArrayOf(1, input.size), DataType.FLOAT32)
         //val outputTensor = TensorBuffer.createFixedSize(intArrayOf(1, 10), DataType.FLOAT32)
         //interpreter.run(inputTensor.buffer, outputTensor.buffer.rewind())
-        return predictions
+
+        //return denormalized output
+        val denormalized = predictions.map { x -> x * standardDeviation + mean }.toFloatArray()
+        return denormalized
     }
 }

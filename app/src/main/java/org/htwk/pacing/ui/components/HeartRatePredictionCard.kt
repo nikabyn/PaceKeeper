@@ -50,7 +50,7 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
         val start = (current - 12.hours).toEpochMilliseconds().toDouble()
         val end = (current + 12.hours).toEpochMilliseconds().toDouble()
 
-        val yConfig = AxisConfig(range = 0.0..180.0, steps = 0u)
+        val yConfig = AxisConfig(range = 40.0..160.0, steps = 6u)
         val xConfig = AxisConfig(
             range = start..end,
             formatFunction = {

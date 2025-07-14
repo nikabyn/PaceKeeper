@@ -26,6 +26,7 @@ import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.heuristics.energyLevelFromHeartRate
 import org.htwk.pacing.ui.math.roundInstantToResolution
+import java.util.Locale
 import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -102,9 +103,10 @@ class PredictionWorker(
             averageArray[i] = currentValidAverage
         }
 
+        //calculate stochastic mean and standard deviation of the array
+
         return averageArray
     }
-
 
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
@@ -159,10 +161,11 @@ class PredictionWorker(
                         "Prediction Alert",
                         "Model prediction (${
                             String.format(
+                                Locale.getDefault(),
                                 "%.2f",
                                 futureEnergyGlimpse
                             )
-                        }) exceeded threshold ($WARNING_TRIGGER_THRESHOLD)."
+                        }) fell below threshold ($WARNING_TRIGGER_THRESHOLD)."
                     )
                 }
                 delay(1000)
