@@ -74,8 +74,7 @@ class PredictionWorker(
         val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes)
         val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
         var sumArray = FloatArray(modelInputSize)
-        var countArray = FloatArray(modelInputSize)
-        var averageArray = FloatArray(modelInputSize)
+        var countArray = IntArray(modelInputSize)
 
         //get raw heart rate data in input interval, ensure it is sorted by time
         val heartRateData = heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min).sortedBy { it.time }
@@ -88,22 +87,22 @@ class PredictionWorker(
             countArray[index10min]++
         }
 
-        val firstValidIndex = sumArray.indexOfFirst { f -> f != 0.0f }
+        val firstValidIndex = countArray.indexOfFirst { x -> x > 0 }
         val firstValidAverage = sumArray[firstValidIndex] / countArray[firstValidIndex]
 
+
+        var averageArray = FloatArray(modelInputSize)
         //fill up possibly missing range in the beginning of the array
         averageArray.fill(firstValidAverage, 0, firstValidIndex)
 
         //now we can forward-fill any missing ranges
         var currentValidAverage = firstValidAverage
         for(i in firstValidIndex until modelInputSize) {
-            if(sumArray[i] != 0.0f) {
-                currentValidAverage = sumArray[i].toFloat() / countArray[i].toFloat()
+            if(countArray[i] > 0) {
+                currentValidAverage = sumArray[i] / countArray[i].toFloat()
             }
             averageArray[i] = currentValidAverage
         }
-
-        //calculate stochastic mean and standard deviation of the array
 
         return averageArray
     }
