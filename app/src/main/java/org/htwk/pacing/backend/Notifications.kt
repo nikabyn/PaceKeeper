@@ -132,7 +132,7 @@ class NotificationsBackgroundWorker(
 
         prefs.edit { putInt("energy", 15) }
 
-        val energy = prefs.getInt("energy", 100) //if energy undefined = 100
+        val energy = prefs.getInt("energy", 100)
 
         Log.d("NotificationsBackgroundWorker", "Energy level is $energy")
 
