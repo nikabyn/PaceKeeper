@@ -10,6 +10,28 @@ export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platfor
 
 yes | sdkmanager --licenses
 sdkmanager "platform-tools" "emulator" "system-images;android-28;google_apis;x86" "system-images;android-35;google_apis;x86_64"
+/bin/echo y | avdmanager create avd -n api28 -k "system-images;android-28;google_apis;x86" --device "pixel"
+/bin/echo y | avdmanager create avd -n api35 -k "system-images;android-35;google_apis;x86_64" --device "pixel"
+```
+
+## System Service
+
+```txt
+[Unit]
+Description=GitLab Runner
+ConditionFileIsExecutable=/usr/bin/gitlab-runner
+After=network.target
+
+[Service]
+StartLimitInterval=5
+StartLimitBurst=10
+ExecStart=/usr/bin/gitlab-runner "run" "--config" "/etc/gitlab-runner/config.toml" "--working-directory" "/home/gitlab-runner" "--service" "gitlab-runner"
+Restart=always
+RestartSec=120
+EnvironmentFile=-/etc/sysconfig/gitlab-runner
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 ## GitLab Runner Configuration
@@ -27,13 +49,13 @@ session_timeout = 1800
 
 [[runners]]
 name = "pacing-app-android"
-url = "https://gitlab.dit.htwk-leipzig.de"
+url = "GIT_URL"
 id = 454
-token = "<token>"
-token_obtained_at = <timestamp>
-token_expires_at = <timestamp>
+token = "TOKEN"
+token_obtained_at = 2025-06-06T07:38:01Z
+token_expires_at = 0001-01-01T00:00:00Z
 executor = "docker"
-tags = ["dind", "docker", "kvm"]
+tags = ["android", "docker"]
 run_untagged = false
 [runners.cache]
 MaxUploadedArchiveSize = 0

@@ -22,11 +22,15 @@ results.
     - test: tests that run on a local machine/server
     - build.gradle.kts: packages to compile app with
 - app/schemas: Full database schemas exported from room (separate file for each version)
+- app/res: contains all application resource files, e.g. layouts, images, strings etc.
+    - values: stores simple resources like strings, colors, dimensions, ... in english language
+        - strings.xml: contains strings that are being displayed inside the app in english language
+    - values-de: stores simple resources like strings, colors, dimensions, ... in german language
+        - strings.xml contains strings that are being displayed inside the app in german language
 - docs: Project documentation, tutorials on how to use specific components
 - gradle
     - libs.version.toml: external package list + versions
     - wrapper: current gradle executable
-
 ## Naming conventions
 
 We are using exclusively English for source and commit messages.

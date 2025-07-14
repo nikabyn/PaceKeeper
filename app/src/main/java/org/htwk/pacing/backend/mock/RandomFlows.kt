@@ -50,16 +50,15 @@ class RandomHeartRateWorker(
 
     private fun createNotification(): Notification {
         val channelId = "heart_rate_ch"
-        val channel =
-            NotificationChannel(
-                channelId,
-                "Heart Rate Generation",
-                NotificationManager.IMPORTANCE_LOW
-            )
+        val channel = NotificationChannel(
+            channelId,
+            applicationContext.getString(R.string.heart_rate_generation),
+            NotificationManager.IMPORTANCE_LOW
+        )
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
         return NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle("Generating heart data…")
+            .setContentTitle(applicationContext.getString(R.string.worker_generating_heart_data))
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .build()
     }
