@@ -1,12 +1,7 @@
 package org.htwk.pacing.backend.mlmodel
 
 import android.content.Context
-import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.common.FileUtil
-import java.nio.FloatBuffer
-import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.pow
@@ -144,6 +139,7 @@ class MLModel(context: Context) {
             .toFloatArray()
     }
 
+    //TODO: how to deal with calculations happening in between the 10min steps
     /**
      * Creates a [FloatBuffer] containing the normalized input heart rate data combined with
      * cyclical time features.
