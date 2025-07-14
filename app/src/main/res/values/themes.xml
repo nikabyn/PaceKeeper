@@ -2,4 +2,11 @@
 <resources>
 
     <style name="Theme.Pacing" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Pacing.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Pacing</item>
+    </style>
+
 </resources>

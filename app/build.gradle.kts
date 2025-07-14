@@ -111,6 +111,9 @@ dependencies {
     //CSV Parsing
     implementation(libs.kotlin.csv.jvm)
 
+    //Splash Screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
 }
 
 val exclusions = listOf(
