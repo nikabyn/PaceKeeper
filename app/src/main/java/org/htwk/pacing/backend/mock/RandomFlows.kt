@@ -11,21 +11,14 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
-import org.htwk.pacing.backend.mlmodel.MLModel
-import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.random.Random
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * Generates heart rate values with a random delay between each of them.
@@ -52,7 +45,6 @@ class RandomHeartRateWorker(
         randomHeartRate(100).collect { (time, value) ->
             heartRateDao.insert(HeartRateEntry(time, value))
         }
-
         return Result.success()
     }
 
