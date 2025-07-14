@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">PaceKeeper</string>
+
     <string name="current_energy">Aktuelles Energielevel</string>
     <string name="energy_prediction">Energieprognose</string>
     <string name="currently_no_data_available">Aktuell keine Daten vorhanden!</string>

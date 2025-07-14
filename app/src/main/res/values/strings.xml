@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">pacing</string>
+    <string name="app_name">PaceKeeper</string>
 
     <string name="current_energy">Current Energy</string>
     <string name="energy_prediction">Energy Prediction</string>
