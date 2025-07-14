@@ -164,31 +164,6 @@ class PredictionWorker(
     }
 
     /**
-     * Checks if the predicted energy level exceeds a predefined warning threshold and sends a notification if it does.
-     *
-     * Uses a heart Rate value in the middle of the predicted energy output to decide whether we should send a warning.
-     *
-     * @param predictionOutput A `FloatArray` containing the predicted heart rate values.
-     */
-    private fun energyExceededCheck(predictionOutput: FloatArray) {
-        //get value in the middle of predictions as relevant value for warning trigger
-        //TODO: rethink after MVP which datapoint(s) we should use to check threshold crossing
-        val futureHeartRateGlimpse = predictionOutput[predictionOutput.size / 2].toDouble()
-        val futureEnergyGlimpse = energyHeuristic(futureHeartRateGlimpse).toDouble()
-
-        //trigger warning notification if energy is predicted to fall below threshold
-        if (futureEnergyGlimpse < WARNING_TRIGGER_THRESHOLD) {
-            sendPredictionAlertNotification(
-                applicationContext.getString(
-                    R.string.energy_prediction_alert_content,
-                    futureEnergyGlimpse,
-                    WARNING_TRIGGER_THRESHOLD
-                )
-            )
-        }
-    }
-
-    /**
      * Main loop for the worker, continuously fetching data, making predictions, and updating the DB.
      */
     private suspend fun workerMainLoop() {
@@ -211,8 +186,6 @@ class PredictionWorker(
             )
 
             updateDBWithPredictionOutput(predictionOutput, now10min)
-
-            energyExceededCheck(predictionOutput)
 
             delay(1000)
         }
@@ -269,33 +242,5 @@ class PredictionWorker(
             ForegroundInfo(FOREGROUND_NOTIFICATION_ID, createNotification())
         }
 
-    }
-
-    private fun sendPredictionAlertNotification(message: String) {
-        val notificationManager =
-            applicationContext.getSystemService(NotificationManager::class.java)
-
-        val channel = NotificationChannel(
-            ALERT_CHANNEL_ID,
-            applicationContext.getString(R.string.energy_prediction_alert_channel),
-            NotificationManager.IMPORTANCE_HIGH // High importance for alerts
-        )
-        channel.description =
-            applicationContext.getString(R.string.energy_prediction_alert_channel_description)
-        notificationManager.createNotificationChannel(channel)
-
-        // Using a unique ID for each alert or a fixed one if you want to overwrite
-        val alertNotificationId =
-            ALERT_NOTIFICATION_ID_BASE // Or System.currentTimeMillis().toInt() for unique
-        val notification = NotificationCompat.Builder(applicationContext, ALERT_CHANNEL_ID)
-            .setContentTitle(applicationContext.getString(R.string.energy_prediction_alert))
-            .setContentText(message)
-            .setSmallIcon(R.drawable.rounded_monitor_heart_24)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true) // Dismiss notification on tap
-            // .setContentIntent(pendingIntent) // Optional: What to do when notification is tapped
-            .build()
-
-        notificationManager.notify(alertNotificationId, notification)
     }
 }

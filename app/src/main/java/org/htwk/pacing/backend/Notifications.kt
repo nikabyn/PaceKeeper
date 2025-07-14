@@ -22,9 +22,13 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlinx.datetime.Clock
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.hours
 
 const val NOTIFICATION_CHANNEL_ID = "Energy_Notification_ID"
 const val ENERGY_WARNING_NOTIFICATION_ID = 2
@@ -123,20 +127,25 @@ fun showNotification(context: Context) {
 
 class NotificationsBackgroundWorker(
     context: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
+    predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         val prefs =
             applicationContext.getSharedPreferences("energy_prefs", Context.MODE_PRIVATE)
 
-        prefs.edit { putInt("energy", 15) }
+        val now = Clock.System.now()
 
-        val energy = prefs.getInt("energy", 100)
+        //get the minimum energy prediction of a future time window for the limit check
+        val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
+            predictedEnergyLevelDao.getInRange(now + 3.hours, now + 4.hours)
+        val predictedEnergyLevel =
+            energyLevelDataWindow.minBy { it.percentage.toDouble() }.percentage.toDouble()
 
-        Log.d("NotificationsBackgroundWorker", "Energy level is $energy")
+        Log.d("NotificationsBackgroundWorker", "Energy level is $predictedEnergyLevel")
 
-        if (energy < 20) {
+        if (predictedEnergyLevel < 0.2f) {
             Log.d("NotificationsBackgroundWorker", "Energy is low, showing notification")
             showNotification(applicationContext)
         } else {
