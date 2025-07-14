@@ -23,6 +23,9 @@ import kotlinx.datetime.Instant
         Symptom::class,
         SymptomForFeeling::class,
 
+        /*These two entities are different than the others in the sense that they represent
+        future data (ml model predictions). Also, when accessing them for writing, their whole table
+        contents are overwritten and they are also at once read as a whole.*/
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class
     ],
@@ -46,6 +49,9 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun speedDao(): SpeedDao
     abstract fun stepsDao(): StepsDao
 
+    /*These two tables are different than the others in the sense that they represent
+    future data (ml model predictions). Also, when accessing them for writing, their whole table
+    contents are overwritten and they are also at once read as a whole. */
     abstract fun predictedHeartRateDao(): PredictedHeartRateDao
     abstract fun predictedEnergyLevelDao(): PredictedEnergyLevelDao
 }
