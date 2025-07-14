@@ -10,6 +10,8 @@ ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-too
 ENV DEBIAN_FRONTEND=noninteractive
 
 COPY start-avds.sh /opt/
+COPY stop-avds.sh /opt/
+
 WORKDIR /tmp
 
 RUN apt-get update; \
@@ -23,6 +25,12 @@ RUN apt-get update; \
         libglu1-mesa \
         libpulse0 \
         openjdk-17-jdk-headless \
+        bridge-utils \
+        xauth \
+        xvfb \
+        libxi6 \
+        libxrender1 \
+        mesa-utils \
         unzip \
         wget; \
     rm -rf /var/lib/apt/lists/*
