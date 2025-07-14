@@ -63,14 +63,14 @@ class HealthConnectWorker(
                         syncRecordChanges(recordType)
                     }
                     job.invokeOnCompletion {
-                        // Log.w(TAG, "Job for ${recordType.simpleName} completed")
+                        Log.w(TAG, "Job for ${recordType.simpleName} completed")
                         jobs.remove(recordType)
                     }
 
                     Log.i(TAG, "Job for ${recordType.simpleName} started")
                     jobs.put(recordType, job)
                 } else {
-                    // Log.w(TAG, "Job for ${recordType.simpleName} canceled, missing permissions")
+                    Log.w(TAG, "Job for ${recordType.simpleName} canceled, missing permissions")
                     jobs.remove(recordType)
                 }
             }
@@ -150,8 +150,9 @@ class HealthConnectWorker(
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
         return NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle("Reading data from Health Connect…")
+            .setContentTitle("Collecting Health Data")
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
+            .setOngoing(true)
             .build()
     }
 

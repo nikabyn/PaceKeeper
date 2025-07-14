@@ -1,7 +1,9 @@
 package org.htwk.pacing
 
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.work.Configuration
 import androidx.work.ExistingWorkPolicy
@@ -29,44 +31,9 @@ open class ProductionApplication : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
         startInjection()
-        val wm = initWorkManager()
+        val wm = initWorkManager(this)
         enqueueHealthConnectWorker(wm)
         enqueuePredictionWorker(wm)
-    }
-
-    /**
-     * Replaces the default WorkManagerInitializer,
-     * which must be disabled in AndroidManifest.xml for this to work.
-     */
-    fun initWorkManager(): WorkManager {
-        val workerFactory = KoinWorkerFactory()
-        val config = Configuration.Builder().setWorkerFactory(workerFactory).build()
-        WorkManager.initialize(this, config)
-        return WorkManager.getInstance(this)
-    }
-
-    fun enqueueHealthConnectWorker(wm: WorkManager) {
-        val workRequest = OneTimeWorkRequestBuilder<HealthConnectWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
-        wm.enqueueUniqueWork(
-            "HealthConnectDataCollection",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        Log.d("PacingApp", "Enqueued HealthConnectWorker")
-    }
-
-    fun enqueuePredictionWorker(wm: WorkManager) {
-        val workRequest = OneTimeWorkRequestBuilder<PredictionWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
-        wm.enqueueUniqueWork(
-            "PredictionWorker",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        Log.d("PacingApp", "Enqueued MLModelWorker")
     }
 
     open fun startInjection() {
@@ -94,12 +61,58 @@ class TestApplication : ProductionApplication() {
     }
 }
 
+class BootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
+            val wm = initWorkManager(context)
+            Log.d("BootReceiver", "Enqueued worker")
+            enqueueHealthConnectWorker(wm)
+        }
+    }
+}
+
+private fun enqueueHealthConnectWorker(wm: WorkManager) {
+    val workRequest = OneTimeWorkRequestBuilder<HealthConnectWorker>()
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .build()
+    wm.enqueueUniqueWork(
+        "HealthConnectDataCollection",
+        ExistingWorkPolicy.REPLACE,
+        workRequest
+    )
+    Log.d("PacingApp", "Enqueued HealthConnectWorker")
+}
+
+fun enqueuePredictionWorker(wm: WorkManager) {
+    val workRequest = OneTimeWorkRequestBuilder<PredictionWorker>()
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .build()
+    wm.enqueueUniqueWork(
+        "PredictionWorker",
+        ExistingWorkPolicy.REPLACE,
+        workRequest
+    )
+    Log.d("PacingApp", "Enqueued MLModelWorker")
+}
+
+
+/**
+ * Replaces the default WorkManagerInitializer,
+ * which must be disabled in AndroidManifest.xml for this to work.
+ */
+private fun initWorkManager(context: Context): WorkManager {
+    val workerFactory = KoinWorkerFactory()
+    val config = Configuration.Builder().setWorkerFactory(workerFactory).build()
+    WorkManager.initialize(context, config)
+    return WorkManager.getInstance(context)
+}
+
 /**
  * Queries and constructs workers using dependency injection with koin.
  * Had to write this ourselves because the koin workmanager library does not
  * properly query for the functions that create workers.
  */
-class KoinWorkerFactory : WorkerFactory(), KoinComponent {
+private class KoinWorkerFactory : WorkerFactory(), KoinComponent {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
