@@ -10,7 +10,6 @@ import kotlinx.datetime.Instant
     entities = [
         DistanceEntry::class,
         ElevationGainedEntry::class,
-        EnergyLevelEntry::class,
         FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
@@ -38,7 +37,6 @@ import kotlinx.datetime.Instant
 abstract class PacingDatabase : RoomDatabase() {
     abstract fun distanceDao(): DistanceDao
     abstract fun elevationGainedDao(): ElevationGainedDao
-    abstract fun energyLevelDao(): EnergyLevelDao
     abstract fun heartRateDao(): HeartRateDao
     abstract fun heartRateVariabilityDao(): HeartRateVariabilityDao
     abstract fun manualSymptomDao(): ManualSymptomDao

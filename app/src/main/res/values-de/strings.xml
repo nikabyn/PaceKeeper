@@ -57,4 +57,6 @@
     <string name="confirm">Bestätigen</string>
     <string name="dismiss">Verwerfen</string>
     <string name="energy_warning_text">Dein Energielevel ist niedrig. Mach eine Pause!</string>
+    <string name="energy_prediction_running_channel">Energieprognosen im Hintergrund</string>
+    <string name="energy_prediction_running">Energieprognose läuft im Hintergrund...</string>
 </resources>
