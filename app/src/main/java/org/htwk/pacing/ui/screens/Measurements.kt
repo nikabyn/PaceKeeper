@@ -5,8 +5,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +18,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
@@ -74,7 +74,7 @@ fun MeasurementsScreen(
             }
 
             GraphCard(
-                title = "Heart Rate [bpm]",
+                title = stringResource(R.string.heart_rate_bpm),
                 series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
@@ -88,7 +88,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Heart Rate [bpm], Filled",
+                title = stringResource(R.string.heart_rate_bpm_filled),
                 series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
@@ -109,7 +109,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Heart Rate [bpm], Dynamic Range",
+                title = stringResource(R.string.heart_rate_bpm_dynamic_range),
                 series = series,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
@@ -130,7 +130,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Feeling, Manual Symptoms",
+                title = stringResource(R.string.feeling_manual_symptoms),
                 series = feelingLevels,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,
@@ -146,10 +146,9 @@ fun MeasurementsScreen(
 }
 
 class MeasurementsViewModel(
-    private val heartRateDao: HeartRateDao,
-    private val predictedHeartRateDao: PredictedHeartRateDao,
-    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
-    private val manualSymptomDao: ManualSymptomDao
+    heartRateDao: HeartRateDao,
+    manualSymptomDao: ManualSymptomDao,
+    predictedHeartRateDao: PredictedHeartRateDao,
 ) : ViewModel() {
     val feelingLevels = manualSymptomDao
         .getLastLive(1.days)
@@ -183,21 +182,6 @@ class MeasurementsViewModel(
         )
 
     val predictedHeartRate = predictedHeartRateDao
-        .getAllLive()
-        .map { entries ->
-            val updated = Series(mutableListOf(), mutableListOf())
-            entries.forEach { (time, value) ->
-                updated.x.add(time.toEpochMilliseconds().toDouble())
-                updated.y.add(value.toDouble())
-            }
-            updated
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = Series(emptyList(), emptyList())
-        )
-
-    val predictedEnergyLevel = predictedEnergyLevelDao
         .getAllLive()
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())

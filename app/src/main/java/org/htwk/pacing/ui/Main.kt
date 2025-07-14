@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -73,7 +75,7 @@ fun NavBar(
                     selectedDestination.value = index
                 },
                 icon = destination.icon,
-                label = { Text(destination.label) }
+                label = { Text(stringResource(destination.labelRes)) }
             )
         }
     }
@@ -81,23 +83,28 @@ fun NavBar(
 
 enum class NavBarEntries(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: @Composable () -> Unit,
 ) {
-    Home(
+    HOME(
         Route.HOME,
-        "Home",
-        { Icon(Icons.Rounded.Home, "Home") },
+        R.string.home,
+        { Icon(Icons.Rounded.Home, contentDescription = stringResource(R.string.home)) }
     ),
-    Measurements(
+    MEASUREMENTS(
         Route.MEASUREMENTS,
-        "Measurements",
-        { Icon(painter = painterResource(R.drawable.rounded_show_chart_24), "Measurements") },
+        R.string.measurements,
+        {
+            Icon(
+                painter = painterResource(R.drawable.rounded_show_chart_24),
+                contentDescription = stringResource(R.string.measurements)
+            )
+        }
     ),
-    Settings(
+    SETTINGS(
         Route.SETTINGS,
-        "Settings",
-        { Icon(Icons.Rounded.Settings, "Settings") },
+        R.string.settings,
+        { Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.settings)) }
     )
 }
 

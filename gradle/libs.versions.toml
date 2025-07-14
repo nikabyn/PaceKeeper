@@ -15,6 +15,7 @@ workRuntimeKtx = "2.10.2"
 koinAndroid = "4.1.0"
 healthConnectClient = "1.1.0-alpha08"
 kotlinCsvJvm = "1.10.0"
+coreSplashScreen = "1.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -42,6 +43,7 @@ koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinAndr
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinAndroid" }
 androidx-health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnectClient" }
 kotlin-csv-jvm = { module = "com.github.doyaaaaaken:kotlin-csv-jvm", version.ref = "kotlinCsvJvm" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashScreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
