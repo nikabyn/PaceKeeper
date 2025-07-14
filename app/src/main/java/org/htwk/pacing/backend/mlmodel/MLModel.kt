@@ -108,6 +108,7 @@ class MLModel(context: Context) {
         val standardDeviation: Float
     )
 
+<<<<<<< Updated upstream
     /**
      * Normalizes the input data, returns the normalized form and the stochastic properties for
      * later denormalization
