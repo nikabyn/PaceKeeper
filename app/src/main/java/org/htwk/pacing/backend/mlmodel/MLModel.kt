@@ -55,8 +55,11 @@ class MLModel(context: Context) {
 
         //normalize input array
         val mean = input.average().toFloat()
-        val standardDeviation = input.map { x -> (x - mean).pow(2) }.average().pow(0.5).toFloat()
-        val normalized = input.map { x -> (x - mean) / standardDeviation }.toFloatArray()
+        val standardDeviationNonSafe = input.map { x -> (x - mean).pow(2) }.average().pow(0.5).toFloat()
+
+        //prevent division by zero
+        val standardDeviationSafe = if (standardDeviationNonSafe == 0.0f) 0.000001f else standardDeviationNonSafe
+        val normalized = input.map { x -> (x - mean) / standardDeviationSafe }.toFloatArray()
 
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT);
         for(i in 0 until INPUT_SIZE) {
@@ -86,12 +89,8 @@ class MLModel(context: Context) {
         val predictions = FloatArray(OUTPUT_SIZE);
         outputBuffer.get(predictions);
 
-        //val inputTensor = TensorBuffer.createFixedSize(intArrayOf(1, input.size), DataType.FLOAT32)
-        //val outputTensor = TensorBuffer.createFixedSize(intArrayOf(1, 10), DataType.FLOAT32)
-        //interpreter.run(inputTensor.buffer, outputTensor.buffer.rewind())
-
         //return denormalized output
-        val denormalized = predictions.map { x -> x * standardDeviation + mean }.toFloatArray()
+        val denormalized = predictions.map { x -> x * standardDeviationSafe + mean }.toFloatArray()
         return denormalized
     }
 }

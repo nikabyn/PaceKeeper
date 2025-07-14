@@ -71,7 +71,7 @@ val appModule = module {
 
     single<MLModel> { MLModel(get()) }
 
-    viewModel { MeasurementsViewModel(get(), get(), get()) }
+    viewModel { MeasurementsViewModel(get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
 

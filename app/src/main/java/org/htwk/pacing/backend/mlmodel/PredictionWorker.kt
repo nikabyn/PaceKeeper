@@ -70,14 +70,13 @@ class PredictionWorker(
         private const val WARNING_TRIGGER_THRESHOLD = 0.3 // Example threshold
     }
 
-    private suspend fun prepareModelInput() : FloatArray? {
-        val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes)
+    private suspend fun prepareModelInput(timeSortedHeartRateData: List<HeartRateEntry>, now10min: kotlinx.datetime.Instant) : FloatArray {
         val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
         var sumArray = FloatArray(modelInputSize)
         var countArray = IntArray(modelInputSize)
 
         //get raw heart rate data in input interval, ensure it is sorted by time
-        val heartRateData = heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min).sortedBy { it.time }
+        val heartRateData = timeSortedHeartRateData
 
         // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
         // TODO: is the index10min calculation really safe?
@@ -88,6 +87,7 @@ class PredictionWorker(
         }
 
         val firstValidIndex = countArray.indexOfFirst { x -> x > 0 }
+
         val firstValidAverage = sumArray[firstValidIndex] / countArray[firstValidIndex]
 
 
@@ -112,9 +112,16 @@ class PredictionWorker(
 
         try {
             while (true) {
-                val modelInput = prepareModelInput()!!
+                val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
 
-                val now10min = Clock.System.now()
+                val timeSortedHeartRateData = heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min).sortedBy { it.time }
+                if(timeSortedHeartRateData.isEmpty()) {
+                    delay(1000)
+                    continue
+                }
+
+                val modelInput = prepareModelInput(timeSortedHeartRateData, now10min)
+
                 val predictionOutput = mlModel.predict(
                     modelInput, now10min.toJavaInstant()
                 )

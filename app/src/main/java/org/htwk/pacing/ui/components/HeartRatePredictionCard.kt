@@ -25,19 +25,20 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * Shows a graph of the last 12 hours of the users energy level
- * and a prediction for the next 12 hours.
+ * Shows a graph of the last 48 hours of the users heart rate
+ * and a prediction for the next 6 hours.
  * The last value in the series is used as the current time.
  */
 @Composable
-fun <C : Collection<Double>> HeartRatePredictionCard(
+fun <C : Collection<Double>, D: Collection<Double>> HeartRatePredictionCard(
     series: Series<C>,
-    seriesPredicted: Series<C>,
+    seriesPredicted: Series<D>,
     @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
+    modifier: Modifier = Modifier,
 ) {
-    CardWithTitle(title = "Heart Rate Prediction") {
+    CardWithTitle(title = "Heart Rate Prediction", modifier) {
         if (series.x.isEmpty()) {
             Text(
                 "Currently no data available!",
@@ -47,10 +48,10 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
         }
 
         val current = Instant.fromEpochMilliseconds(series.x.last().toLong())
-        val start = (current - 12.hours).toEpochMilliseconds().toDouble()
-        val end = (current + 12.hours).toEpochMilliseconds().toDouble()
+        val start = (current - 48.hours).toEpochMilliseconds().toDouble()
+        val end = (current + 6.hours).toEpochMilliseconds().toDouble()
 
-        val yConfig = AxisConfig(range = 40.0..160.0, steps = 6u)
+        val yConfig = AxisConfig(range = 40.0..160.0, steps = 7u)
         val xConfig = AxisConfig(
             range = start..end,
             formatFunction = {
@@ -66,17 +67,11 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
             xConfig = xConfig,
             yConfig = yConfig,
         ) { _, yRange ->
-            Row(
-                modifier = Modifier.drawPrediction(
-                    series.y.lastOrNull()?.toFloat() ?: 0.5f,
-                    minPrediction,
-                    avgPrediction,
-                    maxPrediction
-                )
-            ) {
+            Row()
+            {
                 Graph(
                     series = series,
-                    xRange = (current - 1.minutes).toEpochMilliseconds().toDouble()..(current - 0.hours).toEpochMilliseconds().toDouble(),
+                    xRange = (current - 48.hours).toEpochMilliseconds().toDouble()..(current - 0.hours).toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
                 )
@@ -93,62 +88,4 @@ fun <C : Collection<Double>> HeartRatePredictionCard(
             }
         }
     }
-}
-
-private fun Modifier.drawPrediction(
-    current: Float,
-    minPrediction: Float,
-    avgPrediction: Float,
-    maxPrediction: Float
-): Modifier = this.drawBehind {
-    val scope = this
-    val color = when {
-        avgPrediction < 0.4f -> Color(0xFFF96B6B)
-        avgPrediction < 0.6f -> Color(0xFFECC00A)
-        else -> Color(0xFF8FE02A)
-    }
-    val current = Float2D(0.5f, 1f - current)
-
-    val centerPath = Path().apply {
-        moveTo(scope, Float2D(0.5f, 0f))
-        lineTo(scope, Float2D(0.5f, 1f))
-    }
-    drawPath(
-        centerPath,
-        color = Color.Gray,
-        style = Stroke(
-            width = 3f,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(30f, 20f))
-        ),
-    )
-
-    /*val predictionArea = Path().apply {
-        moveTo(scope, Float2D(1f, 1f - maxPrediction))
-        lineTo(scope, current)
-        lineTo(scope, Float2D(1f, 1f - minPrediction))
-        close()
-    }
-    drawPath(
-        predictionArea,
-        brush = Brush.linearGradient(
-            0f to color.copy(alpha = 0.5f),
-            1f to color.copy(alpha = 0.0f),
-            start = current.toPx(size),
-            end = Float2D(1f, 0.5f).toPx(size),
-        )
-    )
-
-    val predictionDirection = Path().apply {
-        moveTo(scope, current)
-        val scale = 0.3f
-        val direction = Float2D(0.5f, 0.5f - avgPrediction)
-            .normalize()
-            .scale(scale)
-        relativeLineTo(scope, direction)
-    }
-    drawPath(
-        predictionDirection,
-        color = color,
-        style = Stroke(5f)
-    )*/
 }
