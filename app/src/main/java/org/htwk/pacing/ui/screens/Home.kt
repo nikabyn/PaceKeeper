@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.datetime.Clock
 import org.htwk.pacing.ui.components.BatteryCard
+import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.Series
@@ -50,6 +51,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 maxPrediction,
                 modifier = Modifier.height(300.dp)
             )
+            LabelCard(energy = currentEnergy)
             BatteryCard(energy = currentEnergy)
             FeelingSelectionCard(navController)
         }
