@@ -40,7 +40,7 @@ import org.htwk.pacing.backend.database.Temperature
 import org.htwk.pacing.backend.database.Velocity
 
 /**
- * Takes a bunch of Health Connect Records,converts them to a specific TimedEntry
+ * Takes a bunch of Health Connect Records, converts them to a specific TimedEntry
  * and stores all of them in the database.
  *
  * Expects all Records in the list to be of the same subtype.

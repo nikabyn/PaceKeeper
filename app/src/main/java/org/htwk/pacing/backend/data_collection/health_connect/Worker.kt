@@ -37,6 +37,17 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
+/**
+ * Foreground worker responsible for collecting, normalising and storing health data from Health Connect.
+ * Monitors permission changes and dynamically starts or stops syncing for individual record types.
+ *
+ * - Syncs full record history if not recently fetched
+ * - Continuously fetches incremental changes
+ * - Runs in the foreground with a persistent notification to comply with long-running task requirements
+ * - Automatically retries jobs to ensure continuous operation
+ *
+ * This worker should never complete and has to restart if it does.
+ */
 class HealthConnectWorker(
     context: Context,
     workerParams: WorkerParameters,
