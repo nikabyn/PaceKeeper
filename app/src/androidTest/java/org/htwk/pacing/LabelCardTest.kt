@@ -6,7 +6,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.htwk.pacing.ui.components.LabelCard
-import org.htwk.pacing.R
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,7 +24,7 @@ class LabelCardTest {
         composeTestRule.setContent {
             LabelCard(energy = 0.2)
         }
-        
+
         composeTestRule
             .onNodeWithContentDescription("Energy level icon")
             .assertExists()
