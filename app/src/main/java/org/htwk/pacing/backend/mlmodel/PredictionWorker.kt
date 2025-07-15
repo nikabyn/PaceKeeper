@@ -47,15 +47,7 @@ class PredictionWorker(
         // Notification Channel and ID for the Foreground Service
         private const val FOREGROUND_CHANNEL_ID = "prediction_execution_foreground_ch"
         private const val FOREGROUND_NOTIFICATION_ID =
-            101 // Unique for this worker's FG notification
-
-        // Notification Channel and ID for Prediction Alerts
-        private const val ALERT_CHANNEL_ID = "prediction_alert_channel"
-        private const val ALERT_NOTIFICATION_ID_BASE =
-            200 // Base ID for alerts, can increment if needed
-
-        // Prediction constants
-        private const val WARNING_TRIGGER_THRESHOLD = 0.3 // Example threshold
+            201 // Unique for this worker's FG notification
     }
 
     /**
