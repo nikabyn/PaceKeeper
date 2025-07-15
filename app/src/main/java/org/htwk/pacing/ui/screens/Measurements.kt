@@ -131,7 +131,7 @@ fun MeasurementsScreen(
             )
 
             GraphCard(
-                title = "Energy Prediction",
+                title = stringResource(R.string.energy_level_debug_prediction),
                 series = predictedEnergyLevel,
                 xConfig = AxisConfig(
                     formatFunction = ::formatTime,

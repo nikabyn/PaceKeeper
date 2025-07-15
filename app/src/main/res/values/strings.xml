@@ -58,4 +58,5 @@
     <string name="energy_warning_text">Your Energy level is low. Please take a rest!</string>
     <string name="energy_prediction_running_channel">Background energy predictions</string>
     <string name="energy_prediction_running">Background energy prediction running…</string>
+    <string name="energy_level_debug_prediction">Energy Prediction (Debug)</string>
 </resources>
