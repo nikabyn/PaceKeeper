@@ -39,7 +39,7 @@ fun LabelCard(
 
         Icon(
             painter = icon,
-            contentDescription = "Energy level icon",
+            contentDescription = stringResource(R.string.label_energy_icon_name),
             tint = Color.Unspecified,
             modifier = Modifier.size(50.dp)
         )
