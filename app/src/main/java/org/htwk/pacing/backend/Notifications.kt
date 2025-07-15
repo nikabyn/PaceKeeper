@@ -128,7 +128,7 @@ fun showNotification(context: Context) {
 class NotificationsBackgroundWorker(
     context: Context,
     workerParams: WorkerParameters,
-    predictedEnergyLevelDao: PredictedEnergyLevelDao
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
