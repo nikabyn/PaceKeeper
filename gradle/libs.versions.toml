@@ -18,6 +18,7 @@ googleGuava = "32.1.2-android"
 healthConnectClient = "1.1.0-alpha08"
 kotlinCsvJvm = "1.10.0"
 coreSplashScreen = "1.0.1"
+material = "1.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,7 @@ google-guava = { module = "com.google.guava:guava", version = "googleGuava" }
 androidx-health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnectClient" }
 kotlin-csv-jvm = { module = "com.github.doyaaaaaken:kotlin-csv-jvm", version.ref = "kotlinCsvJvm" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashScreen" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
