@@ -28,6 +28,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.until
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.NotificationIds
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.ReadEvent
 import kotlin.reflect.KClass
@@ -41,7 +42,12 @@ class HealthConnectWorker(
     workerParams: WorkerParameters,
     val db: PacingDatabase,
 ) : CoroutineWorker(context, workerParams) {
-    val readEventDao = db.readEventDao()
+    companion object {
+        private const val TAG = "HealthConnectWorker"
+    }
+
+    private val readEventDao = db.readEventDao()
+    private val client = HealthConnectClient.getOrCreate(context)
 
     override suspend fun doWork(): Result = runBlocking {
         setForegroundAsync(getForegroundInfo())
@@ -51,7 +57,6 @@ class HealthConnectWorker(
 
         // React to permission changes
         val jobs = mutableMapOf<KClass<out Record>, Job>()
-
         fun launchRecordSyncJob(recordType: KClass<out Record>) {
             val job = launch {
                 try {
@@ -74,7 +79,6 @@ class HealthConnectWorker(
             Log.i(TAG, "Job for ${recordType.simpleName} started")
             jobs.put(recordType, job)
         }
-
         launch {
             permissionChanges.collect {
                 val permission = it.permission
@@ -128,8 +132,6 @@ class HealthConnectWorker(
         // Always restart worker if we get here
         return@runBlocking Result.retry()
     }
-
-    private val client = HealthConnectClient.getOrCreate(context)
 
     private suspend inline fun syncRecordChanges(recordType: KClass<out Record>) {
         var changesToken = client.getChangesToken(
@@ -192,32 +194,28 @@ class HealthConnectWorker(
     }
 
     private fun createNotification(): Notification {
-        val channelId = "health_connect_sync_ch"
-        val channel =
-            NotificationChannel(
-                channelId,
-                "Health Connect Sync",
-                NotificationManager.IMPORTANCE_LOW
-            )
+        val channelId = NotificationIds.HEALTH_CONNECT_SYNC_CHANNEL_ID
+        val channel = NotificationChannel(
+            channelId,
+            applicationContext.getString(R.string.health_connect_sync),
+            NotificationManager.IMPORTANCE_LOW
+        )
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
         return NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle("Collecting Health Data")
+            .setContentTitle(applicationContext.getString(R.string.collecting_health_data))
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .setOngoing(true)
             .build()
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
+        val notificationId = NotificationIds.HEALTH_CONNECT_SYNC_NOTIFICATION_ID
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ForegroundInfo(1, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            ForegroundInfo(notificationId, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
-            ForegroundInfo(1, createNotification())
+            ForegroundInfo(notificationId, createNotification())
         }
-    }
-
-    companion object {
-        private const val TAG = "HealthConnectWorker"
     }
 }
 

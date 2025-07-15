@@ -39,9 +39,16 @@ import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.Temperature
 import org.htwk.pacing.backend.database.Velocity
 
+/**
+ * Takes a bunch of Health Connect Records,converts them to a specific TimedEntry
+ * and stores all of them in the database.
+ *
+ * Expects all Records in the list to be of the same subtype.
+ * (ie. no mixing DistanceRecord and HeartRateRecord).
+ */
 fun storeRecords(db: PacingDatabase, records: List<Record>) {
     when (records.first()) {
-        is DistanceRecord -> storeDistances(
+        is DistanceRecord -> storeDistance(
             db.distanceDao(),
             records.filterIsInstance<DistanceRecord>(),
         )
@@ -95,7 +102,7 @@ fun storeRecords(db: PacingDatabase, records: List<Record>) {
     }
 }
 
-private fun storeDistances(dao: DistanceDao, records: List<DistanceRecord>) {
+private fun storeDistance(dao: DistanceDao, records: List<DistanceRecord>) {
     dao.insertMany(
         records.map {
             DistanceEntry(
