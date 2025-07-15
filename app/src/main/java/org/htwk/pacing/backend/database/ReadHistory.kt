@@ -20,6 +20,6 @@ interface ReadEventDao {
     @Query("select * from read_event")
     suspend fun getAll(): List<ReadEvent>
 
-    @Query("select * from read_event where record == :record")// order by receivedEnd desc limit 1
+    @Query("select * from read_event where record == :record")
     suspend fun getOfRecord(record: String): List<ReadEvent>
 }
