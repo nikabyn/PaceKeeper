@@ -9,10 +9,10 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 interface TimedSeries<E> {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(entry: E)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertMany(entries: List<E>)
 
     suspend fun deleteAll()
