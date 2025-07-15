@@ -6,19 +6,19 @@ import org.junit.Test
 class EnergyLevelCalculatorTest {
 
     @Test
-    fun calculateNewEnergyLevel_severity1_reducesCorrectly() {
+    fun calculateNewEnergyLevel_1_reducesCorrectly() {
         val result = calculateNewEnergyLevel(100.0, 1)
         assertEquals(95.0, result, 0.01)
     }
 
     @Test
-    fun calculateNewEnergyLevel_severity2_reducesCorrectly() {
+    fun calculateNewEnergyLevel_2_reducesCorrectly() {
         val result = calculateNewEnergyLevel(100.0, 2)
         assertEquals(80.0, result, 0.01)
     }
 
     @Test
-    fun calculateNewEnergyLevel_severity3_reducesCorrectly() {
+    fun calculateNewEnergyLevel_3_reducesCorrectly() {
         val result = calculateNewEnergyLevel(100.0, 3)
         assertEquals(60.0, result, 0.01)
     }
