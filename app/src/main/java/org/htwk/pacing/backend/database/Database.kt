@@ -27,12 +27,12 @@ import kotlinx.datetime.Instant
         contents are overwritten and they are also at once read as a whole.*/
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class
-    ],
 
+        ReadEvent::class,
+    ],
     version = 1,
     exportSchema = false,
 )
-
 @TypeConverters(Converters::class)
 abstract class PacingDatabase : RoomDatabase() {
     abstract fun distanceDao(): DistanceDao
@@ -52,6 +52,8 @@ abstract class PacingDatabase : RoomDatabase() {
     contents are overwritten and they are also at once read as a whole. */
     abstract fun predictedHeartRateDao(): PredictedHeartRateDao
     abstract fun predictedEnergyLevelDao(): PredictedEnergyLevelDao
+
+    abstract fun readEventDao(): ReadEventDao
 }
 
 class Converters {

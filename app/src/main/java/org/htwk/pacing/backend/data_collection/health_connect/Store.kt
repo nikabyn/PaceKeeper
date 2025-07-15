@@ -39,122 +39,169 @@ import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.Temperature
 import org.htwk.pacing.backend.database.Velocity
 
-suspend fun storeRecord(db: PacingDatabase, record: Record) {
-    when (record) {
-        is DistanceRecord -> storeDistance(db.distanceDao(), record)
-        is ElevationGainedRecord -> storeElevationGained(db.elevationGainedDao(), record)
-        is HeartRateRecord -> storeHeartRate(db.heartRateDao(), record)
-        is HeartRateVariabilityRmssdRecord -> storeHrv(db.heartRateVariabilityDao(), record)
-        is MenstruationPeriodRecord -> storeMenstruationPeriod(db.menstruationPeriodDao(), record)
-        is OxygenSaturationRecord -> storeOxygenSaturation(db.oxygenSaturationDao(), record)
-        is SkinTemperatureRecord -> storeSkinTemperature(db.skinTemperatureDao(), record)
-        is SleepSessionRecord -> storeSleepSession(db.sleepSessionsDao(), record)
-        is SpeedRecord -> storeSpeed(db.speedDao(), record)
-        is StepsRecord -> storeSteps(db.stepsDao(), record)
-        else -> throw Exception("Unknown record type ${record::class}")
+fun storeRecords(db: PacingDatabase, records: List<Record>) {
+    when (records.first()) {
+        is DistanceRecord -> storeDistances(
+            db.distanceDao(),
+            records.filterIsInstance<DistanceRecord>(),
+        )
+
+        is ElevationGainedRecord -> storeElevationGained(
+            db.elevationGainedDao(),
+            records.filterIsInstance<ElevationGainedRecord>(),
+        )
+
+        is HeartRateRecord -> storeHeartRate(
+            db.heartRateDao(),
+            records.filterIsInstance<HeartRateRecord>(),
+        )
+
+        is HeartRateVariabilityRmssdRecord -> storeHrv(
+            db.heartRateVariabilityDao(),
+            records.filterIsInstance<HeartRateVariabilityRmssdRecord>(),
+        )
+
+        is MenstruationPeriodRecord -> storeMenstruationPeriod(
+            db.menstruationPeriodDao(),
+            records.filterIsInstance<MenstruationPeriodRecord>(),
+        )
+
+        is OxygenSaturationRecord -> storeOxygenSaturation(
+            db.oxygenSaturationDao(),
+            records.filterIsInstance<OxygenSaturationRecord>(),
+        )
+
+        is SkinTemperatureRecord -> storeSkinTemperature(
+            db.skinTemperatureDao(),
+            records.filterIsInstance<SkinTemperatureRecord>(),
+        )
+
+        is SleepSessionRecord -> storeSleepSession(
+            db.sleepSessionsDao(),
+            records.filterIsInstance<SleepSessionRecord>(),
+        )
+
+        is SpeedRecord -> storeSpeed(
+            db.speedDao(),
+            records.filterIsInstance<SpeedRecord>(),
+        )
+
+        is StepsRecord -> storeSteps(
+            db.stepsDao(),
+            records.filterIsInstance<StepsRecord>(),
+        )
+
+        else -> throw Exception("Unknown record type ${records.first()::class}")
     }
 }
 
-private suspend fun storeDistance(dao: DistanceDao, record: DistanceRecord) {
-    dao.insert(
-        DistanceEntry(
-            record.startTime.toKotlinInstant(),
-            record.endTime.toKotlinInstant(),
-            Length.meters(record.distance.inMeters),
-        )
+private fun storeDistances(dao: DistanceDao, records: List<DistanceRecord>) {
+    dao.insertMany(
+        records.map {
+            DistanceEntry(
+                it.startTime.toKotlinInstant(),
+                it.endTime.toKotlinInstant(),
+                Length.meters(it.distance.inMeters),
+            )
+        }
     )
 }
 
-private suspend fun storeElevationGained(dao: ElevationGainedDao, record: ElevationGainedRecord) {
-    dao.insert(
+private fun storeElevationGained(dao: ElevationGainedDao, records: List<ElevationGainedRecord>) {
+    dao.insertMany(records.map {
         ElevationGainedEntry(
-            record.startTime.toKotlinInstant(),
-            record.endTime.toKotlinInstant(),
-            Length.meters(record.elevation.inMeters),
-        )
-    )
-}
-
-private suspend fun storeHeartRate(dao: HeartRateDao, record: HeartRateRecord) {
-    dao.insertMany(record.samples.map {
-        HeartRateEntry(
-            it.time.toKotlinInstant(),
-            it.beatsPerMinute
-        )
-    })
-}
-
-private suspend fun storeHrv(
-    dao: HeartRateVariabilityDao,
-    record: HeartRateVariabilityRmssdRecord
-) {
-    dao.insert(
-        HeartRateVariabilityEntry(
-            record.time.toKotlinInstant(),
-            record.heartRateVariabilityMillis
-        )
-    )
-}
-
-private suspend fun storeMenstruationPeriod(
-    dao: MenstruationPeriodDao,
-    record: MenstruationPeriodRecord
-) {
-    dao.insert(
-        MenstruationPeriodEntry(
-            record.startTime.toKotlinInstant(),
-            record.endTime.toKotlinInstant(),
-        )
-    )
-}
-
-private suspend fun storeOxygenSaturation(
-    dao: OxygenSaturationDao,
-    record: OxygenSaturationRecord
-) {
-    dao.insert(
-        OxygenSaturationEntry(
-            record.time.toKotlinInstant(),
-            Percentage.fromDouble(record.percentage.value)
-        )
-    )
-}
-
-private suspend fun storeSkinTemperature(dao: SkinTemperatureDao, record: SkinTemperatureRecord) {
-    val baseline = record.baseline?.inCelsius ?: 0.0
-    dao.insertMany(record.deltas.map {
-        SkinTemperatureEntry(
-            it.time.toKotlinInstant(),
-            Temperature.celsius(baseline + it.delta.inCelsius)
-        )
-    })
-}
-
-private suspend fun storeSleepSession(dao: SleepSessionDao, record: SleepSessionRecord) {
-    dao.insertMany(record.stages.map {
-        SleepSessionEntry(
             it.startTime.toKotlinInstant(),
             it.endTime.toKotlinInstant(),
-            SleepStage.fromInt(it.stage)
+            Length.meters(it.elevation.inMeters),
         )
     })
 }
 
-private suspend fun storeSpeed(dao: SpeedDao, record: SpeedRecord) {
-    dao.insertMany(record.samples.map {
-        SpeedEntry(
+private fun storeHeartRate(dao: HeartRateDao, records: List<HeartRateRecord>) {
+    dao.insertMany(records.flatMap {
+        it.samples.map { sample ->
+            HeartRateEntry(
+                sample.time.toKotlinInstant(),
+                sample.beatsPerMinute
+            )
+        }
+    })
+}
+
+private fun storeHrv(dao: HeartRateVariabilityDao, records: List<HeartRateVariabilityRmssdRecord>) {
+    dao.insertMany(records.map {
+        HeartRateVariabilityEntry(
             it.time.toKotlinInstant(),
-            Velocity.metersPerSecond(it.speed.inMetersPerSecond)
+            it.heartRateVariabilityMillis
         )
     })
 }
 
-private suspend fun storeSteps(dao: StepsDao, record: StepsRecord) {
-    dao.insert(
-        StepsEntry(
-            record.startTime.toKotlinInstant(),
-            record.endTime.toKotlinInstant(),
-            record.count
+private fun storeMenstruationPeriod(
+    dao: MenstruationPeriodDao,
+    records: List<MenstruationPeriodRecord>
+) {
+    dao.insertMany(records.map {
+        MenstruationPeriodEntry(
+            it.startTime.toKotlinInstant(),
+            it.endTime.toKotlinInstant(),
         )
-    )
+    })
+}
+
+private fun storeOxygenSaturation(
+    dao: OxygenSaturationDao,
+    records: List<OxygenSaturationRecord>
+) {
+    dao.insertMany(records.map {
+        OxygenSaturationEntry(
+            it.time.toKotlinInstant(),
+            Percentage.fromDouble(it.percentage.value)
+        )
+    })
+}
+
+private fun storeSkinTemperature(dao: SkinTemperatureDao, records: List<SkinTemperatureRecord>) {
+    dao.insertMany(records.flatMap {
+        val baseline = it.baseline?.inCelsius ?: 0.0
+        it.deltas.map { delta ->
+            SkinTemperatureEntry(
+                delta.time.toKotlinInstant(),
+                Temperature.celsius(baseline + delta.delta.inCelsius)
+            )
+        }
+    })
+}
+
+private fun storeSleepSession(dao: SleepSessionDao, records: List<SleepSessionRecord>) {
+    dao.insertMany(records.flatMap {
+        it.stages.map { stage ->
+            SleepSessionEntry(
+                stage.startTime.toKotlinInstant(),
+                stage.endTime.toKotlinInstant(),
+                SleepStage.fromInt(stage.stage)
+            )
+        }
+    })
+}
+
+private fun storeSpeed(dao: SpeedDao, records: List<SpeedRecord>) {
+    dao.insertMany(records.flatMap {
+        it.samples.map {
+            SpeedEntry(
+                it.time.toKotlinInstant(),
+                Velocity.metersPerSecond(it.speed.inMetersPerSecond)
+            )
+        }
+    })
+}
+
+private fun storeSteps(dao: StepsDao, records: List<StepsRecord>) {
+    dao.insertMany(records.map {
+        StepsEntry(
+            it.startTime.toKotlinInstant(),
+            it.endTime.toKotlinInstant(),
+            it.count
+        )
+    })
 }
