@@ -33,6 +33,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
@@ -56,6 +57,7 @@ fun MeasurementsScreen(
     val series by viewModel.heartRate.collectAsState()
     val feelingLevels by viewModel.feelingLevels.collectAsState()
     val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
+    val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
 
     Box(
         modifier = modifier
@@ -124,9 +126,18 @@ fun MeasurementsScreen(
                 title = stringResource(R.string.heart_rate_prediction),
                 series = series,
                 seriesPredicted = predictedHeartRate,
-                minPrediction = 0.1f,
-                avgPrediction = 0.35f,
-                maxPrediction = 0.4f,
+                yConfig = AxisConfig(range = 40.0..160.0, steps = 7u),
+                modifier = Modifier.height(300.dp)
+            )
+
+            GraphCard(
+                title = "Energy Prediction",
+                series = predictedEnergyLevel,
+                xConfig = AxisConfig(
+                    formatFunction = ::formatTime,
+                    steps = 2u,
+                ),
+                yConfig = AxisConfig(range = 0.0..1.0, steps = 5u),
                 modifier = Modifier.height(300.dp)
             )
 
@@ -150,6 +161,7 @@ class MeasurementsViewModel(
     heartRateDao: HeartRateDao,
     manualSymptomDao: ManualSymptomDao,
     predictedHeartRateDao: PredictedHeartRateDao,
+    predictedEnergyLevelDao: PredictedEnergyLevelDao,
 ) : ViewModel() {
     val feelingLevels = manualSymptomDao
         .getLastLive(1.days)
@@ -183,6 +195,21 @@ class MeasurementsViewModel(
         )
 
     val predictedHeartRate = predictedHeartRateDao
+        .getAllLive()
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
+            }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
+
+    val predictedEnergyLevel = predictedEnergyLevelDao
         .getAllLive()
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())

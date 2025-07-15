@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.components
 
-import androidx.annotation.FloatRange
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,9 +23,7 @@ fun <C : Collection<Double>, D : Collection<Double>> HeartRatePredictionCard(
     title: String,
     series: Series<C>,
     seriesPredicted: Series<D>,
-    @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
-    @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
-    @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
+    yConfig: AxisConfig,
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = title, modifier) {
@@ -42,7 +39,6 @@ fun <C : Collection<Double>, D : Collection<Double>> HeartRatePredictionCard(
         val start = (current - 6.hours).toEpochMilliseconds().toDouble()
         val end = (current + 6.hours).toEpochMilliseconds().toDouble()
 
-        val yConfig = AxisConfig(range = 40.0..160.0, steps = 7u)
         val xConfig = AxisConfig(
             range = start..end,
             formatFunction = {
