@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.hours
 
 /**
  * Shows a graph of the last 12 hours of the users energy level
- * and a prediction for the next 12 hours.
+ * and a prediction for the next 12 hoursit lo
  * The last value in the series is used as the current time.
  */
 @Composable
