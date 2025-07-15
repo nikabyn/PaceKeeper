@@ -2,12 +2,13 @@ package org.htwk.pacing.backend.heuristics
 
 object PemCalculator {
 
+    // vorläufige Konstante, ggf. über erfasste Metriken berechnen
     private const val PRIOR_PEM = 0.8
     private const val PRIOR_NOT_PEM = 1.0 - PRIOR_PEM
 
     fun calculatePemProbability(observedSymptoms: List<String>): Double {
         val matchedSymptoms = observedSymptoms.mapNotNull { DavenportData.findSymptom(it) }
-
+        val epsilon = 1e-6
         // Wenn kein bekanntes Symptom gefunden wurde, Rückgabe 0.0
         if (matchedSymptoms.isEmpty()) return 0.0
 
@@ -15,8 +16,8 @@ object PemCalculator {
         var likelihoodGivenNotPem = 1.0
 
         matchedSymptoms.forEach { symptom ->
-            likelihoodGivenPem *= symptom.prevalenceME
-            likelihoodGivenNotPem *= symptom.prevalenceControl
+            likelihoodGivenPem *= symptom.prevalenceME.coerceAtLeast(epsilon)
+            likelihoodGivenNotPem *= symptom.prevalenceControl.coerceAtLeast(epsilon)
         }
 
         val numerator = likelihoodGivenPem * PRIOR_PEM
