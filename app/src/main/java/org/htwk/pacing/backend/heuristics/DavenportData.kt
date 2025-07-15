@@ -17,5 +17,4 @@ object DavenportData {
     fun findSymptom(searchTerm: String): SymptomData? {
         return symptomList.find { it.symptom.contains(searchTerm, ignoreCase = true) }
     }
-
 }
