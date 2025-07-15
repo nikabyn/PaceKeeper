@@ -14,7 +14,7 @@ class MLModelNormalizeTest {
         val expectedStdDev = sqrt(200f) // sqrt(((60-80)² + (70-80)² + (80-80)² + (90-80)² + (100-80)²)/5)
 
         // Act
-        val (normalized, stats) = MLModel.normalize(input)
+        val (normalized, stats) = mlNormalize(input)
 
         // Assert
         assertEquals("Mean calculation incorrect", expectedMean, stats.mean, 0.001f)
@@ -44,7 +44,7 @@ class MLModelNormalizeTest {
         val expectedStdDev = 0.000001f // Should use the safety value
 
         // Act
-        val (normalized, stats) = MLModel.normalize(input)
+        val (normalized, stats) = mlNormalize(input)
 
         // Assert
         assertEquals("Mean calculation incorrect", expectedMean, stats.mean, 0.001f)
@@ -66,7 +66,7 @@ class MLModelNormalizeTest {
         val expectedStdDev = 0.000001f // Should use the safety value
 
         // Act
-        val (normalized, stats) = MLModel.normalize(input)
+        val (normalized, stats) = mlNormalize(input)
 
         // Assert
         assertEquals("Mean calculation incorrect", expectedMean, stats.mean, 0.001f)

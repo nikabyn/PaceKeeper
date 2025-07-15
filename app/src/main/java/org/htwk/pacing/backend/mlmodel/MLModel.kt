@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.mlmodel
 
 import android.content.Context
 import kotlinx.datetime.Instant
+import org.htwk.pacing.backend.mlmodel.MLModel.StochasticProperties
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
 import java.nio.FloatBuffer
@@ -11,6 +12,25 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
+
+/**
+ * Normalizes the input data, returns the normalized form and the stochastic properties for
+ * later denormalization
+ * @param input The input data to be normalized.
+ * @return A pair containing the normalized data and the stochastic properties.
+ * @see StochasticProperties
+ * @see denormalize
+ */
+
+fun mlNormalize(input: FloatArray): Pair<FloatArray, StochasticProperties> {
+    val mean = input.average().toFloat()
+    val standardDeviationNonSafe = input.map { (it - mean).pow(2) }.average().pow(0.5).toFloat()
+    val standardDeviationSafe = if (standardDeviationNonSafe == 0.0f) 0.000001f else standardDeviationNonSafe
+
+    val normalized = input.map { (it - mean) / standardDeviationSafe }.toFloatArray()
+    return Pair(normalized, StochasticProperties(mean, standardDeviationSafe))
+}
+
 
 class MLModel(context: Context) {
     // create tensor flow lite interpreter for model at TFLITE_MODEL_FILE_PATH
@@ -97,7 +117,7 @@ class MLModel(context: Context) {
      *
      * @property mean The average value of the dataset.
      * @property standardDeviation The measure of the amount of variation or dispersion of the dataset.
-     * @see normalize
+     * @see mlNormalize
      * @see denormalize
      */
     data class StochasticProperties(
@@ -105,31 +125,13 @@ class MLModel(context: Context) {
         val standardDeviation: Float
     )
 
-    /**
-     * Normalizes the input data, returns the normalized form and the stochastic properties for
-     * later denormalization
-     * @param input The input data to be normalized.
-     * @return A pair containing the normalized data and the stochastic properties.
-     * @see StochasticProperties
-     * @see denormalize
-     */
-    fun normalize(input: FloatArray): Pair<FloatArray, StochasticProperties> {
-        val mean = input.average().toFloat()
-        val standardDeviationNonSafe =
-            input.map { x -> (x - mean).pow(2) }.average().pow(0.5).toFloat()
-        val standardDeviationSafe =
-            if (standardDeviationNonSafe == 0.0f) 0.000001f else standardDeviationNonSafe
-
-        val normalized = input.map { x -> (x - mean) / standardDeviationSafe }.toFloatArray()
-        return Pair(normalized, StochasticProperties(mean, standardDeviationSafe))
-    }
 
     /**
      * Denormalizes the input data, returns the denormalized form
      * @param input The input data to be denormalized.
      * @param stochasticProperties The stochastic properties used for normalization.
      * @return The denormalized data.
-     * @see normalize
+     * @see mlNormalize
      * @see StochasticProperties
      */
     fun denormalize(
@@ -199,7 +201,7 @@ class MLModel(context: Context) {
         if (input.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
 
         //normalize heart rate input, because model works in normalized heart rate space
-        val (normalized, stochasticProperties) = normalize(input)
+        val (normalized, stochasticProperties) = mlNormalize(input)
 
         //encode time features
         val inputBuffer = createInputBufferWithTimeFeatures(normalized, endTime)
@@ -217,3 +219,4 @@ class MLModel(context: Context) {
         return return denormalizedOutput
     }
 }
+
