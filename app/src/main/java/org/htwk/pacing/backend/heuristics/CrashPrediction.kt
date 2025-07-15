@@ -1,10 +1,4 @@
 package org.htwk.pacing.backend.heuristics
-import org.htwk.pacing.backend.heuristics.DavenportData
-
-/**
- * @param observedSymptoms Liste der beobachteten Symptome als Strings
- * @return Wahrscheinlichkeit für PEM (zwischen 0.0 und 1.0)
- */
 
 object PemCalculator {
 
