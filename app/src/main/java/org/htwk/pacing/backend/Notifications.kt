@@ -107,7 +107,7 @@ fun showNotification(context: Context) {
     )
 
     val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-        .setContentTitle("WARNING!")
+        .setContentTitle(context.getString(R.string.warning))
         .setContentText(context.getString(R.string.energy_warning_text))
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setContentIntent(pendingIntent)
