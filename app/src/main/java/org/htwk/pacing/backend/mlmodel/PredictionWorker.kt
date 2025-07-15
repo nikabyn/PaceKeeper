@@ -172,8 +172,7 @@ class PredictionWorker(
             }
 
             val modelInput =
-                prepareModelInput(timeSortedHeartRateData, now10min).map { f -> 150.0f }
-                    .toFloatArray()
+                prepareModelInput(timeSortedHeartRateData, now10min)
 
             val predictionOutput = mlModel.predict(
                 modelInput, now10min
