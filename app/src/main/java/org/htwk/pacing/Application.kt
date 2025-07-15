@@ -62,7 +62,11 @@ class TestApplication : ProductionApplication() {
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
+        val bootCompleted = Intent.ACTION_BOOT_COMPLETED == intent.action
+        val appUnsuspended = Intent.ACTION_PACKAGES_UNSUSPENDED == intent.action
+                && Intent.EXTRA_CHANGED_PACKAGE_LIST.contains(context.packageName)
+
+        if (bootCompleted || appUnsuspended) {
             val wm = initWorkManager(context)
             Log.d("BootReceiver", "Enqueued worker")
             enqueueHealthConnectWorker(wm)

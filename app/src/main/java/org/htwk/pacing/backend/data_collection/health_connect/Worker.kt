@@ -36,6 +36,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Foreground worker responsible for collecting, normalising and storing health data from Health Connect.
@@ -82,7 +83,7 @@ class HealthConnectWorker(
                 jobs.remove(recordType)
                 if (currentPermissions.contains(HealthPermission.getReadPermission(recordType))) {
                     launch {
-                        delay(10_000)
+                        delay(10.seconds.inWholeMilliseconds)
                         launchRecordSyncJob(recordType)
                     }
                 }
@@ -169,11 +170,10 @@ class HealthConnectWorker(
 
         val end = Clock.System.now()
         val start = lastEvent?.time ?: (end - 30.days)
-        Log.d(TAG, "Read ${start.until(end, DateTimeUnit.MILLISECOND).milliseconds}")
-
         // Do not read history if we have read in the last 1 hour
         if (start > end - 1.hours) return
 
+        Log.d(TAG, "Read ${start.until(end, DateTimeUnit.MILLISECOND).milliseconds}")
         val history = mutableListOf<Record>()
         var nextPageToken: String? = null
         val pageSize = 1000
