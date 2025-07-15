@@ -46,7 +46,7 @@ class MLModel(context: Context) {
      * @property weekCos The cosine component of the day of the week (7-day cycle).
      * @see encodeTimeToCyclicalFeature
      */
-    private data class CyclicalTimepointRepresentation(
+    data class CyclicalTimepointRepresentation(
         val daySin: Double,
         val dayCos: Double,
         val weekSin: Double,
@@ -67,7 +67,7 @@ class MLModel(context: Context) {
      *         - The second inner [Pair] holds the (sine, cosine) for the day of the week.
      * @see CyclicalTimepointRepresentation
      */
-    private fun encodeTimeToCyclicalFeature(
+    fun encodeTimeToCyclicalFeature(
         instant: Instant
     ): CyclicalTimepointRepresentation {
         val secondsInDay = 1.days.inWholeSeconds
@@ -100,7 +100,7 @@ class MLModel(context: Context) {
      * @see normalize
      * @see denormalize
      */
-    private data class StochasticProperties(
+    data class StochasticProperties(
         val mean: Float,
         val standardDeviation: Float
     )
@@ -113,7 +113,7 @@ class MLModel(context: Context) {
      * @see StochasticProperties
      * @see denormalize
      */
-    private fun normalize(input: FloatArray): Pair<FloatArray, StochasticProperties> {
+    fun normalize(input: FloatArray): Pair<FloatArray, StochasticProperties> {
         val mean = input.average().toFloat()
         val standardDeviationNonSafe =
             input.map { x -> (x - mean).pow(2) }.average().pow(0.5).toFloat()
@@ -132,7 +132,7 @@ class MLModel(context: Context) {
      * @see normalize
      * @see StochasticProperties
      */
-    private fun denormalize(
+    fun denormalize(
         input: FloatArray,
         stochasticProperties: StochasticProperties
     ): FloatArray {
@@ -153,7 +153,7 @@ class MLModel(context: Context) {
      * @param endTime The [Instant] marking the end of the input data period. Time features are calculated relative to this point.
      * @return A [FloatBuffer] ready for model inference, containing the combined heart rate and time features.
      */
-    private fun createInputBufferWithTimeFeatures(
+   fun createInputBufferWithTimeFeatures(
         inputNormalized: FloatArray,
         endTime: Instant
     ): FloatBuffer {
