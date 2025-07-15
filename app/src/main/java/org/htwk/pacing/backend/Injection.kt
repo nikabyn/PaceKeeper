@@ -74,9 +74,10 @@ val appModule = module {
 
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
     worker { context, params -> PredictionWorker(context, params, get(), get(), get(), get()) }
-    
-    //TODO: does this worker have to be entered here like the other ones?
-    //worker { context, params -> NotificationsBackgroundWorker(context, params, get()) }
+
+    /*koin sets up the dependencies for the worker class instance here, the actual execution/
+    scheduling is handled elsewhere*/
+    worker { context, params -> NotificationsBackgroundWorker(context, params, get()) }
 }
 
 /**
