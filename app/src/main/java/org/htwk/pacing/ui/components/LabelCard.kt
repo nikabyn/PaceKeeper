@@ -26,12 +26,11 @@ fun LabelCard(
     val energyLevel = if (energy == 0.0) 1 else ceil(energy * 6).toInt().coerceIn(1, 6)
 
     val (labelText, icon: Painter) = when (energyLevel) {
-        1 -> Pair(stringResource(R.string.label_energy_level_1), painterResource(R.drawable.ic_energy_level_1))
-        2 -> Pair(stringResource(R.string.label_energy_level_2), painterResource(R.drawable.ic_energy_level_2))
-        3 -> Pair(stringResource(R.string.label_energy_level_3), painterResource(R.drawable.ic_energy_level_3))
-        4 -> Pair(stringResource(R.string.label_energy_level_4), painterResource(R.drawable.ic_energy_level_4))
-        5 -> Pair(stringResource(R.string.label_energy_level_5), painterResource(R.drawable.ic_energy_level_5))
-        else -> Pair(stringResource(R.string.label_energy_level_6), painterResource(R.drawable.ic_energy_level_6))
+        1 -> Pair(stringResource(R.string.label_energy_level_very_low), painterResource(R.drawable.ic_energy_level_very_low))
+        2 -> Pair(stringResource(R.string.label_energy_level_low), painterResource(R.drawable.ic_energy_level_low))
+        3,4 -> Pair(stringResource(R.string.label_energy_level_moderate), painterResource(R.drawable.ic_energy_level_moderate))
+        5 -> Pair(stringResource(R.string.label_energy_level_high), painterResource(R.drawable.ic_energy_level_high))
+        else -> Pair(stringResource(R.string.label_energy_level_very_high), painterResource(R.drawable.ic_energy_level_very_high))
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,

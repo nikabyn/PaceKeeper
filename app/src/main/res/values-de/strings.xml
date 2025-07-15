@@ -55,10 +55,9 @@
     <string name="should_not_be_empty">Darf nicht leer sein</string>
     <string name="confirm">Bestätigen</string>
     <string name="dismiss">Verwerfen</string>
-    <string name="label_energy_level_1">Sehr niedriges Energielevel</string>
-    <string name="label_energy_level_2">Niedriges Energielevel</string>
-    <string name="label_energy_level_3">Mäßiges Energielevel</string>
-    <string name="label_energy_level_4">Mäßiges Energielevel</string>
-    <string name="label_energy_level_5">Gutes Energielevel</string>
-    <string name="label_energy_level_6">Sehr gutes Energielevel</string>
+    <string name="label_energy_level_very_low">Sehr niedriges Energielevel</string>
+    <string name="label_energy_level_low">Niedriges Energielevel</string>
+    <string name="label_energy_level_moderate">Mäßiges Energielevel</string>
+    <string name="label_energy_level_high">Hohes Energielevel</string>
+    <string name="label_energy_level_very_high">Sehr hohes Energielevel</string>
 </resources>
