@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.screens
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,9 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -46,18 +44,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.data_collection.Permissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
-
-val requiredPermissions = setOf(
-    HealthPermission.getReadPermission(StepsRecord::class),
-    HealthPermission.getReadPermission(HeartRateRecord::class),
-    HealthPermission.getWritePermission(HeartRateRecord::class) //für schreiben des csv imports
-)
 
 /**
  * Verwaltet die Verbindung zu Health Connect.
@@ -81,11 +74,10 @@ fun SettingsScreen(
         Log.d("HealthConnectDebug", "Permission activity result: $granted")
     }
 
-    // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
     suspend fun updateConnectionState() {
         val client = HealthConnectClient.getOrCreate(context)
-        val granted = client.permissionController.getGrantedPermissions()
-        isConnected = requiredPermissions.all { it in granted }
+        isConnected = client.permissionController.getGrantedPermissions()
+            .any { it in Permissions.wanted }
     }
 
     LaunchedEffect(Unit) {
@@ -124,18 +116,15 @@ fun SettingsScreen(
             HealthConnectItem(
                 connected = isConnected,
                 onClick = {
-                    val launchIntent =
-                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-                    if (launchIntent != null) {
-                        context.startActivity(launchIntent)
-                    } else {
-                        Log.w("HealthConnectDebug", "Health Connect not installed.")
+                    if (!isConnected) {
+                        requestPermissionsActivity.launch(Permissions.wanted)
+                        return@HealthConnectItem
                     }
 
-                    if (!isConnected) {
-                        requestPermissionsActivity.launch(requiredPermissions)
-                    }
-                },
+                    val healthConnectSettingsIntent =
+                        Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+                    context.startActivity(healthConnectSettingsIntent)
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))

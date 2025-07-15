@@ -1,0 +1,340 @@
+package org.htwk.pacing.backend.data_collection
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+import android.os.Build
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.changes.UpsertionChange
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.DistanceRecord
+import androidx.health.connect.client.records.ElevationGainedRecord
+import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.MenstruationPeriodRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.SkinTemperatureRecord
+import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.SpeedRecord
+import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.request.ChangesTokenRequest
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
+import androidx.work.WorkerParameters
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
+import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.ElevationGainedEntry
+import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
+import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.database.MenstruationPeriodEntry
+import org.htwk.pacing.backend.database.OxygenSaturationEntry
+import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SleepSessionEntry
+import org.htwk.pacing.backend.database.SleepStage
+import org.htwk.pacing.backend.database.SpeedEntry
+import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.Temperature
+import org.htwk.pacing.backend.database.TimedEntry
+import org.htwk.pacing.backend.database.TimedSeries
+import org.htwk.pacing.backend.database.Velocity
+import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.days
+
+object Permissions {
+    val readDistance = HealthPermission.getReadPermission(DistanceRecord::class)
+    val readElevationGained = HealthPermission.getReadPermission(ElevationGainedRecord::class)
+    val readHeartRate = HealthPermission.getReadPermission(HeartRateRecord::class)
+    val readHeartRateVariability =
+        HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class)
+    val readMenstruationPeriod = HealthPermission.getReadPermission(MenstruationPeriodRecord::class)
+    val readOxygenSaturation = HealthPermission.getReadPermission(OxygenSaturationRecord::class)
+    val readSkinTemperature = HealthPermission.getReadPermission(SkinTemperatureRecord::class)
+    val readSleepSession = HealthPermission.getReadPermission(SleepSessionRecord::class)
+    val readSpeed = HealthPermission.getReadPermission(SpeedRecord::class)
+    val readSteps = HealthPermission.getReadPermission(StepsRecord::class)
+
+
+    val wanted = setOf(
+        readDistance,
+        readElevationGained,
+        readHeartRate,
+        readHeartRateVariability,
+        readMenstruationPeriod,
+        readOxygenSaturation,
+        readSkinTemperature,
+        readSleepSession,
+        readSpeed,
+        readSteps,
+    )
+}
+
+val wantedRecords = setOf(
+    DistanceRecord::class,
+    ElevationGainedRecord::class,
+    HeartRateRecord::class,
+    HeartRateVariabilityRmssdRecord::class,
+    MenstruationPeriodRecord::class,
+    OxygenSaturationRecord::class,
+    SkinTemperatureRecord::class,
+    SleepSessionRecord::class,
+    SpeedRecord::class,
+    StepsRecord::class,
+)
+
+class HealthConnectWorker(
+    context: Context,
+    workerParams: WorkerParameters,
+    private val db: PacingDatabase,
+) : CoroutineWorker(context, workerParams) {
+    companion object {
+        private const val TAG = "HealthConnectWorker"
+    }
+
+    private val client = HealthConnectClient.getOrCreate(context)
+    private val distanceDao = db.distanceDao()
+    private val elevationGainedDao = db.elevationGainedDao()
+    private val heartRateDao = db.heartRateDao()
+    private val heartRateVariabilityDao = db.heartRateVariabilityDao()
+    private val menstruationPeriodDao = db.menstruationPeriodDao()
+    private val oxygenSaturationDao = db.oxygenSaturationDao()
+    private val skinTemperatureDao = db.skinTemperatureDao()
+    private val sleepSessionsDao = db.sleepSessionsDao()
+    private val speedDao = db.speedDao()
+    private val stepsDao = db.stepsDao()
+
+    override suspend fun doWork(): Result {
+        setForegroundAsync(getForegroundInfo())
+
+        val jobs = mutableMapOf<KClass<out Record>, Job>()
+        while (true) {
+            val grantedPermissions = client.permissionController.getGrantedPermissions()
+
+            for (recordType in wantedRecords) {
+                val permission = HealthPermission.getReadPermission(recordType)
+
+                if (grantedPermissions.contains(permission)) {
+                    if (jobs.contains(recordType)) continue
+
+                    val job = CoroutineScope(Dispatchers.IO).launch {
+                        syncChanges(recordType)
+                    }
+                    job.invokeOnCompletion {
+                        // Log.w(TAG, "Job for ${recordType.simpleName} completed")
+                        jobs.remove(recordType)
+                    }
+
+                    Log.i(TAG, "Job for ${recordType.simpleName} started")
+                    jobs.put(recordType, job)
+                } else {
+                    // Log.w(TAG, "Job for ${recordType.simpleName} canceled, missing permissions")
+                    jobs.remove(recordType)
+                }
+            }
+
+            delay(10_000)
+        }
+
+        // Always restart worker if we get here
+        return Result.retry()
+    }
+
+
+    private suspend inline fun syncChanges(recordType: KClass<out Record>) {
+        var changesToken = client.getChangesToken(
+            ChangesTokenRequest(setOf(recordType))
+        )
+        while (true) {
+            val changesResponse = client.getChanges(changesToken)
+            val newRecords = changesResponse.changes.mapNotNull {
+                if (it is UpsertionChange) it.record else null
+            }
+            if (newRecords.isNotEmpty()) {
+                Log.d(TAG, "Received records: $newRecords")
+            }
+            for (record in newRecords) {
+                storeRecord(record)
+            }
+            changesToken = changesResponse.nextChangesToken
+            delay(5_000)
+        }
+    }
+
+    private suspend fun storeRecord(record: Record) {
+        when (record) {
+            is DistanceRecord -> storeDistance(record)
+            is ElevationGainedRecord -> storeElevationGained(record)
+            is HeartRateRecord -> storeHeartRate(record)
+            is HeartRateVariabilityRmssdRecord -> storeHeartRateVariability(record)
+            is MenstruationPeriodRecord -> storemenstruationPeriod(record)
+            is OxygenSaturationRecord -> storeOxygenSaturation(record)
+            is SkinTemperatureRecord -> storeSkinTemperature(record)
+            is SleepSessionRecord -> storeSleepSession(record)
+            is SpeedRecord -> storeSpeed(record)
+            is StepsRecord -> storeSteps(record)
+        }
+    }
+
+
+    private suspend fun storeDistance(record: DistanceRecord) {
+        distanceDao.insert(
+            DistanceEntry(
+                record.startTime.toKotlinInstant(),
+                record.endTime.toKotlinInstant(),
+                Length.meters(record.distance.inMeters),
+            )
+        )
+    }
+
+    private suspend fun storeElevationGained(record: ElevationGainedRecord) {
+        elevationGainedDao.insert(
+            ElevationGainedEntry(
+                record.startTime.toKotlinInstant(),
+                record.endTime.toKotlinInstant(),
+                Length.meters(record.elevation.inMeters),
+            )
+        )
+
+    }
+
+    private suspend fun storeHeartRate(record: HeartRateRecord) {
+        heartRateDao.insertMany(record.samples.map {
+            HeartRateEntry(
+                it.time.toKotlinInstant(),
+                it.beatsPerMinute
+            )
+        })
+    }
+
+    private suspend fun storeHeartRateVariability(record: HeartRateVariabilityRmssdRecord) {
+        heartRateVariabilityDao.insert(
+            HeartRateVariabilityEntry(
+                record.time.toKotlinInstant(),
+                record.heartRateVariabilityMillis
+            )
+        )
+    }
+
+    private suspend fun storemenstruationPeriod(record: MenstruationPeriodRecord) {
+        menstruationPeriodDao.insert(
+            MenstruationPeriodEntry(
+                record.startTime.toKotlinInstant(),
+                record.endTime.toKotlinInstant(),
+            )
+        )
+    }
+
+    private suspend fun storeOxygenSaturation(record: OxygenSaturationRecord) {
+        oxygenSaturationDao.insert(
+            OxygenSaturationEntry(
+                record.time.toKotlinInstant(),
+                Percentage.fromDouble(record.percentage.value)
+            )
+        )
+    }
+
+    private suspend fun storeSkinTemperature(record: SkinTemperatureRecord) {
+        val baseline = record.baseline?.inCelsius ?: 0.0
+        skinTemperatureDao.insertMany(record.deltas.map {
+            SkinTemperatureEntry(
+                it.time.toKotlinInstant(),
+                Temperature.celsius(baseline + it.delta.inCelsius)
+            )
+        })
+    }
+
+    private suspend fun storeSleepSession(record: SleepSessionRecord) {
+        sleepSessionsDao.insertMany(record.stages.map {
+            SleepSessionEntry(
+                it.startTime.toKotlinInstant(),
+                it.endTime.toKotlinInstant(),
+                SleepStage.fromInt(it.stage)
+            )
+        })
+    }
+
+    private suspend fun storeSpeed(record: SpeedRecord) {
+        speedDao.insertMany(record.samples.map {
+            SpeedEntry(
+                it.time.toKotlinInstant(),
+                Velocity.metersPerSecond(it.speed.inMetersPerSecond)
+            )
+        })
+    }
+
+
+    private suspend fun storeSteps(record: StepsRecord) {
+        stepsDao.insert(
+            StepsEntry(
+                record.startTime.toKotlinInstant(),
+                record.endTime.toKotlinInstant(),
+                record.count
+            )
+        )
+    }
+
+    private suspend fun <E : TimedEntry> endTimeLastEntry(dao: TimedSeries<E>) =
+        dao.getLatest()?.end ?: Clock.System.now().minus(30.days)
+
+    private inline fun <reified T : Record> recordFlow(start: Instant): Flow<T> = flow {
+        var nextPageToken: String? = null
+
+        do {
+            val request = ReadRecordsRequest(
+                recordType = T::class,
+                timeRangeFilter = TimeRangeFilter.between(
+                    start.toJavaInstant(),
+                    Clock.System.now().toJavaInstant()
+                ),
+                pageToken = nextPageToken
+            )
+            val response = client.readRecords(request)
+            response.records.forEach { emit(it) }
+            nextPageToken = response.pageToken
+        } while (nextPageToken != null)
+    }
+
+    private fun createNotification(): Notification {
+        val channelId = "health_connect_sync_ch"
+        val channel =
+            NotificationChannel(
+                channelId,
+                "Health Connect Sync",
+                NotificationManager.IMPORTANCE_LOW
+            )
+        applicationContext.getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(channel)
+        return NotificationCompat.Builder(applicationContext, channelId)
+            .setContentTitle("Reading data from Health Connect…")
+            .setSmallIcon(R.drawable.rounded_monitor_heart_24)
+            .build()
+    }
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(1, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(1, createNotification())
+        }
+    }
+}

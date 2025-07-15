@@ -69,6 +69,5 @@ class RandomHeartRateWorker(
         } else {
             ForegroundInfo(1, createNotification())
         }
-
     }
 }

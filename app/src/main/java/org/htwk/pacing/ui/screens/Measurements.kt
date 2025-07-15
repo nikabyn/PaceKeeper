@@ -45,6 +45,7 @@ import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -180,7 +181,7 @@ class MeasurementsViewModel(
         )
 
     val heartRate = heartRateDao
-        .getLastLive(10.seconds)
+        .getLastLive(12.hours)
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
             entries.forEach { (time, value) ->

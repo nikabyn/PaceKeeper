@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
+import org.htwk.pacing.backend.data_collection.HealthConnectWorker
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.backend.productionModule
@@ -21,7 +22,6 @@ import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
-import org.htwk.pacing.backend.data_collection.HealthConnectWorkerScheduler
 
 /**
  * Entry point for non UI related work.
@@ -31,7 +31,7 @@ open class ProductionApplication : Application(), KoinComponent {
         super.onCreate()
         startInjection()
         val wm = initWorkManager()
-        enqueueRandomHeartRateWorker(wm)
+        enqueueHealthConnectWorker(wm)
         HealthConnectWorkerScheduler.scheduleHealthSync(this)
         enqueuePredictionWorker(wm)
     }
@@ -47,16 +47,16 @@ open class ProductionApplication : Application(), KoinComponent {
         return WorkManager.getInstance(this)
     }
 
-    fun enqueueRandomHeartRateWorker(wm: WorkManager) {
-        val workRequest = OneTimeWorkRequestBuilder<RandomHeartRateWorker>()
+    fun enqueueHealthConnectWorker(wm: WorkManager) {
+        val workRequest = OneTimeWorkRequestBuilder<HealthConnectWorker>()
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
         wm.enqueueUniqueWork(
-            "RandomHeartRateGeneration",
+            "HealthConnectDataCollection",
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        Log.d("PacingApp", "Enqueued RandomHeartRateWorker")
+        Log.d("PacingApp", "Enqueued HealthConnectWorker")
     }
 
     fun enqueuePredictionWorker(wm: WorkManager) {

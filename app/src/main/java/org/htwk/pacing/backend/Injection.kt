@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import org.htwk.pacing.backend.data_collection.HealthConnectWorker
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.HeartRateDao
@@ -72,7 +73,7 @@ val appModule = module {
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
 
-    worker { context, params -> RandomHeartRateWorker(context, params, get()) }
+    worker { context, params -> HealthConnectWorker(context, params, get()) }
     worker { context, params -> PredictionWorker(context, params, get(), get(), get(), get()) }
 
     /*koin sets up the dependencies for the worker class instance here, the actual execution/
