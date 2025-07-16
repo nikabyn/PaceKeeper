@@ -36,7 +36,7 @@ object NotificationIds {
     const val HEALTH_CONNECT_SYNC_CHANNEL_ID = "health_connect_sync_ch"
     const val HEALTH_CONNECT_SYNC_NOTIFICATION_ID = 1
 
-    const val ENERGY_LOW_CHANNEL_ID = "energy_low_ch"
+    const val ENERGY_WARNING_CHANNEL_ID = "energy_low_ch"
     const val ENERGY_WARNING_NOTIFICATION_ID = 2
 }
 
@@ -72,7 +72,7 @@ fun initNotificationSystem(activity: ComponentActivity) {
 
 fun createNotificationChannel(context: Context) {
     // Create channel ONLY on API 26+
-    val channelId = NotificationIds.ENERGY_LOW_CHANNEL_ID
+    val channelId = NotificationIds.ENERGY_WARNING_CHANNEL_ID
     val channelName = "Energy Notification Channel"
     val importance = NotificationManager.IMPORTANCE_DEFAULT
     val channel = NotificationChannel(channelId, channelName, importance).apply {
@@ -115,7 +115,7 @@ fun showNotification(context: Context) {
         context, 0, intent, PendingIntent.FLAG_IMMUTABLE
     )
 
-    val builder = NotificationCompat.Builder(context, NotificationIds.ENERGY_LOW_CHANNEL_ID)
+    val builder = NotificationCompat.Builder(context, NotificationIds.ENERGY_WARNING_CHANNEL_ID)
         .setContentTitle("WARNING!")
         .setContentText(context.getString(R.string.energy_warning_text))
         .setPriority(NotificationCompat.PRIORITY_HIGH)
