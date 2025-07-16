@@ -135,7 +135,7 @@ class MLModel(context: Context) {
      */
     fun createInputBufferWithTimeFeaturesAndDerivatives(
         inputHeartRateNormalized: FloatArray,
-        hasDataMask: BooleanArray,
+        inputHasDataMask: BooleanArray,
         endTime: Instant
     ): FloatBuffer {
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT)
@@ -151,12 +151,7 @@ class MLModel(context: Context) {
                 .toFloatArray()
 
         for (i in 0 until INPUT_SIZE) {
-            val encodedHasData = if (hasDataMask[i]) {
-                1.0f
-            } else {
-                0.0f
-            }
-
+            val encodedHasData = if (inputHasDataMask[i]) 1.0f else 0.0f
             inputBuffer.put(encodedHasData)
 
             inputBuffer.put(inputHeartRateNormalized[i])
@@ -191,21 +186,26 @@ class MLModel(context: Context) {
      * Also, we work with FloatBuffer here since that's what TFLite expects. Using FloatArray would
      * require to much conversion boilerplate.
      *
-     * @param input A [FloatArray] representing historical heart rate data. The size must be equal to `INPUT_SIZE`.
+     * @param inputHeartRate A [FloatArray] representing historical heart rate data. The size must be equal to `INPUT_SIZE`.
+     * @param inputHasDataMask [BooleanArray] representing whether data existed at a certain timepoint
      * @param endTime An [Instant] representing the timestamp of the last data point in the `input` array.
      * @return A [FloatArray] containing the predicted future heart rate values. The size will be equal to `OUTPUT_SIZE`.
      */
-    fun predict(input: FloatArray, endTime: Instant): FloatArray {
-        if (input.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
+    fun predict(
+        inputHeartRate: FloatArray,
+        inputHasDataMask: BooleanArray,
+        endTime: Instant
+    ): FloatArray {
+        if (inputHeartRate.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
 
         //normalize heart rate input, because model works in normalized heart rate space
-        val normalized = mlNormalize(input)
+        val normalized = mlNormalize(inputHeartRate)
 
         //encode time features
         val inputBuffer = createInputBufferWithTimeFeaturesAndDerivatives(
-            normalized,
-            hasDataMask = BooleanArray(normalized.size).map { it -> true }.toBooleanArray(),
-            endTime
+            inputHeartRateNormalized = normalized,
+            inputHasDataMask = inputHasDataMask,
+            endTime = endTime
         )
 
         //run inference and store in output buffer
