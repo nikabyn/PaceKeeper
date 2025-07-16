@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -29,13 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -54,12 +50,8 @@ import org.htwk.pacing.ui.components.withFill
 import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
 @Composable
 fun MeasurementsScreen(
     modifier: Modifier = Modifier,
@@ -153,8 +145,6 @@ fun MeasurementsScreen(
                 ),
                 pathConfig = pathConfig,
             )
-
-            val now = kotlin.time.Clock.System.now()
 
             HeartRatePredictionCard(
                 title = stringResource(R.string.heart_rate_prediction),

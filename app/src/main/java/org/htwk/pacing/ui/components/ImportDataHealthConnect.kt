@@ -148,10 +148,8 @@ fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
                 startZoneOffset = ts.offset,
                 endTime = ts.toInstant(),
                 endZoneOffset = ts.offset,
+                samples = listOf(HeartRateRecord.Sample(ts.toInstant(), bpm)),
                 metadata = Metadata.unknownRecordingMethod(),
-                samples = listOf(
-                    HeartRateRecord.Sample(ts.toInstant(), bpm)
-                )
             )
         } catch (_: Exception) {
             null

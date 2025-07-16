@@ -90,19 +90,19 @@ data class Float2D(val x: Float, val y: Float) {
 }
 
 /**
-* Rounds a time instant down to a given resolution.
-*
-* ## Examples
-*
-* ```kotlin
-* roundInstantToResolution(Clock.System.now(), 10.minutes) //will round down to last 10 minute mark
-* ```
-*
-* @param instant time point to be rounded
-* @param resolution resolution to be rounded to
-*/
-
+ * Rounds a time instant down to a given resolution.
+ *
+ * ## Examples
+ *
+ * ```kotlin
+ * roundInstantToResolution(Clock.System.now(), 10.minutes) //will round down to last 10 minute mark
+ * ```
+ *
+ * @param instant time point to be rounded
+ * @param resolution resolution to be rounded to
+ */
 fun roundInstantToResolution(instant: Instant, resolution: Duration): Instant {
-    val truncatedEpochMillis = instant.toEpochMilliseconds() - (instant.toEpochMilliseconds() % resolution.inWholeMilliseconds)
+    val truncatedEpochMillis =
+        instant.toEpochMilliseconds() - (instant.toEpochMilliseconds() % resolution.inWholeMilliseconds)
     return Instant.fromEpochMilliseconds(truncatedEpochMillis)
 }
