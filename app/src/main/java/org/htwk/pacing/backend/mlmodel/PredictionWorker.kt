@@ -175,7 +175,8 @@ class PredictionWorker(
                 prepareModelInput(timeSortedHeartRateData, now10min)
 
             val predictionOutput = mlModel.predict(
-                modelInput, now10min
+                modelInput,
+                now10min
             )
 
             updateDBWithPredictionOutput(predictionOutput, now10min)
