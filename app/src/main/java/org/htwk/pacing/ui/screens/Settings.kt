@@ -49,6 +49,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
+import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
@@ -184,6 +185,7 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
             Text(stringResource(R.string.edit))
         }
     }
+    HeartRateCard()
     ImportDataHealthConnect()
     ImportDemoDataHealthConnect()
 }
