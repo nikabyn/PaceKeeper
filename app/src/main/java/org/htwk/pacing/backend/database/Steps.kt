@@ -10,10 +10,10 @@ import kotlinx.datetime.Instant
 @Entity(tableName = "steps")
 data class StepsEntry(
     @PrimaryKey
-    val start: Instant,
-    val end: Instant,
+    override val start: Instant,
+    override val end: Instant,
     val count: Long,
-)
+) : TimedEntry
 
 @Dao
 interface StepsDao : TimedSeries<StepsEntry> {
@@ -23,7 +23,10 @@ interface StepsDao : TimedSeries<StepsEntry> {
     @Query("select * from steps")
     override suspend fun getAll(): List<StepsEntry>
 
-    @Query("""select * from steps where "start" <= :end and "end" >= :begin""")
+    @Query("select * from steps order by `end` desc limit 1")
+    override suspend fun getLatest(): StepsEntry?
+
+    @Query("select * from steps where `start` <= :end and `end` >= :begin")
     override suspend fun getInRange(begin: Instant, end: Instant): List<StepsEntry>
 
     @Query("select null from steps")

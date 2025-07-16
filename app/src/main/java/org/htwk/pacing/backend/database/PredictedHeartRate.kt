@@ -13,7 +13,10 @@ data class PredictedHeartRateEntry(
     @PrimaryKey
     val time: Instant,
     val bpm: Long,
-)
+) : TimedEntry {
+    override val start get() = time
+    override val end get() = time
+}
 
 @Dao
 interface PredictedHeartRateDao : TimedSeries<PredictedHeartRateEntry> {
@@ -22,6 +25,9 @@ interface PredictedHeartRateDao : TimedSeries<PredictedHeartRateEntry> {
 
     @Query("select * from predicted_heart_rate")
     override suspend fun getAll(): List<PredictedHeartRateEntry>
+
+    @Query("select * from predicted_heart_rate order by time desc limit 1")
+    override suspend fun getLatest(): PredictedHeartRateEntry?
 
     @Query("select * from predicted_heart_rate where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<PredictedHeartRateEntry>
