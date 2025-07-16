@@ -10,22 +10,61 @@ object EnergyFromHeartRateCalculator {
     //const val HR_AT_REST = 75
     //const val HR_PENALTY_START = HR_AT_REST
 
-    /** feed a *predicted* HR sample (10‑min resolution) */
-    fun nextEnergyLevelMinutely(currentEnergy: Double, currentHeartRate: Double): Double {
+    fun nextEnergyLevel10MinSimple(energy: Double, hr: Double): Double {
         val threshold: Double = HEART_RATE_LIMIT              // personal threshold (bpm)
-        val depletionRate: Double = 1.0 / (60.0 * threshold)  // depletion factor
+        val depletionRate: Double = 10.0 / (60.0 * threshold)  // depletion factor
         val recoveryRate: Double = 0.05        // per hour
         val deltaT = 10.0 / 60.0              // timestep size in hours
 
-        val load = max(0.0, currentHeartRate - threshold)   // excess load from being over threshold
+        val load = max(0.0, hr - threshold)   // excess load from being over threshold
         val nextEnergy =
-            (currentEnergy + recoveryRate * deltaT - depletionRate * load * deltaT).coerceIn(
+            (energy + recoveryRate * deltaT - depletionRate * load * deltaT).coerceIn(
                 0.0,
                 1.0
             )
         return nextEnergy
     }
 
+    /**
+     * Energy update for a 10-minute time step with *three* HR ranges:
+     *
+     *   HR > hrThresh     → linear discharge
+     *   hrRest < HR < hrThresh → linear recovery
+     *   HR < hrRest       → maximum recovery (cap)
+     *
+     * Everything is continuous; the sign changes at the threshold hrThresh.
+     */
+
+    fun nextEnergyLevel10MinAdvanced(
+        energy: Double,                 // current energy in the step
+        hr: Double,                     // current heart rate in the step
+        hrThresh: Double = HEART_RATE_LIMIT,   // threshold above which energy decreases
+        hrRest: Double = 50.0,          // sleep/rest HR below which energy charges the most
+        maxRecoveryH: Double = 0.10,    // max. charge per hour (<1)
+        depletionFactor: Double = 1.0 / (60.0 * hrThresh), // as before
+        dtMin: Double = 10.0            // step size in minutes
+    ): Double {
+
+        val dtH = dtMin / 60.0                          // step size in hours
+
+        // linear increase in recovery between hrThresh hrRest
+        val recoverySlope = maxRecoveryH / (hrThresh - hrRest)
+
+        val deltaEnergy = when {
+            hr > hrThresh ->                       // Energy discharge range
+                -depletionFactor * (hr - hrThresh) * dtH
+
+            hr >= hrRest ->                        // Energy linear recover range
+                +recoverySlope * (hrThresh - hr) * dtH
+
+            else ->                                // maximum energy recovery (deep rest/sleep)
+                +maxRecoveryH * dtH
+        }
+
+        return (energy + deltaEnergy).coerceIn(0.0, 1.0)
+    }
+
+    //TODO integrate minutely by lerping hr from one 10 min spot to next while 10 energy steps
     fun heartRate10MinToEnergy10min(
         startingEnergy: Double,
         heartRate10Min: FloatArray
@@ -34,7 +73,7 @@ object EnergyFromHeartRateCalculator {
         var currentEnergy = startingEnergy.toDouble()
 
         for (i in heartRate10Min.indices) {
-            currentEnergy = nextEnergyLevelMinutely(currentEnergy, heartRate10Min[i].toDouble())
+            currentEnergy = nextEnergyLevel10MinSimple(currentEnergy, heartRate10Min[i].toDouble())
             energyLevels[i] = currentEnergy.toFloat()
         }
         return energyLevels
