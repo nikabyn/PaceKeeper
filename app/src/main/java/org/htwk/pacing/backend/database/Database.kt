@@ -26,7 +26,7 @@ import kotlinx.datetime.Instant
         future data (ml model predictions). Also, when accessing them for writing, their whole table
         contents are overwritten and they are also at once read as a whole.*/
         PredictedHeartRateEntry::class,
-        PredictedEnergyLevelEntry::class
+        PredictedEnergyLevelEntry::class,
 
         ReadEvent::class,
     ],
