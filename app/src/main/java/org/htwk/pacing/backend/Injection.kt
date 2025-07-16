@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.HeartRateDao
@@ -21,7 +22,6 @@ import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.mlmodel.MLModel
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
-import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
@@ -70,13 +70,14 @@ val appModule = module {
 
     viewModel { MeasurementsViewModel(get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(androidContext(), get()) }
 
-    worker { context, params -> RandomHeartRateWorker(context, params, get()) }
+    /**
+     * koin sets up the dependencies for the worker class instance here,
+     * the actual execution/scheduling is handled in Application.kt
+     */
+    worker { context, params -> HealthConnectWorker(context, params, get()) }
     worker { context, params -> PredictionWorker(context, params, get(), get(), get(), get()) }
-
-    /*koin sets up the dependencies for the worker class instance here, the actual execution/
-    scheduling is handled elsewhere*/
     worker { context, params -> NotificationsBackgroundWorker(context, params, get()) }
 }
 

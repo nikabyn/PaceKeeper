@@ -20,11 +20,12 @@ class NotificationFunctionsTest {
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             // Remove channel if exists before test
-            notificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID)
+            notificationManager.deleteNotificationChannel(NotificationIds.ENERGY_WARNING_CHANNEL_ID)
 
             createNotificationChannel(context)
 
-            val channel = notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID)
+            val channel =
+                notificationManager.getNotificationChannel(NotificationIds.ENERGY_WARNING_CHANNEL_ID)
             assertNotNull("Notification channel should be created", channel)
             assertEquals("Energy Notification Channel", channel?.name)
         }

@@ -10,10 +10,10 @@ import kotlinx.datetime.Instant
 @Entity(tableName = "elevation_gained")
 data class ElevationGainedEntry(
     @PrimaryKey
-    val start: Instant,
-    val end: Instant,
+    override val start: Instant,
+    override val end: Instant,
     val length: Length,
-)
+) : TimedEntry
 
 @Dao
 interface ElevationGainedDao : TimedSeries<ElevationGainedEntry> {
@@ -23,7 +23,10 @@ interface ElevationGainedDao : TimedSeries<ElevationGainedEntry> {
     @Query("select * from elevation_gained")
     override suspend fun getAll(): List<ElevationGainedEntry>
 
-    @Query("""select * from elevation_gained where "start" <= :end and "end" >= :begin""")
+    @Query("select * from elevation_gained order by `end` desc limit 1")
+    override suspend fun getLatest(): ElevationGainedEntry?
+
+    @Query("select * from elevation_gained where `start` <= :end and `end` >= :begin")
     override suspend fun getInRange(begin: Instant, end: Instant): List<ElevationGainedEntry>
 
     @Query("select null from elevation_gained")

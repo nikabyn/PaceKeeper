@@ -12,7 +12,10 @@ data class SkinTemperatureEntry(
     @PrimaryKey
     val time: Instant,
     val temperature: Temperature,
-)
+) : TimedEntry {
+    override val start get() = time
+    override val end get() = time
+}
 
 @Dao
 interface SkinTemperatureDao : TimedSeries<SkinTemperatureEntry> {
@@ -21,6 +24,9 @@ interface SkinTemperatureDao : TimedSeries<SkinTemperatureEntry> {
 
     @Query("select * from skin_temperature")
     override suspend fun getAll(): List<SkinTemperatureEntry>
+
+    @Query("select * from skin_temperature order by time desc limit 1")
+    override suspend fun getLatest(): SkinTemperatureEntry?
 
     @Query("select * from skin_temperature where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<SkinTemperatureEntry>
