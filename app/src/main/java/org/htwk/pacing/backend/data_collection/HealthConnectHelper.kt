@@ -135,4 +135,25 @@ object HealthConnectHelper {
         val avgBpm = aggregate[HeartRateRecord.BPM_AVG]
         Log.d(TAG, "Durchschnittliche Herzfrequenz ($days Tage): $avgBpm")
     }
+    /**
+     * Herzfrequenzdaten in Health Connect einfügen (batchweise, robust gegen Fehler).
+     */
+    suspend fun insertHeartRateRecords(context: Context, records: List<HeartRateRecord>): Int {
+        val client = HealthConnectClient.getOrCreate(context)
+        val batchSize = 500
+        var totalInserted = 0
+
+        records.chunked(batchSize).forEach { batch ->
+            try {
+                client.insertRecords(batch)
+                totalInserted += batch.size
+            } catch (e: Exception) {
+                Log.e(TAG, "Fehler beim Batch Insert: ${e.message}", e)
+            }
+        }
+
+        Log.d(TAG, "Insgesamt $totalInserted Herzfrequenz-Datensätze eingefügt.")
+        return totalInserted
+    }
 }
+

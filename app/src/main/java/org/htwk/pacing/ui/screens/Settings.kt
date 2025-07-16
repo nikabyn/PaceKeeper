@@ -50,6 +50,7 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
 
 val requiredPermissions = setOf(
@@ -206,6 +207,7 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     }
     HeartRateCard()
     ImportDataHealthConnect()
+    ImportDemoDataHealthConnect()
 }
 
 class SettingsViewModel(

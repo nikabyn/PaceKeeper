@@ -108,11 +108,18 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Tensorflow
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.gpu)
+    implementation(libs.tensorflow.lite.gpu.api)
+    implementation(libs.tensorflow.lite.support)
+
     //CSV Parsing
     implementation(libs.kotlin.csv.jvm)
 
     //Splash Screen
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.material)
 }
 
 val exclusions = listOf(

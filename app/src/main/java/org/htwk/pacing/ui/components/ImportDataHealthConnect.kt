@@ -38,6 +38,7 @@ import java.io.InputStreamReader
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import org.htwk.pacing.backend.data_collection.HealthConnectHelper.insertHeartRateRecords
 
 /**
  * Testdaten für Import:
@@ -156,23 +157,6 @@ fun parseHeartRateRecords(lines: List<String>): List<HeartRateRecord> {
             null
         }
     }
-}
-
-suspend fun insertHeartRateRecords(context: Context, records: List<HeartRateRecord>): Int {
-    val client = HealthConnectClient.getOrCreate(context)
-    val batchSize = 500
-    var totalInserted = 0
-
-    records.chunked(batchSize).forEach { batch ->
-        try {
-            client.insertRecords(batch)
-            totalInserted += batch.size
-        } catch (e: Exception) {
-            Log.e("HealthInsert", "Fehler beim Batch Insert: ${e.message}")
-        }
-    }
-
-    return totalInserted
 }
 
 fun getFileName(context: Context, uri: Uri): String {
