@@ -17,7 +17,6 @@ import org.htwk.pacing.backend.appModule
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.productionModule
-import org.htwk.pacing.backend.testModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -31,7 +30,7 @@ open class ProductionApplication : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
         startInjection()
-        val wm = initWorkManager(this)
+        val wm = getWorkManager(this)
         enqueueHealthConnectWorker(wm)
         enqueuePredictionWorker(wm)
     }
@@ -45,31 +44,31 @@ open class ProductionApplication : Application(), KoinComponent {
     }
 }
 
-class TestApplication : ProductionApplication() {
-    override fun onCreate() {
-        super.onCreate()
-        Log.d("TestApplication", "TestApplication onCreate called")
-    }
+// TODO: Figure out how to enable this without using it in all debug builds
+//class TestApplication : ProductionApplication() {
+//    override fun onCreate() {
+//        super.onCreate()
+//        Log.d("TestApplication", "TestApplication onCreate called")
+//    }
+//
+//    override fun startInjection() {
+//        startKoin {
+//            androidContext(this@TestApplication)
+//            modules(testModule, appModule)
+//        }
+//        Log.d("TestApplication", "Started Koin for testing")
+//    }
+//}
 
-    override fun startInjection() {
-        startKoin {
-            androidContext(this@TestApplication)
-            modules(testModule, appModule)
-        }
-        Log.d("TestApplication", "Started Koin for testing")
-    }
-}
-
-class BootReceiver : BroadcastReceiver() {
+class BroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val bootCompleted = Intent.ACTION_BOOT_COMPLETED == intent.action
-        val appUnsuspended = Intent.ACTION_PACKAGES_UNSUSPENDED == intent.action
-                && Intent.EXTRA_CHANGED_PACKAGE_LIST.contains(context.packageName)
-
-        if (bootCompleted || appUnsuspended) {
-            val wm = initWorkManager(context)
-            Log.d("BootReceiver", "Enqueued worker")
-            enqueueHealthConnectWorker(wm)
+        Log.d("BroadcastReceiver", "Received intent: ${intent.action}")
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_UNSUSPENDED -> {
+                val wm = getWorkManager(context)
+                enqueueHealthConnectWorker(wm)
+            }
         }
     }
 }
@@ -105,7 +104,7 @@ private var initializedWorkManager = false
  * Replaces the default WorkManagerInitializer,
  * which must be disabled in AndroidManifest.xml for this to work.
  */
-private fun initWorkManager(context: Context): WorkManager {
+private fun getWorkManager(context: Context): WorkManager {
     if (!initializedWorkManager) {
         val workerFactory = KoinWorkerFactory()
         val config = Configuration.Builder().setWorkerFactory(workerFactory).build()

@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.data_collection.health_connect
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -19,10 +18,10 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.toJavaInstant
@@ -61,88 +60,95 @@ class HealthConnectWorker(
     private val readEventDao = db.readEventDao()
     private val client = HealthConnectClient.getOrCreate(context)
 
-    override suspend fun doWork(): Result = runBlocking {
-        setForegroundAsync(getForegroundInfo())
+    override suspend fun doWork(): Result {
+        setForeground(getForegroundInfo())
 
         var currentPermissions = emptySet<String>()
         val permissionChanges = MutableSharedFlow<PermissionChange>(replay = 0)
 
-        // React to permission changes
-        val jobs = mutableMapOf<KClass<out Record>, Job>()
-        fun launchRecordSyncJob(recordType: KClass<out Record>) {
-            val job = launch {
-                try {
-                    syncRecordHistory(recordType)
-                    syncRecordChanges(recordType)
-                } catch (e: Exception) {
-                    Log.e(TAG, e.toString())
-                }
-            }
-            job.invokeOnCompletion {
-                Log.w(TAG, "Job for ${recordType.simpleName} completed")
-                jobs.remove(recordType)
-                if (currentPermissions.contains(HealthPermission.getReadPermission(recordType))) {
-                    launch {
-                        delay(10.seconds.inWholeMilliseconds)
-                        launchRecordSyncJob(recordType)
+        coroutineScope {
+            // React to permission changes
+            val jobs = mutableMapOf<KClass<out Record>, Job>()
+            fun launchRecordSyncJob(recordType: KClass<out Record>) {
+                val job = launch {
+                    try {
+                        syncRecordHistory(recordType)
+                        syncRecordChanges(recordType)
+                    } catch (e: Exception) {
+                        Log.e(TAG, e.toString())
                     }
                 }
-            }
-            Log.i(TAG, "Job for ${recordType.simpleName} started")
-            jobs.put(recordType, job)
-        }
-        launch {
-            permissionChanges.collect {
-                val permission = it.permission
-                val recordsEntry = Records.wanted.find { it.readPermission == permission }
-                    ?: return@collect
-                val recordType = recordsEntry.recordType
-
-                Log.d(TAG, it.toString())
-
-                when (it.event) {
-                    PermissionEvent.Added -> {
-                        launchRecordSyncJob(recordType)
+                job.invokeOnCompletion {
+                    Log.w(TAG, "Job for ${recordType.simpleName} completed")
+                    jobs.remove(recordType)
+                    if (currentPermissions.contains(HealthPermission.getReadPermission(recordType))) {
+                        launch {
+                            delay(10.seconds.inWholeMilliseconds)
+                            launchRecordSyncJob(recordType)
+                        }
                     }
+                }
+                Log.i(TAG, "Job for ${recordType.simpleName} started")
+                jobs.put(recordType, job)
+            }
+            launch {
+                permissionChanges.collect {
+                    val permission = it.permission
+                    val recordsEntry = Records.wanted.find { it.readPermission == permission }
+                        ?: return@collect
+                    val recordType = recordsEntry.recordType
 
-                    PermissionEvent.Removed -> {
-                        jobs.remove(recordType)
+                    Log.d(TAG, it.toString())
+
+                    when (it.event) {
+                        PermissionEvent.Added -> {
+                            launchRecordSyncJob(recordType)
+                        }
+
+                        PermissionEvent.Removed -> {
+                            jobs.remove(recordType)
+                        }
                     }
                 }
             }
-        }
 
-        // Emit change events for health connect permissions
-        launch {
-            var previousPermissions = emptySet<String>()
-            while (true) {
-                try {
-                    currentPermissions = client.permissionController.getGrantedPermissions()
-                    val added = currentPermissions - previousPermissions
-                    for (permission in added) {
-                        permissionChanges.emit(PermissionChange(PermissionEvent.Added, permission))
-                    }
-
-                    val removed = previousPermissions - currentPermissions
-                    for (permission in removed) {
-                        permissionChanges.emit(
-                            PermissionChange(
-                                PermissionEvent.Removed,
-                                permission
+            // Emit change events for health connect permissions
+            launch {
+                var previousPermissions = emptySet<String>()
+                while (true) {
+                    try {
+                        currentPermissions = client.permissionController.getGrantedPermissions()
+                        val added = currentPermissions - previousPermissions
+                        for (permission in added) {
+                            permissionChanges.emit(
+                                PermissionChange(
+                                    PermissionEvent.Added,
+                                    permission
+                                )
                             )
-                        )
-                    }
+                        }
 
-                    previousPermissions = currentPermissions
-                } catch (e: Exception) {
-                    Log.e(TAG, e.toString())
+                        val removed = previousPermissions - currentPermissions
+                        for (permission in removed) {
+                            permissionChanges.emit(
+                                PermissionChange(
+                                    PermissionEvent.Removed,
+                                    permission
+                                )
+                            )
+                        }
+
+                        previousPermissions = currentPermissions
+                    } catch (e: Exception) {
+                        Log.e(TAG, e.toString())
+                    }
+                    delay(1.minutes.inWholeMilliseconds)
                 }
-                delay(1.minutes.inWholeMilliseconds)
             }
         }
 
         // Always restart worker if we get here
-        return@runBlocking Result.retry()
+        return Result.retry()
     }
 
     private suspend inline fun syncRecordChanges(recordType: KClass<out Record>) {
@@ -204,28 +210,28 @@ class HealthConnectWorker(
         }
     }
 
-    private fun createNotification(): Notification {
+    override suspend fun getForegroundInfo(): ForegroundInfo {
         val channelId = NotificationIds.HEALTH_CONNECT_SYNC_CHANNEL_ID
+        val notificationId = NotificationIds.HEALTH_CONNECT_SYNC_NOTIFICATION_ID
+
         val channel = NotificationChannel(
-            channelId,
+            NotificationIds.HEALTH_CONNECT_SYNC_CHANNEL_ID,
             applicationContext.getString(R.string.health_connect_sync),
             NotificationManager.IMPORTANCE_LOW
         )
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
-        return NotificationCompat.Builder(applicationContext, channelId)
+
+        val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(applicationContext.getString(R.string.collecting_health_data))
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .setOngoing(true)
             .build()
-    }
 
-    override suspend fun getForegroundInfo(): ForegroundInfo {
-        val notificationId = NotificationIds.HEALTH_CONNECT_SYNC_NOTIFICATION_ID
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ForegroundInfo(notificationId, createNotification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            ForegroundInfo(notificationId, notification, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
-            ForegroundInfo(notificationId, createNotification())
+            ForegroundInfo(notificationId, notification)
         }
     }
 }
