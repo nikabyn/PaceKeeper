@@ -56,4 +56,7 @@
     <string name="confirm">Bestätigen</string>
     <string name="dismiss">Verwerfen</string>
     <string name="energy_warning_text">Dein Energielevel ist niedrig. Mach eine Pause!</string>
+    <string name="demo_data_button_text">Demodaten laden</string>
+    <string name="demo_data_dialog_title">Wichtiger Hiweis</string>
+    <string name="demo_data_dialog_text">Wenn Sie fortfahren werden Demodaten in Health Connect geladen. Diese können Sie nur manuell wieder über Health Connect löschen.</string>
 </resources>
