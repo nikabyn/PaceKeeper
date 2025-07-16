@@ -38,7 +38,6 @@ import java.io.InputStreamReader
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import org.htwk.pacing.backend.data_collection.HealthConnectHelper.insertHeartRateRecords
 
 /**
  * Testdaten für Import:
