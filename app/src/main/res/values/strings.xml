@@ -5,6 +5,7 @@
     <string name="energy_prediction">Energy Prediction</string>
     <string name="currently_no_data_available">Currently no data available!</string>
     <string name="heart_rate_bpm_filled">Heart Rate [bpm], Filled</string>
+    <string name="heart_rate_prediction">Heart Rate [bpm], Prediction</string>
     <string name="heart_rate_bpm_dynamic_range">Heart Rate [bpm], Dynamic Range</string>
     <string name="home">Home</string>
     <string name="measurements">Measurements</string>
@@ -58,4 +59,13 @@
     <string name="demo_data_button_text">Load demo data</string>
     <string name="demo_data_dialog_title">Important notice</string>
     <string name="demo_data_dialog_text">If you proceed, demo data will be loaded into Health Connect. You can only delete this data manually via Health Connect.</string>
+    <string name="energy_prediction_running_channel">Background energy predictions</string>
+    <string name="energy_prediction_running">Background energy prediction running…</string>
+    <string name="energy_level_debug_prediction">Energy Prediction</string>
+    <string name="label_energy_level_very_low">Very low energy level</string>
+    <string name="label_energy_level_low">Low energy level</string>
+    <string name="label_energy_level_moderate">Moderate energy level</string>
+    <string name="label_energy_level_high">High energy level</string>
+    <string name="label_energy_level_very_high">Very high energy level</string>
+    <string name="label_energy_icon_name">Energy level icon</string>
 </resources>

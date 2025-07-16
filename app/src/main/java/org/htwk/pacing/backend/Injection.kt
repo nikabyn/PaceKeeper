@@ -7,17 +7,20 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
-import org.htwk.pacing.backend.database.EnergyLevelDao
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.SkinTemperatureDao
 import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
+import org.htwk.pacing.backend.mlmodel.MLModel
+import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.mock.RandomHeartRateWorker
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
@@ -50,7 +53,6 @@ val productionModule = module {
 val appModule = module {
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
-    single<EnergyLevelDao> { get<PacingDatabase>().energyLevelDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
     single<HeartRateVariabilityDao> { get<PacingDatabase>().heartRateVariabilityDao() }
     single<ManualSymptomDao> { get<PacingDatabase>().manualSymptomDao() }
@@ -61,12 +63,21 @@ val appModule = module {
     single<SpeedDao> { get<PacingDatabase>().speedDao() }
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
 
-    viewModel { MeasurementsViewModel(get(), get()) }
+    single<PredictedHeartRateDao> { get<PacingDatabase>().predictedHeartRateDao() }
+    single<PredictedEnergyLevelDao> { get<PacingDatabase>().predictedEnergyLevelDao() }
+
+    single<MLModel> { MLModel(get()) }
+
+    viewModel { MeasurementsViewModel(get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
-    viewModel {
-        SettingsViewModel(get())
-    }
+    viewModel { SettingsViewModel(get()) }
+
     worker { context, params -> RandomHeartRateWorker(context, params, get()) }
+    worker { context, params -> PredictionWorker(context, params, get(), get(), get(), get()) }
+
+    /*koin sets up the dependencies for the worker class instance here, the actual execution/
+    scheduling is handled elsewhere*/
+    worker { context, params -> NotificationsBackgroundWorker(context, params, get()) }
 }
 
 /**

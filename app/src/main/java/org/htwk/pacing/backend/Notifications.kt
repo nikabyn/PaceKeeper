@@ -19,12 +19,18 @@ import androidx.core.content.edit
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.hours
 
 const val NOTIFICATION_CHANNEL_ID = "Energy_Notification_ID"
 const val ENERGY_WARNING_NOTIFICATION_ID = 2
@@ -123,20 +129,33 @@ fun showNotification(context: Context) {
 
 class NotificationsBackgroundWorker(
     context: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
+    val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
 
+    private suspend fun getRelevantPredictedEnergyLevelFromDB(): Double? {
+        val now = Clock.System.now()
+        val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
+            predictedEnergyLevelDao.getInRange(now + 3.hours, now + 4.hours)
+        val minimumEntry =
+            energyLevelDataWindow.minByOrNull { it.percentage.toDouble() }
+
+        return minimumEntry?.percentage?.toDouble()
+    }
+
     override suspend fun doWork(): Result {
-        val prefs =
-            applicationContext.getSharedPreferences("energy_prefs", Context.MODE_PRIVATE)
+        //delay for 2 seconds
+        delay(2000)
 
-        prefs.edit { putInt("energy", 15) }
+        val predictedEnergy = getRelevantPredictedEnergyLevelFromDB()
+            ?: 1.0 //if no data available, assume energy is ok and thus display no warning
 
-        val energy = prefs.getInt("energy", 100)
+        Log.d(
+            "NoficationsBackgroundWorker",
+            "Predicted Energy level of %.2f".format(predictedEnergy)
+        )
 
-        Log.d("NotificationsBackgroundWorker", "Energy level is $energy")
-
-        if (energy < 20) {
+        if (predictedEnergy < 0.2) {
             Log.d("NotificationsBackgroundWorker", "Energy is low, showing notification")
             showNotification(applicationContext)
         } else {
@@ -147,8 +166,9 @@ class NotificationsBackgroundWorker(
 }
 
 fun scheduleEnergyCheckWorker(context: Context) {
-    val workRequest =
-        PeriodicWorkRequestBuilder<NotificationsBackgroundWorker>(15, TimeUnit.MINUTES)
+    val DEBUG_RUN_IMMEDIATELY = true
+    val workRequestBuilder = if (DEBUG_RUN_IMMEDIATELY) {
+        val workRequest = OneTimeWorkRequestBuilder<NotificationsBackgroundWorker>()
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(true)
@@ -156,9 +176,22 @@ fun scheduleEnergyCheckWorker(context: Context) {
             )
             .build()
 
-    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-        "EnergyCheckWorker",
-        ExistingPeriodicWorkPolicy.KEEP,
-        workRequest
-    )
+        WorkManager.getInstance(context).enqueue(workRequest)
+    } else {
+        val workRequest =
+            PeriodicWorkRequestBuilder<NotificationsBackgroundWorker>(15, TimeUnit.MINUTES)
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiresBatteryNotLow(true)
+                        .build()
+                )
+                .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "EnergyCheckWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
+    }
+
 }

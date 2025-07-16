@@ -10,7 +10,6 @@ import kotlinx.datetime.Instant
     entities = [
         DistanceEntry::class,
         ElevationGainedEntry::class,
-        EnergyLevelEntry::class,
         FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
@@ -22,11 +21,18 @@ import kotlinx.datetime.Instant
         StepsEntry::class,
         Symptom::class,
         SymptomForFeeling::class,
+
+        /*These two entities are different than the others in the sense that they represent
+        future data (ml model predictions). Also, when accessing them for writing, their whole table
+        contents are overwritten and they are also at once read as a whole.*/
+        PredictedHeartRateEntry::class,
+        PredictedEnergyLevelEntry::class
     ],
 
     version = 1,
     exportSchema = false,
 )
+
 @TypeConverters(Converters::class)
 abstract class PacingDatabase : RoomDatabase() {
     abstract fun distanceDao(): DistanceDao
@@ -40,7 +46,12 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun sleepSessionsDao(): SleepSessionDao
     abstract fun speedDao(): SpeedDao
     abstract fun stepsDao(): StepsDao
-    abstract fun energyLevelDao(): EnergyLevelDao
+
+    /*These two tables are different than the others in the sense that they represent
+    future data (ml model predictions). Also, when accessing them for writing, their whole table
+    contents are overwritten and they are also at once read as a whole. */
+    abstract fun predictedHeartRateDao(): PredictedHeartRateDao
+    abstract fun predictedEnergyLevelDao(): PredictedEnergyLevelDao
 }
 
 class Converters {

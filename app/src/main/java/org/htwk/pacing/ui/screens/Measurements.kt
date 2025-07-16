@@ -5,6 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -32,16 +33,22 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
+import org.htwk.pacing.ui.components.HeartRatePredictionCard
 import org.htwk.pacing.ui.components.PathConfig
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.components.withFill
 import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun MeasurementsScreen(
     modifier: Modifier = Modifier,
@@ -49,7 +56,8 @@ fun MeasurementsScreen(
 ) {
     val series by viewModel.heartRate.collectAsState()
     val feelingLevels by viewModel.feelingLevels.collectAsState()
-
+    val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
+    val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
 
     Box(
         modifier = modifier
@@ -112,6 +120,27 @@ fun MeasurementsScreen(
                 yConfig = AxisConfig(steps = 4u),
             )
 
+            val now = Clock.System.now()
+
+            HeartRatePredictionCard(
+                title = stringResource(R.string.heart_rate_prediction),
+                series = series,
+                seriesPredicted = predictedHeartRate,
+                yConfig = AxisConfig(range = 40.0..160.0, steps = 7u),
+                modifier = Modifier.height(300.dp)
+            )
+
+            GraphCard(
+                title = stringResource(R.string.energy_level_debug_prediction),
+                series = predictedEnergyLevel,
+                xConfig = AxisConfig(
+                    formatFunction = ::formatTime,
+                    steps = 2u,
+                ),
+                yConfig = AxisConfig(range = 0.0..1.0, steps = 5u),
+                modifier = Modifier.height(300.dp)
+            )
+
             GraphCard(
                 title = stringResource(R.string.feeling_manual_symptoms),
                 series = feelingLevels,
@@ -130,7 +159,9 @@ fun MeasurementsScreen(
 
 class MeasurementsViewModel(
     heartRateDao: HeartRateDao,
-    manualSymptomDao: ManualSymptomDao
+    manualSymptomDao: ManualSymptomDao,
+    predictedHeartRateDao: PredictedHeartRateDao,
+    predictedEnergyLevelDao: PredictedEnergyLevelDao,
 ) : ViewModel() {
     val feelingLevels = manualSymptomDao
         .getLastLive(1.days)
@@ -163,4 +194,33 @@ class MeasurementsViewModel(
             initialValue = Series(emptyList(), emptyList())
         )
 
+    val predictedHeartRate = predictedHeartRateDao
+        .getAllLive()
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
+            }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
+
+    val predictedEnergyLevel = predictedEnergyLevelDao
+        .getAllLive()
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
+            }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
 }
