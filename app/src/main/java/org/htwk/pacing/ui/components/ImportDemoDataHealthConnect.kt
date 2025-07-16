@@ -3,11 +3,20 @@ package org.htwk.pacing.ui.components
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -15,7 +24,9 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.HealthConnectHelper.insertHeartRateRecords
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.time.*
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @Composable
 fun ImportDemoDataHealthConnect() {
@@ -99,9 +110,8 @@ class ImportDemoDataHealthConnectImpl {
                         startZoneOffset = timestamp.offset,
                         endTime = timestamp.toInstant(),
                         endZoneOffset = timestamp.offset,
-                        samples = listOf(
-                            HeartRateRecord.Sample(timestamp.toInstant(), bpm)
-                        )
+                        samples = listOf(HeartRateRecord.Sample(timestamp.toInstant(), bpm)),
+                        metadata = Metadata.unknownRecordingMethod(),
                     )
                 } catch (e: Exception) {
                     Log.w("DemoImport", "Fehler beim Parsen: ${e.message}")

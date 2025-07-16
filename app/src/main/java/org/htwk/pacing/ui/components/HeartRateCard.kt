@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.data_collection.HealthConnectHelper
+import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectHelper
 import java.time.ZonedDateTime
 
 /**

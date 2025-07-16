@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -273,13 +275,13 @@ class SymptomsViewModel(
         )
 
     fun storeSymptom(name: String) {
-        viewModelScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
             manualSymptomDao.insertSymptom(Symptom(name))
         }
     }
 
     fun storeEntry(feeling: Feeling, symptoms: List<Symptom>) {
-        viewModelScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val now = Clock.System.now()
             val entry = ManualSymptomEntry(feeling = FeelingEntry(now, feeling), symptoms)
             manualSymptomDao.insert(entry)

@@ -12,7 +12,10 @@ data class OxygenSaturationEntry(
     @PrimaryKey
     val time: Instant,
     val percentage: Percentage,
-)
+) : TimedEntry {
+    override val start get() = time
+    override val end get() = time
+}
 
 @Dao
 interface OxygenSaturationDao : TimedSeries<OxygenSaturationEntry> {
@@ -22,9 +25,11 @@ interface OxygenSaturationDao : TimedSeries<OxygenSaturationEntry> {
     @Query("select * from oxygen_saturation")
     override suspend fun getAll(): List<OxygenSaturationEntry>
 
+    @Query("select * from oxygen_saturation order by time desc limit 1")
+    override suspend fun getLatest(): OxygenSaturationEntry?
+
     @Query("select * from oxygen_saturation where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<OxygenSaturationEntry>
-
 
     @Query("select null from oxygen_saturation")
     override fun getChangeTrigger(): Flow<Int?>

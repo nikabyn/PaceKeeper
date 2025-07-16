@@ -13,7 +13,10 @@ data class PredictedEnergyLevelEntry(
     @PrimaryKey
     val time: Instant,
     val percentage: Percentage,
-)
+) : TimedEntry {
+    override val start get() = time
+    override val end get() = time
+}
 
 @Dao
 interface PredictedEnergyLevelDao : TimedSeries<PredictedEnergyLevelEntry> {
@@ -22,6 +25,9 @@ interface PredictedEnergyLevelDao : TimedSeries<PredictedEnergyLevelEntry> {
 
     @Query("select * from predicted_energy_level")
     override suspend fun getAll(): List<PredictedEnergyLevelEntry>
+
+    @Query("select * from predicted_energy_level order by time desc limit 1")
+    override suspend fun getLatest(): PredictedEnergyLevelEntry?
 
     @Query("select * from predicted_energy_level where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<PredictedEnergyLevelEntry>

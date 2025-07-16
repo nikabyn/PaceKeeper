@@ -32,8 +32,13 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.hours
 
-const val NOTIFICATION_CHANNEL_ID = "Energy_Notification_ID"
-const val ENERGY_WARNING_NOTIFICATION_ID = 2
+object NotificationIds {
+    const val HEALTH_CONNECT_SYNC_CHANNEL_ID = "health_connect_sync_ch"
+    const val HEALTH_CONNECT_SYNC_NOTIFICATION_ID = 1
+
+    const val ENERGY_WARNING_CHANNEL_ID = "energy_low_ch"
+    const val ENERGY_WARNING_NOTIFICATION_ID = 2
+}
 
 fun initNotificationSystem(activity: ComponentActivity) {
     val sharedPrefs = activity.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
@@ -48,11 +53,9 @@ fun initNotificationSystem(activity: ComponentActivity) {
     }
 
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-
         //No runtime permission needed before API 33
         sharedPrefs.edit { putBoolean("notifications_allowed", true) }
     } else {
-
         //Only reference the constant if API >= 33
         val permissionGranted = ContextCompat.checkSelfPermission(
             activity,
@@ -69,7 +72,7 @@ fun initNotificationSystem(activity: ComponentActivity) {
 
 fun createNotificationChannel(context: Context) {
     // Create channel ONLY on API 26+
-    val channelId = NOTIFICATION_CHANNEL_ID
+    val channelId = NotificationIds.ENERGY_WARNING_CHANNEL_ID
     val channelName = "Energy Notification Channel"
     val importance = NotificationManager.IMPORTANCE_DEFAULT
     val channel = NotificationChannel(channelId, channelName, importance).apply {
@@ -112,7 +115,7 @@ fun showNotification(context: Context) {
         context, 0, intent, PendingIntent.FLAG_IMMUTABLE
     )
 
-    val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+    val builder = NotificationCompat.Builder(context, NotificationIds.ENERGY_WARNING_CHANNEL_ID)
         .setContentTitle("WARNING!")
         .setContentText(context.getString(R.string.energy_warning_text))
         .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -121,7 +124,7 @@ fun showNotification(context: Context) {
         .setAutoCancel(true)
 
     val notificationManager = NotificationManagerCompat.from(context)
-    notificationManager.notify(ENERGY_WARNING_NOTIFICATION_ID, builder.build())
+    notificationManager.notify(NotificationIds.ENERGY_WARNING_NOTIFICATION_ID, builder.build())
 
     Log.d("Notification", "Notification wurde ausgelöst")
 }
