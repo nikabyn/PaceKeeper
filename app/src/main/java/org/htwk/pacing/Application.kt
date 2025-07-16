@@ -14,9 +14,12 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
+import org.htwk.pacing.backend.data_collection.HealthConnectWorkerScheduler
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.productionModule
+import org.htwk.pacing.backend.scheduleEnergyCheckWorker
+import org.htwk.pacing.backend.testModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -31,8 +34,7 @@ open class ProductionApplication : Application(), KoinComponent {
         super.onCreate()
         startInjection()
         val wm = getWorkManager(this)
-        enqueueHealthConnectWorker(wm)
-        enqueuePredictionWorker(wm)
+        enqueueWorkers(wm)
     }
 
     open fun startInjection() {
@@ -67,22 +69,29 @@ class BroadcastReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_UNSUSPENDED -> {
                 val wm = getWorkManager(context)
-                enqueueHealthConnectWorker(wm)
+                enqueueWorkers(wm)
             }
         }
     }
 }
 
-private fun enqueueHealthConnectWorker(wm: WorkManager) {
-    val workRequest = OneTimeWorkRequestBuilder<HealthConnectWorker>()
+fun enqueueWorkers(wm: WorkManager) {
+    enqueueRandomHeartRateWorker(wm)
+    HealthConnectWorkerScheduler.scheduleHealthSync(wm)
+    enqueuePredictionWorker(wm)
+    scheduleEnergyCheckWorker(wm)
+}
+
+fun enqueueRandomHeartRateWorker(wm: WorkManager) {
+    val workRequest = OneTimeWorkRequestBuilder<RandomHeartRateWorker>()
         .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         .build()
     wm.enqueueUniqueWork(
-        "HealthConnectDataCollection",
+        "RandomHeartRateGeneration",
         ExistingWorkPolicy.REPLACE,
         workRequest
     )
-    Log.d("PacingApp", "Enqueued HealthConnectWorker")
+    Log.d("PacingApp", "Enqueued RandomHeartRateWorker")
 }
 
 fun enqueuePredictionWorker(wm: WorkManager) {

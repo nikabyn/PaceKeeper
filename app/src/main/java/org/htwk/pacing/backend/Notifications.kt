@@ -168,7 +168,7 @@ class NotificationsBackgroundWorker(
     }
 }
 
-fun scheduleEnergyCheckWorker(context: Context) {
+fun scheduleEnergyCheckWorker(wm: WorkManager) {
     val DEBUG_RUN_IMMEDIATELY = true
     val workRequestBuilder = if (DEBUG_RUN_IMMEDIATELY) {
         val workRequest = OneTimeWorkRequestBuilder<NotificationsBackgroundWorker>()
@@ -179,7 +179,7 @@ fun scheduleEnergyCheckWorker(context: Context) {
             )
             .build()
 
-        WorkManager.getInstance(context).enqueue(workRequest)
+        wm.enqueue(workRequest)
     } else {
         val workRequest =
             PeriodicWorkRequestBuilder<NotificationsBackgroundWorker>(15, TimeUnit.MINUTES)
@@ -190,7 +190,7 @@ fun scheduleEnergyCheckWorker(context: Context) {
                 )
                 .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        wm.enqueueUniquePeriodicWork(
             "EnergyCheckWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             workRequest
