@@ -26,8 +26,18 @@ object EnergyFromHeartRateCalculator {
         return nextEnergy
     }
 
-    fun heartRate10MinToEnergy10min(heartRate10min: FloatArray) {
+    fun heartRate10MinToEnergy10min(
+        startingEnergy: Double,
+        heartRate10Min: FloatArray
+    ): FloatArray {
+        val energyLevels = FloatArray(heartRate10Min.size)
+        var currentEnergy = startingEnergy.toDouble()
 
+        for (i in heartRate10Min.indices) {
+            currentEnergy = nextEnergyLevelMinutely(currentEnergy, heartRate10Min[i].toDouble())
+            energyLevels[i] = currentEnergy.toFloat()
+        }
+        return energyLevels
     }
 
     //TODO: placeholder, to be replaced by scientific model trough ui feature ticket #21

@@ -21,7 +21,7 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
-import org.htwk.pacing.backend.heuristics.energyLevelFromHeartRate
+import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.heartRate10MinToEnergy10min
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -34,11 +34,6 @@ class PredictionWorker(
     private val predictedHeartRateDao: PredictedHeartRateDao,
     private val predictedEnergyLevelDao: PredictedEnergyLevelDao
 ) : CoroutineWorker(context, workerParams) {
-
-    //higher-order drop-in function for energy-> hr calculation
-    private val energyHeuristic: (Double) -> Percentage = { hr: Double ->
-        Percentage(energyLevelFromHeartRate(hr))
-    }
 
     companion object {
         const val WORK_NAME = "PredictionWorker" // For unique work
@@ -156,11 +151,14 @@ class PredictionWorker(
             }
         )
 
+        val predictedEnergy = heartRate10MinToEnergy10min(1.0, predictionOutput)
+
         predictedEnergyLevelDao.insertMany(
             List(predictionOutput.size) { i ->
                 PredictedEnergyLevelEntry(
                     now10min + 10.minutes * i,
-                    energyHeuristic(predictionOutput[i].toDouble())
+                    //energyHeuristic(predictionOutput[i].toDouble())
+                    Percentage(predictedEnergy[i].toDouble())
                 )
             }
         )
