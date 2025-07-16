@@ -22,14 +22,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            )
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -69,6 +61,7 @@ android {
     room {
         schemaDirectory("$projectDir/schemas")
     }
+
 }
 
 dependencies {
@@ -194,7 +187,6 @@ tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
                 .get().asFile
         ) {
             include("**/*.ec")
-        }
-    )
+        })
 }
 
