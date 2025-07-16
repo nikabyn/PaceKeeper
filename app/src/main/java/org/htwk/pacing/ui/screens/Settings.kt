@@ -46,10 +46,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
-import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
-import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
@@ -185,7 +184,6 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
             Text(stringResource(R.string.edit))
         }
     }
-    HeartRateCard()
     ImportDataHealthConnect()
     ImportDemoDataHealthConnect()
 }
@@ -201,7 +199,7 @@ class SettingsViewModel(
     fun checkPermissions() {
         viewModelScope.launch {
             val granted = client.permissionController.getGrantedPermissions()
-            _isConnected.value = Permissions.wanted.any { it in granted }
+            _isConnected.value = wantedPermissions.any { it in granted }
         }
     }
 

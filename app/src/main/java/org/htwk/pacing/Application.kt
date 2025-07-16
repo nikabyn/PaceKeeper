@@ -15,9 +15,9 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
+import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.productionModule
 import org.htwk.pacing.backend.testModule
-import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -44,7 +44,6 @@ open class ProductionApplication : Application(), KoinComponent {
         Log.d("ProductionApplication", "Started Koin for production")
     }
 }
-
 
 class TestApplication : ProductionApplication() {
     override fun onCreate() {
@@ -95,15 +94,20 @@ fun enqueuePredictionWorker(wm: WorkManager) {
     Log.d("PacingApp", "Enqueued MLModelWorker")
 }
 
+@Volatile
+private var initializedWorkManager = false
 
 /**
  * Replaces the default WorkManagerInitializer,
  * which must be disabled in AndroidManifest.xml for this to work.
  */
 private fun initWorkManager(context: Context): WorkManager {
-    val workerFactory = KoinWorkerFactory()
-    val config = Configuration.Builder().setWorkerFactory(workerFactory).build()
-    WorkManager.initialize(context, config)
+    if (!initializedWorkManager) {
+        val workerFactory = KoinWorkerFactory()
+        val config = Configuration.Builder().setWorkerFactory(workerFactory).build()
+        WorkManager.initialize(context, config)
+        initializedWorkManager = true
+    }
     return WorkManager.getInstance(context)
 }
 
