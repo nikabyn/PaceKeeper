@@ -82,7 +82,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.guava)
+    implementation(libs.google.guava)
 
     // Koin (dependency injection)
     implementation(libs.koin.android)
@@ -110,10 +110,10 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Tensorflow
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.gpu)
-    implementation(libs.tensorflow.lite.gpu.api)
-    implementation(libs.tensorflow.lite.support)
+    implementation(libs.litert)
+    implementation(libs.litert.gpu)
+    implementation(libs.litert.gpu.api)
+    implementation(libs.litert.support)
 
     //CSV Parsing
     implementation(libs.kotlin.csv.jvm)
