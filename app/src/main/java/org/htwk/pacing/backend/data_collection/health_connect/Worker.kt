@@ -17,6 +17,7 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -63,93 +64,18 @@ class HealthConnectWorker(
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
 
-        var currentPermissions = emptySet<String>()
-        val permissionChanges = MutableSharedFlow<PermissionChange>(replay = 0)
 
         coroutineScope {
-            // React to permission changes
-            val jobs = mutableMapOf<KClass<out Record>, Job>()
-            fun launchRecordSyncJob(recordType: KClass<out Record>) {
-                val job = launch {
-                    try {
-                        syncRecordHistory(recordType)
-                        syncRecordChanges(recordType)
-                    } catch (e: Exception) {
-                        Log.e(TAG, e.toString())
-                    }
-                }
-                job.invokeOnCompletion {
-                    Log.w(TAG, "Job for ${recordType.simpleName} completed")
-                    jobs.remove(recordType)
-                    if (currentPermissions.contains(HealthPermission.getReadPermission(recordType))) {
-                        launch {
-                            delay(10.seconds.inWholeMilliseconds)
-                            launchRecordSyncJob(recordType)
-                        }
-                    }
-                }
-                Log.i(TAG, "Job for ${recordType.simpleName} started")
-                jobs.put(recordType, job)
-            }
-            launch {
-                permissionChanges.collect {
-                    val permission = it.permission
-                    val recordsEntry = Records.wanted.find { it.readPermission == permission }
-                        ?: return@collect
-                    val recordType = recordsEntry.recordType
-
-                    Log.d(TAG, it.toString())
-
-                    when (it.event) {
-                        PermissionEvent.Added -> {
-                            launchRecordSyncJob(recordType)
-                        }
-
-                        PermissionEvent.Removed -> {
-                            jobs.remove(recordType)
-                        }
-                    }
-                }
-            }
-
-            // Emit change events for health connect permissions
-            launch {
-                var previousPermissions = emptySet<String>()
-                while (true) {
-                    try {
-                        currentPermissions = client.permissionController.getGrantedPermissions()
-                        val added = currentPermissions - previousPermissions
-                        for (permission in added) {
-                            permissionChanges.emit(
-                                PermissionChange(
-                                    PermissionEvent.Added,
-                                    permission
-                                )
-                            )
-                        }
-
-                        val removed = previousPermissions - currentPermissions
-                        for (permission in removed) {
-                            permissionChanges.emit(
-                                PermissionChange(
-                                    PermissionEvent.Removed,
-                                    permission
-                                )
-                            )
-                        }
-
-                        previousPermissions = currentPermissions
-                    } catch (e: Exception) {
-                        Log.e(TAG, e.toString())
-                    }
-                    delay(1.minutes.inWholeMilliseconds)
-                }
-            }
+            HealthConnectJobScheduler(client, this) { recordType ->
+                syncRecordHistory(recordType)
+                syncRecordChanges(recordType)
+            }.run()
         }
 
         // Always restart worker if we get here
         return Result.retry()
     }
+
 
     private suspend inline fun syncRecordChanges(recordType: KClass<out Record>) {
         var changesToken = client.getChangesToken(
@@ -234,11 +160,104 @@ class HealthConnectWorker(
             ForegroundInfo(notificationId, notification)
         }
     }
+
 }
 
-data class PermissionChange(val event: PermissionEvent, val permission: String)
+class HealthConnectJobScheduler(
+    val client: HealthConnectClient,
+    val scope: CoroutineScope,
+    val job: suspend (recordType: KClass<out Record>) -> Unit
+) {
+    companion object {
+        const val TAG = "HealthConnectJobScheduler"
+    }
 
-enum class PermissionEvent {
-    Added,
-    Removed,
+    data class PermissionChange(val event: PermissionEvent, val permission: String)
+    enum class PermissionEvent { Added, Removed }
+
+    var currentPermissions = emptySet<String>()
+    val permissionChanges = MutableSharedFlow<PermissionChange>(replay = 0)
+    val jobs = mutableMapOf<KClass<out Record>, Job>()
+
+    fun run() {
+        scope.launch { consumePermissionChanges() }
+        scope.launch { emitPermissionChanges() }
+    }
+
+    suspend fun consumePermissionChanges() {
+        permissionChanges.collect {
+            val permission = it.permission
+            val recordsEntry = Records.wanted.find { it.readPermission == permission }
+                ?: return@collect
+            val recordType = recordsEntry.recordType
+
+            Log.d(TAG, it.toString())
+
+            when (it.event) {
+                PermissionEvent.Added -> {
+                    launchRecordSyncJob(recordType)
+                }
+
+                PermissionEvent.Removed -> {
+                    jobs.remove(recordType)
+                }
+            }
+        }
+    }
+
+    suspend fun emitPermissionChanges() {
+        var previousPermissions = emptySet<String>()
+        while (true) {
+            try {
+                currentPermissions = client.permissionController.getGrantedPermissions()
+                val added = currentPermissions - previousPermissions
+                for (permission in added) {
+                    permissionChanges.emit(
+                        PermissionChange(
+                            PermissionEvent.Added,
+                            permission
+                        )
+                    )
+                    Log.d(TAG, "send")
+                }
+
+                val removed = previousPermissions - currentPermissions
+                for (permission in removed) {
+                    permissionChanges.emit(
+                        PermissionChange(
+                            PermissionEvent.Removed,
+                            permission
+                        )
+                    )
+                }
+
+                previousPermissions = currentPermissions
+            } catch (e: Exception) {
+                Log.e(TAG, e.toString())
+            }
+            delay(1.minutes.inWholeMilliseconds)
+        }
+    }
+
+    fun launchRecordSyncJob(recordType: KClass<out Record>) {
+        val job = scope.launch {
+            try {
+                job(recordType)
+            } catch (e: Exception) {
+                Log.e(TAG, e.toString())
+            }
+        }
+        job.invokeOnCompletion {
+            Log.w(TAG, "Job for ${recordType.simpleName} completed")
+            jobs.remove(recordType)
+            if (currentPermissions.contains(HealthPermission.getReadPermission(recordType))) {
+                scope.launch {
+                    delay(10.seconds.inWholeMilliseconds)
+                    launchRecordSyncJob(recordType)
+                }
+            }
+        }
+        Log.i(TAG, "Job for ${recordType.simpleName} started")
+        jobs.put(recordType, job)
+    }
 }
