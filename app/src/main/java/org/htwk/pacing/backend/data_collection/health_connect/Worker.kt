@@ -77,6 +77,9 @@ class HealthConnectWorker(
     }
 
 
+    /**
+     * Continuously inserts new data of the provided Record into the database.
+     */
     private suspend inline fun syncRecordChanges(recordType: KClass<out Record>) {
         var changesToken = client.getChangesToken(
             ChangesTokenRequest(setOf(recordType))
@@ -96,6 +99,9 @@ class HealthConnectWorker(
         }
     }
 
+    /**
+     * Reads and stores the history of a Record that we do not yet have stored in our database.
+     */
     private suspend inline fun syncRecordHistory(recordType: KClass<out Record>) {
         val lastEvent = readEventDao.getOfRecord(recordType.simpleName!!).lastOrNull()
         Log.d(TAG, "Last event $lastEvent")
@@ -163,6 +169,10 @@ class HealthConnectWorker(
 
 }
 
+/**
+ * Runs the provided job for a record that we have read permissions for.
+ * Stops the job if we loose the permissions.
+ */
 class HealthConnectJobScheduler(
     val client: HealthConnectClient,
     val scope: CoroutineScope,
@@ -184,6 +194,9 @@ class HealthConnectJobScheduler(
         scope.launch { emitPermissionChanges() }
     }
 
+    /**
+     * Reacts to a permission change by starting/stopping the job for the corresponding Record.
+     */
     suspend fun consumePermissionChanges() {
         permissionChanges.collect {
             val permission = it.permission
@@ -205,6 +218,11 @@ class HealthConnectJobScheduler(
         }
     }
 
+    /**
+     * Polls the permissions granted by health connect,
+     * diffs them against the previous permission
+     * and emits events for added/removed permissions.
+     */
     suspend fun emitPermissionChanges() {
         var previousPermissions = emptySet<String>()
         while (true) {
@@ -239,6 +257,9 @@ class HealthConnectJobScheduler(
         }
     }
 
+    /**
+     * Inserts and starts a new Job for the provided Record.
+     */
     fun launchRecordSyncJob(recordType: KClass<out Record>) {
         val job = scope.launch {
             try {
