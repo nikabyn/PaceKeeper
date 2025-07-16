@@ -14,12 +14,10 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.htwk.pacing.backend.appModule
-import org.htwk.pacing.backend.data_collection.HealthConnectWorkerScheduler
-import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
+import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.productionModule
 import org.htwk.pacing.backend.scheduleEnergyCheckWorker
-import org.htwk.pacing.backend.testModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -76,18 +74,17 @@ class BroadcastReceiver : BroadcastReceiver() {
 }
 
 fun enqueueWorkers(wm: WorkManager) {
-    enqueueRandomHeartRateWorker(wm)
-    HealthConnectWorkerScheduler.scheduleHealthSync(wm)
+    enqueueHealthConnectWorker(wm)
     enqueuePredictionWorker(wm)
     scheduleEnergyCheckWorker(wm)
 }
 
-fun enqueueRandomHeartRateWorker(wm: WorkManager) {
-    val workRequest = OneTimeWorkRequestBuilder<RandomHeartRateWorker>()
+fun enqueueHealthConnectWorker(wm: WorkManager) {
+    val workRequest = OneTimeWorkRequestBuilder<HealthConnectWorker>()
         .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         .build()
     wm.enqueueUniqueWork(
-        "RandomHeartRateGeneration",
+        "HealthDataCollection",
         ExistingWorkPolicy.REPLACE,
         workRequest
     )
