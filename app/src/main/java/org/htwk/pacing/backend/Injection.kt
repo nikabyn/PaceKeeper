@@ -77,7 +77,17 @@ val appModule = module {
      * the actual execution/scheduling is handled in Application.kt
      */
     worker { context, params -> HealthConnectWorker(context, params, get()) }
-    worker { context, params -> PredictionWorker(context, params, get(), get(), get(), get()) }
+    worker { context, params ->
+        PredictionWorker(
+            context,
+            params,
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     worker { context, params -> NotificationsBackgroundWorker(context, params, get()) }
 }
 

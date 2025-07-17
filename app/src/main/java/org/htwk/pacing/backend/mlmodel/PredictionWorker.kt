@@ -16,12 +16,14 @@ import kotlinx.datetime.Clock
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.heartRate10MinToEnergy10min
+import org.htwk.pacing.backend.heuristics.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -32,7 +34,8 @@ class PredictionWorker(
     private val mlModel: MLModel,
     private val heartRateDao: HeartRateDao,
     private val predictedHeartRateDao: PredictedHeartRateDao,
-    private val predictedEnergyLevelDao: PredictedEnergyLevelDao
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val manualSymptonDao: ManualSymptomDao
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -137,6 +140,11 @@ class PredictionWorker(
         predictionOutput: FloatArray,
         now10min: kotlinx.datetime.Instant
     ) {
+        val now = Clock.System.now()
+        val relevantSymptoms = manualSymptonDao.getInRange(now - 3.days, now)
+
+        val energySymptoms = mainEnergyHeuristic(predictionOutput, relevantSymptoms, now)
+
         //delete previous HR and Energy Level prediction
         predictedHeartRateDao.deleteAll()
         predictedEnergyLevelDao.deleteAll()
