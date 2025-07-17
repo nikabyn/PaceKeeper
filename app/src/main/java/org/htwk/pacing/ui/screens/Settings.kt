@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.screens
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,7 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,30 +35,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
-
-val requiredPermissions = setOf(
-    HealthPermission.getReadPermission(StepsRecord::class),
-    HealthPermission.getReadPermission(HeartRateRecord::class),
-    HealthPermission.getWritePermission(HeartRateRecord::class) //für schreiben des csv imports
-)
 
 /**
  * Verwaltet die Verbindung zu Health Connect.
@@ -72,37 +67,27 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalContext.current as LifecycleOwner
-    var isConnected by remember { mutableStateOf(false) }
+    val isConnected by viewModel.isConnected.collectAsState()
+
+    viewModel.checkPermissions()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val requestPermissionsActivity = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
     ) { granted ->
-        Log.d("HealthConnectDebug", "Permission activity result: $granted")
-    }
-
-    // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
-    suspend fun updateConnectionState() {
-        val client = HealthConnectClient.getOrCreate(context)
-        val granted = client.permissionController.getGrantedPermissions()
-        isConnected = requiredPermissions.all { it in granted }
-    }
-
-    LaunchedEffect(Unit) {
-        updateConnectionState()
-    }
-
-    DisposableEffect(Unit) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    updateConnectionState()
-                }
-            }
-        }
-        val lifecycle = lifecycleOwner.lifecycle
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
+        Log.d("RequestPermissions", "Granted: $granted")
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -124,17 +109,13 @@ fun SettingsScreen(
             HealthConnectItem(
                 connected = isConnected,
                 onClick = {
-                    val launchIntent =
-                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-                    if (launchIntent != null) {
-                        context.startActivity(launchIntent)
-                    } else {
-                        Log.w("HealthConnectDebug", "Health Connect not installed.")
+                    if (!isConnected) {
+                        requestPermissionsActivity.launch(wantedPermissions)
+                        return@HealthConnectItem
                     }
 
-                    if (!isConnected) {
-                        requestPermissionsActivity.launch(requiredPermissions)
-                    }
+                    val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+                    context.startActivity(intent)
                 },
             )
 
@@ -203,7 +184,6 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         TextButton(onClick = onClick) {
             Text(stringResource(R.string.edit))
         }
-
     }
     HeartRateCard()
     ImportDataHealthConnect()
@@ -211,8 +191,19 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
 }
 
 class SettingsViewModel(
+    context: Context,
     private val db: PacingDatabase
 ) : ViewModel() {
+    private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> = _isConnected
+
+    fun checkPermissions() {
+        viewModelScope.launch {
+            val granted = client.permissionController.getGrantedPermissions()
+            _isConnected.value = wantedPermissions.any { it in granted }
+        }
+    }
 
     /**
      * Starts export as background thread.

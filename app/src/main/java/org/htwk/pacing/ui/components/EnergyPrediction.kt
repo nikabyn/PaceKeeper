@@ -26,8 +26,8 @@ import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
 
 /**
- * Shows a graph of the last 12 hours of the users energy level
- * and a prediction for the next 12 hoursit lo
+ * Shows a graph of the last 6 hours of the users energy level
+ * and a prediction for the next 6 hours.
  * The last value in the series is used as the current time.
  */
 @Composable

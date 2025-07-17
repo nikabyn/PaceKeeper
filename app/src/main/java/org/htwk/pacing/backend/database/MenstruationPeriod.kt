@@ -10,9 +10,9 @@ import kotlinx.datetime.Instant
 @Entity(tableName = "menstruation_period")
 data class MenstruationPeriodEntry(
     @PrimaryKey
-    val start: Instant,
-    val end: Instant,
-)
+    override val start: Instant,
+    override val end: Instant,
+) : TimedEntry
 
 @Dao
 interface MenstruationPeriodDao : TimedSeries<MenstruationPeriodEntry> {
@@ -21,6 +21,9 @@ interface MenstruationPeriodDao : TimedSeries<MenstruationPeriodEntry> {
 
     @Query("select * from menstruation_period")
     override suspend fun getAll(): List<MenstruationPeriodEntry>
+
+    @Query("select * from menstruation_period order by `end` desc limit 1")
+    override suspend fun getLatest(): MenstruationPeriodEntry?
 
     @Query("""select * from menstruation_period where "start" <= :end and "end" >= :begin""")
     override suspend fun getInRange(begin: Instant, end: Instant): List<MenstruationPeriodEntry>

@@ -12,7 +12,10 @@ data class SpeedEntry(
     @PrimaryKey
     val time: Instant,
     val velocity: Velocity,
-)
+) : TimedEntry {
+    override val start get() = time
+    override val end get() = time
+}
 
 @Dao
 interface SpeedDao : TimedSeries<SpeedEntry> {
@@ -21,6 +24,9 @@ interface SpeedDao : TimedSeries<SpeedEntry> {
 
     @Query("select * from speed")
     override suspend fun getAll(): List<SpeedEntry>
+
+    @Query("select * from speed order by time desc limit 1")
+    override suspend fun getLatest(): SpeedEntry?
 
     @Query("select * from speed where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<SpeedEntry>

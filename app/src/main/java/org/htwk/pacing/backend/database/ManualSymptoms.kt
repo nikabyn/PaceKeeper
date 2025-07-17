@@ -90,7 +90,13 @@ data class ManualSymptomEntry(
         )
     )
     val symptoms: List<Symptom>
-)
+) : TimedEntry {
+    override val start: Instant
+        get() = feeling.time
+
+    override val end: Instant
+        get() = feeling.time
+}
 
 @Dao
 interface ManualSymptomDao : TimedSeries<ManualSymptomEntry> {
@@ -128,6 +134,10 @@ interface ManualSymptomDao : TimedSeries<ManualSymptomEntry> {
     @Transaction
     @Query("select * from feeling")
     override suspend fun getAll(): List<ManualSymptomEntry>
+
+    @Transaction
+    @Query("select * from feeling order by time desc limit 1")
+    override suspend fun getLatest(): ManualSymptomEntry?
 
     @Transaction
     @Query("select * from feeling where time between :begin and :end")

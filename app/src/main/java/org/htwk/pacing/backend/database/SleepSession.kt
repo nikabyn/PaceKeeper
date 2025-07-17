@@ -12,10 +12,10 @@ import kotlinx.datetime.Instant
 @Entity(tableName = "sleep_session")
 data class SleepSessionEntry(
     @PrimaryKey
-    val start: Instant,
-    val end: Instant,
+    override val start: Instant,
+    override val end: Instant,
     val stage: SleepStage,
-)
+) : TimedEntry
 
 @Dao
 interface SleepSessionDao : TimedSeries<SleepSessionEntry> {
@@ -25,7 +25,10 @@ interface SleepSessionDao : TimedSeries<SleepSessionEntry> {
     @Query("select * from sleep_session")
     override suspend fun getAll(): List<SleepSessionEntry>
 
-    @Query("""select * from sleep_session where "start" <= :end and "end" >= :begin""")
+    @Query("select * from sleep_session order by `end` desc limit 1")
+    override suspend fun getLatest(): SleepSessionEntry?
+
+    @Query("select * from sleep_session where `start` <= :end and `end` >= :begin")
     override suspend fun getInRange(begin: Instant, end: Instant): List<SleepSessionEntry>
 
     @Query("select null from sleep_session")

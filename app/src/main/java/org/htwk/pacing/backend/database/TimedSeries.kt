@@ -8,7 +8,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-interface TimedSeries<E> {
+interface TimedSeries<E : TimedEntry> {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(entry: E)
 
@@ -18,6 +18,8 @@ interface TimedSeries<E> {
     suspend fun deleteAll()
 
     suspend fun getAll(): List<E>
+
+    suspend fun getLatest(): E?
 
     suspend fun getInRange(begin: Instant, end: Instant): List<E>
 
@@ -31,4 +33,9 @@ interface TimedSeries<E> {
             val now = Clock.System.now()
             getInRange(now.minus(duration), now)
         }
+}
+
+interface TimedEntry {
+    val start: Instant
+    val end: Instant
 }
