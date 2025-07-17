@@ -16,10 +16,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.ui.components.BatteryCard
@@ -28,6 +30,7 @@ import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.Series
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Duration.Companion.hours
 
 @Composable
 fun HomeScreen(
@@ -37,68 +40,23 @@ fun HomeScreen(
 ) {
     val energySeriesFull by viewModel.predictedEnergyLevel.collectAsState()
 
-    /*var timeNow by remember { mutableStateOf(Clock.System.now()) }
-    var time7daysAgo by remember { mutableStateOf(timeNow - 7.days) }
-    var time12hoursAgo by remember { mutableStateOf(timeNow - 12.hours) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            timeNow = Clock.System.now()
-            time7daysAgo = timeNow - 7.days
-            time12hoursAgo = timeNow - 12.hours
-        }
-    }*/
-
     val now = Clock.System.now()
 
-    // Find the last value that is before or at the current time
-    val lastPastValue =
-        energySeriesFull.x.lastOrNull { Instant.fromEpochMilliseconds(it.toLong()) <= now }
+    //don't display if no data available
+    if (energySeriesFull.y.isEmpty()) return
 
-    val energySeriesPast = if (lastPastValue != null) {
-        val lastPastIndex = energySeriesFull.x.indexOf(lastPastValue)
-        Series(
-            x = energySeriesFull.x.subList(0, lastPastIndex + 1).toMutableList(),
-            y = energySeriesFull.y.subList(0, lastPastIndex + 1).toMutableList()
-        )
-    } else Series(mutableListOf(), mutableListOf())
+    val mid = energySeriesFull.x.size / 2
 
-
-    //select only future values from energySeries
-    val energySeriesFuture = Series(
-        x = energySeriesFull.x.filter { Instant.fromEpochMilliseconds(it.toLong()) > now }
-            .toMutableList(),
-        y = energySeriesFull.y.takeLast(energySeriesFull.x.count { Instant.fromEpochMilliseconds(it.toLong()) > now })
-            .toMutableList()
-    )
-
-    var energySeries = energySeriesPast
+    val secondHalfValues = energySeriesFull.y.drop(mid)
 
     /*val minPrediction = 0.1f
    val avgPrediction = 0.35f
    val maxPrediction = 0.4f*/
 
-    val currentEnergy: Double
-    val minPrediction: Float
-    val maxPrediction: Float
-    val avgPrediction: Float
-
-    if (energySeries.y.isEmpty()) {
-        // Provide dummy data if no energy data is available
-        energySeries = Series(
-            x = mutableListOf(now.toEpochMilliseconds().toDouble()),
-            y = mutableListOf(0.5) // Default energy level
-        )
-        currentEnergy = 0.5
-        minPrediction = 0.3f
-        maxPrediction = 0.7f
-        avgPrediction = 0.5f
-    } else {
-        currentEnergy = energySeries.y.last()
-        minPrediction = energySeries.y.min().toFloat()
-        maxPrediction = energySeries.y.max().toFloat()
-        avgPrediction = (energySeries.y.average() - currentEnergy + 0.5f).toFloat()
-    }
+    val currentEnergy = energySeriesFull.y[mid]
+    val minPrediction = secondHalfValues.min().toFloat()
+    val maxPrediction = secondHalfValues.max().toFloat()
+    val avgPrediction = (secondHalfValues.average() - currentEnergy + 0.5f).toFloat()
 
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -107,7 +65,7 @@ fun HomeScreen(
             modifier = Modifier.padding(all = 40.dp)
         ) {
             EnergyPredictionCard(
-                series = energySeries,
+                series = energySeriesFull,
                 minPrediction,
                 avgPrediction,
                 maxPrediction,
@@ -126,8 +84,21 @@ class HomeViewModel(
 ) : ViewModel() {
     val predictedEnergyLevel = predictedEnergyLevelDao
         .getAllLive()
+        .filter { it.isNotEmpty() }
+        .debounce(1000) //give 1 second to update
+        .distinctUntilChanged()
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
+
+            //add dummy values if no data available
+            if (entries.isEmpty()) {
+                updated.x.add((Clock.System.now() - 6.hours).toEpochMilliseconds().toDouble())
+                updated.y.add(0.5)
+
+                updated.x.add((Clock.System.now() + 6.hours).toEpochMilliseconds().toDouble())
+                updated.y.add(0.5)
+            }
+
             entries.forEach { (time, value) ->
                 updated.x.add(time.toEpochMilliseconds().toDouble())
                 updated.y.add(value.toDouble())
