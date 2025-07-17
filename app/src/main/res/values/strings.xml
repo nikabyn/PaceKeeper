@@ -56,6 +56,7 @@
     <string name="confirm">Confirm</string>
     <string name="dismiss">Dismiss</string>
     <string name="energy_warning_text">Your Energy level is low. Please take a rest!</string>
+    <string name="warning">WARNING</string>
     <string name="demo_data_button_text">Load demo data</string>
     <string name="demo_data_dialog_title">Important notice</string>
     <string name="demo_data_dialog_text">If you proceed, demo data will be loaded into Health Connect. You can only delete this data manually via Health Connect.</string>
