@@ -2,6 +2,8 @@ package org.htwk.pacing.backend.mlmodel
 
 import android.content.Context
 import kotlinx.datetime.Instant
+import org.htwk.pacing.backend.mlmodel.MLModel.Companion.denormalize
+import org.htwk.pacing.backend.mlmodel.MLModel.Companion.normalize
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
 import java.nio.FloatBuffer
@@ -35,8 +37,35 @@ class MLModel(context: Context) {
          * 2025-07-16 13:44:32,320 INFO: Mean HR: 79.76, Std HR: 18.73
          */
 
-        private const val HR_MEAN: Float = 79.76f
-        private const val HR_STANDARD_DEVIATION: Float = 18.73f
+        const val HR_MEAN: Float = 79.76f
+        const val HR_STANDARD_DEVIATION: Float = 18.73f
+
+        /**
+         * Normalizes the input data, returns the normalized form and the stochastic properties for
+         * later denormalization
+         * @param input The input data to be normalized.
+         * @see StochasticProperties
+         * @see denormalize
+         */
+
+        fun normalize(input: FloatArray): FloatArray {
+            val normalized =
+                input.map { (it - HR_MEAN) / HR_STANDARD_DEVIATION }.toFloatArray()
+            return normalized
+        }
+
+        /**
+         * Denormalizes the input data, returns the denormalized form
+         * @param input The input data to be denormalized.
+         * @return The denormalized data.
+         * @see normalize
+         */
+        fun denormalize(
+            input: FloatArray
+        ): FloatArray {
+            return input.map { x -> x * HR_STANDARD_DEVIATION + HR_MEAN }
+                .toFloatArray()
+        }
     }
 
     /**
@@ -92,33 +121,6 @@ class MLModel(context: Context) {
             weekSin = sin(2 * PI * weekRatio),
             weekCos = cos(2 * PI * weekRatio)
         )
-    }
-
-    /**
-     * Normalizes the input data, returns the normalized form and the stochastic properties for
-     * later denormalization
-     * @param input The input data to be normalized.
-     * @see StochasticProperties
-     * @see denormalize
-     */
-
-    fun mlNormalize(input: FloatArray): FloatArray {
-        val normalized =
-            input.map { (it - HR_MEAN) / HR_STANDARD_DEVIATION }.toFloatArray()
-        return normalized
-    }
-
-    /**
-     * Denormalizes the input data, returns the denormalized form
-     * @param input The input data to be denormalized.
-     * @return The denormalized data.
-     * @see mlNormalize
-     */
-    fun denormalize(
-        input: FloatArray
-    ): FloatArray {
-        return input.map { x -> x * HR_STANDARD_DEVIATION + HR_MEAN }
-            .toFloatArray()
     }
 
     //TODO: how to deal with calculations happening in between the 10min steps ?
@@ -199,7 +201,7 @@ class MLModel(context: Context) {
         if (inputHeartRate.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
 
         //normalize heart rate input, because model works in normalized heart rate space
-        val normalized = mlNormalize(inputHeartRate)
+        val normalized = normalize(inputHeartRate)
 
         //encode time features
         val inputBuffer = createInputBufferWithTimeFeaturesAndDerivatives(
