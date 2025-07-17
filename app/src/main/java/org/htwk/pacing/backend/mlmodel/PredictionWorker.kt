@@ -22,6 +22,7 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
+import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.nextEnergyLevelFromHeartRate
 import org.htwk.pacing.backend.heuristics.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration
@@ -142,6 +143,9 @@ class PredictionWorker(
         predictionOutputHR: FloatArray,
         now10min: kotlinx.datetime.Instant
     ) {
+        //append predictionOutput to previousHeartRates, run energy calculation on past + future
+        val totalHRSeries = predictionInputHR + predictionOutputHR
+
         /*TODO: turn PredictedEnergyLevel into EnergyLevel again
          *  write both future and past energy
          *  start heuristic at now - 12 hours, using the bpm at that point as a starting point
@@ -149,17 +153,22 @@ class PredictionWorker(
          *  -> if no data exists in the db yet, overwrite with constant 0.5
          *  -> this will then be the starting point of the above process
          *  OR: just start at 1.0 for MVP
-         *
+         *  .
+         *  SOLUTION FOR NOW: estimate energy based on first HR value
         * */
 
-        //append predictionOutput to previousHeartRates, run energy calculation on past + future
-        val totalHRSeries = predictionInputHR + predictionOutputHR
+        //inital energy estimation
+        val firstHR = predictionInputHR.first().toDouble()
+        var energyBegin = 1.0
+        for (i in 0 until 6) {
+            energyBegin = nextEnergyLevelFromHeartRate(energyBegin, firstHR)
+        }
 
         val predictedEnergy = mainEnergyHeuristic(
-            energyBegin = 1.0,
+            energyBegin = energyBegin,
             heartRate10MinSeries = totalHRSeries,
             symptomsFromLast3Days = manualSymptonDao.getInRange(now10min - 3.days, now10min),
-            now = now10min + 0.days
+            now = now10min
         )
 
         //delete previous HR and Energy Level prediction
@@ -210,7 +219,7 @@ class PredictionWorker(
         var i = 0
         while (true) {
             i++
-            insertTestDataIntoDB(i * 90)
+            insertTestDataIntoDB((i * 9) % 800)
 
             //TODO: should we consider data that came in after the most recent 10 minute mark?
             val now10min =
