@@ -142,12 +142,22 @@ class PredictionWorker(
         predictionOutputHR: FloatArray,
         now10min: kotlinx.datetime.Instant
     ) {
-        //append predictionOutput to previousHeartRates
-        val totalArray = predictionInputHR + predictionOutputHR
+        /*TODO: turn PredictedEnergyLevel into EnergyLevel again
+         *  write both future and past energy
+         *  start heuristic at now - 12 hours, using the bpm at that point as a starting point
+         *  alternatively, just use the first existing datapoint and then overwrite
+         *  -> if no data exists in the db yet, overwrite with constant 0.5
+         *  -> this will then be the starting point of the above process
+         *  OR: just start at 1.0 for MVP
+         *
+        * */
+
+        //append predictionOutput to previousHeartRates, run energy calculation on past + future
+        val totalHRSeries = predictionInputHR + predictionOutputHR
 
         val predictedEnergy = mainEnergyHeuristic(
             energyBegin = 1.0,
-            heartRate10MinSeries = totalArray,
+            heartRate10MinSeries = totalHRSeries,
             symptomsFromLast3Days = manualSymptonDao.getInRange(now10min - 3.days, now10min),
             now = now10min + 0.days
         )
@@ -176,27 +186,31 @@ class PredictionWorker(
         )
     }
 
+    private suspend fun insertTestDataIntoDB(offset: Int) {
+        val testHeartRateData = getTestHeartRateData(offset)
+
+        heartRateDao.deleteAll()
+        predictedEnergyLevelDao.deleteAll()
+
+        //insert testHeartRateData into db
+        val listToDB = List(testHeartRateData.size) { i ->
+            HeartRateEntry(
+                time = (Clock.System.now() - (10.minutes * testHeartRateData.size) + 10.minutes * i),
+                bpm = testHeartRateData[i].toLong()
+            )
+        }
+
+        heartRateDao.insertMany(listToDB)
+    }
+
     /**
      * Main loop for the worker, continuously fetching data, making predictions, and updating the DB.
      */
     private suspend fun workerMainLoop() {
-        var i = 0u
+        var i = 0
         while (true) {
-            val testHeartRateData = getTestHeartRateData((i * 90u) % 800u)
             i++
-
-            heartRateDao.deleteAll()
-            predictedEnergyLevelDao.deleteAll()
-
-            //insert testHeartRateData into db
-            val listToDB = List(testHeartRateData.size) { i ->
-                HeartRateEntry(
-                    time = (Clock.System.now() - (10.minutes * testHeartRateData.size) + 10.minutes * i),
-                    bpm = testHeartRateData[i].toLong()
-                )
-            }
-
-            heartRateDao.insertMany(listToDB)
+            insertTestDataIntoDB(i * 90)
 
             //TODO: should we consider data that came in after the most recent 10 minute mark?
             val now10min =
@@ -207,7 +221,7 @@ class PredictionWorker(
                     .sortedBy { it.time }
 
             if (timeSortedHeartRateData.isEmpty()) {
-                delay(1000)
+                delay(5000)
                 continue
             }
 

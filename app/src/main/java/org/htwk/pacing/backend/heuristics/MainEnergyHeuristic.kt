@@ -67,19 +67,10 @@ fun mainEnergyHeuristic(
     heartRate10MinSeries: FloatArray,
     symptomsFromLast3Days: List<ManualSymptomEntry>, now: Instant
 ): FloatArray {
-    /*TODO: turn PredictedEnergyLevel into EnergyLevel again
-        write both future and past energy
-        start heuristic at now - 12 hours, using the bpm at that point as a starting point
-        alternatively, just use the first existing datapoint and then overwrite
-        -> if no data exists in the db yet, overwrite with constant 0.5
-        -> this will then be the starting point of the above process
-    * */
-
     val energy10minSeries = FloatArray(heartRate10MinSeries.size)
     var currentEnergy = energyBegin.toDouble()
 
     for (i in heartRate10MinSeries.indices) {
-        //energy10minSeries[i] = //(heartRate10MinSeries[i].toFloat() / 100.0f + 0.5f).coerceIn(0.0f, 1.0f)
         //continue;
         // A, 1.) HR based adjustment
         //TODO: base recharge if we have no energy available?
