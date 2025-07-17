@@ -20,9 +20,13 @@ object EnergyFromHeartRateCalculator {
 
         val baseRate = 1.0 / FULL_RECHARGE_HOURS
 
-        //val load = max(0.0, hr - threshold)   // excess load from being over threshold
         var load = (HR_THRESHOLD - hr) / (HR_MARGIN * 2)
+        
+        // the patient will loose energy much faster than regaining
         if (load < 0.0) load *= ACTIVITY_RECOVERY_RATIO
+
+        //don't load up energy until we're at least resting
+        if (hr in HR_REST..HR_THRESHOLD) load = 0.0
         val nextEnergy =
             (energy + baseRate * load * deltaT).coerceIn(
                 0.0,
