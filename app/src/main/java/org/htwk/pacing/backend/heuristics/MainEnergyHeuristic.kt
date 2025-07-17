@@ -6,60 +6,80 @@ import org.htwk.pacing.backend.database.ManualSymptomEntry
 import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.nextEnergyLevelFromHeartRate
 import org.htwk.pacing.backend.heuristics.PemCalculator.calculatePemProbability
 import org.htwk.pacing.ui.math.interpolate
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 private val WEAR_OFF_SPEED = 0.05f
-private val SYMPTOM_WEAR_OFF_DAYS = 5
+private val PEM_WEAR_OFF_DAYS = 5
+
+/**
+ * Returns a factor between 1.0 (at start) and 0.0 (at end, faded‑out) that drops
+ * linearly with time.
+ *
+ * @param elapsed     How much time has passed since the event.
+ * @param totalSpan   Duration after which the effect is considered 0.
+ */
+private fun linearFadeOut(elapsed: Duration, totalSpan: Duration): Float {
+    return (1.0f - elapsed.inWholeSeconds.toFloat() /
+            totalSpan.inWholeSeconds.toFloat())
+        .coerceIn(0.0f, 1.0f)
+}
+
+//more severe symptoms should take longer to fade out, this map defines how long it should take
+private val fadeDaysBySeverity = mapOf(
+    1 to 1.days,   // mild
+    2 to 3.days,   // moderat
+    3 to 5.days    // stark / Crash
+)
+
+//worse feeling means higher severity
+private val severityByFeeling = mapOf(
+    Feeling.VeryGood to 0,
+    Feeling.Good to 1,
+    Feeling.Bad to 2,
+    Feeling.VeryBad to 3
+)
 
 fun nextEnergyFromSymptomLevels(
-    currentEnergy: Double,
-    latestSymptomEntry: ManualSymptomEntry,
+    energy: Double,
+    last: ManualSymptomEntry,
     now: Instant,
 ): Double {
-    val feeling = latestSymptomEntry.feeling.feeling
-    //don't reduce energy if symptoms good
-    if (feeling == Feeling.VeryGood) return currentEnergy;
+    val feeling = last.feeling.feeling
+    if (feeling == Feeling.VeryGood) return energy  // good symptoms, don't reduce energy
 
-    val severity: Int = (3 - feeling.level).coerceIn(1, 3)
+    val severity = severityByFeeling[feeling] ?: 1
+    val fadeDur = fadeDaysBySeverity[severity] ?: 3.days
 
-    val timeSinceSymptom = (now - latestSymptomEntry.feeling.time)
+    val elapsed = now - last.feeling.time
+    if (elapsed >= fadeDur) return energy          // already surpassed full fade
 
-    val assumedRemainingStrength =
-        ((severity.days.inWholeSeconds - timeSinceSymptom.inWholeSeconds).toDouble() / 3.days.inWholeSeconds.toDouble())
-            .coerceIn(0.0, 1.0)
+    val remainingFadedStrength = linearFadeOut(elapsed, fadeDur)
+    val targetEnergyForSeverity = calculateNewEnergyLevel(energy, severity)
 
-    val newEnergy =
-        interpolate(
-            currentEnergy,
-            calculateNewEnergyLevel(currentEnergy, severity),
-            assumedRemainingStrength.toFloat() * WEAR_OFF_SPEED
-        )
-
-    return newEnergy.coerceIn(0.0, 1.0)
+    return interpolate(energy, targetEnergyForSeverity, remainingFadedStrength * WEAR_OFF_SPEED)
+        .coerceIn(0.0, 1.0)
 }
 
 fun nextEnergyFromPemProbability(
     currentEnergy: Double,
-    latestSymptomEntry: ManualSymptomEntry,
+    last: ManualSymptomEntry,
     now: Instant
 ): Double {
-    val timeSinceEntry = now - latestSymptomEntry.feeling.time
-    //no pem last pem is too long ago
-    if (timeSinceEntry > SYMPTOM_WEAR_OFF_DAYS.days) return currentEnergy
+    val fadeDays = PEM_WEAR_OFF_DAYS.days
 
-    val symptomNames = latestSymptomEntry.symptoms.map { it.name }.distinct()
-    val pemProbability = calculatePemProbability(symptomNames)
+    val elapsed = now - last.feeling.time
+    if (elapsed >= fadeDays) return currentEnergy //PEM Duration already exceeded
 
-    val timeDecayFactor =
-        maxOf(
-            0.0,
-            1.0 - (timeSinceEntry.inWholeSeconds.toDouble() / SYMPTOM_WEAR_OFF_DAYS.days.inWholeSeconds.toDouble())
-        )
+    val pemProbability = calculatePemProbability(
+        last.symptoms.map { it.name }.distinct()
+    )
 
-    val remainingPemProbability = interpolate(pemProbability, 0.0, timeDecayFactor.toFloat())
+    val remainingFadedStrength = linearFadeOut(elapsed, fadeDays)
 
-    return remainingPemProbability
+    val penalty = pemProbability * remainingFadedStrength
+    return (currentEnergy - penalty).coerceIn(0.0, 1.0)
 }
 
 fun mainEnergyHeuristic(
