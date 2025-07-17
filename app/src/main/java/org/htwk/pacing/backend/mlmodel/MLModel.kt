@@ -2,35 +2,16 @@ package org.htwk.pacing.backend.mlmodel
 
 import android.content.Context
 import kotlinx.datetime.Instant
-import org.htwk.pacing.backend.mlmodel.MLModel.StochasticProperties
+import org.htwk.pacing.backend.mlmodel.MLModel.Companion.denormalize
+import org.htwk.pacing.backend.mlmodel.MLModel.Companion.normalize
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
 import java.nio.FloatBuffer
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
-
-/**
- * Normalizes the input data, returns the normalized form and the stochastic properties for
- * later denormalization
- * @param input The input data to be normalized.
- * @return A pair containing the normalized data and the stochastic properties.
- * @see StochasticProperties
- * @see denormalize
- */
-
-fun mlNormalize(input: FloatArray): Pair<FloatArray, StochasticProperties> {
-    val mean = input.average().toFloat()
-    val standardDeviationNonSafe = input.map { (it - mean).pow(2) }.average().pow(0.5).toFloat()
-    val standardDeviationSafe = if (standardDeviationNonSafe == 0.0f) 0.000001f else standardDeviationNonSafe
-
-    val normalized = input.map { (it - mean) / standardDeviationSafe }.toFloatArray()
-    return Pair(normalized, StochasticProperties(mean, standardDeviationSafe))
-}
-
 
 class MLModel(context: Context) {
     // create tensor flow lite interpreter for model at TFLITE_MODEL_FILE_PATH
@@ -49,7 +30,42 @@ class MLModel(context: Context) {
         const val OUTPUT_SIZE: Int = 6 * 6 // 6 hours in 30 minutes timesteps = 36
 
         //doesn't need to be visible to outside for now
-        private const val FEATURE_COUNT: Int = 5
+        private const val FEATURE_COUNT: Int = 8
+
+        /** output of training script, it calculated the following generic stochastic properties
+         * from the fitbit multi-person dataset
+         * 2025-07-16 13:44:32,320 INFO: Mean HR: 79.76, Std HR: 18.73
+         */
+
+        const val HR_MEAN: Float = 79.76f
+        const val HR_STANDARD_DEVIATION: Float = 18.73f
+
+        /**
+         * Normalizes the input data, returns the normalized form and the stochastic properties for
+         * later denormalization
+         * @param input The input data to be normalized.
+         * @see StochasticProperties
+         * @see denormalize
+         */
+
+        fun normalize(input: FloatArray): FloatArray {
+            val normalized =
+                input.map { (it - HR_MEAN) / HR_STANDARD_DEVIATION }.toFloatArray()
+            return normalized
+        }
+
+        /**
+         * Denormalizes the input data, returns the denormalized form
+         * @param input The input data to be denormalized.
+         * @return The denormalized data.
+         * @see normalize
+         */
+        fun denormalize(
+            input: FloatArray
+        ): FloatArray {
+            return input.map { x -> x * HR_STANDARD_DEVIATION + HR_MEAN }
+                .toFloatArray()
+        }
     }
 
     /**
@@ -107,62 +123,42 @@ class MLModel(context: Context) {
         )
     }
 
-    /**
-     * Represents the stochastic properties (mean and standard deviation) of a dataset.
-     *
-     * This data class is used to store the calculated mean and standard deviation,
-     * which are essential for normalizing input and denormalizing output data in out ml model.
-     * Because Normalization greatly improves model performance, the tflite model is trained on
-     * normalized data.
-     *
-     * @property mean The average value of the dataset.
-     * @property standardDeviation The measure of the amount of variation or dispersion of the dataset.
-     * @see mlNormalize
-     * @see denormalize
-     */
-    data class StochasticProperties(
-        val mean: Float,
-        val standardDeviation: Float
-    )
-
-
-    /**
-     * Denormalizes the input data, returns the denormalized form
-     * @param input The input data to be denormalized.
-     * @param stochasticProperties The stochastic properties used for normalization.
-     * @return The denormalized data.
-     * @see mlNormalize
-     * @see StochasticProperties
-     */
-    fun denormalize(
-        input: FloatArray,
-        stochasticProperties: StochasticProperties
-    ): FloatArray {
-        return input.map { x -> x * stochasticProperties.standardDeviation + stochasticProperties.mean }
-            .toFloatArray()
-    }
-
-    //TODO: how to deal with calculations happening in between the 10min steps
-    //TODO: how to deal with calculations happening in between the 10min steps
+    //TODO: how to deal with calculations happening in between the 10min steps ?
     /**
      * Creates a [FloatBuffer] containing the normalized input heart rate data combined with
-     * cyclical time features.
+     * first and second order derivatives and cyclical time features.
      *
-     * The buffer is structured to be directly usable as input for the TensorFlow Lite model.
+     * The buffer is structured to be directly usable as input for the LiteRT model.
      * Each input data point is augmented with its corresponding cyclical time representation.
      *
-     * @param inputNormalized The normalized heart rate data as a [FloatArray].
+     * @param inputHeartRateNormalized The normalized heart rate data as a [FloatArray].
      * @param endTime The [Instant] marking the end of the input data period. Time features are calculated relative to this point.
      * @return A [FloatBuffer] ready for model inference, containing the combined heart rate and time features.
      */
-   fun createInputBufferWithTimeFeatures(
-        inputNormalized: FloatArray,
+    fun createInputBufferWithTimeFeaturesAndDerivatives(
+        inputHeartRateNormalized: FloatArray,
+        inputHasDataMask: BooleanArray,
         endTime: Instant
     ): FloatBuffer {
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT)
 
+        //generate first order derivative input feature
+        val derivative1 =
+            floatArrayOf(0f) + inputHeartRateNormalized.asIterable().zipWithNext { a, b -> b - a }
+                .toFloatArray()
+
+        //generate second order derivative input feature
+        val derivative2 =
+            floatArrayOf(0f, 0f) + derivative1.asIterable().zipWithNext { a, b -> b - a }
+                .toFloatArray()
+
         for (i in 0 until INPUT_SIZE) {
-            inputBuffer.put(inputNormalized[i])
+            val encodedHasData = if (inputHasDataMask[i]) 1.0f else 0.0f
+            inputBuffer.put(encodedHasData)
+
+            inputBuffer.put(inputHeartRateNormalized[i])
+            inputBuffer.put(derivative1[i])
+            inputBuffer.put(derivative2[i])
 
             val timePoint = endTime - TIME_UNIT_10_MINUTES * i
             val cyclicalTime = encodeTimeToCyclicalFeature(timePoint)
@@ -184,7 +180,6 @@ class MLModel(context: Context) {
      * The prediction process involves several steps:
      * 1. **Input Validation**: Checks if the input array size matches the expected `INPUT_SIZE`.
      * 2. **Normalization**: Normalizes the input heart rate data. The model is trained on normalized data.
-     *    The mean and standard deviation used for normalization are stored for later denormalization of the output.
      * 3. **Time Feature Encoding**: Augments the normalized heart rate data with cyclical time features
      *    (sine/cosine of time of day and day of week) based on the provided `endTime`.
      * 4. **Inference**: Runs the TensorFlow Lite model with the prepared input buffer.
@@ -193,18 +188,27 @@ class MLModel(context: Context) {
      * Also, we work with FloatBuffer here since that's what TFLite expects. Using FloatArray would
      * require to much conversion boilerplate.
      *
-     * @param input A [FloatArray] representing historical heart rate data. The size must be equal to `INPUT_SIZE`.
+     * @param inputHeartRate A [FloatArray] representing historical heart rate data. The size must be equal to `INPUT_SIZE`.
+     * @param inputHasDataMask [BooleanArray] representing whether data existed at a certain timepoint
      * @param endTime An [Instant] representing the timestamp of the last data point in the `input` array.
      * @return A [FloatArray] containing the predicted future heart rate values. The size will be equal to `OUTPUT_SIZE`.
      */
-    fun predict(input: FloatArray, endTime: Instant): FloatArray {
-        if (input.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
+    fun predict(
+        inputHeartRate: FloatArray,
+        inputHasDataMask: BooleanArray,
+        endTime: Instant
+    ): FloatArray {
+        if (inputHeartRate.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
 
         //normalize heart rate input, because model works in normalized heart rate space
-        val (normalized, stochasticProperties) = mlNormalize(input)
+        val normalized = normalize(inputHeartRate)
 
         //encode time features
-        val inputBuffer = createInputBufferWithTimeFeatures(normalized, endTime)
+        val inputBuffer = createInputBufferWithTimeFeaturesAndDerivatives(
+            inputHeartRateNormalized = normalized,
+            inputHasDataMask = inputHasDataMask,
+            endTime = endTime
+        )
 
         //run inference and store in output buffer
         val outputBuffer = FloatBuffer.allocate(OUTPUT_SIZE)
@@ -215,8 +219,8 @@ class MLModel(context: Context) {
         //denormalize output and convert to return format (FloatArray instead of FloatBuffer)
         val output = FloatArray(OUTPUT_SIZE)
         outputBuffer.get(output)
-        val denormalizedOutput = denormalize(output, stochasticProperties)
-        return return denormalizedOutput
+        val denormalizedOutput = denormalize(output)
+        return denormalizedOutput
     }
 }
 

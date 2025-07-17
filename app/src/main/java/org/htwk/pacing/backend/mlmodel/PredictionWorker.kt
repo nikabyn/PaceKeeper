@@ -77,10 +77,11 @@ class PredictionWorker(
     private fun prepareModelInput(
         heartRateData: List<HeartRateEntry>,
         now10min: kotlinx.datetime.Instant
-    ): FloatArray {
+    ): Pair<FloatArray, BooleanArray> {
         val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
         val modelInputDuration = (MLModel::INPUT_DAYS.get().toInt()).days
         val averageArray = FloatArray(modelInputSize)
+        val hasDataArray = BooleanArray(modelInputSize) { x -> false }
 
         val modelInputBeginInstant = now10min - modelInputDuration
 
@@ -97,19 +98,29 @@ class PredictionWorker(
         /*check if there is at least one valid 10 min group, to extrapolate from first 10 min value
         to the left*/
         val leftMostTime = averagesPer10Min.minByOrNull { it.key }
-        if (leftMostTime == null) return FloatArray(modelInputSize) //if empty, return zero-data
+
+        //if empty, return zero-data
+        if (leftMostTime == null) {
+            return Pair(
+                FloatArray(modelInputSize),
+                hasDataArray
+            )
+        }
 
         var lastKnownAverage = averagesPer10Min[leftMostTime.key]!!
         for (i in 0 until modelInputSize) {
             //if there's an average available for this 10 minute interval, use it from now on
             val currentAverage = averagesPer10Min[modelInputBeginInstant + (i * 10).minutes]
 
-            if (currentAverage != null) lastKnownAverage = currentAverage
+            if (currentAverage != null) {
+                lastKnownAverage = currentAverage
+                hasDataArray[i] = true
+            }
 
             averageArray[i] = lastKnownAverage
         }
 
-        return averageArray
+        return Pair(averageArray, hasDataArray)
     }
 
     /**
@@ -171,12 +182,10 @@ class PredictionWorker(
                 continue
             }
 
-            val modelInput =
+            val (inputHeartRate, inputHasDataMask) =
                 prepareModelInput(timeSortedHeartRateData, now10min)
 
-            val predictionOutput = mlModel.predict(
-                modelInput, now10min
-            )
+            val predictionOutput = mlModel.predict(inputHeartRate, inputHasDataMask, now10min)
 
             updateDBWithPredictionOutput(predictionOutput, now10min)
 
