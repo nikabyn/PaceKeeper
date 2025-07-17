@@ -1,26 +1,27 @@
 package org.htwk.pacing.backend.heuristics
 
-import kotlin.math.max
-import kotlin.math.min
-
 object EnergyFromHeartRateCalculator {
+    //good heuristic for anaerobic threshold limit for ME/CFS patients in general
+    //observed to be a bit higher than healthy people
+    const val HR_REST = 75.0
+
+    //margin of 15 bpm before we reach threshold
     // see https://www.millionsmissing.de/2024/10/08/pacing-bei-me-cfs-herzfrequenz%C3%BCberwachung-zur-vermeidung-von-pem-und-flare-ups/
+    const val HR_MARGIN = 15.0
+    const val HR_THRESHOLD = HR_REST + HR_MARGIN
 
-    const val HEART_RATE_LIMIT = 90.0
+    const val FULL_RECHARGE_HOURS = 48.0
+
+    //in ME/CFS Patients, recovery usually takes 8 times as long as associated depletion
     const val ACTIVITY_RECOVERY_RATIO = 8.0
-    //const val HR_AT_REST = 75
-    //const val HR_PENALTY_START = HR_AT_REST
 
-    fun nextEnergyLevel10MinSimple(energy: Double, hr: Double): Double {
-        val threshold: Double = HEART_RATE_LIMIT              // personal threshold (bpm)
-        val depletionRate: Double = 20.0 / (60.0 * threshold)  // depletion factor
-        val recoveryRate: Double = 2.0 / (60.0 * 10.0)        // per hour
-        val deltaT = 10.0 / 60.0              // timestep size in hours
+    fun nextEnergyLevelFromHeartRate(energy: Double, hr: Double): Double {
+        val deltaT = 10.0 / 60.0              // timestep size from one energy calc step to next
 
-        val baseRate = 1.0 / 36.0
+        val baseRate = 1.0 / FULL_RECHARGE_HOURS
 
         //val load = max(0.0, hr - threshold)   // excess load from being over threshold
-        var load = (threshold - hr) / 20.0
+        var load = (HR_THRESHOLD - hr) / (HR_MARGIN * 2)
         if (load < 0.0) load *= ACTIVITY_RECOVERY_RATIO
         val nextEnergy =
             (energy + baseRate * load * deltaT).coerceIn(
@@ -28,11 +29,5 @@ object EnergyFromHeartRateCalculator {
                 1.0
             )
         return nextEnergy
-    }
-
-    //TODO: placeholder, to be replaced by scientific model trough ui feature ticket #21
-    fun energyLevelFromHeartRate(heartRate: Double /*liste von symptomen*/): Double {
-        val heartRateClipped = max(50.0, min(heartRate, 150.0)) - 50.0
-        return (100.0 - heartRateClipped) / 100.0
     }
 }

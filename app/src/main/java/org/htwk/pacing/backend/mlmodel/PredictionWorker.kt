@@ -22,10 +22,10 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
-import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.heartRate10MinToEnergy10min
 import org.htwk.pacing.backend.heuristics.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class PredictionWorker(
@@ -141,9 +141,13 @@ class PredictionWorker(
         now10min: kotlinx.datetime.Instant
     ) {
         val now = Clock.System.now()
-        val relevantSymptoms = manualSymptonDao.getInRange(now - 3.days, now)
 
-        val energySymptoms = mainEnergyHeuristic(predictionOutput, relevantSymptoms, now)
+        val predictedEnergy = mainEnergyHeuristic(
+            energyBegin = 1.0,
+            heartRate10MinSeries = predictionOutput,
+            symptomsFromLast3Days = manualSymptonDao.getInRange(now - 3.days, now),
+            now = now + 0.days
+        )
 
         //delete previous HR and Energy Level prediction
         predictedHeartRateDao.deleteAll()
@@ -159,14 +163,13 @@ class PredictionWorker(
             }
         )
 
-        val predictedEnergy = heartRate10MinToEnergy10min(1.0, predictionOutput)
-
         predictedEnergyLevelDao.insertMany(
             List(predictionOutput.size) { i ->
                 PredictedEnergyLevelEntry(
                     now10min + 10.minutes * i,
                     //energyHeuristic(predictionOutput[i].toDouble())
-                    Percentage(predictedEnergy[i].toDouble())
+                    //Percentage(predictedEnergy[i].toDouble())
+                    Percentage((predictionOutput[i].toDouble() / 100.0 - 0.5).coerceIn(0.0, 1.0))
                 )
             }
         )
@@ -176,22 +179,36 @@ class PredictionWorker(
      * Main loop for the worker, continuously fetching data, making predictions, and updating the DB.
      */
     private suspend fun workerMainLoop() {
+        //insert testHeartRateData into db
+        val listToDB = List(testHeartRateData.size) { i ->
+            HeartRateEntry(
+                time = (Clock.System.now() - 2.days + 10.minutes * i),
+                bpm = testHeartRateData[i].toLong()
+            )
+        }
+        heartRateDao.insertMany(listToDB)
+
         while (true) {
             //TODO: should we consider data that came in after the most recent 10 minute mark?
-            val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
+            val now10min =
+                roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes - 8.hours
 
             val timeSortedHeartRateData =
                 heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min)
                     .sortedBy { it.time }
-            if (timeSortedHeartRateData.isEmpty()) {
+            /*if (timeSortedHeartRateData.isEmpty()) {
                 delay(1000)
                 continue
-            }
+            }*/
 
             val (inputHeartRate, inputHasDataMask) =
                 prepareModelInput(timeSortedHeartRateData, now10min)
 
-            val predictionOutput = mlModel.predict(inputHeartRate, inputHasDataMask, now10min)
+            val predictionOutput = mlModel.predict(
+                inputHeartRate = inputHeartRate,
+                inputHasDataMask = inputHasDataMask,//BooleanArray(MLModel::INPUT_SIZE.get().toInt()) { true },
+                now10min
+            )
 
             updateDBWithPredictionOutput(predictionOutput, now10min)
 

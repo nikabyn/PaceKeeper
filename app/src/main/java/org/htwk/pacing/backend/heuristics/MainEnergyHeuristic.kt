@@ -3,58 +3,69 @@ package org.htwk.pacing.backend.heuristics
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.ManualSymptomEntry
+import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.nextEnergyLevelFromHeartRate
 import org.htwk.pacing.backend.heuristics.PemCalculator.calculatePemProbability
 import org.htwk.pacing.ui.math.interpolate
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
+private val WEAR_OFF_SPEED = 0.05f
+private val SYMPTOM_WEAR_OFF_DAYS = 5
+
 fun nextEnergyFromSymptomLevels(
     currentEnergy: Double,
-    symptomEntries: List<ManualSymptomEntry>,
+    latestSymptomEntry: ManualSymptomEntry,
     now: Instant,
 ): Double {
-    //find latest symptom Entry before now
-    val latestSymptomEntry =
-        symptomEntries.filter { it.feeling.time <= now }.maxByOrNull { it.feeling.time }
-
-    if (latestSymptomEntry == null) return currentEnergy
-
-    val symptomsTime = latestSymptomEntry.feeling.time
-    val symptoms = latestSymptomEntry.symptoms
     val feeling = latestSymptomEntry.feeling.feeling
-
     //don't reduce energy if symptoms good
     if (feeling == Feeling.VeryGood) return currentEnergy;
 
     val severity: Int = (3 - feeling.level).coerceIn(1, 3)
 
-    //for (symptom in symptoms) {
-    val timeSinceSymptom = (now - symptomsTime)
+    val timeSinceSymptom = (now - latestSymptomEntry.feeling.time)
+
     val assumedRemainingStrength =
         ((severity.days.inWholeSeconds - timeSinceSymptom.inWholeSeconds).toDouble() / 3.days.inWholeSeconds.toDouble())
             .coerceIn(0.0, 1.0)
+
     val newEnergy =
         interpolate(
             currentEnergy,
             calculateNewEnergyLevel(currentEnergy, severity),
-            assumedRemainingStrength.toFloat() * 0.05f
+            assumedRemainingStrength.toFloat() * WEAR_OFF_SPEED
         )
 
     return newEnergy.coerceIn(0.0, 1.0)
 }
 
-fun energyFromPemProbability(symptomEntries: List<ManualSymptomEntry>): Double {
-    val symptomNames: List<String> = symptomEntries.flatMap { it.symptoms.map { s -> s.name } }
-    val symptomNamesDistinct = symptomNames.distinct()
-    val pemProbability = calculatePemProbability(symptomNamesDistinct)
-    return 1.0 - pemProbability
-}
+fun nextEnergyFromPemProbability(
+    currentEnergy: Double,
+    latestSymptomEntry: ManualSymptomEntry,
+    now: Instant
+): Double {
+    val timeSinceEntry = now - latestSymptomEntry.feeling.time
+    //no pem last pem is too long ago
+    if (timeSinceEntry > SYMPTOM_WEAR_OFF_DAYS.days) return currentEnergy
 
+    val symptomNames = latestSymptomEntry.symptoms.map { it.name }.distinct()
+    val pemProbability = calculatePemProbability(symptomNames)
+
+    val timeDecayFactor =
+        maxOf(
+            0.0,
+            1.0 - (timeSinceEntry.inWholeSeconds.toDouble() / SYMPTOM_WEAR_OFF_DAYS.days.inWholeSeconds.toDouble())
+        )
+
+    val remainingPemProbability = interpolate(pemProbability, 0.0, timeDecayFactor.toFloat())
+
+    return remainingPemProbability
+}
 
 fun mainEnergyHeuristic(
     energyBegin: Double,
     heartRate10MinSeries: FloatArray,
-    symptomEntries: List<ManualSymptomEntry>, now: Instant
+    symptomsFromLast3Days: List<ManualSymptomEntry>, now: Instant
 ): FloatArray {
     /*TODO: turn PredictedEnergyLevel into EnergyLevel again
         write both future and past energy
@@ -64,28 +75,36 @@ fun mainEnergyHeuristic(
         -> this will then be the starting point of the above process
     * */
 
-    //val energy = heartRate10MinToEnergy10min(energyBegin, heartRate10MinSeries)
-
-    //energyFromSymptomLevels
-
-    //energyFromPemProbability
-
-    //energyFromHeartRate
-
     val energy10minSeries = FloatArray(heartRate10MinSeries.size)
     var currentEnergy = energyBegin.toDouble()
 
-    //TODO integrate minutely by lerping hr from one 10 min spot to next while 10 energy steps
     for (i in heartRate10MinSeries.indices) {
-        /*currentEnergy =
-            nextEnergyLevel10MinSimple(
-                currentEnergy, heartRate10MinSeries[i].toDouble()
-            )*/
-
+        // A, 1.) HR based adjustment
+        //TODO: base recharge if we have no energy available?
         currentEnergy =
-            nextEnergyFromSymptomLevels(currentEnergy, symptomEntries, now + 10.minutes * i)
+            nextEnergyLevelFromHeartRate(
+                currentEnergy, heartRate10MinSeries[i].toDouble()
+            )
 
-        val pemEnergyPenalty = energyFromPemProbability(symptomEntries)
+
+        // B) symptom based adjustments
+        val timepoint = now + 10.minutes * i
+        val latestSymptomEntry =
+            symptomsFromLast3Days.filter { it.feeling.time <= timepoint }
+                .maxByOrNull { it.feeling.time }
+
+        //skip symptom based energy calculation if there's no most recent entry
+
+        //TODO: don't skip other calculations
+        if (latestSymptomEntry != null && false) {
+            // 2.) symptom based adjustment
+            currentEnergy =
+                nextEnergyFromSymptomLevels(currentEnergy, latestSymptomEntry!!, timepoint)
+
+            // 3.) pem based adjustment
+            val pemEnergyPenalty =
+                nextEnergyFromPemProbability(currentEnergy, latestSymptomEntry!!, timepoint)
+        }
 
         energy10minSeries[i] = currentEnergy.toFloat()
     }
