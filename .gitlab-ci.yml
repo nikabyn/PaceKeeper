@@ -100,6 +100,7 @@ assembleRelease:
   variables:
     SECURE_FILES_DOWNLOAD_PATH: './'
   script:
+    - apt update && apt install curl
     - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
     - ./gradlew clean assembleRelease -Pandroid.injected.signing.store.file=$ANDROID_KEYSTORE -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD -Pandroid.injected.signing.key.alias=$KEY_ALIAS -Pandroid.injected.signing.key.password=$KEY_PASSWORD
   rules:
