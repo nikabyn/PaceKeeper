@@ -10,6 +10,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -17,7 +20,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -38,22 +40,33 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: MeasurementsViewModel = koinViewModel()
 ) {
-    val energySeriesFull by viewModel.predictedEnergyLevel.collectAsState()
+    val latest by viewModel.predictedEnergyLevel.collectAsState()
 
-    val now = Clock.System.now()
+    // cache remembers the most recent non‑empty series to fix flickering
+    var cached by remember {
+        mutableStateOf<Series<out List<Double>>>(
+            Series(
+                emptyList(),
+                emptyList()
+            )
+        )
+    }
 
-    //don't display if no data available
-    if (energySeriesFull.y.isEmpty()) return
+    if (latest.y.isNotEmpty()) cached = latest
 
-    val mid = energySeriesFull.x.size / 2
+    val series = cached
+    // always draw the cache
+    if (series.y.isEmpty()) return //should never happen in runtime, but may happen during startup
 
-    val secondHalfValues = energySeriesFull.y.drop(mid)
+    val mid = series.x.size / 2
+
+    val secondHalfValues = series.y.drop(mid)
 
     /*val minPrediction = 0.1f
    val avgPrediction = 0.35f
    val maxPrediction = 0.4f*/
 
-    val currentEnergy = energySeriesFull.y[mid]
+    val currentEnergy = series.y[mid]
     val minPrediction = secondHalfValues.min().toFloat()
     val maxPrediction = secondHalfValues.max().toFloat()
     val avgPrediction = (secondHalfValues.average() - currentEnergy + 0.5f).toFloat()
@@ -65,7 +78,7 @@ fun HomeScreen(
             modifier = Modifier.padding(all = 40.dp)
         ) {
             EnergyPredictionCard(
-                series = energySeriesFull,
+                series = series,
                 minPrediction,
                 avgPrediction,
                 maxPrediction,
@@ -83,10 +96,9 @@ class HomeViewModel(
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
 ) : ViewModel() {
     val predictedEnergyLevel = predictedEnergyLevelDao
-        .getAllLive()
-        .filter { it.isNotEmpty() }
-        .debounce(1000) //give 1 second to update
-        .distinctUntilChanged()
+        .getAllLive()                            // Flow<List<Entry>>
+        .filter { it.isNotEmpty() }              // skip the “[]” emission
+        .debounce(200)                           // 200 ms of silence = stable
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
 
