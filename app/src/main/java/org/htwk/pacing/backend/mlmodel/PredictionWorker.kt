@@ -24,6 +24,7 @@ import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.heuristics.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -74,10 +75,10 @@ class PredictionWorker(
      */
     private fun prepareModelInput(
         heartRateData: List<HeartRateEntry>,
-        now10min: kotlinx.datetime.Instant
+        now10min: kotlinx.datetime.Instant,
+        modelInputSize: Int = MLModel::INPUT_SIZE.get().toInt(),
+        modelInputDuration: Duration = (MLModel::INPUT_DAYS.get().toInt()).days,
     ): Pair<FloatArray, BooleanArray> {
-        val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
-        val modelInputDuration = (MLModel::INPUT_DAYS.get().toInt()).days
         val averageArray = FloatArray(modelInputSize)
         val hasDataArray = BooleanArray(modelInputSize) { x -> false }
 
@@ -132,21 +133,23 @@ class PredictionWorker(
      * 1. **Delete Previous Predictions:** Clear out previous predictions in DB
      * 2. **Store Predicted Heart Rates and Energy levels:** Store predicted heart rate and energy level. Energy level is based on the predicted heart rate, using energyHeuristic.
      *
-     * @param predictionOutput A `FloatArray` containing the predicted HR values to be stored
+     * @param predictionOutputHR A `FloatArray` containing the predicted HR values to be stored
      * @param now10min The timestamp of the start of the prediction window, rounded to last 10-minute mark.
      * @see energyHeuristic
      */
     private suspend fun updateDBWithPredictionOutput(
-        predictionOutput: FloatArray,
+        predictionInputHR: FloatArray,
+        predictionOutputHR: FloatArray,
         now10min: kotlinx.datetime.Instant
     ) {
-        val now = Clock.System.now()
+        //append predictionOutput to previousHeartRates
+        val totalArray = predictionInputHR + predictionOutputHR
 
         val predictedEnergy = mainEnergyHeuristic(
             energyBegin = 1.0,
-            heartRate10MinSeries = predictionOutput,
-            symptomsFromLast3Days = manualSymptonDao.getInRange(now - 3.days, now),
-            now = now + 0.days
+            heartRate10MinSeries = totalArray,
+            symptomsFromLast3Days = manualSymptonDao.getInRange(now10min - 3.days, now10min),
+            now = now10min + 0.days
         )
 
         //delete previous HR and Energy Level prediction
@@ -155,21 +158,19 @@ class PredictionWorker(
 
         //store predictions in database
         predictedHeartRateDao.insertMany(
-            List(predictionOutput.size) { i ->
+            List(predictionOutputHR.size) { i ->
                 PredictedHeartRateEntry(
                     now10min + 10.minutes * i,
-                    predictionOutput[i].toLong()
+                    predictionOutputHR[i].toLong()
                 )
             }
         )
 
         predictedEnergyLevelDao.insertMany(
-            List(predictionOutput.size) { i ->
+            List(predictedEnergy.size) { i ->
                 PredictedEnergyLevelEntry(
-                    now10min + 10.minutes * i,
-                    //energyHeuristic(predictionOutput[i].toDouble())
-                    //Percentage(predictedEnergy[i].toDouble())
-                    Percentage((predictionOutput[i].toDouble() / 100.0 - 0.5).coerceIn(0.0, 1.0))
+                    now10min + 10.minutes * i - 6.hours,
+                    Percentage(predictedEnergy[i].toDouble())
                 )
             }
         )
@@ -179,40 +180,53 @@ class PredictionWorker(
      * Main loop for the worker, continuously fetching data, making predictions, and updating the DB.
      */
     private suspend fun workerMainLoop() {
-        //insert testHeartRateData into db
-        val listToDB = List(testHeartRateData.size) { i ->
-            HeartRateEntry(
-                time = (Clock.System.now() - 2.days + 10.minutes * i),
-                bpm = testHeartRateData[i].toLong()
-            )
-        }
-        heartRateDao.insertMany(listToDB)
-
+        var i = 0u
         while (true) {
+            val testHeartRateData = getTestHeartRateData((i * 90u) % 800u)
+            i++
+
+            heartRateDao.deleteAll()
+            predictedEnergyLevelDao.deleteAll()
+
+            //insert testHeartRateData into db
+            val listToDB = List(testHeartRateData.size) { i ->
+                HeartRateEntry(
+                    time = (Clock.System.now() - (10.minutes * testHeartRateData.size) + 10.minutes * i),
+                    bpm = testHeartRateData[i].toLong()
+                )
+            }
+
+            heartRateDao.insertMany(listToDB)
+
             //TODO: should we consider data that came in after the most recent 10 minute mark?
             val now10min =
-                roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes - 8.hours
+                roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
 
             val timeSortedHeartRateData =
                 heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min)
                     .sortedBy { it.time }
-            /*if (timeSortedHeartRateData.isEmpty()) {
+
+            if (timeSortedHeartRateData.isEmpty()) {
                 delay(1000)
                 continue
-            }*/
+            }
 
             val (inputHeartRate, inputHasDataMask) =
                 prepareModelInput(timeSortedHeartRateData, now10min)
 
             val predictionOutput = mlModel.predict(
                 inputHeartRate = inputHeartRate,
-                inputHasDataMask = inputHasDataMask,//BooleanArray(MLModel::INPUT_SIZE.get().toInt()) { true },
+                inputHasDataMask = inputHasDataMask,
                 now10min
             )
 
-            updateDBWithPredictionOutput(predictionOutput, now10min)
+            updateDBWithPredictionOutput(
+                inputHeartRate.takeLast(36).toFloatArray(),
+                predictionOutput,
+                now10min
+            )
 
-            delay(1000)
+            delay(5000)
         }
     }
 

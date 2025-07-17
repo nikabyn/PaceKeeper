@@ -79,6 +79,8 @@ fun mainEnergyHeuristic(
     var currentEnergy = energyBegin.toDouble()
 
     for (i in heartRate10MinSeries.indices) {
+        //energy10minSeries[i] = //(heartRate10MinSeries[i].toFloat() / 100.0f + 0.5f).coerceIn(0.0f, 1.0f)
+        //continue;
         // A, 1.) HR based adjustment
         //TODO: base recharge if we have no energy available?
         currentEnergy =
