@@ -44,8 +44,8 @@ fun HomeScreen(
     var cached by remember {
         mutableStateOf<Series<out List<Double>>>(
             Series<List<Double>>(
-                listOf(0.0), // dummy value
-                listOf(0.0)  // dummy value
+                listOf(0.0, 0.0), // dummy value
+                listOf(0.0, 0.0)  // dummy value
             )
         )
     }
