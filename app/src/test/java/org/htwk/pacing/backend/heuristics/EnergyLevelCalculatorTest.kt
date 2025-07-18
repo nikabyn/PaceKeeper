@@ -1,6 +1,6 @@
 package org.htwk.pacing.backend.heuristics
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class EnergyLevelCalculatorTest {
@@ -23,13 +23,15 @@ class EnergyLevelCalculatorTest {
         assertEquals(60.0, result, 0.01)
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun calculateNewEnergyLevel_severity0_throwsException() {
-        calculateNewEnergyLevel(100.0, 0)
+    @Test
+    fun calculateNewEnergyLevel_severity0_doesNotThrowException() {
+        val result = calculateNewEnergyLevel(100.0, 0)
+        assertEquals(95.0, result, 0.01)
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun calculateNewEnergyLevel_severity4_throwsException() {
-        calculateNewEnergyLevel(100.0, 4)
+    @Test
+    fun calculateNewEnergyLevel_severity4_doesNotThrowException() {
+        val result = calculateNewEnergyLevel(100.0, 4)
+        assertEquals(60.0, result, 0.01)
     }
 }

@@ -169,10 +169,10 @@ class PredictionWorker(
         }
 
         val predictedEnergy = mainEnergyHeuristic(
+            timeBegin = now10min - 6.hours,
             energyBegin = energyBegin,
             heartRate10MinSeries = totalHRSeries,
-            symptomsFromLast3Days = manualSymptonDao.getInRange(now10min - 3.days, now10min),
-            now = now10min
+            symptomsFromLast3Days = manualSymptonDao.getInRange(now10min - 3.days, now10min)
         )
 
         //delete previous HR and Energy Level prediction

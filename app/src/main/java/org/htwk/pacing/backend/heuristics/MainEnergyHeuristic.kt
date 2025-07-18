@@ -132,14 +132,15 @@ object MainEnergyHeuristicCalculator {
      * @param energyBegin The initial energy level.
      * @param heartRate10MinSeries An array of heart rate values recorded over the last 10 minutes.
      * @param symptomsFromLast3Days A list of manual symptom entries from the last 3 days.
-     * @param now The current timestamp.
+     * @param timeBegin Beginning timestamp.
      * @return A float array representing the energy levels in 10 minute intervals
      *
      */
     fun mainEnergyHeuristic(
+        timeBegin: Instant,
         energyBegin: Double,
         heartRate10MinSeries: FloatArray,
-        symptomsFromLast3Days: List<ManualSymptomEntry>, now: Instant
+        symptomsFromLast3Days: List<ManualSymptomEntry>
     ): FloatArray {
         val energy10minSeries = FloatArray(heartRate10MinSeries.size)
         var currentEnergy = energyBegin.toDouble()
@@ -151,9 +152,9 @@ object MainEnergyHeuristicCalculator {
                 nextEnergyLevelFromHeartRate(
                     currentEnergy, heartRate10MinSeries[i].toDouble()
                 )
-            
+
             // B) symptom based adjustments
-            val timepoint = now + (10.minutes * i)
+            val timepoint = timeBegin + (10.minutes * i)
             val latestSymptomEntry =
                 symptomsFromLast3Days.filter { it.feeling.time <= timepoint }
                     .maxByOrNull { it.feeling.time }
