@@ -43,9 +43,9 @@ fun HomeScreen(
     // cache remembers the most recent non‑empty series to fix flickering
     var cached by remember {
         mutableStateOf<Series<out List<Double>>>(
-            Series(
-                emptyList(),
-                emptyList()
+            Series<List<Double>>(
+                listOf(0.0), // dummy value
+                listOf(0.0)  // dummy value
             )
         )
     }
@@ -104,6 +104,9 @@ class HomeViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = Series(emptyList(), emptyList())
+            initialValue = Series<List<Double>>(
+                listOf(0.0), // dummy value
+                listOf(0.0)  // dummy value
+            )
         )
 }
