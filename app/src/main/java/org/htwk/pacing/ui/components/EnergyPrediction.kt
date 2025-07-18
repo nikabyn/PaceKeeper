@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -35,6 +36,7 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
+    @FloatRange(from = 0.0, to = 1.0) currentEnergy: Float,
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
@@ -46,9 +48,9 @@ fun <C : Collection<Double>> EnergyPredictionCard(
             return@CardWithTitle
         }
 
-        val current = Instant.fromEpochMilliseconds(series.x.last().toLong())
-        val start = (current - 12.hours).toEpochMilliseconds().toDouble()
-        val end = (current + 12.hours).toEpochMilliseconds().toDouble()
+        val current = Clock.System.now()
+        val start = (current - 6.hours).toEpochMilliseconds().toDouble()
+        val end = (current + 6.hours).toEpochMilliseconds().toDouble()
 
         val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
         val xConfig = AxisConfig(
@@ -68,7 +70,7 @@ fun <C : Collection<Double>> EnergyPredictionCard(
         ) { _, yRange ->
             Row(
                 modifier = Modifier.drawPrediction(
-                    series.y.lastOrNull()?.toFloat() ?: 0.5f,
+                    currentEnergy,
                     minPrediction,
                     avgPrediction,
                     maxPrediction
@@ -134,10 +136,10 @@ private fun Modifier.drawPrediction(
         moveTo(scope, current)
         val scale = 0.5f
 
-        val targetY = (avgPrediction - currentEnergy) * scale + currentEnergy
+        val targetY = (avgPrediction - currentEnergy) * 0.5f + currentEnergy
         lineTo(
             scope,
-            Float2D(0.5f + 0.5f * scale, 1f - targetY)
+            Float2D(0.75f, 1f - targetY)
         )
     }
     drawPath(

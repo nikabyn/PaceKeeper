@@ -60,7 +60,7 @@ fun HomeScreen(
 
     val secondHalfValues = series.y.drop(mid)
 
-    val currentEnergy = series.y[mid]
+    val currentEnergy = secondHalfValues.first()
     val minPrediction = secondHalfValues.min().toFloat()
     val maxPrediction = secondHalfValues.max().toFloat()
     val avgPrediction = secondHalfValues.average().toFloat()
@@ -73,9 +73,10 @@ fun HomeScreen(
         ) {
             EnergyPredictionCard(
                 series = series,
-                minPrediction,
-                avgPrediction,
-                maxPrediction,
+                currentEnergy = currentEnergy.toFloat(),
+                minPrediction = minPrediction,
+                avgPrediction = avgPrediction,
+                maxPrediction = maxPrediction,
                 modifier = Modifier.height(300.dp)
             )
             LabelCard(energy = currentEnergy)
