@@ -1,6 +1,7 @@
 package org.htwk.pacing.backend.mlmodel
 
 import android.content.Context
+import android.util.Log
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.mlmodel.MLModel.Companion.denormalize
 import org.htwk.pacing.backend.mlmodel.MLModel.Companion.normalize
@@ -19,6 +20,10 @@ class MLModel(context: Context) {
         FileUtil.loadMappedFile(context, TFLITE_MODEL_FILE_PATH)
     )
 
+    init {
+        showTFLiteMetadata()
+    }
+
     companion object {
         private const val TFLITE_MODEL_FILE_PATH = "hr_prediction_model/model.tflite"
 
@@ -30,7 +35,7 @@ class MLModel(context: Context) {
         const val OUTPUT_SIZE: Int = 6 * 6 // 6 hours in 30 minutes timesteps = 36
 
         //doesn't need to be visible to outside for now
-        private const val FEATURE_COUNT: Int = 8
+        private const val FEATURE_COUNT: Int = 6
 
         /** output of training script, it calculated the following generic stochastic properties
          * from the fitbit multi-person dataset
@@ -142,23 +147,11 @@ class MLModel(context: Context) {
     ): FloatBuffer {
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT)
 
-        //generate first order derivative input feature
-        val derivative1 =
-            floatArrayOf(0f) + inputHeartRateNormalized.asIterable().zipWithNext { a, b -> b - a }
-                .toFloatArray()
-
-        //generate second order derivative input feature
-        val derivative2 =
-            floatArrayOf(0f, 0f) + derivative1.asIterable().zipWithNext { a, b -> b - a }
-                .toFloatArray()
-
         for (i in 0 until INPUT_SIZE) {
+            inputBuffer.put(inputHeartRateNormalized[i])
+
             val encodedHasData = if (inputHasDataMask[i]) 1.0f else 0.0f
             inputBuffer.put(encodedHasData)
-
-            inputBuffer.put(inputHeartRateNormalized[i])
-            inputBuffer.put(derivative1[i])
-            inputBuffer.put(derivative2[i])
 
             val timePoint = endTime - TIME_UNIT_10_MINUTES * i
             val cyclicalTime = encodeTimeToCyclicalFeature(timePoint)
@@ -198,7 +191,7 @@ class MLModel(context: Context) {
         inputHasDataMask: BooleanArray,
         endTime: Instant
     ): FloatArray {
-        if (inputHeartRate.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
+        if (inputHeartRate.size != INPUT_SIZE) throw Exception("wrong ml model input size")
 
         //normalize heart rate input, because model works in normalized heart rate space
         val normalized = normalize(inputHeartRate)
@@ -221,6 +214,22 @@ class MLModel(context: Context) {
         outputBuffer.get(output)
         val denormalizedOutput = denormalize(output)
         return denormalizedOutput
+    }
+
+    /**
+     * just for debugging, once helped find a mistake with .tflite file version that lead to an hour-long search
+     * comparing the basic metrics of the .tflite model can help verify its (version) correctness
+     */
+    fun showTFLiteMetadata() {
+        // Iterate over all input tensors
+        val inputCount = interpreter.inputTensorCount
+        for (i in 0 until inputCount) {
+            val tensor = interpreter.getInputTensor(i)
+            val name = tensor.name()
+            val shape = tensor.shape().joinToString(prefix = "[", postfix = "]")
+            val dtype = tensor.dataType()
+            Log.i("MLModel", "Input #$i: name=$name, shape=$shape, dataType=$dtype")
+        }
     }
 }
 

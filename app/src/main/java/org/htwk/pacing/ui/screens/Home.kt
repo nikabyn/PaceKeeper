@@ -8,36 +8,63 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import kotlinx.datetime.Clock
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import org.htwk.pacing.backend.database.HeartRateDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.ui.components.BatteryCard
-import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
+import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.Series
-import kotlin.time.Duration.Companion.hours
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
-    val now = Clock.System.now()
-    val energySeries = Series(
-        listOf(
-            now - 12.hours,
-            now - 11.hours,
-            now - 10.hours,
-            now - 6.hours,
-            now - 4.hours,
-            now - 2.hours,
-            now
-        ).map { it.toEpochMilliseconds().toDouble() },
-        listOf(0.8, 0.82, 0.7, 0.65, 0.67, 0.45, 0.4),
-    )
-    val currentEnergy = energySeries.y.last()
-    val minPrediction = 0.1f
-    val avgPrediction = 0.35f
-    val maxPrediction = 0.4f
+fun HomeScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    viewModel: MeasurementsViewModel = koinViewModel()
+) {
+    val latest by viewModel.predictedEnergyLevel.collectAsState()
+
+    // cache remembers the most recent non‑empty series to fix flickering
+    var cached by remember {
+        mutableStateOf<Series<out List<Double>>>(
+            Series<List<Double>>(
+                listOf(0.0), // dummy value
+                listOf(0.0)  // dummy value
+            )
+        )
+    }
+
+    if (latest.y.isNotEmpty()) cached = latest
+
+    val series = cached
+    // always draw the cache
+    if (series.y.isEmpty()) return//should never happen in runtime, but may happen during startup
+
+    val mid = series.x.size / 2
+
+    val secondHalfValues = series.y.drop(mid)
+
+    val currentEnergy = series.y[mid]
+    val minPrediction = secondHalfValues.min().toFloat()
+    val maxPrediction = secondHalfValues.max().toFloat()
+    val avgPrediction = secondHalfValues.average().toFloat()
+
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
@@ -45,7 +72,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(all = 40.dp)
         ) {
             EnergyPredictionCard(
-                series = energySeries,
+                series = series,
                 minPrediction,
                 avgPrediction,
                 maxPrediction,
@@ -56,4 +83,30 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             FeelingSelectionCard(navController)
         }
     }
+}
+
+class HomeViewModel(
+    heartRateDao: HeartRateDao,
+    predictedEnergyLevelDao: PredictedEnergyLevelDao,
+) : ViewModel() {
+    val predictedEnergyLevel = predictedEnergyLevelDao
+        .getAllLive()                            // Flow<List<Entry>>
+        .filter { it.isNotEmpty() }              // skip the “[]” emission
+        .debounce(200)                           // 200 ms of silence = stable
+        .map { entries ->
+            val updated = Series(mutableListOf(), mutableListOf())
+
+            entries.forEach { (time, value) ->
+                updated.x.add(time.toEpochMilliseconds().toDouble())
+                updated.y.add(value.toDouble())
+            }
+            updated
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series<List<Double>>(
+                listOf(0.0), // dummy value
+                listOf(0.0)  // dummy value
+            )
+        )
 }

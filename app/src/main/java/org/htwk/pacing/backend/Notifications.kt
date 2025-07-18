@@ -139,7 +139,7 @@ class NotificationsBackgroundWorker(
     private suspend fun getRelevantPredictedEnergyLevelFromDB(): Double? {
         val now = Clock.System.now()
         val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
-            predictedEnergyLevelDao.getInRange(now + 3.hours, now + 4.hours)
+            predictedEnergyLevelDao.getInRange(now, now + 6.hours)
         val minimumEntry =
             energyLevelDataWindow.minByOrNull { it.percentage.toDouble() }
 

@@ -16,14 +16,17 @@ import kotlinx.datetime.Clock
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
-import org.htwk.pacing.backend.heuristics.energyLevelFromHeartRate
+import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.nextEnergyLevelFromHeartRate
+import org.htwk.pacing.backend.heuristics.MainEnergyHeuristicCalculator.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class PredictionWorker(
@@ -32,13 +35,9 @@ class PredictionWorker(
     private val mlModel: MLModel,
     private val heartRateDao: HeartRateDao,
     private val predictedHeartRateDao: PredictedHeartRateDao,
-    private val predictedEnergyLevelDao: PredictedEnergyLevelDao
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val manualSymptonDao: ManualSymptomDao
 ) : CoroutineWorker(context, workerParams) {
-
-    //higher-order drop-in function for energy-> hr calculation
-    private val energyHeuristic: (Double) -> Percentage = { hr: Double ->
-        Percentage(energyLevelFromHeartRate(hr))
-    }
 
     companion object {
         const val WORK_NAME = "PredictionWorker" // For unique work
@@ -48,6 +47,9 @@ class PredictionWorker(
         private const val FOREGROUND_CHANNEL_ID = "prediction_execution_foreground_ch"
         private const val FOREGROUND_NOTIFICATION_ID =
             201 // Unique for this worker's FG notification
+
+        //how long to delay before running worker main loop again
+        private const val REFRESH_INTERVAL_MS: Long = 1 * 5000
     }
 
     /**
@@ -76,10 +78,11 @@ class PredictionWorker(
      */
     private fun prepareModelInput(
         heartRateData: List<HeartRateEntry>,
-        now10min: kotlinx.datetime.Instant
+        now10min: kotlinx.datetime.Instant,
     ): Pair<FloatArray, BooleanArray> {
         val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
         val modelInputDuration = (MLModel::INPUT_DAYS.get().toInt()).days
+
         val averageArray = FloatArray(modelInputSize)
         val hasDataArray = BooleanArray(modelInputSize) { x -> false }
 
@@ -134,36 +137,89 @@ class PredictionWorker(
      * 1. **Delete Previous Predictions:** Clear out previous predictions in DB
      * 2. **Store Predicted Heart Rates and Energy levels:** Store predicted heart rate and energy level. Energy level is based on the predicted heart rate, using energyHeuristic.
      *
-     * @param predictionOutput A `FloatArray` containing the predicted HR values to be stored
+     * @param predictionOutputHR A `FloatArray` containing the predicted HR values to be stored
      * @param now10min The timestamp of the start of the prediction window, rounded to last 10-minute mark.
      * @see energyHeuristic
      */
     private suspend fun updateDBWithPredictionOutput(
-        predictionOutput: FloatArray,
+        predictionInputHR: FloatArray,
+        predictionOutputHR: FloatArray,
         now10min: kotlinx.datetime.Instant
     ) {
+        //append predictionOutput to previousHeartRates, run energy calculation on past + future
+        val totalHRSeries = predictionInputHR + predictionOutputHR
+
+        /*TODO: turn PredictedEnergyLevel into EnergyLevel again
+         *  write both future and past energy
+         *  start heuristic at now - 12 hours, using the bpm at that point as a starting point
+         *  alternatively, just use the first existing datapoint and then overwrite
+         *  -> if no data exists in the db yet, overwrite with constant 0.5
+         *  -> this will then be the starting point of the above process
+         *  OR: just start at 1.0 for MVP
+         *  .
+         *  SOLUTION FOR NOW: estimate energy based on first HR value
+        * */
+
+        val initialRounds = 10
+        //inital energy estimation
+        val firstHR = predictionInputHR.first().toDouble()
+        var energyBegin = 1.0
+        for (i in 0 until initialRounds) {
+            energyBegin = nextEnergyLevelFromHeartRate(energyBegin, firstHR)
+        }
+
+        val predictedEnergy = mainEnergyHeuristic(
+            timeBegin = now10min - 6.hours,
+            energyBegin = energyBegin,
+            heartRate10MinSeries = totalHRSeries,
+            symptomsFromLast3Days = manualSymptonDao.getInRange(now10min - 3.days, now10min)
+        )
+
         //delete previous HR and Energy Level prediction
         predictedHeartRateDao.deleteAll()
         predictedEnergyLevelDao.deleteAll()
 
         //store predictions in database
         predictedHeartRateDao.insertMany(
-            List(predictionOutput.size) { i ->
+            List(predictionOutputHR.size) { i ->
                 PredictedHeartRateEntry(
                     now10min + 10.minutes * i,
-                    predictionOutput[i].toLong()
+                    predictionOutputHR[i].toLong()
                 )
             }
         )
 
         predictedEnergyLevelDao.insertMany(
-            List(predictionOutput.size) { i ->
+            List(predictedEnergy.size) { i ->
                 PredictedEnergyLevelEntry(
-                    now10min + 10.minutes * i,
-                    energyHeuristic(predictionOutput[i].toDouble())
+                    now10min + 10.minutes * i - 6.hours,
+                    Percentage(predictedEnergy[i].toDouble())
                 )
             }
         )
+    }
+
+    /**
+     * Overwrites Heart Rate in DB with some test data
+     *
+     * use for quick visual test without loading external data into db, preferably not in production
+     *
+     * @param offset offset into testHeartRateData (is bound-checked in there)
+     */
+    private suspend fun insertTestDataIntoDB(offset: Int) {
+        val testHeartRateData = getTestHeartRateData(offset)
+
+        heartRateDao.deleteAll()
+
+        //insert testHeartRateData into db
+        val listToDB = List(testHeartRateData.size) { i ->
+            HeartRateEntry(
+                time = (Clock.System.now() - (10.minutes * testHeartRateData.size) + 10.minutes * i),
+                bpm = testHeartRateData[i].toLong()
+            )
+        }.filter { it.time.epochSeconds % 4500L < 900 }
+
+        heartRateDao.insertMany(listToDB)
     }
 
     /**
@@ -172,24 +228,34 @@ class PredictionWorker(
     private suspend fun workerMainLoop() {
         while (true) {
             //TODO: should we consider data that came in after the most recent 10 minute mark?
-            val now10min = roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
+            val now10min =
+                roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes
 
             val timeSortedHeartRateData =
                 heartRateDao.getInRange(now10min - MLModel::INPUT_DAYS.get().days, now10min)
                     .sortedBy { it.time }
+
             if (timeSortedHeartRateData.isEmpty()) {
-                delay(1000)
+                delay(REFRESH_INTERVAL_MS)
                 continue
             }
 
             val (inputHeartRate, inputHasDataMask) =
                 prepareModelInput(timeSortedHeartRateData, now10min)
 
-            val predictionOutput = mlModel.predict(inputHeartRate, inputHasDataMask, now10min)
+            val predictionOutput = mlModel.predict(
+                inputHeartRate = inputHeartRate,
+                inputHasDataMask = inputHasDataMask,
+                now10min
+            )
 
-            updateDBWithPredictionOutput(predictionOutput, now10min)
+            updateDBWithPredictionOutput(
+                inputHeartRate.takeLast(36).toFloatArray(),
+                predictionOutput,
+                now10min
+            )
 
-            delay(1000)
+            delay(REFRESH_INTERVAL_MS)
         }
     }
 

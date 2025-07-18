@@ -21,7 +21,6 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.moveTo
-import org.htwk.pacing.ui.relativeLineTo
 import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
 
@@ -89,7 +88,7 @@ fun <C : Collection<Double>> EnergyPredictionCard(
 }
 
 private fun Modifier.drawPrediction(
-    current: Float,
+    currentEnergy: Float,
     minPrediction: Float,
     avgPrediction: Float,
     maxPrediction: Float
@@ -100,7 +99,7 @@ private fun Modifier.drawPrediction(
         avgPrediction < 0.6f -> Color(0xFFECC00A)
         else -> Color(0xFF8FE02A)
     }
-    val current = Float2D(0.5f, 1f - current)
+    val current = Float2D(0.5f, 1f - currentEnergy)
 
     val centerPath = Path().apply {
         moveTo(scope, Float2D(0.5f, 0f))
@@ -133,11 +132,13 @@ private fun Modifier.drawPrediction(
 
     val predictionDirection = Path().apply {
         moveTo(scope, current)
-        val scale = 0.3f
-        val direction = Float2D(0.5f, 0.5f - avgPrediction)
-            .normalize()
-            .scale(scale)
-        relativeLineTo(scope, direction)
+        val scale = 0.5f
+
+        val targetY = (avgPrediction - currentEnergy) * scale + currentEnergy
+        lineTo(
+            scope,
+            Float2D(0.5f + 0.5f * scale, 1f - targetY)
+        )
     }
     drawPath(
         predictionDirection,
