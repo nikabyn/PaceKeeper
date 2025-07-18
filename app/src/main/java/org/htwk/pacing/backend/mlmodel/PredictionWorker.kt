@@ -49,7 +49,7 @@ class PredictionWorker(
             201 // Unique for this worker's FG notification
 
         //how long to delay before running worker main loop again
-        private const val REFRESH_INTERVAL_MS: Long = 1 * 1000
+        private const val REFRESH_INTERVAL_MS: Long = 1 * 5000
     }
 
     /**
@@ -217,7 +217,7 @@ class PredictionWorker(
                 time = (Clock.System.now() - (10.minutes * testHeartRateData.size) + 10.minutes * i),
                 bpm = testHeartRateData[i].toLong()
             )
-        }
+        }.filter { it.time.epochSeconds % 4500L < 900 }
 
         heartRateDao.insertMany(listToDB)
     }
