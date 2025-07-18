@@ -60,14 +60,10 @@ fun HomeScreen(
 
     val secondHalfValues = series.y.drop(mid)
 
-    /*val minPrediction = 0.1f
-   val avgPrediction = 0.35f
-   val maxPrediction = 0.4f*/
-
     val currentEnergy = series.y[mid]
     val minPrediction = secondHalfValues.min().toFloat()
     val maxPrediction = secondHalfValues.max().toFloat()
-    val avgPrediction = (secondHalfValues.average() - currentEnergy + 0.5f).toFloat()
+    val avgPrediction = secondHalfValues.average().toFloat()
 
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
