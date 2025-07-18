@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
@@ -90,6 +91,7 @@ class HomeViewModel(
     heartRateDao: HeartRateDao,
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
 ) : ViewModel() {
+    @OptIn(FlowPreview::class)
     val predictedEnergyLevel = predictedEnergyLevelDao
         .getAllLive()                            // Flow<List<Entry>>
         .filter { it.isNotEmpty() }              // skip the “[]” emission
@@ -106,8 +108,8 @@ class HomeViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = Series<List<Double>>(
-                listOf(0.0), // dummy value
-                listOf(0.0)  // dummy value
+                listOf(0.0, 0.0), // dummy value
+                listOf(0.0, 0.0)  // dummy value
             )
         )
 }
