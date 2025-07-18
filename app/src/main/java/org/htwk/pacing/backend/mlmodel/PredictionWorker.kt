@@ -23,7 +23,7 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.nextEnergyLevelFromHeartRate
-import org.htwk.pacing.backend.heuristics.mainEnergyHeuristic
+import org.htwk.pacing.backend.heuristics.MainEnergyHeuristicCalculator.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -48,6 +48,9 @@ class PredictionWorker(
         private const val FOREGROUND_CHANNEL_ID = "prediction_execution_foreground_ch"
         private const val FOREGROUND_NOTIFICATION_ID =
             201 // Unique for this worker's FG notification
+
+        //how long to delay before running worker main loop again
+        private const val REFRESH_INTERVAL_MS: Long = 1 * 1000
     }
 
     /**
@@ -157,10 +160,11 @@ class PredictionWorker(
          *  SOLUTION FOR NOW: estimate energy based on first HR value
         * */
 
+        val initialRounds = 10
         //inital energy estimation
         val firstHR = predictionInputHR.first().toDouble()
         var energyBegin = 1.0
-        for (i in 0 until 6) {
+        for (i in 0 until initialRounds) {
             energyBegin = nextEnergyLevelFromHeartRate(energyBegin, firstHR)
         }
 
@@ -218,8 +222,9 @@ class PredictionWorker(
     private suspend fun workerMainLoop() {
         var i = 0
         while (true) {
-            i++
-            insertTestDataIntoDB((i * 9) % 800)
+            i = (i + 1) % 8
+            insertTestDataIntoDB((i * 100) % 800)
+            val offset = i.minutes * 100 + 16.hours
 
             //TODO: should we consider data that came in after the most recent 10 minute mark?
             val now10min =
@@ -230,7 +235,7 @@ class PredictionWorker(
                     .sortedBy { it.time }
 
             if (timeSortedHeartRateData.isEmpty()) {
-                delay(5000)
+                delay(REFRESH_INTERVAL_MS)
                 continue
             }
 
@@ -249,7 +254,7 @@ class PredictionWorker(
                 now10min
             )
 
-            delay(5000)
+            delay(REFRESH_INTERVAL_MS)
         }
     }
 

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.ui.components.BatteryCard
@@ -32,7 +31,6 @@ import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.Series
 import org.koin.androidx.compose.koinViewModel
-import kotlin.time.Duration.Companion.hours
 
 @Composable
 fun HomeScreen(
@@ -56,7 +54,7 @@ fun HomeScreen(
 
     val series = cached
     // always draw the cache
-    if (series.y.isEmpty()) return //should never happen in runtime, but may happen during startup
+    if (series.y.isEmpty()) return//should never happen in runtime, but may happen during startup
 
     val mid = series.x.size / 2
 
@@ -101,15 +99,6 @@ class HomeViewModel(
         .debounce(200)                           // 200 ms of silence = stable
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
-
-            //add dummy values if no data available
-            if (entries.isEmpty()) {
-                updated.x.add((Clock.System.now() - 6.hours).toEpochMilliseconds().toDouble())
-                updated.y.add(0.5)
-
-                updated.x.add((Clock.System.now() + 6.hours).toEpochMilliseconds().toDouble())
-                updated.y.add(0.5)
-            }
 
             entries.forEach { (time, value) ->
                 updated.x.add(time.toEpochMilliseconds().toDouble())
