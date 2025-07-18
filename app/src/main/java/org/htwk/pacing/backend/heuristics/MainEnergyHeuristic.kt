@@ -64,8 +64,6 @@ object MainEnergyHeuristicCalculator {
         last: ManualSymptomEntry,
         now: Instant,
     ): Double {
-        //skip if any part of feeling not available
-        if (last == null || last.feeling == null || last.feeling.feeling == null) return currentEnergy
 
         val feeling = last.feeling.feeling
         if (feeling == Feeling.VeryGood) return currentEnergy  // good symptoms, dont reduce energy
@@ -105,8 +103,6 @@ object MainEnergyHeuristicCalculator {
         last: ManualSymptomEntry,
         now: Instant
     ): Double {
-        if (last == null || last.symptoms == null) return currentEnergy
-
         val fadeDays = PEM_WEAR_OFF_DAYS.days
 
         val elapsed = now - last.feeling.time
@@ -160,7 +156,6 @@ object MainEnergyHeuristicCalculator {
                     .maxByOrNull { it.feeling.time }
 
             //skip symptom based energy calculation if there's no most recent entry
-
             if (latestSymptomEntry != null) {
                 // 2.) symptom based adjustment
                 currentEnergy =
