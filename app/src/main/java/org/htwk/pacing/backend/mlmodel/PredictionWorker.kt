@@ -25,7 +25,6 @@ import org.htwk.pacing.backend.database.PredictedHeartRateEntry
 import org.htwk.pacing.backend.heuristics.EnergyFromHeartRateCalculator.nextEnergyLevelFromHeartRate
 import org.htwk.pacing.backend.heuristics.MainEnergyHeuristicCalculator.mainEnergyHeuristic
 import org.htwk.pacing.ui.math.roundInstantToResolution
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -80,9 +79,10 @@ class PredictionWorker(
     private fun prepareModelInput(
         heartRateData: List<HeartRateEntry>,
         now10min: kotlinx.datetime.Instant,
-        modelInputSize: Int = MLModel::INPUT_SIZE.get().toInt(),
-        modelInputDuration: Duration = (MLModel::INPUT_DAYS.get().toInt()).days,
     ): Pair<FloatArray, BooleanArray> {
+        val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
+        val modelInputDuration = (MLModel::INPUT_DAYS.get().toInt()).days
+
         val averageArray = FloatArray(modelInputSize)
         val hasDataArray = BooleanArray(modelInputSize) { x -> false }
 
@@ -199,11 +199,17 @@ class PredictionWorker(
         )
     }
 
+    /**
+     * Overwrites Heart Rate in DB with some test data
+     *
+     * use for quick visual test without loading external data into db, preferably not in production
+     *
+     * @param offset offset into testHeartRateData (is bound-checked in there)
+     */
     private suspend fun insertTestDataIntoDB(offset: Int) {
         val testHeartRateData = getTestHeartRateData(offset)
 
         heartRateDao.deleteAll()
-        predictedEnergyLevelDao.deleteAll()
 
         //insert testHeartRateData into db
         val listToDB = List(testHeartRateData.size) { i ->
@@ -220,12 +226,7 @@ class PredictionWorker(
      * Main loop for the worker, continuously fetching data, making predictions, and updating the DB.
      */
     private suspend fun workerMainLoop() {
-        var i = 0
         while (true) {
-            i = (i + 1) % 8
-            insertTestDataIntoDB((i * 100) % 800)
-            val offset = i.minutes * 100 + 16.hours
-
             //TODO: should we consider data that came in after the most recent 10 minute mark?
             val now10min =
                 roundInstantToResolution(Clock.System.now(), 10.minutes) + 10.minutes

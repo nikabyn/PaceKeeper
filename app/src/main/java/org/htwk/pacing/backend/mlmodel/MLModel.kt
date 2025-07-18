@@ -148,8 +148,6 @@ class MLModel(context: Context) {
         val inputBuffer = FloatBuffer.allocate(INPUT_SIZE * FEATURE_COUNT)
 
         for (i in 0 until INPUT_SIZE) {
-            //for (i in 0 until FEATURE_COUNT) inputBuffer.put(1.0f)
-            //continue
             inputBuffer.put(inputHeartRateNormalized[i])
 
             val encodedHasData = if (inputHasDataMask[i]) 1.0f else 0.0f
@@ -193,8 +191,7 @@ class MLModel(context: Context) {
         inputHasDataMask: BooleanArray,
         endTime: Instant
     ): FloatArray {
-
-        if (inputHeartRate.size != INPUT_SIZE) throw Exception("Wrong ml Model input size")
+        if (inputHeartRate.size != INPUT_SIZE) throw Exception("wrong ml model input size")
 
         //normalize heart rate input, because model works in normalized heart rate space
         val normalized = normalize(inputHeartRate)
