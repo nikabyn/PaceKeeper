@@ -1,4 +1,4 @@
-package org.htwk.pacing.backend.data_collection
+package org.htwk.pacing.backend.data_collection.health_connect
 
 import android.content.Context
 import android.util.Log
@@ -18,7 +18,6 @@ import java.time.ZoneId
  * Kapselt Health Connect API vollständig.
  */
 object HealthConnectHelper {
-
     private const val TAG = "HealthConnectHelper"
 
     val requiredPermissions = setOf(
@@ -45,7 +44,11 @@ object HealthConnectHelper {
     /**
      * Herzfrequenz-Samples (Zeit + bpm) im Zeitbereich.
      */
-    suspend fun readHeartRateSamples(context: Context, from: Instant, to: Instant): List<Pair<String, Long>> {
+    suspend fun readHeartRateSamples(
+        context: Context,
+        from: Instant,
+        to: Instant
+    ): List<Pair<String, Long>> {
         val client = HealthConnectClient.getOrCreate(context)
         val records = client.readRecords(
             ReadRecordsRequest(
@@ -56,7 +59,8 @@ object HealthConnectHelper {
 
         val samples = records.records.flatMap { record ->
             record.samples.map {
-                val timeStr = record.startTime.atZone(ZoneId.systemDefault()).toLocalTime().toString()
+                val timeStr =
+                    record.startTime.atZone(ZoneId.systemDefault()).toLocalTime().toString()
                 timeStr to it.beatsPerMinute
             }
         }
@@ -98,41 +102,24 @@ object HealthConnectHelper {
     }
 
     /**
-     * Liste aller Herzfrequenzdaten der letzten X Tage – für Debug oder Analysezwecke.
+     * Herzfrequenzdaten in Health Connect einfügen (batchweise, robust gegen Fehler).
      */
-    suspend fun debugAllHeartRates(context: Context, days: Long = 10) {
+    suspend fun insertHeartRateRecords(context: Context, records: List<HeartRateRecord>): Int {
         val client = HealthConnectClient.getOrCreate(context)
-        val endTime = Instant.now()
-        val startTime = endTime.minusSeconds(days * 86400)
+        val batchSize = 500
+        var totalInserted = 0
 
-        val allRecords = mutableListOf<HeartRateRecord>()
-        var nextPageToken: String? = null
-
-        do {
-            val response = client.readRecords(
-                ReadRecordsRequest(
-                    recordType = HeartRateRecord::class,
-                    timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
-                    pageToken = nextPageToken
-                )
-            )
-            allRecords += response.records
-            nextPageToken = response.pageToken
-        } while (nextPageToken != null)
-
-        for (record in allRecords) {
-            val origin = record.metadata.dataOrigin.packageName
-            val samples = record.samples.joinToString(", ") { "${it.beatsPerMinute} bpm" }
-            Log.d(TAG, "Samples: [$samples] @ ${record.startTime} von $origin")
+        records.chunked(batchSize).forEach { batch ->
+            try {
+                client.insertRecords(batch)
+                totalInserted += batch.size
+            } catch (e: Exception) {
+                Log.e(TAG, "Fehler beim Batch Insert: ${e.message}", e)
+            }
         }
 
-        val aggregate = client.aggregate(
-            AggregateRequest(
-                metrics = setOf(HeartRateRecord.BPM_AVG),
-                timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
-            )
-        )
-        val avgBpm = aggregate[HeartRateRecord.BPM_AVG]
-        Log.d(TAG, "Durchschnittliche Herzfrequenz ($days Tage): $avgBpm")
+        Log.d(TAG, "Insgesamt $totalInserted Herzfrequenz-Datensätze eingefügt.")
+        return totalInserted
     }
 }
+

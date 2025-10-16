@@ -1,7 +1,9 @@
 package org.htwk.pacing.ui.math
 
 import androidx.annotation.FloatRange
+import kotlinx.datetime.Instant
 import kotlin.math.sqrt
+import kotlin.time.Duration
 
 /**
  * Linearly interpolate between two floating point values.
@@ -85,4 +87,22 @@ data class Float2D(val x: Float, val y: Float) {
     fun scale(factor: Float): Float2D {
         return Float2D(x * factor, y * factor)
     }
+}
+
+/**
+ * Rounds a time instant down to a given resolution.
+ *
+ * ## Examples
+ *
+ * ```kotlin
+ * roundInstantToResolution(Clock.System.now(), 10.minutes) //will round down to last 10 minute mark
+ * ```
+ *
+ * @param instant time point to be rounded
+ * @param resolution resolution to be rounded to
+ */
+fun roundInstantToResolution(instant: Instant, resolution: Duration): Instant {
+    val truncatedEpochMillis =
+        instant.toEpochMilliseconds() - (instant.toEpochMilliseconds() % resolution.inWholeMilliseconds)
+    return Instant.fromEpochMilliseconds(truncatedEpochMillis)
 }

@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.screens
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,7 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,32 +30,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.htwk.pacing.R
+import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
-
-val requiredPermissions = setOf(
-    HealthPermission.getReadPermission(StepsRecord::class),
-    HealthPermission.getReadPermission(HeartRateRecord::class),
-    HealthPermission.getWritePermission(HeartRateRecord::class) //für schreiben des csv imports
-)
 
 /**
  * Verwaltet die Verbindung zu Health Connect.
@@ -69,37 +67,27 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalContext.current as LifecycleOwner
-    var isConnected by remember { mutableStateOf(false) }
+    val isConnected by viewModel.isConnected.collectAsState()
+
+    viewModel.checkPermissions()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val requestPermissionsActivity = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract()
     ) { granted ->
-        Log.d("HealthConnectDebug", "Permission activity result: $granted")
-    }
-
-    // Prüft, ob alle notwendigen Health Connect Berechtigungen vorhanden sind.
-    suspend fun updateConnectionState() {
-        val client = HealthConnectClient.getOrCreate(context)
-        val granted = client.permissionController.getGrantedPermissions()
-        isConnected = requiredPermissions.all { it in granted }
-    }
-
-    LaunchedEffect(Unit) {
-        updateConnectionState()
-    }
-
-    DisposableEffect(Unit) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    updateConnectionState()
-                }
-            }
-        }
-        val lifecycle = lifecycleOwner.lifecycle
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
+        Log.d("RequestPermissions", "Granted: $granted")
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -116,33 +104,26 @@ fun SettingsScreen(
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(modifier = Modifier.padding(40.dp)) {
-            SectionTitle("Connections and Services")
+            SectionTitle(stringResource(R.string.connections_and_services))
 
             HealthConnectItem(
                 connected = isConnected,
                 onClick = {
-                    val launchIntent =
-                        context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-                    if (launchIntent != null) {
-                        context.startActivity(launchIntent)
-                    } else {
-                        Log.w("HealthConnectDebug", "Health Connect not installed.")
+                    if (!isConnected) {
+                        requestPermissionsActivity.launch(wantedPermissions)
+                        return@HealthConnectItem
                     }
 
-                    if (!isConnected) {
-                        requestPermissionsActivity.launch(requiredPermissions)
-                    }
+                    val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+                    context.startActivity(intent)
                 },
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
-            HeartRateCard()
-
             Spacer(modifier = Modifier.height(20.dp))
-            SectionTitle("Stored Data")
+            SectionTitle(stringResource(R.string.stored_data))
 
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("Export data to ZIP-archive")
+                Text(stringResource(R.string.export_data_to_zip_archive))
             }
         }
     }
@@ -150,10 +131,9 @@ fun SettingsScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Data protection notice") },
+            title = { Text(stringResource(R.string.data_protection_notice)) },
             text = {
-                // TODO german: Text("Beim Export werden personenbezogene Daten gespeichert. Bitte stimme der Verarbeitung zu.")
-                Text("Personalised data will be stored by exporting. Please consent to the processing.")
+                Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
             },
             confirmButton = {
                 TextButton(
@@ -161,12 +141,12 @@ fun SettingsScreen(
                         showDialog = false
                         launcher.launch("pacing_export.zip")
                     }) {
-                    Text("Agree")
+                    Text(stringResource(R.string.agree))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             })
     }
@@ -191,25 +171,39 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Health Connect", style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = if (connected) "Connected" else "Not connected",
+                stringResource(R.string.health_connect),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = if (connected) stringResource(R.string.connected) else stringResource(R.string.not_connected),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         TextButton(onClick = onClick) {
-            Text("Edit")
+            Text(stringResource(R.string.edit))
         }
-
     }
     HeartRateCard()
     ImportDataHealthConnect()
+    ImportDemoDataHealthConnect()
 }
 
 class SettingsViewModel(
+    context: Context,
     private val db: PacingDatabase
 ) : ViewModel() {
+    private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> = _isConnected
+
+    fun checkPermissions() {
+        viewModelScope.launch {
+            val granted = client.permissionController.getGrantedPermissions()
+            _isConnected.value = wantedPermissions.any { it in granted }
+        }
+    }
 
     /**
      * Starts export as background thread.

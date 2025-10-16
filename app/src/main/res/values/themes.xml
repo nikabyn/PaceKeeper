@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Pacing" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Basis-App-Theme nach dem Splashscreen -->
+    <style name="Theme.Pacing" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+
+    <!-- Splashscreen-Theme -->
+    <style name="Theme.Pacing.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Pacing</item>
+    </style>
+
 </resources>

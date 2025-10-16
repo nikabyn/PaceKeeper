@@ -38,6 +38,7 @@ class EnergyPredictionTest {
         composeTestRule.setContent {
             EnergyPredictionCard(
                 series,
+                currentEnergy = 0.5f,
                 minPrediction = 0.1f,
                 avgPrediction = 0.3f,
                 maxPrediction = 0.6f,
@@ -61,6 +62,7 @@ class EnergyPredictionTest {
         composeTestRule.setContent {
             EnergyPredictionCard(
                 series,
+                currentEnergy = 0f,
                 minPrediction = 0f,
                 avgPrediction = 0.5f,
                 maxPrediction = 1f,
