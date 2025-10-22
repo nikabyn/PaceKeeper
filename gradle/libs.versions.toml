@@ -5,10 +5,10 @@ coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.9.1"
+lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
 composeBom = "2025.06.01"
-navigationCompose = "2.9.1"
+navigationCompose = "2.9.5"
 kotlinxDatetime = "0.6.2"
 roomCompiler = "2.7.2"
 workRuntimeKtx = "2.10.5"
@@ -60,5 +60,5 @@ material = { group = "com.google.android.material", name = "material", version.r
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-ksp = { id = "com.google.devtools.ksp", version = "2.1.21-2.0.2" }
+ksp = { id = "com.google.devtools.ksp", version = "2.2.20-2.0.4" }
 androidx-room = { id = "androidx.room", version.ref = "roomCompiler" }
