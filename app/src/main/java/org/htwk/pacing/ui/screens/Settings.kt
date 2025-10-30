@@ -64,8 +64,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = koinViewModel(),
-   // navController: NavController
+    viewModel: SettingsViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val isConnected by viewModel.isConnected.collectAsState()
@@ -126,16 +125,8 @@ fun SettingsScreen(
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.export_data_to_zip_archive))
             }
-            Button(
-                onClick = { navController.navigate("datasettings") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Datenverwaltung")
-            }
         }
-
     }
-
 
     if (showDialog) {
         AlertDialog(

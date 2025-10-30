@@ -12,7 +12,7 @@ import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DataManagement(navController: NavController) {
+fun DataManagementScreen(navController: NavController) {
     var items by remember {
         mutableStateOf(
             listOf(

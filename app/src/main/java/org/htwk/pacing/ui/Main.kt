@@ -131,6 +131,7 @@ fun AppNavHost(
             composable(route = Route.HOME) { HomeScreen(navController) }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
             composable(route = Route.SETTINGS) { SettingsScreen() }
+            composable(route = Route.DATAMANAGEMENT) { DataManagementScreen() }
         }
 
         composable(
@@ -140,6 +141,10 @@ fun AppNavHost(
             val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
             val feeling = Feeling.fromInt(feelingLevel)
             SymptomScreen(navController, feeling)
+        }
+
+        composable(route = Route.DATAMANAGEMENT) {
+            ChecklistScreen(navController = navController)
         }
     }
 }
