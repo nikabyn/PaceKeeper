@@ -49,6 +49,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
+import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
@@ -124,6 +125,13 @@ fun SettingsScreen(
 
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.export_data_to_zip_archive))
+            }
+
+            Button(
+                onClick = { Route.DATAMANAGEMENT },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Datenverwaltung")
             }
         }
     }

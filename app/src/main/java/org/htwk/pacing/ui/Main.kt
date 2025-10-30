@@ -30,6 +30,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
+import org.htwk.pacing.ui.screens.DataManagementScreen
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
@@ -131,7 +132,7 @@ fun AppNavHost(
             composable(route = Route.HOME) { HomeScreen(navController) }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
             composable(route = Route.SETTINGS) { SettingsScreen() }
-            composable(route = Route.DATAMANAGEMENT) { DataManagementScreen() }
+            composable(route = Route.DATAMANAGEMENT) { DataManagementScreen(navController = navController) }
         }
 
         composable(
@@ -144,7 +145,7 @@ fun AppNavHost(
         }
 
         composable(route = Route.DATAMANAGEMENT) {
-            ChecklistScreen(navController = navController)
+            DataManagementScreen(navController = navController)
         }
     }
 }
