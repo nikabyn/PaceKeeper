@@ -131,8 +131,9 @@ fun AppNavHost(
         navigation(route = "main_nav", startDestination = Route.HOME) {
             composable(route = Route.HOME) { HomeScreen(navController) }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
-            composable(route = Route.SETTINGS) { SettingsScreen() }
-            composable(route = Route.DATAMANAGEMENT) { DataManagementScreen(navController = navController) }
+            composable(route = Route.SETTINGS) { SettingsScreen(navController) }
+            composable(route = Route.DATAMANAGEMENT) { DataManagementScreen(navController) }
+
         }
 
         composable(
@@ -147,5 +148,10 @@ fun AppNavHost(
         composable(route = Route.DATAMANAGEMENT) {
             DataManagementScreen(navController = navController)
         }
+
+        composable(route = Route.SETTINGS) {
+            SettingsScreen(navController = navController)
+        }
+
     }
 }

@@ -40,6 +40,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,7 @@ import org.koin.androidx.compose.koinViewModel
  */
 @Composable
 fun SettingsScreen(
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = koinViewModel()
 ) {
@@ -128,10 +130,10 @@ fun SettingsScreen(
             }
 
             Button(
-                onClick = { Route.DATAMANAGEMENT },
+                onClick = { navController.navigate(Route.DATAMANAGEMENT) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Datenverwaltung")
+                Text("Manage your data")
             }
         }
     }
