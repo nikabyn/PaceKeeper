@@ -112,6 +112,7 @@ object Route {
     const val HOME = "home"
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
+    const val DATAMANAGEMENT = "datamanagement"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
