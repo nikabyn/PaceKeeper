@@ -1,15 +1,25 @@
 package org.htwk.pacing.backend.predictor.model
 
-import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesSamples
+import org.htwk.pacing.backend.predictor.Predictor
+import kotlin.math.exp
 
 
-//actual mathematical model that we use for making a prediction
 object Model {
-    private val paramA = 0.0;
-    private val paramB = 0.0;
+    val scaleParam = 1.0f;
 
-    //returns extrapolated energy level
-    fun predict(input: MultiTimeSeriesSamples): FloatArray {
-        return floatArrayOf();
+    //numerically stable sigmoid implementation
+    private fun sigmoidStable(x: Double): Double =
+        if (x >= 0.0) {
+            val z = exp(-x)
+            1.0 / (1.0 + z)
+        } else {
+            val z = exp(x)
+            z / (1.0 + z)
+        }
+
+    //returns extrapolated energy level point
+
+    fun predict(input: Predictor.MultiTimeSeriesDiscrete): Double {
+        return sigmoidStable(scaleParam * input.heartRate.integral.last());
     }
 }
