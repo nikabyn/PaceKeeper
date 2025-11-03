@@ -84,9 +84,6 @@ fun HomeScreen(
     val maxPrediction = secondHalfValues.max().toFloat()
     val avgPrediction = secondHalfValues.average().toFloat()
 
-    val adjustingEnergy = remember { mutableStateOf(false) }
-    val adjustedEnergy = remember { mutableDoubleStateOf(currentEnergy) }
-
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
             verticalArrangement = Arrangement.spacedBy(30.dp),
@@ -102,60 +99,70 @@ fun HomeScreen(
             )
             LabelCard(energy = currentEnergy)
             BatteryCard(energy = currentEnergy)
-
-            CardWithTitle("Validate Energy") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            viewModel.storeValidatedEnergyLevel(Validation.Correct, currentEnergy)
-                        },
-                        enabled = !adjustingEnergy.value,
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Correct") }
-                    Button(
-                        onClick = { adjustingEnergy.value = true },
-                        enabled = !adjustingEnergy.value,
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Adjust") }
-                }
-
-                TextField(
-                    value = adjustedEnergy.doubleValue.toString(),
-                    enabled = adjustingEnergy.value,
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    onValueChange = { value: String ->
-                        adjustedEnergy.doubleValue = value.toDoubleOrNull() ?: currentEnergy
-                    }
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    TextButton(
-                        onClick = { adjustingEnergy.value = false },
-                        enabled = adjustingEnergy.value,
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Cancel") }
-                    TextButton(
-                        onClick = {
-                            adjustingEnergy.value = false;
-                            viewModel.storeValidatedEnergyLevel(
-                                Validation.Adjusted,
-                                adjustedEnergy.doubleValue
-                            )
-                        },
-                        enabled = adjustingEnergy.value && adjustedEnergy.doubleValue in 0.0..1.0,
-                        colors = ButtonDefaults.buttonColors(),
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Save") }
-                }
-            }
-
+            EnergyValidationCard(viewModel, currentEnergy)
             FeelingSelectionCard(navController)
+        }
+    }
+}
+
+/**
+ * Allows the user to accept the current energy prediction as correct
+ * or adjust it based on how they feel.
+ */
+@Composable
+fun EnergyValidationCard(viewModel: HomeViewModel, currentEnergy: Double) {
+    val adjustingEnergy = remember { mutableStateOf(false) }
+    val adjustedEnergy = remember { mutableDoubleStateOf(currentEnergy) }
+
+    CardWithTitle("Validate Energy") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Button(
+                onClick = {
+                    viewModel.storeValidatedEnergyLevel(Validation.Correct, currentEnergy)
+                },
+                enabled = !adjustingEnergy.value,
+                modifier = Modifier.weight(1f)
+            ) { Text("Correct") }
+            Button(
+                onClick = { adjustingEnergy.value = true },
+                enabled = !adjustingEnergy.value,
+                modifier = Modifier.weight(1f)
+            ) { Text("Adjust") }
+        }
+
+        TextField(
+            value = adjustedEnergy.doubleValue.toString(),
+            enabled = adjustingEnergy.value,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            onValueChange = { value: String ->
+                adjustedEnergy.doubleValue = value.toDoubleOrNull() ?: currentEnergy
+            }
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            TextButton(
+                onClick = { adjustingEnergy.value = false },
+                enabled = adjustingEnergy.value,
+                modifier = Modifier.weight(1f)
+            ) { Text("Cancel") }
+            TextButton(
+                onClick = {
+                    adjustingEnergy.value = false;
+                    viewModel.storeValidatedEnergyLevel(
+                        Validation.Adjusted,
+                        adjustedEnergy.doubleValue
+                    )
+                },
+                enabled = adjustingEnergy.value && adjustedEnergy.doubleValue in 0.0..1.0,
+                colors = ButtonDefaults.buttonColors(),
+                modifier = Modifier.weight(1f)
+            ) { Text("Save") }
         }
     }
 }
