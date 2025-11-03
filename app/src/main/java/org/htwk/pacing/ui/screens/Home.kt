@@ -28,14 +28,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import org.htwk.pacing.backend.database.HeartRateDao
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
+import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.components.BatteryCard
 import org.htwk.pacing.ui.components.CardWithTitle
 import org.htwk.pacing.ui.components.EnergyPredictionCard
@@ -48,7 +55,7 @@ import org.koin.androidx.compose.koinViewModel
 fun HomeScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: MeasurementsViewModel = koinViewModel()
+    viewModel: HomeViewModel = koinViewModel()
 ) {
     val latest by viewModel.predictedEnergyLevel.collectAsState()
 
@@ -80,7 +87,6 @@ fun HomeScreen(
     val adjustingEnergy = remember { mutableStateOf(false) }
     val adjustedEnergy = remember { mutableDoubleStateOf(currentEnergy) }
 
-
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
             verticalArrangement = Arrangement.spacedBy(30.dp),
@@ -103,7 +109,10 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = {}, enabled = !adjustingEnergy.value,
+                        onClick = {
+                            viewModel.storeValidatedEnergyLevel(Validation.Correct, currentEnergy)
+                        },
+                        enabled = !adjustingEnergy.value,
                         modifier = Modifier.weight(1f)
                     ) { Text("Correct") }
                     Button(
@@ -132,7 +141,13 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f)
                     ) { Text("Cancel") }
                     TextButton(
-                        onClick = { adjustingEnergy.value = false },
+                        onClick = {
+                            adjustingEnergy.value = false;
+                            viewModel.storeValidatedEnergyLevel(
+                                Validation.Adjusted,
+                                adjustedEnergy.doubleValue
+                            )
+                        },
                         enabled = adjustingEnergy.value && adjustedEnergy.doubleValue in 0.0..1.0,
                         colors = ButtonDefaults.buttonColors(),
                         modifier = Modifier.weight(1f)
@@ -146,8 +161,8 @@ fun HomeScreen(
 }
 
 class HomeViewModel(
-    heartRateDao: HeartRateDao,
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
 ) : ViewModel() {
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = predictedEnergyLevelDao
@@ -170,4 +185,16 @@ class HomeViewModel(
                 listOf(0.0, 0.0)  // dummy value
             )
         )
+
+    fun storeValidatedEnergyLevel(validation: Validation, energy: Double) {
+        CoroutineScope(Dispatchers.IO).launch {
+            validatedEnergyLevelDao.insert(
+                ValidatedEnergyLevelEntry(
+                    Clock.System.now(),
+                    validation,
+                    Percentage.fromDouble(energy)
+                )
+            )
+        }
+    }
 }
