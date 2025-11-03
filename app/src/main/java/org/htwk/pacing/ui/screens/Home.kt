@@ -3,17 +3,27 @@ package org.htwk.pacing.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,6 +37,7 @@ import kotlinx.coroutines.flow.stateIn
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.ui.components.BatteryCard
+import org.htwk.pacing.ui.components.CardWithTitle
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
@@ -66,6 +77,9 @@ fun HomeScreen(
     val maxPrediction = secondHalfValues.max().toFloat()
     val avgPrediction = secondHalfValues.average().toFloat()
 
+    val adjustingEnergy = remember { mutableStateOf(false) }
+    val adjustedEnergy = remember { mutableDoubleStateOf(currentEnergy) }
+
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
@@ -82,6 +96,50 @@ fun HomeScreen(
             )
             LabelCard(energy = currentEnergy)
             BatteryCard(energy = currentEnergy)
+
+            CardWithTitle("Validate Energy") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = {}, enabled = !adjustingEnergy.value,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Correct") }
+                    Button(
+                        onClick = { adjustingEnergy.value = true },
+                        enabled = !adjustingEnergy.value,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Adjust") }
+                }
+
+                TextField(
+                    value = adjustedEnergy.doubleValue.toString(),
+                    enabled = adjustingEnergy.value,
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    onValueChange = { value: String ->
+                        adjustedEnergy.doubleValue = value.toDoubleOrNull() ?: currentEnergy
+                    }
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    TextButton(
+                        onClick = { adjustingEnergy.value = false },
+                        enabled = adjustingEnergy.value,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Cancel") }
+                    TextButton(
+                        onClick = { adjustingEnergy.value = false },
+                        enabled = adjustingEnergy.value && adjustedEnergy.doubleValue in 0.0..1.0,
+                        colors = ButtonDefaults.buttonColors(),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Save") }
+                }
+            }
+
             FeelingSelectionCard(navController)
         }
     }
