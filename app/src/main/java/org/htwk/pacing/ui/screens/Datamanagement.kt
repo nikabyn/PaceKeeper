@@ -29,9 +29,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
+import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.StepsEntry
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +42,12 @@ fun DataManagementScreen(navController: NavController) {
     val context = LocalContext.current
     val client = remember { HealthConnectClient.getOrCreate(context) }
     val coroutineScope = rememberCoroutineScope()
+
+    val permissionItems = listOf(
+        "Herzfrequenzdaten" to HealthPermission.read(HeartRateEntry::class),
+        "Schrittdaten" to Permission.read(StepsEntry::class),
+    )
+
 
     var grantedPermissions by remember { mutableStateOf<Set<String>>(emptySet()) }
 
@@ -72,9 +81,9 @@ fun DataManagementScreen(navController: NavController) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            wantedPermissions.forEach { permission ->
-                val checked = grantedPermissions.contains(permission)
-                val label = permission.substringAfterLast('.')
+            permissionItems.forEach { (label, permission) ->
+                val checked = grantedPermissions.contains(permission.toString())
+
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
