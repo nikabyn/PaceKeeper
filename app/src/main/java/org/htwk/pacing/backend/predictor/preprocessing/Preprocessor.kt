@@ -3,34 +3,16 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteIntegral
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
-object Preprocessor {
+object Preprocessor : IPreprocessor {
     private data class GenericTimedDataPoint(
         val time: Instant,
         val value: Double,
-    )
-
-    //for results of continuous time series (like heart rate)
-    data class DiscretePID(
-        val proportional: DoubleArray,
-        val integral: DoubleArray,
-        val derivative: DoubleArray
-    )
-
-    //for results of integrable/summable time series (aggregations like steps)
-    data class DiscreteIntegral(
-        val integral: DoubleArray,
-    )
-
-    //only used internally between preprocessor and model
-    data class MultiTimeSeriesDiscrete(
-        //TODO: expand with more vitals
-        val timeStart: kotlinx.datetime.Instant,
-        //class 1 (continuous values)
-        val heartRate: Preprocessor.DiscretePID,
-        //class 2 (aggregated values)
     )
 
     //class 1) continuous series like Heart BPM
@@ -71,7 +53,7 @@ object Preprocessor {
         return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value };
     }
 
-    fun run(
+    override fun run(
         raw: Predictor.MultiTimeSeriesEntries,
         fixedParameters: Predictor.FixedParameters
     ): MultiTimeSeriesDiscrete {

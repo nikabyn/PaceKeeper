@@ -3,7 +3,7 @@ package org.htwk.pacing.backend.predictor
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
-import org.htwk.pacing.backend.predictor.model.Model
+import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -39,7 +39,7 @@ class Predictor {
         // (1.5) TODO: cache (don't need that for now)
 
         // 2.) run model and return energy prediction
-        val predictedEnergy = Model.predict(multiTimeSeriesDiscrete);
+        val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION,
             Percentage(predictedEnergy)
