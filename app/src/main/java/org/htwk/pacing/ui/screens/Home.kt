@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -124,19 +125,27 @@ fun EnergyValidationCard(viewModel: HomeViewModel, currentEnergy: Double) {
                     viewModel.storeValidatedEnergyLevel(Validation.Correct, currentEnergy)
                 },
                 enabled = !adjustingEnergy.value,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("ValidationCorrectButton")
             ) { Text("Correct") }
             Button(
                 onClick = { adjustingEnergy.value = true },
                 enabled = !adjustingEnergy.value,
-                modifier = Modifier.weight(1f)
-            ) { Text("Adjust") }
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("ValidationAdjustButton")
+            ) {
+                Text("Adjust")
+            }
         }
 
         TextField(
             value = adjustedEnergy.doubleValue.toString(),
             enabled = adjustingEnergy.value,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("ValidationAdjustTextField"),
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
             onValueChange = { value: String ->
                 adjustedEnergy.doubleValue = value.toDoubleOrNull() ?: currentEnergy
@@ -149,7 +158,9 @@ fun EnergyValidationCard(viewModel: HomeViewModel, currentEnergy: Double) {
             TextButton(
                 onClick = { adjustingEnergy.value = false },
                 enabled = adjustingEnergy.value,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("ValidationAdjustCancelButton")
             ) { Text("Cancel") }
             TextButton(
                 onClick = {
@@ -161,7 +172,10 @@ fun EnergyValidationCard(viewModel: HomeViewModel, currentEnergy: Double) {
                 },
                 enabled = adjustingEnergy.value && adjustedEnergy.doubleValue in 0.0..1.0,
                 colors = ButtonDefaults.buttonColors(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("ValidationAdjustSaveButton")
+
             ) { Text("Save") }
         }
     }
