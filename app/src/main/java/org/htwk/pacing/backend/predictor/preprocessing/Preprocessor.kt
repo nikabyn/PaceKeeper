@@ -1,14 +1,14 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 object Preprocessor {
     private data class GenericTimedDataPoint(
-        val time: kotlinx.datetime.Instant,
+        val time: Instant,
         val value: Double,
     )
 
@@ -64,7 +64,11 @@ object Preprocessor {
         step: Duration = 10.minutes,
         holdEdges: Boolean = true // bei false: lin. Extrapolation
     ): DoubleArray {
-        return doubleArrayOf()
+        //constant extrapolation of first value in time series
+        require(input.isNotEmpty());
+
+        //TODO: replace with actual resampling code (this is just a placeholder for a constant fill)
+        return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value };
     }
 
     fun run(
@@ -73,7 +77,7 @@ object Preprocessor {
     ): MultiTimeSeriesDiscrete {
         //TODO: see other ticket
         return MultiTimeSeriesDiscrete(
-            timeStart = Clock.System.now() - Predictor.TIME_SERIES_DURATION,
+            timeStart = raw.timeStart,
             heartRate = processContinuous(raw.heartRate.map { it ->
                 GenericTimedDataPoint(
                     it.time,

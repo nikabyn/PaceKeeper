@@ -27,7 +27,7 @@ class Predictor {
 
     data class FixedParameters(
         //TODO: add more fixed vital parameters
-        val anaerobicThreshold: Float
+        val anaerobicThreshold: Double
     )
 
     fun run(
