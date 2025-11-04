@@ -8,9 +8,9 @@ import kotlinx.datetime.Instant
 
 @Database(
     entities = [
+        // Data received from Health Connect
         DistanceEntry::class,
         ElevationGainedEntry::class,
-        FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
         MenstruationPeriodEntry::class,
@@ -19,14 +19,16 @@ import kotlinx.datetime.Instant
         SleepSessionEntry::class,
         SpeedEntry::class,
         StepsEntry::class,
+
+        // Data manually entered by user
+        ValidatedEnergyLevelEntry::class,
+        FeelingEntry::class,
         Symptom::class,
         SymptomForFeeling::class,
 
-        ValidatedEnergyLevelEntry::class,
-
-        /*These two entities are different than the others in the sense that they represent
-        future data (ml model predictions). Also, when accessing them for writing, their whole table
-        contents are overwritten and they are also at once read as a whole.*/
+        // These two entities are different than the others in the sense that they represent
+        // future data (ml model predictions). Also, when accessing them for writing,
+        // their whole table contents are overwritten and they are also at once read as a whole.
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class,
 
