@@ -52,8 +52,8 @@ object Preprocessor {
         step: Duration = 10.minutes,
         holdEdges: Boolean = true // bei false: lin. Extrapolation
     ): DoubleArray {
-        val size = Predictor.timeSeriesSampleCount
-        val duration = Predictor.timeSeriesDuration
+        val size = Predictor.TIME_SERIES_SAMPLE_COUNT
+        val duration = Predictor.TIME_SERIES_DURATION
         val start = now10min - duration
 
         val stepMs = step.inWholeMilliseconds
@@ -103,7 +103,7 @@ object Preprocessor {
     ): Predictor.MultiTimeSeriesDiscrete {
         //TODO: see other ticket
         return Predictor.MultiTimeSeriesDiscrete(
-            timeStart = Clock.System.now() - Predictor.timeSeriesDuration,
+            timeStart = Clock.System.now() - Predictor.TIME_SERIES_DURATION,
             heartRate = processContinuous(raw.heartRate.map { it ->
                 GenericTimedDataPoint(
                     it.time,

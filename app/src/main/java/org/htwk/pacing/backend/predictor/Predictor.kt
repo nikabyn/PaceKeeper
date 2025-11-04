@@ -12,9 +12,9 @@ import kotlin.time.Duration.Companion.hours
 
 class Predictor {
     companion object {
-        val timeSeriesDuration: Duration = 2.days
-        val timeSeriesSampleCount: Int =
-            timeSeriesDuration.inWholeHours.toInt() * 6 // 2 days of 10-min steps
+        val TIME_SERIES_DURATION: Duration = 1.days;
+        val TIME_SERIES_SAMPLE_COUNT: Int =
+            TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
 
         val predictionWindowDuration: Duration = 2.hours
     }
@@ -48,7 +48,7 @@ class Predictor {
         // 2.) run model and return energy prediction
         val predictedEnergy = Model.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
-            inputTimeSeries.timeStart + timeSeriesDuration,
+            inputTimeSeries.timeStart + TIME_SERIES_DURATION,
             Percentage(predictedEnergy)
         );
     }
