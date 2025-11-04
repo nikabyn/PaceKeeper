@@ -27,7 +27,7 @@ class PreprocessorTests {
             heartRate = heartRateData
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThreshold = 80.0);
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
 
         val result = Preprocessor.run(rawData, fixedParameters)
 
@@ -55,7 +55,7 @@ class PreprocessorTests {
             heartRate = heartRateData
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThreshold = 80.0);
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
 
 
         var exceptionThrown: Boolean = false;
