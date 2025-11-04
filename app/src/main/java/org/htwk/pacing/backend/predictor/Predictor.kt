@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.predictor
 
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.Model
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
@@ -23,6 +24,8 @@ class Predictor {
         val timeStart: kotlinx.datetime.Instant,
         val heartRate: FloatArray,
         val distance: FloatArray,
+        val cleanedHeartRatesRatio: Percentage,  // new
+        val cleanedDistancesRatio: Percentage    // new
     )
 
     fun run(

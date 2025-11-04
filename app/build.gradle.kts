@@ -136,6 +136,7 @@ dependencies {
     //Splash Screen
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.material)
+    testImplementation(kotlin("test"))
 }
 
 val exclusions = listOf(
