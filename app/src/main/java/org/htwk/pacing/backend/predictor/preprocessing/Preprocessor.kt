@@ -3,8 +3,8 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteIntegral
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
