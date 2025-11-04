@@ -20,6 +20,8 @@ object Model {
     //returns extrapolated energy level point
 
     fun predict(input: Predictor.MultiTimeSeriesDiscrete): Double {
-        return sigmoidStable(scaleParam * input.heartRate.integral.last());
+        //TODO: use integral and other derived time series in a linear combination model once they're
+        // implemented in the preprocessor
+        return sigmoidStable(scaleParam * input.heartRate.proportional.last());
     }
 }
