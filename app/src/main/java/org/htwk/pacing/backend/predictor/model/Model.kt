@@ -1,6 +1,7 @@
 package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
+import org.htwk.pacing.ui.math.sigmoidStable
 
 
 object Model {
