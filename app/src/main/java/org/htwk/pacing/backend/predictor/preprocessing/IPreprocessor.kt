@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 
@@ -21,9 +22,11 @@ interface IPreprocessor {
     }
 
     //only used internally between preprocessor and model
+    //see ui#38, comment: https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963
     data class MultiTimeSeriesDiscrete(
-        //TODO: expand with more vitals
-        val timeStart: kotlinx.datetime.Instant,
+        val timeStart: Instant,
+
+        //will be expanded with more vitals
         //class 1 (continuous values)
         val heartRate: DiscretePID,
         //class 2 (aggregated values)
