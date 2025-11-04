@@ -4,9 +4,10 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.HeartRateEntry
-import org.htwk.pacing.backend.predictor.*
+import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
 
@@ -42,31 +43,28 @@ class PreprocessorTests {
     }
 
     @Test
-    fun `run handles empty heart rate data with require`() {
+    fun `Preprocessor run needs to throw exception of input data is empty`() {
         val now = Clock.System.now()
         val timeStart = now - TIME_SERIES_DURATION
 
         // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
-        val heartRateData = listOf(
-            HealthDataEntry.HeartRate(time = timeStart, bpm = 70)
-        )
+        val heartRateData: List<HeartRateEntry> = listOf()
 
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData
         )
 
-        val fixedParameters = Predictor.FixedParameters(
-            gender = Predictor.Gender.MALE,
-            age = 30,
-            height = 180,
-            weight = 80.0
-        )
+        val fixedParameters = Predictor.FixedParameters(anaerobicThreshold = 80.0);
 
-        // The placeholder discretizeTimeSeries requires input.size > 1
-        // This test verifies that the IllegalArgumentException is thrown.
-        kotlin.test.assertFailsWith<IllegalArgumentException> {
+
+        var exceptionThrown: Boolean = false;
+        try {
             Preprocessor.run(rawData, fixedParameters)
+        } catch (e: IllegalArgumentException) {
+            exceptionThrown = true;
         }
+
+        assertTrue(exceptionThrown);
     }
 }
