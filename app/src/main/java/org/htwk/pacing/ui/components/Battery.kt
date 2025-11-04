@@ -4,24 +4,30 @@ import androidx.annotation.FloatRange
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
-import org.htwk.pacing.ui.math.remap
-import kotlin.math.ceil
 
 /**
  * Shows the current energy level using 1 to 6 colored bars (a battery).
@@ -31,63 +37,62 @@ fun BatteryCard(
     @FloatRange(from = 0.0, to = 1.0) energy: Double,
     modifier: Modifier = Modifier,
 ) {
-    fun lerpThreeColors(color1: Color, color2: Color, color3: Color): Color = when {
-        energy <= 0.5 -> {
-            val t = remap(energy, 0.0, 0.5, 0.0, 1.0).toFloat()
-            lerp(color1, color2, t)
-        }
-
-        else -> {
-            val t = remap(energy, 0.5, 1.0, 0.0, 1.0).toFloat()
-            lerp(color2, color3, t)
-        }
+    val inactiveColor = if (isSystemInDarkTheme()) {
+        lerp(MaterialTheme.colorScheme.surfaceVariant, Color.White, 0.2f)
+    } else {
+        lerp(MaterialTheme.colorScheme.surfaceVariant, Color.Black, 0.15f)
     }
 
-    val red = Color(0xFFEC4242)
-    val yellow = Color(0xFFE1C508)
-    val green = Color(0xFF72D207)
-    val color = lerpThreeColors(red, yellow, green)
-
-    val inactiveOutlineColor = MaterialTheme.colorScheme.outline
-    val inactiveBackgroundColor =
-        if (isSystemInDarkTheme()) {
-            lerp(MaterialTheme.colorScheme.surfaceVariant, Color.White, 0.2f)
-        } else {
-            lerp(MaterialTheme.colorScheme.surfaceVariant, Color.Black, 0.15f)
-        }
+    val gradientColors = arrayListOf(
+        Color(0xFFEC4242), // Red
+        Color(0xFFE1C508), // Yellow
+        Color(0xFF72D207), // Green
+    )
 
     CardWithTitle(
-        stringResource(R.string.current_energy), modifier = modifier
+        title = stringResource(R.string.current_energy),
+        modifier = modifier
             .height(200.dp)
             .testTag("BatteryCard")
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val numActiveBars = if (energy == 0.0) {
-                1
-            } else {
-                ceil(energy * 6.0).toInt()
-            }
+        val cornerShape = MaterialTheme.shapes.large
 
-            for (i in 0..5) {
-                val shape = RoundedCornerShape(8.dp)
-                val isActive = i < numActiveBars
-                val outlineColor = if (isActive) color else inactiveOutlineColor
-                val backgroundColor = if (isActive) {
-                    color.copy(alpha = 0.4f)
-                } else {
-                    inactiveBackgroundColor
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2.5f)
+                .clip(cornerShape)
+                .background(inactiveColor)
+                .border(1.dp, MaterialTheme.colorScheme.outline, cornerShape)
+                .drawWithContent {
+                    drawContent()
+                    val widthCutoff = size.width * energy.toFloat()
+                    clipPath(Path().apply {
+                        addRoundRect(
+                            RoundRect(
+                                0f,
+                                0f,
+                                widthCutoff,
+                                size.height,
+                                cornerShape.toCornerRadius(this@drawWithContent)
+                            )
+                        )
+                    }) {
+                        drawRect(
+                            brush = Brush.horizontalGradient(gradientColors),
+                            size = Size(widthCutoff, size.height)
+                        )
+                    }
                 }
+        )
+    }
+}
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(shape)
-                        .background(backgroundColor)
-                        .border(width = 1.dp, color = outlineColor, shape = shape)
-                        .testTag("BatteryCardBar")
-                ) {}
-            }
-        }
+fun Shape.toCornerRadius(drawScope: DrawScope): CornerRadius {
+    val outline = this.createOutline(drawScope.size, drawScope.layoutDirection, drawScope)
+    return when (outline) {
+        // Use top-left corner (they’re usually uniform)
+        is Outline.Rounded -> outline.roundRect.bottomLeftCornerRadius
+        else -> CornerRadius.Zero
     }
 }

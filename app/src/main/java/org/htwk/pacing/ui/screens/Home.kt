@@ -99,7 +99,7 @@ fun HomeScreen(
                 modifier = Modifier.height(300.dp)
             )
             LabelCard(energy = currentEnergy)
-            BatteryCard(energy = currentEnergy)
+            BatteryCard(energy = 0.5)
             EnergyValidationCard(viewModel, currentEnergy)
             FeelingSelectionCard(navController)
         }
