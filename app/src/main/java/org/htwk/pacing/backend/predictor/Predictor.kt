@@ -12,24 +12,17 @@ import kotlin.time.Duration.Companion.hours
 
 class Predictor {
     companion object {
+        //time duration/length of input time series
         val TIME_SERIES_DURATION: Duration = 1.days;
         val TIME_SERIES_SAMPLE_COUNT: Int =
             TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
 
-        val predictionWindowDuration: Duration = 2.hours
+        val PREDICTION_WINDOW_DURATION: Duration = 2.hours
     }
 
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
         val heartRate: List<HeartRateEntry> //TODO: add more vitals
-    )
-
-    data class MultiTimeSeriesDiscrete(
-        //TODO: expand with more vitals
-        val timeStart: kotlinx.datetime.Instant,
-        //class 1 (continuous values)
-        val heartRate: Preprocessor.DiscretePID,
-        //class 2 (aggregated values)
     )
 
     data class FixedParameters(

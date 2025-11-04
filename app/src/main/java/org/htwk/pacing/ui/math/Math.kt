@@ -2,6 +2,7 @@ package org.htwk.pacing.ui.math
 
 import androidx.annotation.FloatRange
 import kotlinx.datetime.Instant
+import kotlin.math.exp
 import kotlin.math.sqrt
 import kotlin.time.Duration
 
@@ -105,4 +106,28 @@ fun roundInstantToResolution(instant: Instant, resolution: Duration): Instant {
     val truncatedEpochMillis =
         instant.toEpochMilliseconds() - (instant.toEpochMilliseconds() % resolution.inWholeMilliseconds)
     return Instant.fromEpochMilliseconds(truncatedEpochMillis)
+}
+
+/**
+ * Calculates the sigmoid function in a numerically stable way.
+ *
+ * The sigmoid function, `S(x) = 1 / (1 + e^-x)`, maps any real-valued number
+ * into the range (0, 1). This implementation avoids floating-point overflow
+ * issues that can occur with large positive or negative input values by using
+ * two different but mathematically equivalent formulas depending on the sign of `x`.
+ *
+ * - For `x >= 0`, it computes `1.0 / (1.0 + exp(-x))`.
+ * - For `x < 0`, it computes `exp(x) / (1.0 + exp(x))`.
+ *
+ * @param x The input value.
+ * @return The result of the sigmoid function, a value between 0.0 and 1.0.
+ */
+fun sigmoidStable(x: Double): Double {
+    if (x >= 0.0) {
+        val z = exp(-x)
+        return 1.0 / (1.0 + z)
+    } else {
+        val z = exp(x)
+        return z / (1.0 + z)
+    }
 }

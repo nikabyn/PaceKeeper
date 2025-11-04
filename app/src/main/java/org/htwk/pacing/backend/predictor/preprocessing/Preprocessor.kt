@@ -24,6 +24,15 @@ object Preprocessor {
         val integral: DoubleArray,
     )
 
+    //only used internally between preprocessor and model
+    data class MultiTimeSeriesDiscrete(
+        //TODO: expand with more vitals
+        val timeStart: kotlinx.datetime.Instant,
+        //class 1 (continuous values)
+        val heartRate: Preprocessor.DiscretePID,
+        //class 2 (aggregated values)
+    )
+
     //class 1) continuous series like Heart BPM
     private fun processContinuous(
         input: List<GenericTimedDataPoint>,
@@ -61,9 +70,9 @@ object Preprocessor {
     fun run(
         raw: Predictor.MultiTimeSeriesEntries,
         fixedParameters: Predictor.FixedParameters
-    ): Predictor.MultiTimeSeriesDiscrete {
+    ): MultiTimeSeriesDiscrete {
         //TODO: see other ticket
-        return Predictor.MultiTimeSeriesDiscrete(
+        return MultiTimeSeriesDiscrete(
             timeStart = Clock.System.now() - Predictor.TIME_SERIES_DURATION,
             heartRate = processContinuous(raw.heartRate.map { it ->
                 GenericTimedDataPoint(
