@@ -1,5 +1,8 @@
 package org.htwk.pacing.ui.screens
 
+import android.content.Intent
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,26 +17,42 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(navController: NavController) {
-    var items by remember {
-        mutableStateOf(
-            listOf(
-                "Data 1" to false,
-                "Data 2" to false,
-                "Data 3" to false
-            )
-        )
+    val context = LocalContext.current
+    val client = remember { HealthConnectClient.getOrCreate(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    var grantedPermissions by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    LaunchedEffect(Unit) {
+        grantedPermissions = client.permissionController.getGrantedPermissions()
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        Log.d("Permissions", "Granted permissions: $granted")
+        coroutineScope.launch {
+            grantedPermissions = client.permissionController.getGrantedPermissions()
+        }
     }
 
     Scaffold(
@@ -53,7 +72,10 @@ fun DataManagementScreen(navController: NavController) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            items.forEachIndexed { index, (title, checked) ->
+            wantedPermissions.forEach { permission ->
+                val checked = grantedPermissions.contains(permission)
+                val label = permission.substringAfterLast('.')
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -63,12 +85,16 @@ fun DataManagementScreen(navController: NavController) {
                     Checkbox(
                         checked = checked,
                         onCheckedChange = { newChecked ->
-                            items = items.toMutableList().apply {
-                                set(index, title to newChecked)
+                            if (newChecked) {
+                                permissionLauncher.launch(setOf(permission))
+                            } else {
+                                val intent =
+                                    Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+                                context.startActivity(intent)
                             }
                         }
                     )
-                    Text(title, modifier = Modifier.padding(start = 8.dp))
+                    Text(label, modifier = Modifier.padding(start = 8.dp))
                 }
             }
         }
