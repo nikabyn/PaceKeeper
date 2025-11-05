@@ -32,6 +32,9 @@ interface IPreprocessor {
         val heartRate: DiscretePID,
         //class 2 (aggregated values)
 
+    )
+
+    data class QualityRatios(
         val cleanedHeartRatesRatio: Percentage,  // new
         val cleanedDistancesRatio: Percentage    // new
     )

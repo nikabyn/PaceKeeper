@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
@@ -11,7 +10,6 @@ import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATIO
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 object Preprocessor : IPreprocessor {
@@ -86,7 +84,7 @@ object Preprocessor : IPreprocessor {
         return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value };
     }
 
-    fun run_clean_data(raw: Predictor.MultiTimeSeriesEntries): IPreprocessor.MultiTimeSeriesDiscrete {
+    private fun clean_input_data(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiTimeSeriesEntries, IPreprocessor.QualityRatios> {
         // generic cleaning of data
         fun <T, R : Comparable<R>> cleanData(
             list: List<T>,
@@ -132,13 +130,18 @@ object Preprocessor : IPreprocessor {
         )
 
         // TODO: see other ticket
-        return Predictor.MultiTimeSeriesSamples(
-            timeStart = Clock.System.now() - 6.hours,
-            heartRate = cleanedHeartRates.map { it.bpm.toFloat() }.toFloatArray(),
-            distance = cleanedDistances.map { it.length.inMeters().toFloat() }.toFloatArray(),
-            cleanedHeartRatesRatio = Percentage(correctionHeartRatio),
-            cleanedDistancesRatio = Percentage(correctionDistancesRatio)
+        return Pair(
+            Predictor.MultiTimeSeriesEntries(
+                timeStart = raw.timeStart,
+                heartRate = cleanedHeartRates,
+                distance = cleanedDistances
+            ),
 
+            IPreprocessor.QualityRatios(
+                cleanedHeartRatesRatio = Percentage(correctionHeartRatio),
+                cleanedDistancesRatio = Percentage(correctionDistancesRatio)
+            )
         )
+
     }
 }
