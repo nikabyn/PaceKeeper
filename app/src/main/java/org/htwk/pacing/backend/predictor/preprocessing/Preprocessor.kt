@@ -3,13 +3,15 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.*
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.*
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
-import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesList
+import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
-object Preprocessor {
+object Preprocessor : IPreprocessor {
 
     /**
      * A generic data structure to unify different time series data types
@@ -105,11 +107,12 @@ object Preprocessor {
                     it.time,
                     it.bpm.toDouble()
                 )
-            })
+            }),
+            distance = processAggregated(raw.timeStart, listOf())
         )
     }
 
-    fun run_1(raw: Predictor.MultiTimeSeriesList): Predictor.MultiTimeSeriesSamples {
+    fun run_1_discretize(raw: Predictor.MultiTimeSeriesEntries): IPreprocessor.MultiTimeSeriesDiscrete {
         val timeStart = kotlinx.datetime.Clock.System.now() - 6.hours
 
         //HeartRate 10 min Buckets --> Durchschnitt von Bucket
@@ -118,12 +121,12 @@ object Preprocessor {
         }
 
         val hrAveragesPer10Min = groupedHR.mapValues { (_, entries) ->
-            entries.map { it.bpm.toFloat() }.average().toFloat()
+            entries.map { it.bpm.toDouble() }.average()
         }
 
         val sortedKeys = hrAveragesPer10Min.keys.sorted()
-        val heartRateArray = FloatArray(sortedKeys.size)
-        var lastKnownHR = hrAveragesPer10Min[sortedKeys.first()] ?: 0f
+        val heartRateArray = DoubleArray(sortedKeys.size)
+        var lastKnownHR : Double = hrAveragesPer10Min[sortedKeys.first()] ?: 0.0
         for ((i, key) in sortedKeys.withIndex()) {
             val avg = hrAveragesPer10Min[key]
 
@@ -145,16 +148,16 @@ object Preprocessor {
             entries.sumOf { it.length.inMeters()} // Gesamtstrecke pro Intervall
         }
 
-        val distanceArray = FloatArray(sortedKeys.size)
+        val distanceArray = DoubleArray(sortedKeys.size)
         for ((i, key) in sortedKeys.withIndex()) {
             val value = distancePer10Min[key]
-            distanceArray[i] = value!!.toFloat()
+            distanceArray[i] = value!!
         }
 
-        return Predictor.MultiTimeSeriesSamples(
+        return IPreprocessor.MultiTimeSeriesDiscrete(
             timeStart = timeStart,
-            heartRate = heartRateArray,
-            distance = distanceArray
+            heartRate = DiscretePID(heartRateArray, doubleArrayOf(), doubleArrayOf()),
+            distance = DiscreteIntegral(distanceArray)
         )
     }
 

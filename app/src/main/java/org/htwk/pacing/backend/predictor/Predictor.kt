@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor
 
+import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
@@ -31,7 +32,8 @@ class Predictor {
         val timeStart: kotlinx.datetime.Instant,
 
         //we have to add more data sources later
-        val heartRate: List<HeartRateEntry>
+        val heartRate: List<HeartRateEntry>,
+        val distance: List<DistanceEntry>
     )
 
     /**
