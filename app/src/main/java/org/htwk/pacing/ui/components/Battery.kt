@@ -21,10 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -49,8 +51,16 @@ fun BatteryCard(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val latestValidation = viewModel.loadLatestValidatedEnergyLevel()
+    val adjustedEnergy = remember {
+        mutableDoubleStateOf(
+            when (latestValidation?.validation) {
+                Validation.Adjusted -> latestValidation.percentage.toDouble()
+                else -> energy
+            }
+        )
+    }
     val adjustingEnergy = remember { mutableStateOf(false) }
-    val adjustedEnergy = remember { mutableDoubleStateOf(energy) }
 
     val gradientColors = arrayOf(
         Color(0xFFEC4242), // Red
@@ -71,9 +81,10 @@ fun BatteryCard(
                 .clip(cornerShape)
                 .background(MaterialTheme.colorScheme.surfaceDim)
                 .gradientBackground(
-                    if (adjustingEnergy.value) adjustedEnergy.doubleValue else energy,
-                    gradientColors,
-                    cornerShape
+                    currentEnergy = energy,
+                    adjustedEnergy = adjustedEnergy.doubleValue,
+                    colors = gradientColors,
+                    cornerShape = cornerShape,
                 )
                 .pointerInput(adjustingEnergy.value) {
                     if (!adjustingEnergy.value) return@pointerInput
@@ -97,9 +108,11 @@ fun BatteryCard(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             if (!adjustingEnergy.value) {
-
                 ActionButton(
-                    onClick = { viewModel.storeValidatedEnergyLevel(Validation.Correct, energy) },
+                    onClick = {
+                        adjustedEnergy.doubleValue = energy
+                        viewModel.storeValidatedEnergyLevel(Validation.Correct, energy)
+                    },
                     iconPainter = painterResource(R.drawable.rounded_check_24),
                     actionText = stringResource(R.string.correct),
                     modifier = Modifier
@@ -164,22 +177,105 @@ fun ActionButton(
 }
 
 fun Modifier.gradientBackground(
-    energy: Double,
+    currentEnergy: Double,
+    adjustedEnergy: Double,
     colors: Array<Color>,
     cornerShape: Shape,
 ): Modifier = this.then(
     Modifier.drawWithContent {
         drawContent()
 
-        val widthCutoff = size.width * energy.toFloat()
-        val outline = cornerShape
-            .createOutline(Size(widthCutoff, size.height), layoutDirection, this)
+        val widthCurrent = size.width * currentEnergy.toFloat()
+        val outlineCurrent = cornerShape.createOutline(
+            Size(widthCurrent, size.height),
+            layoutDirection,
+            this
+        )
+        val pathCurrent = Path().apply {
+            addOutline(outlineCurrent)
+        }
 
-        clipPath(Path().apply { addOutline(outline) }) {
+        clipPath(pathCurrent) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
-                size = Size(widthCutoff, size.height)
+                size = Size(widthCurrent, size.height)
             )
+        }
+
+        val change =
+            if (adjustedEnergy > currentEnergy) Change.Positive
+            else Change.Negative
+
+        val widthAdjusted = size.width * when (change) {
+            Change.Positive -> adjustedEnergy.toFloat()
+            Change.Negative -> 1f - adjustedEnergy.toFloat()
+        }
+        val offsetAdjusted = Offset(
+            when (change) {
+                Change.Positive -> 0f
+                Change.Negative -> size.width - widthAdjusted
+            },
+            0f
+        )
+        val outlineAdjusted = cornerShape.createOutline(
+            Size(widthAdjusted, size.height),
+            layoutDirection,
+            this
+        )
+        val pathAdjusted = Path().apply {
+            addOutline(outlineAdjusted)
+            translate(offsetAdjusted)
+        }
+
+        clipPath(
+            Path.combine(
+                when (change) {
+                    Change.Positive -> PathOperation.ReverseDifference
+                    Change.Negative -> PathOperation.Intersect
+                },
+                pathCurrent,
+                pathAdjusted
+            )
+        ) {
+            val stripeColor = when (change) {
+                Change.Negative -> Color.Red
+                Change.Positive -> Color.Green
+            }
+
+            drawRect(
+                color = stripeColor.copy(alpha = 0.2f),
+                topLeft = offsetAdjusted,
+                size = Size(widthAdjusted, size.height)
+            )
+
+            // Draw 45° diagonal stripes
+            val stripeWidth = 2.dp.toPx()
+            val stripeSpacing = 12.dp.toPx()
+
+            val diagonal = kotlin.math.hypot(size.width, size.height)
+            val stripePath = Path()
+
+            var startX = -diagonal
+            while (startX < size.width + diagonal) {
+                stripePath.reset()
+                stripePath.moveTo(startX, size.height)
+                stripePath.lineTo(startX + stripeWidth, size.height)
+                stripePath.lineTo(startX + stripeWidth - size.height, 0f)
+                stripePath.lineTo(startX - size.height, 0f)
+                stripePath.close()
+
+                drawPath(
+                    path = stripePath,
+                    color = stripeColor
+                )
+
+                startX += stripeSpacing
+            }
         }
     }
 )
+
+enum class Change {
+    Negative,
+    Positive,
+}

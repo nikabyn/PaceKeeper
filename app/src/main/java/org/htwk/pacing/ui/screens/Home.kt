@@ -95,7 +95,7 @@ fun HomeScreen(
 
 class HomeViewModel(
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
-    val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
+    private val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
 ) : ViewModel() {
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = predictedEnergyLevelDao
@@ -129,5 +129,13 @@ class HomeViewModel(
                 )
             )
         }
+    }
+
+    fun loadLatestValidatedEnergyLevel(): ValidatedEnergyLevelEntry? {
+        var result: ValidatedEnergyLevelEntry? = null
+        CoroutineScope(Dispatchers.IO).launch {
+            result = validatedEnergyLevelDao.getLatest()
+        }
+        return result
     }
 }
