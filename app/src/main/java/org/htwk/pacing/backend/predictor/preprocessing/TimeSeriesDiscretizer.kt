@@ -51,37 +51,44 @@ object TimeSeriesDiscretizer {
      */
     private fun discretizeWithMissingValues(
         timeBucketAverages: Map<ULong, Double>,
+        doEdgeExtrapolation: Boolean
     ): DoubleArray {
-        val sortedAverages = timeBucketAverages.toSortedMap()
+        require(timeBucketAverages.isNotEmpty())
+        val sortedBucketAverages = timeBucketAverages.toSortedMap()
 
-        //ensure value at t=0 (for constant extrapolation at edges if missing)
-        if (sortedAverages.firstKey() != 0UL) {
-            sortedAverages[0UL] = sortedAverages.getValue(sortedAverages.firstKey())
+        //optionally pin the first and last known value to the borders so that we don't get missing values
+        //this only makes sense with continuous time series, and not with aggregated (like steps) ones
+        if (doEdgeExtrapolation) {
+            val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())
+            val lastValue = sortedBucketAverages.getValue(sortedBucketAverages.lastKey())
+            val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1).toULong()
+
+            sortedBucketAverages.putIfAbsent(0u, firstValue)
+            sortedBucketAverages.putIfAbsent(lastKey, lastValue);
         }
 
-        //ensure value at t=end (for constant extrapolation at edges if missing)
-        if (sortedAverages.lastKey() != Predictor.TIME_SERIES_SAMPLE_COUNT.toULong()) {
-            sortedAverages[Predictor.TIME_SERIES_SAMPLE_COUNT.toULong()] =
-                sortedAverages.getValue(sortedAverages.lastKey())
-        }
+        val sortedBucketList = sortedBucketAverages.toList()
 
         //resulting time series, with interpolated, discrete values
         val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
 
-        timeBucketAverages.entries.sortedBy { it.key }.zipWithNext()
-            .forEach { (startPoint, endPoint) ->
-                val (x0, y0) = startPoint
-                val (x1, y1) = endPoint
+        //add interpolated points
+        sortedBucketList.zipWithNext().forEach { (startPoint, endPoint) ->
+            val (x0, y0) = startPoint
+            val (x1, y1) = endPoint
 
-                val intervalSteps = (x1 - x0).toInt()
-                if (intervalSteps > 1) {
-                    val slope = (y1 - y0) / intervalSteps.toDouble()
-                    for (i in 1 until intervalSteps) {
-                        discreteTimeSeries[i] = y0 + slope * i
+            val intervalSteps = (x1 - x0).toInt()
+            if (intervalSteps > 1) {
+                val slope = (y1 - y0) / intervalSteps.toDouble()
+                for (i in 1 until intervalSteps) {
+                    val index = x0.toInt() + i
+                    if (index in discreteTimeSeries.indices) {
+                        discreteTimeSeries[index] = y0 + slope * i
                     }
                 }
             }
-
+        }
+        
         return discreteTimeSeries
     }
 
@@ -91,7 +98,6 @@ object TimeSeriesDiscretizer {
      * @param input The list of [GenericTimedDataPoint]s to process.
      * @return A [DoubleArray] representing the discretized time series.
      */
-
     fun discretizeTimeSeries(
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
