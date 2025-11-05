@@ -6,8 +6,6 @@ import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATIO
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
 object Preprocessor : IPreprocessor {
     /**
@@ -20,7 +18,7 @@ object Preprocessor : IPreprocessor {
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
     ): DiscretePID {
-        val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
+        val p = TimeSeriesDiscretizer.discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
         //TODO: implement functions for discrete integral, derivative, use them here
         return DiscretePID(p, doubleArrayOf(), doubleArrayOf())
     }
@@ -35,7 +33,7 @@ object Preprocessor : IPreprocessor {
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
     ): DiscreteIntegral {
-        val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
+        val p = TimeSeriesDiscretizer.discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
         //TODO: implement function for discrete derivative, use it here
         return DiscreteIntegral(doubleArrayOf())
     }
@@ -45,31 +43,6 @@ object Preprocessor : IPreprocessor {
         return 0.0;
     }
 
-    /**
-     * Resamples a time series to a uniform time grid.
-     *
-     * This function converts arbitrarily timed data points into a uniformly spaced series
-     * starting at `timeStart`, with a fixed `step` duration.
-     *
-     * @param timeStart The start time for the resampling grid.
-     * @param input The list of `GenericTimedDataPoint`s to resample. Must not be empty.
-     * @param step The time interval for the output grid.
-     * @param holdEdges If `true`, uses constant extrapolation for values outside the input time range.
-     * @return A `DoubleArray` with the resampled time series values.
-     * @throws IllegalArgumentException if `input` is empty.
-     */
-    private fun discretizeTimeSeries(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-        step: Duration = 10.minutes,
-        holdEdges: Boolean = true // bei false: lin. Extrapolation
-    ): DoubleArray {
-        //constant extrapolation of first value in time series
-        require(input.isNotEmpty());
-
-        //TODO: replace with actual resampling code (this is just a placeholder for a constant fill)
-        return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value };
-    }
 
     /**
      * Executes the preprocessing pipeline on raw time series data.
