@@ -68,7 +68,7 @@ fun BatteryCard(
                 .fillMaxWidth()
                 .aspectRatio(2.5f)
                 .clip(cornerShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.surfaceDim)
                 .gradientBackground(energy, gradientColors, cornerShape)
         )
 
