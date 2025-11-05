@@ -131,11 +131,10 @@ object TimeSeriesDiscretizer {
         return stepTime.toULong()
     }
 
-
-    private fun discretizeWithMissingValues(
+    private fun calculateTimeBucketAverages(
         startTime: Instant,
         entries: List<GenericTimedDataPoint>,
-    ): DoubleArray {
+    ): Map<ULong, Double> {
         require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
         require(entries.minOf { it.time } >= startTime) { "All entry times must be at or after the start time." }
 
@@ -149,27 +148,42 @@ object TimeSeriesDiscretizer {
             group.map { it -> it.value }.average()
         }
 
-        //we enter averages per time step into this array, steps with no corresponding entries are left at NaN
-        val discreteWithGaps = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
-        /*
-                timeBucketAverages.entries.sortedBy { it.key }.zipWithNext().forEach { (startPoint, endPoint) ->
-                    val (x0, y0) = startPoint
-                    val (x1, y1) = endPoint
+        return timeBucketAverages
+    }
 
-                    val interval = x1 - x0
-                    if (interval == 0u) {
-                        discreteWithGaps[x0.toInt()] = y0
-                    )*/
+    private fun discretizeWithMissingValues(
+        timeBucketAverages: Map<ULong, Double>,
+    ): DoubleArray {
+        val sortedAverages = timeBucketAverages.toSortedMap()
 
-
-        //iterate through time-sorted averagesPerBucket (it.key is step-rounded time)
-        timeBucketAverages.entries.sortedBy { it.key }.forEach { (timeDiscrete, value) ->
-            val index = timeDiscrete.toInt()
-            if (index in discreteWithGaps.indices) { //sanity check
-                discreteWithGaps[index] = value
-            }
+        //extrapolate to fill the start of the time series if the first data point isn't at the beginning.
+        if (sortedAverages.firstKey() != 0UL) {
+            sortedAverages[0UL] = sortedAverages.getValue(sortedAverages.firstKey())
         }
 
-        return discreteWithGaps
+        //extrapolate to fill the end of the time series if the last data point isn't at the end.
+        if (sortedAverages.lastKey() != Predictor.TIME_SERIES_SAMPLE_COUNT.toULong()) {
+            sortedAverages[Predictor.TIME_SERIES_SAMPLE_COUNT.toULong()] =
+                sortedAverages.getValue(sortedAverages.lastKey())
+        }
+
+        //resulting time series, with interpolated, discrete values
+        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
+
+        timeBucketAverages.entries.sortedBy { it.key }.zipWithNext()
+            .forEach { (startPoint, endPoint) ->
+                val (x0, y0) = startPoint
+                val (x1, y1) = endPoint
+
+                val intervalSteps = (x1 - x0).toInt()
+                if (intervalSteps > 1) {
+                    val slope = (y1 - y0) / intervalSteps.toDouble()
+                    for (i in 1 until intervalSteps) {
+                        discreteTimeSeries[i] = y0 + slope * i
+                    }
+                }
+            }
+
+        return discreteTimeSeries
     }
 }
