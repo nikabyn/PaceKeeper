@@ -93,12 +93,6 @@ fun HomeScreen(
     }
 }
 
-/**
- * Allows the user to accept the current energy prediction as correct
- * or adjust it based on how they feel.
- */
-
-
 class HomeViewModel(
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
     val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
