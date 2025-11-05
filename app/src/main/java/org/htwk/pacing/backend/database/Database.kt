@@ -8,9 +8,9 @@ import kotlinx.datetime.Instant
 
 @Database(
     entities = [
+        // Data received from Health Connect
         DistanceEntry::class,
         ElevationGainedEntry::class,
-        FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
         MenstruationPeriodEntry::class,
@@ -19,18 +19,22 @@ import kotlinx.datetime.Instant
         SleepSessionEntry::class,
         SpeedEntry::class,
         StepsEntry::class,
+
+        // Data manually entered by user
+        ValidatedEnergyLevelEntry::class,
+        FeelingEntry::class,
         Symptom::class,
         SymptomForFeeling::class,
 
-        /*These two entities are different than the others in the sense that they represent
-        future data (ml model predictions). Also, when accessing them for writing, their whole table
-        contents are overwritten and they are also at once read as a whole.*/
+        // These two entities are different than the others in the sense that they represent
+        // future data (ml model predictions). Also, when accessing them for writing,
+        // their whole table contents are overwritten and they are also at once read as a whole.
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class,
 
         ReadEvent::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -46,6 +50,8 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun sleepSessionsDao(): SleepSessionDao
     abstract fun speedDao(): SpeedDao
     abstract fun stepsDao(): StepsDao
+
+    abstract fun validatedEnergyLevelDao(): ValidatedEnergyLevelDao
 
     /*These two tables are different than the others in the sense that they represent
     future data (ml model predictions). Also, when accessing them for writing, their whole table
@@ -98,4 +104,10 @@ class Converters {
 
     @TypeConverter
     fun toFeeling(value: Int): Feeling = Feeling.entries.first { it.level == value }
+
+    @TypeConverter
+    fun fromValidation(value: Validation): Int = value.code
+
+    @TypeConverter
+    fun toValidation(value: Int): Validation = Validation.entries.first { it.code == value }
 }

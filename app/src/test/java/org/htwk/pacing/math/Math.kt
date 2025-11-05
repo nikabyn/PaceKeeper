@@ -3,10 +3,12 @@ package org.htwk.pacing.math
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
 import org.htwk.pacing.ui.math.remap
+import org.htwk.pacing.ui.math.sigmoidStable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.math.sqrt
 
 class Math {
@@ -99,5 +101,61 @@ class Math {
 
         val zero = Float2D(0f, 0f)
         assertEquals(zero, zero.normalize())
+    }
+
+    @Test
+    fun `sigmoidStable test zero input`() {
+        // Test case: Zero input
+        // The function should be centered at x=0, resulting in 0.5.
+        assertEquals("Sigmoid of 0.0 should be 0.5", 0.5, sigmoidStable(0.0), 1e-9)
+    }
+
+    @Test
+    fun `sigmoidStable regular inputs`() {
+        // Test case: Standard positive input
+        // Check the function's output for a typical positive value.
+        val expectedPositive = 1.0 / (1.0 + exp(-1.0))
+        assertEquals("Sigmoid of 1.0", expectedPositive, sigmoidStable(1.0), 1e-9)
+
+        // Test case: Standard negative input
+        // Check the function's output for a typical negative value.
+        val expectedNegative = exp(-1.0) / (1.0 + exp(-1.0))
+        assertEquals("Sigmoid of -1.0", expectedNegative, sigmoidStable(-1.0), 1e-9)
+    }
+
+    @Test
+    fun `sigmoidStable test handling of large input values`() {
+        // Test case: Large positive inputs (approaching 1.0)
+        // Verifies the upper limit and stability for large values, including infinity.
+        assertEquals("Sigmoid of 50.0 should approach 1.0", 1.0, sigmoidStable(50.0), 1e-9)
+        assertEquals(
+            "Sigmoid of Double.MAX_VALUE should be 1.0",
+            1.0,
+            sigmoidStable(Double.MAX_VALUE),
+            0.0
+        )
+        assertEquals(
+            "Sigmoid of Double.POSITIVE_INFINITY should be 1.0",
+            1.0,
+            sigmoidStable(Double.POSITIVE_INFINITY),
+            0.0
+        )
+
+        // Test case: Large negative inputs (approaching 0.0)
+        // Verifies the lower limit and stability for large negative values, including negative infinity.
+        assertEquals("Sigmoid of -50.0 should approach 0.0", 0.0, sigmoidStable(-50.0), 1e-9)
+        assertEquals(
+            "Sigmoid of Double.NEGATIVE_INFINITY should be 0.0",
+            0.0,
+            sigmoidStable(Double.NEGATIVE_INFINITY),
+            0.0
+        )
+    }
+
+    @Test
+    fun `sigmoidStable test NaN input`() {
+        // Test case: NaN input
+        // Ensures correct handling of invalid floating-point values.
+        assertTrue("Sigmoid of NaN should be NaN", sigmoidStable(Double.NaN).isNaN())
     }
 }
