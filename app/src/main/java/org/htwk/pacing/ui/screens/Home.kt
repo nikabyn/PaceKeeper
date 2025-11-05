@@ -3,28 +3,17 @@ package org.htwk.pacing.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -45,7 +34,6 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.components.BatteryCard
-import org.htwk.pacing.ui.components.CardWithTitle
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
@@ -99,8 +87,7 @@ fun HomeScreen(
                 modifier = Modifier.height(300.dp)
             )
             LabelCard(energy = currentEnergy)
-            BatteryCard(energy = 0.5)
-            EnergyValidationCard(viewModel, currentEnergy)
+            BatteryCard(energy = 0.5, viewModel)
             FeelingSelectionCard(navController)
         }
     }
@@ -110,76 +97,7 @@ fun HomeScreen(
  * Allows the user to accept the current energy prediction as correct
  * or adjust it based on how they feel.
  */
-@Composable
-fun EnergyValidationCard(viewModel: HomeViewModel, currentEnergy: Double) {
-    val adjustingEnergy = remember { mutableStateOf(false) }
-    val adjustedEnergy = remember { mutableDoubleStateOf(currentEnergy) }
 
-    CardWithTitle("Validate Energy") {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Button(
-                onClick = {
-                    viewModel.storeValidatedEnergyLevel(Validation.Correct, currentEnergy)
-                },
-                enabled = !adjustingEnergy.value,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ValidationCorrectButton")
-            ) { Text("Correct") }
-            Button(
-                onClick = { adjustingEnergy.value = true },
-                enabled = !adjustingEnergy.value,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ValidationAdjustButton")
-            ) {
-                Text("Adjust")
-            }
-        }
-
-        TextField(
-            value = adjustedEnergy.doubleValue.toString(),
-            enabled = adjustingEnergy.value,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("ValidationAdjustTextField"),
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-            onValueChange = { value: String ->
-                adjustedEnergy.doubleValue = value.toDoubleOrNull() ?: currentEnergy
-            }
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            TextButton(
-                onClick = { adjustingEnergy.value = false },
-                enabled = adjustingEnergy.value,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ValidationAdjustCancelButton")
-            ) { Text("Cancel") }
-            TextButton(
-                onClick = {
-                    adjustingEnergy.value = false;
-                    viewModel.storeValidatedEnergyLevel(
-                        Validation.Adjusted,
-                        adjustedEnergy.doubleValue
-                    )
-                },
-                enabled = adjustingEnergy.value && adjustedEnergy.doubleValue in 0.0..1.0,
-                colors = ButtonDefaults.buttonColors(),
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ValidationAdjustSaveButton")
-
-            ) { Text("Save") }
-        }
-    }
-}
 
 class HomeViewModel(
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
