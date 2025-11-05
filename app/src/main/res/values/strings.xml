@@ -44,6 +44,9 @@
     <string name="personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing">Personalised data will be stored by exporting. Please consent to the processing.</string>
     <string name="agree">Agree</string>
     <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="correct">Correct</string>
+    <string name="adjust">Adjust</string>
     <string name="feeling_really_bad">Feeling really bad?</string>
     <string name="feeling_bad">Feeling bad?</string>
     <string name="feeling_good">Feeling good?</string>

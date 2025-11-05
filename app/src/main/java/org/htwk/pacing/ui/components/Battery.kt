@@ -2,6 +2,7 @@ package org.htwk.pacing.ui.components
 
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,8 +60,7 @@ fun BatteryCard(
 
     CardWithTitle(
         title = stringResource(R.string.current_energy),
-        modifier = modifier
-            .testTag("BatteryCard")
+        modifier = modifier.testTag("BatteryCard")
     ) {
         val cornerShape = MaterialTheme.shapes.large
 
@@ -69,7 +70,26 @@ fun BatteryCard(
                 .aspectRatio(2.5f)
                 .clip(cornerShape)
                 .background(MaterialTheme.colorScheme.surfaceDim)
-                .gradientBackground(energy, gradientColors, cornerShape)
+                .gradientBackground(
+                    if (adjustingEnergy.value) adjustedEnergy.doubleValue else energy,
+                    gradientColors,
+                    cornerShape
+                )
+                .pointerInput(adjustingEnergy.value) {
+                    if (!adjustingEnergy.value) return@pointerInput
+
+                    val updateAdjustedEnergy = { x: Float ->
+                        adjustedEnergy.doubleValue = (x / size.width)
+                            .coerceIn(0f, 1f)
+                            .toDouble()
+                    }
+
+                    detectHorizontalDragGestures { change, _ ->
+                        change.consume()
+                        updateAdjustedEnergy(change.position.x)
+                    }
+                }
+                .testTag("BatteryBar")
         )
 
         Row(
@@ -81,7 +101,7 @@ fun BatteryCard(
                 ActionButton(
                     onClick = { viewModel.storeValidatedEnergyLevel(Validation.Correct, energy) },
                     iconPainter = painterResource(R.drawable.rounded_check_24),
-                    actionText = "Correct",
+                    actionText = stringResource(R.string.correct),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationCorrectButton")
