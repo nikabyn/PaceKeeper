@@ -39,6 +39,10 @@ class Velocity(private val velocityMetersPerSecond: Double) {
 class Percentage(private val percentage: Double) {
     fun toDouble(): Double = percentage
 
+    override fun toString(): String {
+        return (percentage * 100.0).toString() + "%"
+    }
+
     companion object {
         fun fromDouble(@FloatRange(from = 0.0, to = 1.0) value: Double): Percentage {
             // TODO: Should this really crash the app in production?
