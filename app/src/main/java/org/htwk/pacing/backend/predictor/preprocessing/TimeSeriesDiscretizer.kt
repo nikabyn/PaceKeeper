@@ -47,6 +47,7 @@ object TimeSeriesDiscretizer {
     /**
      * Fills in missing values in a discretized time series using linear interpolation.
      * @param timeBucketAverages A map of discrete time buckets to their average values.
+     * @param doEdgeExtrapolation Whether to extrapolate the first and last known values.
      * @return A [DoubleArray] representing the complete, interpolated time series.
      */
     private fun discretizeWithMissingValues(
@@ -72,8 +73,16 @@ object TimeSeriesDiscretizer {
         //resulting time series, with interpolated, discrete values
         val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
 
-        //add interpolated points
-        sortedBucketList.zipWithNext().forEach { (startPoint, endPoint) ->
+        //fill known points
+        for ((timeStep, value) in sortedBucketAverages) {
+            val index = timeStep.toInt()
+            if (index in discreteTimeSeries.indices) {
+                discreteTimeSeries[index] = value
+            }
+        }
+
+        //add interpolation steps between those points
+        for ((startPoint, endPoint) in sortedBucketList.zipWithNext()) {
             val (x0, y0) = startPoint
             val (x1, y1) = endPoint
 
@@ -88,7 +97,7 @@ object TimeSeriesDiscretizer {
                 }
             }
         }
-        
+
         return discreteTimeSeries
     }
 
@@ -101,9 +110,11 @@ object TimeSeriesDiscretizer {
     fun discretizeTimeSeries(
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
+        doEdgeExtrapolation: Boolean
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(timeStart, input)
-        val discreteTimeSeries = discretizeWithMissingValues(timeBucketAverages)
+        val discreteTimeSeries =
+            discretizeWithMissingValues(timeBucketAverages, doEdgeExtrapolation)
 
         return discreteTimeSeries
     }

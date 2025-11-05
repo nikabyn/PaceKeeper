@@ -18,7 +18,11 @@ object Preprocessor : IPreprocessor {
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
     ): DiscretePID {
-        val p = TimeSeriesDiscretizer.discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
+        val p = TimeSeriesDiscretizer.discretizeTimeSeries(
+            timeStart = timeStart + TIME_SERIES_DURATION,
+            input = input,
+            doEdgeExtrapolation = true
+        )
         //TODO: implement functions for discrete integral, derivative, use them here
         return DiscretePID(p, doubleArrayOf(), doubleArrayOf())
     }
@@ -33,7 +37,11 @@ object Preprocessor : IPreprocessor {
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
     ): DiscreteIntegral {
-        val p = TimeSeriesDiscretizer.discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
+        val p = TimeSeriesDiscretizer.discretizeTimeSeries(
+            timeStart = timeStart + TIME_SERIES_DURATION,
+            input = input,
+            doEdgeExtrapolation = false
+        )
         //TODO: implement function for discrete derivative, use it here
         return DiscreteIntegral(doubleArrayOf())
     }
