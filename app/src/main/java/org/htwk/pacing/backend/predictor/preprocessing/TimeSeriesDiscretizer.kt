@@ -4,7 +4,6 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor.GenericTimedDataPoint
 import org.htwk.pacing.ui.math.roundInstantToResolution
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -126,32 +125,47 @@ object TimeSeriesDiscretizer {
         return p
     }
 
+    private fun discretizeInstant(instant: Instant): ULong {
+        val stepTime =
+            instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
+        return stepTime.toULong()
+    }
+
+
     private fun discretizeWithMissingValues(
         startTime: Instant,
         entries: List<GenericTimedDataPoint>,
     ): DoubleArray {
-        require(entries.isNotEmpty()) //we need at least one entry to work with
+        require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
+        require(entries.minOf { it.time } >= startTime) { "All entry times must be at or after the start time." }
 
-        val startTimeRounded =
-            roundInstantToResolution(startTime, Predictor.TIME_SERIES_STEP_DURATION)
+        val startTimeDiscrete: ULong = discretizeInstant(startTime)
 
-        //sort into buckets, where the key is the step-size interval each entry falls into
-        val bucketsByStep = entries.groupBy { it ->
-            roundInstantToResolution(it.time, Predictor.TIME_SERIES_STEP_DURATION)
-        }
-
-        // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
-        val averagesPerBucket = bucketsByStep.mapValues { (_, group) ->
+        //sort into discrete time step buckets and calculate average bucket
+        val timeBucketAverages: Map<ULong, Double> = entries.groupBy { it ->
+            discretizeInstant(it.time) - startTimeDiscrete
+        }.mapValues { (_, group) ->
+            // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
             group.map { it -> it.value }.average()
         }
 
         //we enter averages per time step into this array, steps with no corresponding entries are left at NaN
         val discreteWithGaps = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
+        /*
+                timeBucketAverages.entries.sortedBy { it.key }.zipWithNext().forEach { (startPoint, endPoint) ->
+                    val (x0, y0) = startPoint
+                    val (x1, y1) = endPoint
+
+                    val interval = x1 - x0
+                    if (interval == 0u) {
+                        discreteWithGaps[x0.toInt()] = y0
+                    )*/
+
 
         //iterate through time-sorted averagesPerBucket (it.key is step-rounded time)
-        averagesPerBucket.entries.sortedBy { it.key }.forEach { (time, value) ->
-            val index = ((time - startTimeRounded) / Predictor.TIME_SERIES_STEP_DURATION).toInt();
-            if (index in discreteWithGaps.indices) {
+        timeBucketAverages.entries.sortedBy { it.key }.forEach { (timeDiscrete, value) ->
+            val index = timeDiscrete.toInt()
+            if (index in discreteWithGaps.indices) { //sanity check
                 discreteWithGaps[index] = value
             }
         }
