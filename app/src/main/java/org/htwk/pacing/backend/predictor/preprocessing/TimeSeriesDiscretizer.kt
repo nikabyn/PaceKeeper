@@ -4,12 +4,24 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 
 object TimeSeriesDiscretizer {
+    /**
+     * Converts an [Instant] to a discrete time step.
+     * @param instant The [Instant] to discretize.
+     * @return The discrete time step as a [ULong].
+     */
     private fun discretizeInstant(instant: Instant): ULong {
         val stepTime =
             instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
         return stepTime.toULong()
     }
 
+    /**
+     * Calculates the average value for each time bucket from a list of timed data points.
+     * @param startTime The start time of the time series.
+     * @param entries A list of [GenericTimedDataPoint]s to be processed.
+     * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
+     * @throws IllegalArgumentException if the entries list is empty or contains timestamps before startTime.
+     */
     private fun calculateTimeBucketAverages(
         startTime: Instant,
         entries: List<GenericTimedDataPoint>,
@@ -32,6 +44,11 @@ object TimeSeriesDiscretizer {
         return timeBucketAverages
     }
 
+    /**
+     * Fills in missing values in a discretized time series using linear interpolation.
+     * @param timeBucketAverages A map of discrete time buckets to their average values.
+     * @return A [DoubleArray] representing the complete, interpolated time series.
+     */
     private fun discretizeWithMissingValues(
         timeBucketAverages: Map<ULong, Double>,
     ): DoubleArray {
@@ -67,6 +84,13 @@ object TimeSeriesDiscretizer {
 
         return discreteTimeSeries
     }
+
+    /**
+     * Discretizes a list of timed data points into a fixed-size time series array.
+     * @param timeStart The start time for the discretization.
+     * @param input The list of [GenericTimedDataPoint]s to process.
+     * @return A [DoubleArray] representing the discretized time series.
+     */
 
     fun discretizeTimeSeries(
         timeStart: Instant,
