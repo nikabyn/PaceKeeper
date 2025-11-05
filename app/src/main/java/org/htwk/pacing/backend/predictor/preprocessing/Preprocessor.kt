@@ -9,6 +9,7 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -82,6 +83,34 @@ object Preprocessor : IPreprocessor {
 
         //TODO: replace with actual resampling code (this is just a placeholder for a constant fill)
         return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value };
+    }
+
+    /**
+     * Executes the preprocessing pipeline on raw time series data.
+     *
+     * This function takes raw, continuous time series data for various metrics (like heart rate)
+     * and transforms it into a discrete, uniformly sampled format suitable for the prediction model.
+     * It handles the conversion of each metric into a common `GenericTimedDataPoint` format
+     * before passing it to specialized processing functions (e.g., `processContinuous`).
+     *
+     * @param raw The raw time series data, containing lists of data points for different metrics.
+     * @param fixedParameters Additional fixed parameters that might influence the preprocessing, though currently unused.
+     * @return A [MultiTimeSeriesDiscrete] object containing the processed, discretized time series data.
+     */
+    override fun run(
+        raw: Predictor.MultiTimeSeriesEntries,
+        fixedParameters: Predictor.FixedParameters
+    ): MultiTimeSeriesDiscrete {
+
+        return MultiTimeSeriesDiscrete(
+            timeStart = raw.timeStart,
+            heartRate = processContinuous(raw.timeStart, raw.heartRate.map { it ->
+                GenericTimedDataPoint(
+                    it.time,
+                    it.bpm.toDouble()
+                )
+            })
+        )
     }
 
     private fun clean_input_data(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiTimeSeriesEntries, IPreprocessor.QualityRatios> {
