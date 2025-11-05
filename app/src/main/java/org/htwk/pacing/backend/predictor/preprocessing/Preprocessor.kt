@@ -10,16 +10,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 object Preprocessor : IPreprocessor {
-
-    /**
-     * A generic data structure to unify different time series data types
-     * before passing them to the common processing functions.
-     */
-    internal data class GenericTimedDataPoint(
-        val time: Instant,
-        val value: Double,
-    )
-
     /**
      * Processes continuous time series data, like heart rate.
      * @param input The list of timed data points.
@@ -101,11 +91,9 @@ object Preprocessor : IPreprocessor {
         return MultiTimeSeriesDiscrete(
             timeStart = raw.timeStart,
             heartRate = processContinuous(raw.timeStart, raw.heartRate.map { it ->
-                GenericTimedDataPoint(
-                    it.time,
-                    it.bpm.toDouble()
-                )
-            })
+                GenericTimedDataPoint(it)
+            }
+            )
         )
     }
 }
