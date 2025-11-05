@@ -113,7 +113,7 @@ object Preprocessor : IPreprocessor {
             })
         )
     }
-
+    
     private fun clean_input_data(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiTimeSeriesEntries, IPreprocessor.QualityRatios> {
         // generic cleaning of data
         fun <T, R : Comparable<R>> cleanData(
