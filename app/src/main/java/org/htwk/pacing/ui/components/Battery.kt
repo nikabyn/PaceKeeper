@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -15,12 +19,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -32,9 +38,12 @@ import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Validation
@@ -73,35 +82,71 @@ fun BatteryCard(
         modifier = modifier.testTag("BatteryCard")
     ) {
         val cornerShape = MaterialTheme.shapes.large
+        val barWidth = remember { mutableIntStateOf(0) }
 
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .aspectRatio(2.5f)
-                .clip(cornerShape)
-                .background(MaterialTheme.colorScheme.surfaceDim)
-                .gradientBackground(
-                    currentEnergy = energy,
-                    adjustedEnergy = adjustedEnergy.doubleValue,
-                    colors = gradientColors,
-                    cornerShape = cornerShape,
-                )
-                .pointerInput(adjustingEnergy.value) {
-                    if (!adjustingEnergy.value) return@pointerInput
-
-                    val updateAdjustedEnergy = { x: Float ->
-                        adjustedEnergy.doubleValue = (x / size.width)
-                            .coerceIn(0f, 1f)
-                            .toDouble()
-                    }
-
-                    detectHorizontalDragGestures { change, _ ->
-                        change.consume()
-                        updateAdjustedEnergy(change.position.x)
-                    }
+                .onGloballyPositioned { layoutCoordinates ->
+                    barWidth.intValue = layoutCoordinates.size.width
                 }
-                .testTag("BatteryBar")
-        )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(cornerShape)
+                    .background(MaterialTheme.colorScheme.surfaceDim)
+                    .gradientBackground(
+                        currentEnergy = energy,
+                        adjustedEnergy = adjustedEnergy.doubleValue,
+                        colors = gradientColors,
+                        cornerShape = cornerShape,
+                    )
+                    .pointerInput(adjustingEnergy.value) {
+                        if (!adjustingEnergy.value) return@pointerInput
+
+                        val updateAdjustedEnergy = { x: Float ->
+                            adjustedEnergy.doubleValue = (x / size.width)
+                                .coerceIn(0f, 1f)
+                                .toDouble()
+                        }
+
+                        detectHorizontalDragGestures { change, _ ->
+                            change.consume()
+                            updateAdjustedEnergy(change.position.x)
+                        }
+                    }
+                    .testTag("BatteryBar")
+            )
+
+            if (!adjustingEnergy.value) return@Box
+
+            val handleSize = DpSize(24.dp, 32.dp)
+            Box(
+                modifier = Modifier
+                    .offset {
+                        IntOffset(
+                            (adjustedEnergy.doubleValue * barWidth.intValue - handleSize.width.toPx() / 2).toInt(),
+                            0
+                        )
+                    }
+                    .size(handleSize)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .shadow(32.dp)
+                    .align(Alignment.CenterStart)
+                    .testTag("EnergyDragHandle")
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.rounded_drag_indicator_24),
+                    contentDescription = null,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -182,9 +227,7 @@ fun Modifier.gradientBackground(
     colors: Array<Color>,
     cornerShape: Shape,
 ): Modifier = this.then(
-    Modifier.drawWithContent {
-        drawContent()
-
+    Modifier.drawBehind {
         val widthCurrent = size.width * currentEnergy.toFloat()
         val outlineCurrent = cornerShape.createOutline(
             Size(widthCurrent, size.height),

@@ -86,7 +86,7 @@ fun HomeScreen(
                 maxPrediction = maxPrediction,
                 modifier = Modifier.height(300.dp)
             )
-            BatteryCard(energy = 0.5, viewModel)
+            BatteryCard(energy = 0.25, viewModel)
             LabelCard(energy = currentEnergy)
             FeelingSelectionCard(navController)
         }
