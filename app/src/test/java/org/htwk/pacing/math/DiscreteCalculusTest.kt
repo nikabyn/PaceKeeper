@@ -1,7 +1,7 @@
 package org.htwk.pacing.math
 
 import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.trapezoidalIntegral
+import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertArrayEquals
 import org.junit.Test
@@ -43,7 +43,7 @@ class DiscreteCalculusTest {
     fun testIntegralKonstantesSignal() {
         val input = doubleArrayOf(1.0, 1.0, 1.0, 1.0)
         val expected = doubleArrayOf(0.0, 1.0, 2.0, 3.0)
-        val result = input.trapezoidalIntegral()
+        val result = input.discreteTrapezoidalIntegral()
         assertArrayEquals(expected, result, 1e-9)
     }
 
@@ -51,7 +51,7 @@ class DiscreteCalculusTest {
     fun testIntegralMitInitialOffset() {
         val input = doubleArrayOf(1.0, 1.0, 1.0)
         val expected = doubleArrayOf(5.0, 6.0, 7.0)
-        val result = input.trapezoidalIntegral(initialOffset = 5.0)
+        val result = input.discreteTrapezoidalIntegral(initialOffset = 5.0)
         assertArrayEquals(expected, result, 1e-9)
     }
 
@@ -59,7 +59,7 @@ class DiscreteCalculusTest {
     fun testIntegralLinearerVerlauf() {
         val input = doubleArrayOf(0.0, 1.0, 2.0, 3.0)
         val expected = doubleArrayOf(0.0, 0.5, 2.0, 4.5)
-        val result = input.trapezoidalIntegral()
+        val result = input.discreteTrapezoidalIntegral()
         assertArrayEquals(expected, result, 1e-9)
     }
 
@@ -103,7 +103,7 @@ class DiscreteCalculusTest {
         }
         val expected = sinValues
 
-        val result = input.trapezoidalIntegral()
+        val result = input.discreteTrapezoidalIntegral()
         assertArrayEquals(expected, result, 0.02)
     }
 }

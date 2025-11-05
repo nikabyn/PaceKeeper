@@ -1,12 +1,13 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.*
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.*
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
+import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.roundInstantToResolution
+import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -33,8 +34,7 @@ object Preprocessor : IPreprocessor {
         input: List<GenericTimedDataPoint>,
     ): DiscretePID {
         val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
-        //TODO: implement functions for discrete integral, derivative, use them here
-        return DiscretePID(p, doubleArrayOf(), doubleArrayOf())
+        return DiscretePID(p, p.discreteTrapezoidalIntegral(), p.discreteDerivative())
     }
 
     /**
@@ -48,8 +48,7 @@ object Preprocessor : IPreprocessor {
         input: List<GenericTimedDataPoint>,
     ): DiscreteIntegral {
         val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
-        //TODO: implement function for discrete derivative, use it here
-        return DiscreteIntegral(doubleArrayOf())
+        return DiscreteIntegral(p.discreteTrapezoidalIntegral())
     }
 
     //class 3) (unused for now), see ui#38

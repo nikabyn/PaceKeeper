@@ -1,7 +1,5 @@
 package org.htwk.pacing.ui.math
 
-import kotlin.math.PI
-
 //SEE: ui#38 comment for explanation on this file
 
 /**
@@ -35,7 +33,7 @@ fun DoubleArray.discreteDerivative(): DoubleArray {
 }
 
 /** Cumulative trapezoidal Integral */
-fun DoubleArray.trapezoidalIntegral(initialOffset: Double = 0.0): DoubleArray {
+fun DoubleArray.discreteTrapezoidalIntegral(initialOffset: Double = 0.0): DoubleArray {
     val n = size
     val out = DoubleArray(n)
 
