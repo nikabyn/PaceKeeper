@@ -1,17 +1,11 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
-import org.htwk.pacing.backend.database.HeartRateEntry
-import org.htwk.pacing.backend.mlmodel.MLModel
-import org.htwk.pacing.backend.mlmodel.MLModel.Companion.INPUT_DAYS
-import org.htwk.pacing.backend.mlmodel.MLModel.Companion.INPUT_SIZE
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor.GenericTimedDataPoint
 import org.htwk.pacing.ui.math.roundInstantToResolution
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
@@ -92,28 +86,20 @@ object TimeSeriesDiscretizer {
     private fun discretizeTimeSeries(
         input: List<GenericTimedDataPoint>,
         now10min: Instant,
-        step: Duration = 10.minutes,
         holdEdges: Boolean = true // bei false: lin. Extrapolation
     ): DoubleArray {
         val size = Predictor.TIME_SERIES_SAMPLE_COUNT
         val duration = Predictor.TIME_SERIES_DURATION
         val start = now10min - duration
 
-        val stepMs = step.inWholeMilliseconds
         val anchorMs = start.toEpochMilliseconds()
 
-        fun bucketMs(t: Instant): Long {
-            val ms = t.toEpochMilliseconds()
-            val k = Math.floorDiv(ms - anchorMs, stepMs)
-            return anchorMs + k * stepMs
-        }
-
         //calculate average per step-size bucket (not adjusted, perhaps replace by time-weighted avg.)
-        val avgByBucket: Map<Long, Double> =
-            input.groupBy { bucketMs(it.time) }
+        val averagesPerStepBucket: Map<Instant, Double> =
+            input.groupBy { roundInstantToResolution(it.time, Predictor.TIME_SERIES_STEP_DURATION) }
                 .mapValues { (_, xs) -> xs.map { it.value }.average() }
 
-        //fixed rasterization times
+        //map average per bucket to array (1 array element corresponds to average of all values that fall into index * TIME_SERIES_STEP_DURATION)
         val p = DoubleArray(size) { Double.NaN }
         for (i in 0 until size) {
             val tMs = anchorMs + i.toLong() * stepMs
@@ -140,53 +126,36 @@ object TimeSeriesDiscretizer {
         return p
     }
 
-    private fun prepareModelInput(
-        heartRateData: List<HeartRateEntry>,
-        now10min: kotlinx.datetime.Instant,
-    ): Pair<FloatArray, BooleanArray> {
-        val modelInputSize = MLModel::INPUT_SIZE.get().toInt()
-        val modelInputDuration = (MLModel::INPUT_DAYS.get().toInt()).days
+    private fun discretizeWithMissingValues(
+        startTime: Instant,
+        entries: List<GenericTimedDataPoint>,
+    ): DoubleArray {
+        require(entries.isNotEmpty()) //we need at least one entry to work with
 
-        val averageArray = FloatArray(modelInputSize)
-        val hasDataArray = BooleanArray(modelInputSize) { x -> false }
+        val startTimeRounded =
+            roundInstantToResolution(startTime, Predictor.TIME_SERIES_STEP_DURATION)
 
-        val modelInputBeginInstant = now10min - modelInputDuration
-
-        //sort into buckets, where the key is the 10-minute interval each entry falls into
-        val groupedBy10Min = heartRateData.groupBy { hrEntry ->
-            roundInstantToResolution(hrEntry.time, 10.minutes)
+        //sort into buckets, where the key is the step-size interval each entry falls into
+        val bucketsByStep = entries.groupBy { it ->
+            roundInstantToResolution(it.time, Predictor.TIME_SERIES_STEP_DURATION)
         }
 
         // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
-        val averagesPer10Min = groupedBy10Min.mapValues { (_, group) ->
-            group.map { hrEntry -> hrEntry.bpm.toFloat() }.average().toFloat()
+        val averagesPerBucket = bucketsByStep.mapValues { (_, group) ->
+            group.map { it -> it.value }.average()
         }
 
-        /*check if there is at least one valid 10 min group, to extrapolate from first 10 min value
-        to the left*/
-        val leftMostTime = averagesPer10Min.minByOrNull { it.key }
+        //we enter averages per time step into this array, steps with no corresponding entries are left at NaN
+        val discreteWithGaps = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
 
-        //if empty, return zero-data
-        if (leftMostTime == null) {
-            return Pair(
-                FloatArray(modelInputSize),
-                hasDataArray
-            )
-        }
-
-        var lastKnownAverage = averagesPer10Min[leftMostTime.key]!!
-        for (i in 0 until modelInputSize) {
-            //if there's an average available for this 10 minute interval, use it from now on
-            val currentAverage = averagesPer10Min[modelInputBeginInstant + (i * 10).minutes]
-
-            if (currentAverage != null) {
-                lastKnownAverage = currentAverage
-                hasDataArray[i] = true
+        //iterate through time-sorted averagesPerBucket (it.key is step-rounded time)
+        averagesPerBucket.entries.sortedBy { it.key }.forEach { (time, value) ->
+            val index = ((time - startTimeRounded) / Predictor.TIME_SERIES_STEP_DURATION).toInt();
+            if (index in discreteWithGaps.indices) {
+                discreteWithGaps[index] = value
             }
-
-            averageArray[i] = lastKnownAverage
         }
 
-        return Pair(averageArray, hasDataArray)
+        return discreteWithGaps
     }
 }

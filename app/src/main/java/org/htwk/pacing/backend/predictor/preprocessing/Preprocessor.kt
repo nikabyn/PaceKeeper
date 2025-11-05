@@ -15,7 +15,7 @@ object Preprocessor : IPreprocessor {
      * A generic data structure to unify different time series data types
      * before passing them to the common processing functions.
      */
-    private data class GenericTimedDataPoint(
+    internal data class GenericTimedDataPoint(
         val time: Instant,
         val value: Double,
     )

@@ -8,6 +8,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 
 class Predictor {
@@ -19,6 +20,9 @@ class Predictor {
             TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
 
         val PREDICTION_WINDOW_DURATION: Duration = 2.hours
+
+        val TIME_SERIES_STEP_DURATION: Duration =
+            10.minutes; //TODO: see what actually makes sense as duration
     }
 
     /**
