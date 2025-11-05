@@ -228,23 +228,6 @@ fun Modifier.gradientBackground(
     cornerShape: Shape,
 ): Modifier = this.then(
     Modifier.drawBehind {
-        val widthCurrent = size.width * currentEnergy.toFloat()
-        val outlineCurrent = cornerShape.createOutline(
-            Size(widthCurrent, size.height),
-            layoutDirection,
-            this
-        )
-        val pathCurrent = Path().apply {
-            addOutline(outlineCurrent)
-        }
-
-        clipPath(pathCurrent) {
-            drawRect(
-                brush = Brush.horizontalGradient(colors.asList()),
-                size = Size(widthCurrent, size.height)
-            )
-        }
-
         val change =
             if (adjustedEnergy > currentEnergy) Change.Positive
             else Change.Negative
@@ -270,19 +253,30 @@ fun Modifier.gradientBackground(
             translate(offsetAdjusted)
         }
 
+        val widthCurrent = size.width * currentEnergy.toFloat()
+        val outlineCurrent = cornerShape.createOutline(
+            Size(widthCurrent, size.height),
+            layoutDirection,
+            this
+        )
+        val pathCurrent = Path().apply {
+            addOutline(outlineCurrent)
+        }
+
         clipPath(
-            Path.combine(
-                when (change) {
-                    Change.Positive -> PathOperation.ReverseDifference
-                    Change.Negative -> PathOperation.Intersect
-                },
-                pathCurrent,
-                pathAdjusted
-            )
+            when (change) {
+                Change.Negative -> Path.combine(
+                    PathOperation.Intersect,
+                    pathAdjusted,
+                    pathCurrent,
+                )
+
+                Change.Positive -> pathAdjusted
+            }
         ) {
             val stripeColor = when (change) {
-                Change.Negative -> Color.Red
-                Change.Positive -> Color.Green
+                Change.Negative -> colors.first()
+                Change.Positive -> colors.last()
             }
 
             drawRect(
@@ -315,6 +309,23 @@ fun Modifier.gradientBackground(
                 startX += stripeSpacing
             }
         }
+
+        clipPath(
+            Path.combine(
+                when (change) {
+                    Change.Negative -> PathOperation.ReverseDifference
+                    Change.Positive -> PathOperation.Intersect
+                },
+                pathAdjusted,
+                pathCurrent,
+            )
+        ) {
+            drawRect(
+                brush = Brush.horizontalGradient(colors.asList()),
+                size = Size(widthCurrent, size.height)
+            )
+        }
+
     }
 )
 
