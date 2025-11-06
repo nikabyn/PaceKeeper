@@ -33,7 +33,7 @@ class DiscreteCalculusTest {
 
     @Test
     fun testDerivativeLinearerVerlauf() {
-        // y = 2x → Ableitung = 2
+        // y = 2x -> derivative (unnormalized) = 4, since the function does not divide by 2
         val input = doubleArrayOf(0.0, 2.0, 4.0, 6.0, 8.0)
         val result = input.discreteDerivative()
         result.forEach { assertEquals(2.0, it, 1e-9) }
