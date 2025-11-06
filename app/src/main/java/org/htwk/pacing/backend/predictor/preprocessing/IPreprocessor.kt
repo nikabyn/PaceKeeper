@@ -35,8 +35,8 @@ interface IPreprocessor {
     )
 
     data class QualityRatios(
-        val cleanedHeartRatesRatio: Percentage,  // new
-        val cleanedDistancesRatio: Percentage    // new
+        val cleanedHeartRatesRatio: Percentage,
+        val cleanedDistancesRatio: Percentage
     )
 
     fun run(

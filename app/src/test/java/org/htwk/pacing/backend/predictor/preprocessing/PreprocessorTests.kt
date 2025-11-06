@@ -33,7 +33,7 @@ class PreprocessorTests {
 
         val expectedHeartRates = floatArrayOf(80f, 100f)
         assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
-        assertEquals(0.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
+        assertEquals(1.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
     @Test
@@ -48,9 +48,9 @@ class PreprocessorTests {
         )
         val (results, ratios) = cleanInputData(raw)
 
-        val expectedHeartRates = floatArrayOf(0f, 0f)
+        val expectedHeartRates = floatArrayOf()
         assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
-        assertEquals(1.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
+        assertEquals(0.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
     @Test
@@ -68,7 +68,7 @@ class PreprocessorTests {
 
         val expectedHeartRates = floatArrayOf(80f)
         assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
-        assertEquals(0.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
+        assertEquals(0.5, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
     @Test
@@ -86,7 +86,7 @@ class PreprocessorTests {
 
         val expectedDistances = floatArrayOf(50f, 0f)
         assertArrayEquals(expectedDistances,results.distance.map { it.length.inMeters().toFloat()}.toFloatArray(),0.001f)
-        assertEquals(0.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
+        assertEquals(1.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
     @Test
@@ -102,9 +102,9 @@ class PreprocessorTests {
 
         val (results, ratios) = cleanInputData(raw)
 
-        val expectedDistances = floatArrayOf(0f, 0f)
+        val expectedDistances = floatArrayOf()
         assertArrayEquals(expectedDistances,results.distance.map { it.length.inMeters().toFloat()}.toFloatArray(),0.001f)
-        assertEquals(1.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
+        assertEquals(0.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
     @Test
@@ -122,7 +122,7 @@ class PreprocessorTests {
 
         val expectedDistances = floatArrayOf(75f)
         assertArrayEquals(expectedDistances, results.distance.map { it.length.inMeters().toFloat() }.toFloatArray(), 0.001f)
-        assertEquals(0.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
+        assertEquals(0.5, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
     @Test
