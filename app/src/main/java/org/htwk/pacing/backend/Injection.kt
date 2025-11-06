@@ -26,6 +26,10 @@ import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
+import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.backend.database.UserProfileDatabase
+import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.ui.screens.UserProfileScreen
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -49,6 +53,11 @@ val productionModule = module {
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
+    single<UserProfileDatabase> {
+        Room.databaseBuilder(androidContext(), UserProfileDatabase::class.java, "user_profile.db")
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
 }
 
 val appModule = module {
@@ -69,10 +78,13 @@ val appModule = module {
 
     single<MLModel> { MLModel(get()) }
 
+    single<UserProfileDao> { get<UserProfileDatabase>().userProfileDao() }
+
     viewModel { HomeViewModel(get(), get()) }
     viewModel { MeasurementsViewModel(get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(androidContext(), get()) }
+    viewModel { UserProfileViewModel(get()) }
 
     /**
      * koin sets up the dependencies for the worker class instance here,

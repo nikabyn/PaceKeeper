@@ -1,263 +1,299 @@
 package org.htwk.pacing.ui.screens
 
+import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-// Import der Datenklassen, die in der Datenbank-Datei definiert sind
-import org.htwk.pacing.backend.database.* import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.util.UUID
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import org.htwk.pacing.backend.database.UserProfile
+import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.ui.Route
+import java.text.SimpleDateFormat
+import java.util.*
 
-/**
- * Screen zur Eingabe und Bearbeitung des Benutzerprofils.
- * * @param onNavigateBack Lambda zum Verlassen des Screens.
- * @param onSaveProfile Lambda, das aufgerufen wird, um das Profil zu speichern.
- * @param initialProfile Das aktuell geladene Profil (oder ein Platzhalter-Profil).
- */
 @Composable
 fun UserProfileScreen(
     navController: NavController,
-    onSaveProfile: (UserProfile) -> Unit,
-    initialProfile: UserProfile = createInitialPlaceholderProfile()
+    viewModel: UserProfileViewModel,
+    onSaveProfile: (UserProfile) -> Unit
 ) {
-    // 1. Lokale Zustände (State) für die Eingabefelder
-    var nickname by remember { mutableStateOf(initialProfile.nickname ?: "") }
-    var birthYear by remember { mutableStateOf(initialProfile.birthYear?.toString() ?: "") }
-    var heightCm by remember { mutableStateOf(initialProfile.heightCm?.toString() ?: "") }
-    var weightKg by remember { mutableStateOf(initialProfile.weightKg?.toString() ?: "") }
-    var fatigueSensitivity by remember { mutableStateOf(initialProfile.fatigueSensitivity?.toString() ?: "") }
-    var bellScale by remember { mutableStateOf(initialProfile.bellScale?.toString() ?: "") }
-    var fitnessTracker by remember { mutableStateOf(initialProfile.fitnessTracker ?: "") }
-    var sex by remember { mutableStateOf(initialProfile.sex) }
-    var amputationLevel by remember { mutableStateOf(initialProfile.amputationLevel) }
-    var diagnosis by remember { mutableStateOf(initialProfile.diagnosis) }
-    var illnessStartDate by remember { mutableStateOf(initialProfile.illnessStartDate) }
+    val profileState by viewModel.profile.collectAsState()
+    val profile = profileState ?: return
+
+    // lokale States für Textfelder
+    var nickname by remember { mutableStateOf(profile.nickname ?: "") }
+    var birthYear by remember { mutableStateOf(profile.birthYear?.toString() ?: "") }
+    var heightCm by remember { mutableStateOf(profile.heightCm?.toString() ?: "") }
+    var weightKg by remember { mutableStateOf(profile.weightKg?.toString() ?: "") }
+    var selectedSex by remember { mutableStateOf(profile.sex) }
+    var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
+    var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
+    var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
+    var activityBaseline by remember { mutableStateOf(profile.activityBaseline?.toString() ?: "") }
+    var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
+    var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
+    var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
-        // --- Navigation / Header Ersatz ---
-        /*Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.Start) {
-            Button(onClick = onNavigateBack) {
-                Text("Zurück") // Hardcoded String
-            }
-        }*/
-
-        // --- 1. Allgemeine Daten ---
-        Spacer(Modifier.height(16.dp))
-        SectionTitle("Allgemeine Daten") // Hardcoded String
-
-        CustomOutlinedTextField(
-            value = nickname,
-            onValueChange = { nickname = it },
-            label = "Spitzname"
-        )
-        SexDropdown(selectedSex = sex, onSexSelected = { sex = it })
-        CustomOutlinedTextField(
-            value = birthYear,
-            onValueChange = { birthYear = it.filter { char -> char.isDigit() }.take(4) },
-            label = "Geburtsjahr (z.B. 1990)",
-            keyboardType = KeyboardType.Number
-        )
-
+        // Zurück Button
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            CustomOutlinedTextField(
-                value = heightCm,
-                onValueChange = { heightCm = it.filter { char -> char.isDigit() } },
-                label = "Größe (cm)",
-                keyboardType = KeyboardType.Number,
-                modifier = Modifier.weight(1f)
-            )
-            CustomOutlinedTextField(
-                value = weightKg,
-                onValueChange = { weightKg = it.filter { char -> char.isDigit() } },
-                label = "Gewicht (kg)",
-                keyboardType = KeyboardType.Number,
-                modifier = Modifier.weight(1f)
-            )
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+            }
+            Text("Benutzerprofil", style = MaterialTheme.typography.titleMedium)
         }
 
-        // --- 2. Pacing-Relevante Daten ---
-        SectionTitle("Pacing-Einstellungen") // Hardcoded String
-
-        AmputationLevelDropdown(
-            selectedLevel = amputationLevel,
-            onLevelSelected = { amputationLevel = it }
+        OutlinedTextField(
+            value = nickname,
+            onValueChange = { nickname = it },
+            label = { Text("Spitzname") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
 
-        CustomOutlinedTextField(
+        OutlinedTextField(
+            value = birthYear,
+            onValueChange = { birthYear = it.filter { c -> c.isDigit() }.take(4) },
+            label = { Text("Geburtsjahr") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = heightCm,
+            onValueChange = { heightCm = it.filter { c -> c.isDigit() } },
+            label = { Text("Größe (cm)") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = weightKg,
+            onValueChange = { weightKg = it.filter { c -> c.isDigit() } },
+            label = { Text("Gewicht (kg)") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Geschlecht
+        DropdownMenuField(
+            label = "Geschlecht",
+            options = UserProfile.Sex.entries.map { it.name },
+            selectedOption = selectedSex.name,
+            onOptionSelected = { selectedSex = UserProfile.Sex.valueOf(it) }
+        )
+
+        // Amputationslevel
+        DropdownMenuField(
+            label = "Amputationslevel",
+            options = UserProfile.AmputationLevel.entries.map { it.name },
+            selectedOption = selectedAmputationLevel?.name ?: "NONE",
+            onOptionSelected = { selectedAmputationLevel = UserProfile.AmputationLevel.valueOf(it) }
+        )
+
+        // Diagnose
+        DropdownMenuField(
+            label = "Diagnose",
+            options = listOf("Keine") + UserProfile.Diagnosis.entries.map { it.name },
+            selectedOption = selectedDiagnosis?.name ?: "Keine",
+            onOptionSelected = { 
+                selectedDiagnosis = if (it == "Keine") null else UserProfile.Diagnosis.valueOf(it)
+            }
+        )
+
+        OutlinedTextField(
             value = fatigueSensitivity,
-            onValueChange = { fatigueSensitivity = it.filter { char -> char.isDigit() }.take(2) },
-            label = "Ermüdungsempfindlichkeit (1-10)",
-            keyboardType = KeyboardType.Number
+            onValueChange = { fatigueSensitivity = it.filter { c -> c.isDigit() } },
+            label = { Text("Müdigkeitsempfindlichkeit") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
         )
 
-        CustomOutlinedTextField(
+        OutlinedTextField(
+            value = activityBaseline,
+            onValueChange = { activityBaseline = it.filter { c -> c.isDigit() } },
+            label = { Text("Aktivitäts-Baseline") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = anaerobicThreshold,
+            onValueChange = { anaerobicThreshold = it.filter { c -> c.isDigit() } },
+            label = { Text("Anaerobische Schwelle") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
             value = bellScale,
-            onValueChange = { bellScale = it.filter { char -> char.isDigit() }.take(2) },
-            label = "BELL-Skala (Belastungsempfinden 1-10)",
-            keyboardType = KeyboardType.Number
+            onValueChange = { bellScale = it.filter { c -> c.isDigit() } },
+            label = { Text("Bell-Skala") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
         )
 
-        // --- 3. Krankheits- und Tracker-Daten ---
-        SectionTitle("Krankheit & Tracker") // Hardcoded String
-
-        DiagnosisDropdown(selectedDiagnosis = diagnosis, onDiagnosisSelected = { diagnosis = it })
-
-        IllnessStartDatePicker(
-            selectedTimestamp = illnessStartDate,
-            onDateSelected = { illnessStartDate = it }
-        )
-
-        CustomOutlinedTextField(
+        OutlinedTextField(
             value = fitnessTracker,
             onValueChange = { fitnessTracker = it },
-            label = "Fitness-Tracker (z.B. Garmin)"
+            label = { Text("Fitness-Tracker") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(32.dp))
 
-        // Speichern Button
         Button(
             onClick = {
-                val profileToSave = createProfileFromState(
-                    initialProfile = initialProfile,
-                    nickname = nickname,
-                    sex = sex,
-                    birthYear = birthYear,
-                    heightCm = heightCm,
-                    weightKg = weightKg,
-                    amputationLevel = amputationLevel,
-                    fatigueSensitivity = fatigueSensitivity,
-                    bellScale = bellScale,
-                    illnessStartDate = illnessStartDate,
-                    diagnosis = diagnosis,
-                    fitnessTracker = fitnessTracker
+                val updatedProfile = profile.copy(
+                    nickname = nickname.takeIf { it.isNotBlank() },
+                    birthYear = birthYear.toIntOrNull(),
+                    heightCm = heightCm.toIntOrNull(),
+                    weightKg = weightKg.toIntOrNull(),
+                    sex = selectedSex,
+                    amputationLevel = selectedAmputationLevel,
+                    diagnosis = selectedDiagnosis,
+                    fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
+                    activityBaseline = activityBaseline.toIntOrNull(),
+                    anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
+                    bellScale = bellScale.toIntOrNull(),
+                    fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
                 )
-                onSaveProfile(profileToSave)
+                Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
+                viewModel.saveProfile(updatedProfile)
+                Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
+                navController.navigate(Route.SETTINGS) {
+                    popUpTo(Route.USERPROFILE) { inclusive = true }
+                }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Profil speichern") // Hardcoded String
+            Text("Profil speichern")
         }
     }
 }
 
-// --- Hilfsfunktionen und Composables ---
-
-private fun createProfileFromState(
-    initialProfile: UserProfile,
-    nickname: String,
-    sex: Sex,
-    birthYear: String,
-    heightCm: String,
-    weightKg: String,
-    amputationLevel: AmputationLevel?,
-    fatigueSensitivity: String,
-    bellScale: String,
-    illnessStartDate: Long?,
-    diagnosis: Diagnosis?,
-    fitnessTracker: String
-): UserProfile {
-    return initialProfile.copy(
-        nickname = nickname.takeIf { it.isNotBlank() },
-        sex = sex,
-        birthYear = birthYear.toIntOrNull(),
-        heightCm = heightCm.toIntOrNull(),
-        weightKg = weightKg.toIntOrNull(),
-        amputationLevel = amputationLevel,
-        fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
-        bellScale = bellScale.toIntOrNull(),
-        illnessStartDate = illnessStartDate,
-        diagnosis = diagnosis,
-        fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() },
-        userId = initialProfile.userId.ifBlank { UUID.randomUUID().toString() }
-    )
-}
-
-fun createInitialPlaceholderProfile(): UserProfile {
-    return UserProfile(
-        id = 0,
-        userId = "",
-        nickname = null,
-        sex = Sex.UNSPECIFIED,
-        birthYear = null,
-        heightCm = null,
-        weightKg = null,
-        amputationLevel = AmputationLevel.NONE,
-        fatigueSensitivity = null,
-        activityBaseline = null,
-        anaerobicThreshold = null,
-        bellScale = null,
-        illnessStartDate = null,
-        diagnosis = null,
-        fitnessTracker = null
-    )
-}
-
-
 @Composable
-fun CustomOutlinedTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String, // Hardcoded String für das Label
-    modifier: Modifier = Modifier,
-    keyboardType: KeyboardType = KeyboardType.Text
+fun DropdownMenuField(
+    label: String,
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        modifier = modifier.fillMaxWidth()
-    )
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = selectedOption,
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+            trailingIcon = {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.clickable { expanded = !expanded }
+                )
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }
 
-@Composable
-fun SexDropdown(selectedSex: Sex, onSexSelected: (Sex) -> Unit) {
-    Text("Geschlecht: ${selectedSex.name}", style = MaterialTheme.typography.bodyLarge)
-}
+class UserProfileViewModel(
+    private val dao: UserProfileDao
+) : ViewModel() {
 
-@Composable
-fun AmputationLevelDropdown(selectedLevel: AmputationLevel?, onLevelSelected: (AmputationLevel?) -> Unit) {
-    Text("Amputation: ${selectedLevel?.name ?: "Keine Angabe"}", style = MaterialTheme.typography.bodyLarge)
-}
+    private val _profile = MutableStateFlow<UserProfile?>(null)
+    val profile: StateFlow<UserProfile?> = _profile.asStateFlow()
 
-@Composable
-fun DiagnosisDropdown(selectedDiagnosis: Diagnosis?, onDiagnosisSelected: (Diagnosis?) -> Unit) {
-    Text("Diagnose: ${selectedDiagnosis?.name ?: "Keine Angabe"}", style = MaterialTheme.typography.bodyLarge)
-}
+    init {
+        viewModelScope.launch {
+            dao.getCurrentProfile().collect { userProfile ->
+                _profile.value = userProfile ?: createPlaceholder()
+            }
+        }
+    }
 
-@Composable
-fun IllnessStartDatePicker(selectedTimestamp: Long?, onDateSelected: (Long?) -> Unit) {
-    val dateText = selectedTimestamp?.let {
-        ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()).toLocalDate().toString()
-    } ?: "Datum auswählen" // Hardcoded String
+    fun saveProfile(profile: UserProfile) {
+        viewModelScope.launch {
+            dao.insertOrUpdate(profile)
+        }
+    }
 
-    Button(onClick = {
-        println("Date Picker geöffnet")
-    }) {
-        Text("Erkrankungsbeginn: $dateText") // Hardcoded String
+    /**
+     * Speichert oder aktualisiert das Profil, ähnlich wie storeRecords().
+     */
+    fun storeProfile(profile: UserProfile) {
+        saveProfile(profile)
+    }
+
+    private fun createPlaceholder(): UserProfile {
+        return UserProfile(
+            userId = "",
+            nickname = null,
+            sex = UserProfile.Sex.UNSPECIFIED,
+            birthYear = null,
+            heightCm = null,
+            weightKg = null,
+            amputationLevel = UserProfile.AmputationLevel.NONE,
+            fatigueSensitivity = null,
+            activityBaseline = null,
+            anaerobicThreshold = null,
+            bellScale = null,
+            illnessStartDate = null,
+            diagnosis = null,
+            fitnessTracker = null
+        )
     }
 }

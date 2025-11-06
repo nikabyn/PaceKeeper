@@ -57,7 +57,6 @@ import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
 import org.htwk.pacing.ui.components.UserProfileCard
-import androidx.navigation.NavHostController
 
 
 /**

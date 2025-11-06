@@ -35,7 +35,9 @@ import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
+import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.theme.PacingTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun Main() {
@@ -132,6 +134,14 @@ fun AppNavHost(
             composable(route = Route.HOME) { HomeScreen(navController) }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
             composable(route = Route.SETTINGS) { SettingsScreen(navController) }
+            composable(Route.USERPROFILE) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                UserProfileScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel,
+                    onSaveProfile = { profile -> userProfileViewModel.saveProfile(profile) }
+                )
+            }
         }
 
         composable(
@@ -141,9 +151,6 @@ fun AppNavHost(
             val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
             val feeling = Feeling.fromInt(feelingLevel)
             SymptomScreen(navController, feeling)
-        }
-        composable(Route.USERPROFILE) {
-            UserProfileScreen(navController = navController, onSaveProfile = { /* speichern */ })
         }
     }
 }
