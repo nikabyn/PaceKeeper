@@ -19,7 +19,7 @@ class PreprocessorTests {
     // --- Tests zur Datenbereinigung ---
 
     @Test
-    fun valid_HeartRatesAreKept() {
+    fun validHeartRatesAreKept() {
         val raw = Predictor.MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = listOf(
