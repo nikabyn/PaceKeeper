@@ -24,8 +24,9 @@ package org.htwk.pacing.ui.math
  *
  * @receiver The [DoubleArray] of sampled data points. Must contain at least 2 elements.
  * @return A [DoubleArray] of the same size, containing the calculated derivatives at each point.
- * @throws IllegalArgumentException if the array has fewer than 2 samples.
+ * @throws IllegalArgumentException if the receiver array has less than 2 elements. We can't differentiate a single point.
  */
+@Throws(IllegalArgumentException::class)
 fun DoubleArray.discreteDerivative(): DoubleArray {
     require(size >= 2) { "Need at least 2 samples." }
 
@@ -63,8 +64,9 @@ fun DoubleArray.discreteDerivative(): DoubleArray {
  * @param initialOffset The starting value for the integration (the value at index -1, conceptually). Defaults to 0.0.
  *                      This can be used to set an initial condition or a baseline for the integral.
  * @return A `DoubleArray` of the same size, where each element is the cumulative integral up to that point. The first element is always `initialOffset`.
- * @throws IllegalArgumentException if the receiver array is empty.
+ * @throws IllegalArgumentException if the receiver array is empty. We can't integrate an empty time series
  */
+@Throws(IllegalArgumentException::class)
 fun DoubleArray.discreteTrapezoidalIntegral(initialOffset: Double = 0.0): DoubleArray {
     val n = size
     val out = DoubleArray(n)
@@ -72,7 +74,7 @@ fun DoubleArray.discreteTrapezoidalIntegral(initialOffset: Double = 0.0): Double
     //initial offset so that we can for example drain energy if bpm is over that initial offset, making the integration negative
     var cumSum = initialOffset
 
-    require(size > 0) { "Need at least 1 sample." }
+    require(this.isNotEmpty()) { "Need at least 1 sample." }
     out[0] = cumSum
     for (i in 1 until n) {
         cumSum += 0.5 * (this[i - 1] + this[i])
