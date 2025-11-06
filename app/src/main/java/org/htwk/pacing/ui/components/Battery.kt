@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
@@ -174,7 +175,10 @@ fun BatteryCard(
                 )
             } else {
                 TextButton(
-                    onClick = { adjustingEnergy.value = false },
+                    onClick = {
+                        adjustingEnergy.value = false
+                        adjustedEnergy.doubleValue = energy
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationAdjustCancelButton")
@@ -232,102 +236,131 @@ fun Modifier.gradientBackground(
             if (adjustedEnergy > currentEnergy) Change.Positive
             else Change.Negative
 
-        val widthAdjusted = size.width * when (change) {
-            Change.Positive -> adjustedEnergy.toFloat()
-            Change.Negative -> 1f - adjustedEnergy.toFloat()
-        }
-        val offsetAdjusted = Offset(
+        val pathCurrent = pathCurrent(
+            drawScope = this,
+            currentEnergy = currentEnergy,
+            cornerShape = cornerShape,
+        )
+        val pathAdjusted = pathAdjusted(
+            drawScope = this,
+            adjustedEnergy = adjustedEnergy,
+            change = change,
+            cornerShape = cornerShape,
+        )
+
+        val pathCutoffCurrent = Path.combine(
             when (change) {
-                Change.Positive -> 0f
-                Change.Negative -> size.width - widthAdjusted
+                Change.Negative -> PathOperation.ReverseDifference
+                Change.Positive -> PathOperation.Intersect
             },
-            0f
+            pathAdjusted,
+            pathCurrent,
         )
-        val outlineAdjusted = cornerShape.createOutline(
-            Size(widthAdjusted, size.height),
-            layoutDirection,
-            this
-        )
-        val pathAdjusted = Path().apply {
-            addOutline(outlineAdjusted)
-            translate(offsetAdjusted)
-        }
-
-        val widthCurrent = size.width * currentEnergy.toFloat()
-        val outlineCurrent = cornerShape.createOutline(
-            Size(widthCurrent, size.height),
-            layoutDirection,
-            this
-        )
-        val pathCurrent = Path().apply {
-            addOutline(outlineCurrent)
-        }
-
-        clipPath(
-            when (change) {
-                Change.Negative -> Path.combine(
-                    PathOperation.Intersect,
-                    pathAdjusted,
-                    pathCurrent,
-                )
-
-                Change.Positive -> pathAdjusted
-            }
-        ) {
-            val stripeColor = when (change) {
-                Change.Negative -> colors.first()
-                Change.Positive -> colors.last()
-            }
-
-            drawRect(
-                color = stripeColor.copy(alpha = 0.2f),
-                topLeft = offsetAdjusted,
-                size = Size(widthAdjusted, size.height)
-            )
-
-            // Draw 45° diagonal stripes
-            val stripeWidth = 2.dp.toPx()
-            val stripeSpacing = 12.dp.toPx()
-
-            val diagonal = kotlin.math.hypot(size.width, size.height)
-            val stripePath = Path()
-
-            var startX = -diagonal
-            while (startX < size.width + diagonal) {
-                stripePath.reset()
-                stripePath.moveTo(startX, size.height)
-                stripePath.lineTo(startX + stripeWidth, size.height)
-                stripePath.lineTo(startX + stripeWidth - size.height, 0f)
-                stripePath.lineTo(startX - size.height, 0f)
-                stripePath.close()
-
-                drawPath(
-                    path = stripePath,
-                    color = stripeColor
-                )
-
-                startX += stripeSpacing
-            }
-        }
-
-        clipPath(
-            Path.combine(
-                when (change) {
-                    Change.Negative -> PathOperation.ReverseDifference
-                    Change.Positive -> PathOperation.Intersect
-                },
+        val pathCutoffAdjusted = when (change) {
+            Change.Negative -> Path.combine(
+                PathOperation.Intersect,
                 pathAdjusted,
                 pathCurrent,
             )
-        ) {
+
+            Change.Positive -> pathAdjusted
+        }
+
+        clipPath(pathCutoffAdjusted) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
-                size = Size(widthCurrent, size.height)
+                alpha = 0.2f,
+                size = size
             )
         }
 
+        val pathStripes = pathDiagonalStripes(
+            size = size,
+            stripeWidthPx = 2.dp.toPx(),
+            stripeSpacingPx = 12.dp.toPx(),
+        )
+
+        clipPath(Path.combine(PathOperation.Intersect, pathCutoffAdjusted, pathStripes)) {
+            drawRect(
+                brush = Brush.horizontalGradient(colors.asList()),
+                size = Size(size.width, size.height)
+            )
+        }
+
+        clipPath(pathCutoffCurrent) {
+            drawRect(
+                brush = Brush.horizontalGradient(colors.asList()),
+                size = Size(size.width, size.height)
+            )
+        }
     }
 )
+
+fun pathCurrent(
+    drawScope: DrawScope,
+    currentEnergy: Double,
+    cornerShape: Shape,
+): Path {
+    val widthCurrent = drawScope.size.width * currentEnergy.toFloat()
+    val outlineCurrent = cornerShape.createOutline(
+        Size(widthCurrent, drawScope.size.height),
+        drawScope.layoutDirection,
+        drawScope
+    )
+
+    return Path().apply { addOutline(outlineCurrent) }
+}
+
+fun pathAdjusted(
+    drawScope: DrawScope,
+    adjustedEnergy: Double,
+    change: Change,
+    cornerShape: Shape,
+): Path {
+    val widthAdjusted = drawScope.size.width * when (change) {
+        Change.Positive -> adjustedEnergy.toFloat()
+        Change.Negative -> 1f - adjustedEnergy.toFloat()
+    }
+    val offsetAdjusted = Offset(
+        when (change) {
+            Change.Positive -> 0f
+            Change.Negative -> drawScope.size.width - widthAdjusted
+        },
+        0f
+    )
+    val outlineAdjusted = cornerShape.createOutline(
+        Size(widthAdjusted, drawScope.size.height),
+        drawScope.layoutDirection,
+        drawScope
+    )
+
+    return Path().apply {
+        addOutline(outlineAdjusted)
+        translate(offsetAdjusted)
+    }
+}
+
+fun pathDiagonalStripes(
+    size: Size,
+    stripeWidthPx: Float,
+    stripeSpacingPx: Float,
+): Path {
+    val path = Path()
+
+    val diagonal = kotlin.math.hypot(size.width, size.height)
+    var startX = -diagonal
+    while (startX < size.width + diagonal) {
+        path.moveTo(startX, size.height)
+        path.lineTo(startX + stripeWidthPx, size.height)
+        path.lineTo(startX + stripeWidthPx - size.height, 0f)
+        path.lineTo(startX - size.height, 0f)
+        path.close()
+
+        startX += stripeSpacingPx
+    }
+
+    return path
+}
 
 enum class Change {
     Negative,
