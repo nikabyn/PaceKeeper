@@ -62,8 +62,9 @@ object TimeSeriesDiscretizer {
         require(timeBucketAverages.isNotEmpty())
         val sortedBucketAverages = timeBucketAverages.toSortedMap()
 
-        //optionally pin the first and last known value to the borders so that we don't get missing values
-        //this only makes sense with continuous time series, and not with aggregated (like steps) ones
+        //optionally pin the first and last known value to the borders so that we don't get missing
+        //values,this will lead to constant extrapolation at the edges
+        //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
         val doEdgeExtrapolation = !isAggregation
         if (doEdgeExtrapolation) {
             val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())

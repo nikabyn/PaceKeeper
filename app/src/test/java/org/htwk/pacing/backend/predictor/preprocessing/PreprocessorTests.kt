@@ -21,13 +21,24 @@ class PreprocessorTests {
 
         private val heartRateData = listOf(
             //the first two values should fall into first bucket, averaging to 70 bpm in bucket
-            HeartRateEntry(time = timeStart, bpm = 65),
-            HeartRateEntry(time = timeStart + 5.seconds, bpm = 75),
+            HeartRateEntry(time = timeStart + Predictor.TIME_SERIES_STEP_DURATION * 5, bpm = 70),
+            HeartRateEntry(
+                time = timeStart + Predictor.TIME_SERIES_STEP_DURATION * 5 + 5.seconds,
+                bpm = 80
+            ),
 
             //second value in later bucket, no values in between -> expect linear interpolation
             HeartRateEntry(
                 time = timeStart + Predictor.TIME_SERIES_STEP_DURATION * 10 + 5.seconds,
                 bpm = 80
+            ),
+            HeartRateEntry(
+                time = timeStart + Predictor.TIME_SERIES_STEP_DURATION * 11 + 5.seconds,
+                bpm = 100
+            ),
+            HeartRateEntry(
+                time = timeStart + Predictor.TIME_SERIES_STEP_DURATION * 16 + 5.seconds,
+                bpm = 50
             )
         )
 
@@ -74,19 +85,25 @@ class PreprocessorTests {
         assertEquals(expectedSize, result.heartRate.proportional.size)
 
         val expectedResultHeartRate = doubleArrayOf(
-            70.0,
-            71.0,
-            72.0,
-            73.0,
-            74.0,
+            75.0,
+            75.0,
+            75.0,
+            75.0,
+            75.0,
             75.0,
             76.0,
             77.0,
             78.0,
             79.0,
             80.0,
+            100.0,
+            90.0,
             80.0,
-            80.0
+            70.0,
+            60.0,
+            50.0,
+            50.0,
+            50.0
         )
 
         for (i in 0 until expectedResultHeartRate.size) {
