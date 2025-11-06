@@ -1,5 +1,7 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+//unit tests for preprocessor.run
+
 import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
@@ -195,7 +197,7 @@ class PreprocessorTests {
     // --- Tests zum Preprocessor.run Verhalten ---
 
     @Test
-    fun runProcessesHeartRateDataCorrectly() {
+    fun `run processes heart rate data correctly`() {
         val now = Clock.System.now()
         val timeStart = now - TIME_SERIES_DURATION
 
@@ -207,25 +209,30 @@ class PreprocessorTests {
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = listOf(),
+            distance = listOf()
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
 
         val result = Preprocessor.run(rawData, fixedParameters)
 
         assertEquals(timeStart, result.timeStart)
 
+        // The placeholder implementation of discretizeTimeSeries fills the array with the first value.
+        // The size should be TIME_SERIES_DURATION / 10.minutes
         val expectedSize = (TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
         assertEquals(expectedSize, result.heartRate.proportional.size)
+
+        // Check if all values in the proportional array are the first BPM value (70.0)
         assertTrue(result.heartRate.proportional.all { it == 70.0 })
     }
 
     @Test
-    fun preprocessorRunNeedsToThrowExceptionIfInputDataIsEmpty() {
+    fun `Preprocessor run needs to throw exception of input data is empty`() {
         val now = Clock.System.now()
         val timeStart = now - TIME_SERIES_DURATION
 
+        // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
         val heartRateData: List<HeartRateEntry> = listOf()
 
         val rawData = Predictor.MultiTimeSeriesEntries(
@@ -234,15 +241,16 @@ class PreprocessorTests {
             distance = listOf()
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
 
-        var exceptionThrown = false
+
+        var exceptionThrown: Boolean = false;
         try {
             Preprocessor.run(rawData, fixedParameters)
         } catch (e: IllegalArgumentException) {
-            exceptionThrown = true
+            exceptionThrown = true;
         }
 
-        assertTrue(exceptionThrown)
+        assertTrue(exceptionThrown);
     }
 }
