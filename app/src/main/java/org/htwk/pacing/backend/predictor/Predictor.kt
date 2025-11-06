@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor
 
+import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
@@ -14,7 +15,7 @@ class Predictor {
     companion object {
         //time duration/length of input time series
         val TIME_SERIES_DURATION: Duration =
-            1.days; //TODO: see what actually makes sense as duration
+            1.days //TODO: see what actually makes sense as duration
         val TIME_SERIES_SAMPLE_COUNT: Int =
             TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
 
@@ -31,7 +32,8 @@ class Predictor {
         val timeStart: kotlinx.datetime.Instant,
 
         //we have to add more data sources later
-        val heartRate: List<HeartRateEntry>
+        val heartRate: List<HeartRateEntry>,
+        val distance: List<DistanceEntry>
     )
 
     /**

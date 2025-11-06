@@ -2,10 +2,11 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.*
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.*
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.ui.math.discreteDerivative
+import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -31,8 +32,7 @@ object Preprocessor : IPreprocessor {
         input: List<GenericTimedDataPoint>,
     ): DiscretePID {
         val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
-        //TODO: implement functions for discrete integral, derivative, use them here
-        return DiscretePID(p, doubleArrayOf(), doubleArrayOf())
+        return DiscretePID(p, p.discreteTrapezoidalIntegral(), p.discreteDerivative())
     }
 
     /**
@@ -46,13 +46,12 @@ object Preprocessor : IPreprocessor {
         input: List<GenericTimedDataPoint>,
     ): DiscreteIntegral {
         val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
-        //TODO: implement function for discrete derivative, use it here
-        return DiscreteIntegral(doubleArrayOf())
+        return DiscreteIntegral(p.discreteTrapezoidalIntegral())
     }
 
     //class 3) (unused for now), see ui#38
     private fun processDailyConstant(): Double {
-        return 0.0;
+        return 0.0
     }
 
     /**
@@ -75,10 +74,10 @@ object Preprocessor : IPreprocessor {
         holdEdges: Boolean = true // bei false: lin. Extrapolation
     ): DoubleArray {
         //constant extrapolation of first value in time series
-        require(input.isNotEmpty());
+        require(input.isNotEmpty())
 
         //TODO: replace with actual resampling code (this is just a placeholder for a constant fill)
-        return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value };
+        return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value }
     }
 
     /**
@@ -104,6 +103,12 @@ object Preprocessor : IPreprocessor {
                 GenericTimedDataPoint(
                     it.time,
                     it.bpm.toDouble()
+                )
+            }),
+            distance = processAggregated(raw.timeStart, raw.distance.map { it ->
+                GenericTimedDataPoint(
+                    it.end,
+                    it.length.inMeters()
                 )
             })
         )
