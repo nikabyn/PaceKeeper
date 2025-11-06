@@ -3,7 +3,9 @@ package org.htwk.pacing.backend.predictor.preprocessing
 //unit tests for preprocessor.run
 
 import kotlinx.datetime.Clock
+import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
 import org.junit.Assert.assertEquals
@@ -25,7 +27,8 @@ class PreprocessorTests {
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = listOf()
+            distance = listOf(DistanceEntry(start = timeStart, end = timeStart + 1.minutes, length = Length(100.0)
+            ))
         )
 
         val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
