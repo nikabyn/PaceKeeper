@@ -25,6 +25,7 @@ object TimeSeriesDiscretizer {
     private fun calculateTimeBucketAverages(
         startTime: Instant,
         entries: List<GenericTimedDataPoint>,
+        isAggregation: Boolean
     ): Map<ULong, Double> {
         require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
         require(entries.minOf { it.time } >= startTime) { "All entry times must be at or after the start time." }
@@ -38,7 +39,11 @@ object TimeSeriesDiscretizer {
         }.mapValues { (_, group) ->
             //map each group to an average value
             // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
-            group.map { it -> it.value }.average()
+            if (isAggregation) {
+                group.sumOf { it -> it.value }
+            } else {
+                group.map { it -> it.value }.average()
+            }
         }
 
         return timeBucketAverages
@@ -52,13 +57,14 @@ object TimeSeriesDiscretizer {
      */
     private fun discretizeWithMissingValues(
         timeBucketAverages: Map<ULong, Double>,
-        doEdgeExtrapolation: Boolean
+        isAggregation: Boolean
     ): DoubleArray {
         require(timeBucketAverages.isNotEmpty())
         val sortedBucketAverages = timeBucketAverages.toSortedMap()
 
         //optionally pin the first and last known value to the borders so that we don't get missing values
         //this only makes sense with continuous time series, and not with aggregated (like steps) ones
+        val doEdgeExtrapolation = !isAggregation
         if (doEdgeExtrapolation) {
             val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())
             val lastValue = sortedBucketAverages.getValue(sortedBucketAverages.lastKey())
@@ -105,16 +111,19 @@ object TimeSeriesDiscretizer {
      * Discretizes a list of timed data points into a fixed-size time series array.
      * @param timeStart The start time for the discretization.
      * @param input The list of [GenericTimedDataPoint]s to process.
+     * @param isAggregation True if the input data corresponds to aggregated values like steps,
+     *  for such data we should take sums instead of averages in an interval,
+     *  since steps in a time interval accumulate, they don't average
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
         timeStart: Instant,
         input: List<GenericTimedDataPoint>,
-        doEdgeExtrapolation: Boolean
+        isAggregation: Boolean
     ): DoubleArray {
-        val timeBucketAverages = calculateTimeBucketAverages(timeStart, input)
-        val discreteTimeSeries =
-            discretizeWithMissingValues(timeBucketAverages, doEdgeExtrapolation)
+        val timeBucketAverages = calculateTimeBucketAverages(timeStart, input, isAggregation)
+
+        val discreteTimeSeries = discretizeWithMissingValues(timeBucketAverages, isAggregation)
 
         return discreteTimeSeries
     }

@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
@@ -19,9 +18,9 @@ object Preprocessor : IPreprocessor {
         input: List<GenericTimedDataPoint>,
     ): DiscretePID {
         val p = TimeSeriesDiscretizer.discretizeTimeSeries(
-            timeStart = timeStart + TIME_SERIES_DURATION,
+            timeStart = timeStart,
             input = input,
-            doEdgeExtrapolation = true
+            isAggregation = false
         )
         //TODO: implement functions for discrete integral, derivative, use them here
         return DiscretePID(p, doubleArrayOf(), doubleArrayOf())
@@ -30,7 +29,7 @@ object Preprocessor : IPreprocessor {
     /**
      * Processes aggregated/counted time series data, like step count.
      * @param input The list of timed data points.
-     * @param now10min The reference start time for discretization.
+     * @param timeStart The reference start time for discretization.
      * @return A [DiscreteIntegral] object containing the discretized series derivative.
      */
     private fun processAggregated(
@@ -38,9 +37,9 @@ object Preprocessor : IPreprocessor {
         input: List<GenericTimedDataPoint>,
     ): DiscreteIntegral {
         val p = TimeSeriesDiscretizer.discretizeTimeSeries(
-            timeStart = timeStart + TIME_SERIES_DURATION,
+            timeStart = timeStart,
             input = input,
-            doEdgeExtrapolation = false
+            isAggregation = true
         )
         //TODO: implement function for discrete derivative, use it here
         return DiscreteIntegral(doubleArrayOf())
@@ -68,13 +67,15 @@ object Preprocessor : IPreprocessor {
         raw: Predictor.MultiTimeSeriesEntries,
         fixedParameters: Predictor.FixedParameters
     ): MultiTimeSeriesDiscrete {
-
         return MultiTimeSeriesDiscrete(
             timeStart = raw.timeStart,
-            heartRate = processContinuous(raw.timeStart, raw.heartRate.map { it ->
-                GenericTimedDataPoint(it)
-            }
-            )
+            heartRate = processContinuous(
+                raw.timeStart, raw.heartRate.map { it ->
+                    GenericTimedDataPoint(it)
+                }),
+            distance = processAggregated(
+                raw.timeStart,
+                raw.distance.map { it -> GenericTimedDataPoint(it) })
         )
     }
 }
