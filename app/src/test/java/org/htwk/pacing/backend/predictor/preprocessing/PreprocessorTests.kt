@@ -6,7 +6,9 @@ import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.hours
@@ -32,7 +34,11 @@ class PreprocessorTests {
         val (results, ratios) = cleanInputData(raw)
 
         val expectedHeartRates = floatArrayOf(80f, 100f)
-        assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
+        assertArrayEquals(
+            expectedHeartRates,
+            results.heartRate.map { it.bpm.toFloat() }.toFloatArray(),
+            0.001f
+        )
         assertEquals(1.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
@@ -43,7 +49,31 @@ class PreprocessorTests {
             heartRate = listOf(
                 HeartRateEntry(now, 20),   // <30 invalid
                 HeartRateEntry(now + 1.minutes, 250), // >220 invalid
-                HeartRateEntry(now + 1.minutes, 70), // duplicat time -> deleted
+                HeartRateEntry(now + 2.minutes, 70), // keep
+                HeartRateEntry(now + 3.minutes, 70) // keep
+
+            ),
+            distance = emptyList()
+        )
+        val (results, ratios) = cleanInputData(raw)
+
+        val expectedHeartRates = floatArrayOf(70f, 70f)
+        assertArrayEquals(
+            expectedHeartRates,
+            results.heartRate.map { it.bpm.toFloat() }.toFloatArray(),
+            0.001f
+        )
+        assertEquals(0.5, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
+    }
+
+    @Test
+    fun invalidAndDuplicateHeartRatesAreDeleted() {
+        val raw = Predictor.MultiTimeSeriesEntries(
+            timeStart = now - 6.hours,
+            heartRate = listOf(
+                HeartRateEntry(now, 20),              // <30 invalid
+                HeartRateEntry(now + 1.minutes, 250), // >220 invalid
+                HeartRateEntry(now + 1.minutes, 70), // duplicate time -> deleted
                 HeartRateEntry(now + 2.minutes, 70) // keep
             ),
             distance = emptyList()
@@ -51,7 +81,11 @@ class PreprocessorTests {
         val (results, ratios) = cleanInputData(raw)
 
         val expectedHeartRates = floatArrayOf(70f)
-        assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
+        assertArrayEquals(
+            expectedHeartRates,
+            results.heartRate.map { it.bpm.toFloat() }.toFloatArray(),
+            0.001f
+        )
         assertEquals(0.25, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
@@ -69,7 +103,11 @@ class PreprocessorTests {
         val (results, ratios) = cleanInputData(raw)
 
         val expectedHeartRates = floatArrayOf(80f)
-        assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
+        assertArrayEquals(
+            expectedHeartRates,
+            results.heartRate.map { it.bpm.toFloat() }.toFloatArray(),
+            0.001f
+        )
         assertEquals(0.5, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
@@ -87,7 +125,11 @@ class PreprocessorTests {
         val (results, ratios) = cleanInputData(raw)
 
         val expectedDistances = floatArrayOf(50f)
-        assertArrayEquals(expectedDistances,results.distance.map { it.length.inMeters().toFloat()}.toFloatArray(),0.001f)
+        assertArrayEquals(
+            expectedDistances,
+            results.distance.map { it.length.inMeters().toFloat() }.toFloatArray(),
+            0.001f
+        )
         assertEquals(0.5, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
@@ -105,7 +147,11 @@ class PreprocessorTests {
         val (results, ratios) = cleanInputData(raw)
 
         val expectedDistances = floatArrayOf()
-        assertArrayEquals(expectedDistances,results.distance.map { it.length.inMeters().toFloat()}.toFloatArray(),0.001f)
+        assertArrayEquals(
+            expectedDistances,
+            results.distance.map { it.length.inMeters().toFloat() }.toFloatArray(),
+            0.001f
+        )
         assertEquals(0.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
@@ -123,7 +169,11 @@ class PreprocessorTests {
         val (results, ratios) = cleanInputData(raw)
 
         val expectedDistances = floatArrayOf(75f)
-        assertArrayEquals(expectedDistances, results.distance.map { it.length.inMeters().toFloat() }.toFloatArray(), 0.001f)
+        assertArrayEquals(
+            expectedDistances,
+            results.distance.map { it.length.inMeters().toFloat() }.toFloatArray(),
+            0.001f
+        )
         assertEquals(0.5, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
