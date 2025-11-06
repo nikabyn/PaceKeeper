@@ -66,12 +66,12 @@ class DiscreteCalculusTest {
     @Test
     fun testSinusAbleitung() {
         val n = 90
-        val sinValues: DoubleArray = DoubleArray(n) { i ->
+        val sinValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             sin(x)
         }
 
-        val cosValues: DoubleArray = DoubleArray(n) { i ->
+        val cosValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             cos(x) * (4 * PI / n) //we need to scale here because the higher the sample rate, the lower the change per sample
         }
@@ -92,12 +92,12 @@ class DiscreteCalculusTest {
     @Test
     fun testCosAufleitung() {
         val n = 20
-        val cosValues: DoubleArray = DoubleArray(n) { i ->
+        val cosValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             cos(x)
         }
         val input = cosValues
-        val sinValues: DoubleArray = DoubleArray(n) { i ->
+        val sinValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             sin(x) * PI
         }
