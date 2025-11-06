@@ -4,7 +4,7 @@ import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "user_profile")
-data class UserProfile(
+data class UserProfileEntry(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
 
@@ -57,43 +57,11 @@ data class UserProfile(
 @Dao
 interface UserProfileDao {
     @Query("SELECT * FROM user_profile LIMIT 1")
-    fun getCurrentProfile(): Flow<UserProfile?>
+    fun getCurrentProfile(): Flow<UserProfileEntry?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrUpdate(profile: UserProfile)
+    suspend fun insertOrUpdate(profile: UserProfileEntry)
 
     @Query("DELETE FROM user_profile")
     suspend fun deleteAll()
-}
-
-@Database(
-    entities = [UserProfile::class],
-    version = 1,
-    exportSchema = false
-)
-@TypeConverters(UserProfileConverters::class)
-abstract class UserProfileDatabase : RoomDatabase() {
-    abstract fun userProfileDao(): UserProfileDao
-}
-
-class UserProfileConverters {
-    @TypeConverter
-    fun fromSex(value: UserProfile.Sex): String = value.name
-
-    @TypeConverter
-    fun toSex(value: String): UserProfile.Sex = enumValueOf(value)
-
-    @TypeConverter
-    fun fromAmputationLevel(value: UserProfile.AmputationLevel?): String? = value?.name
-
-    @TypeConverter
-    fun toAmputationLevel(value: String?): UserProfile.AmputationLevel? =
-        value?.let { enumValueOf<UserProfile.AmputationLevel>(it) }
-
-    @TypeConverter
-    fun fromDiagnosis(value: UserProfile.Diagnosis?): String? = value?.name
-
-    @TypeConverter
-    fun toDiagnosis(value: String?): UserProfile.Diagnosis? =
-        value?.let { enumValueOf<UserProfile.Diagnosis>(it) }
 }

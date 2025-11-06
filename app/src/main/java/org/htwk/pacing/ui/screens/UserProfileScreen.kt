@@ -21,7 +21,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.database.UserProfile
+import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.Route
 import java.text.SimpleDateFormat
@@ -31,7 +31,7 @@ import java.util.*
 fun UserProfileScreen(
     navController: NavController,
     viewModel: UserProfileViewModel,
-    onSaveProfile: (UserProfile) -> Unit
+    onSaveProfile: (UserProfileEntry) -> Unit
 ) {
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return
@@ -107,26 +107,26 @@ fun UserProfileScreen(
         // Geschlecht
         DropdownMenuField(
             label = "Geschlecht",
-            options = UserProfile.Sex.entries.map { it.name },
+            options = UserProfileEntry.Sex.entries.map { it.name },
             selectedOption = selectedSex.name,
-            onOptionSelected = { selectedSex = UserProfile.Sex.valueOf(it) }
+            onOptionSelected = { selectedSex = UserProfileEntry.Sex.valueOf(it) }
         )
 
         // Amputationslevel
         DropdownMenuField(
             label = "Amputationslevel",
-            options = UserProfile.AmputationLevel.entries.map { it.name },
+            options = UserProfileEntry.AmputationLevel.entries.map { it.name },
             selectedOption = selectedAmputationLevel?.name ?: "NONE",
-            onOptionSelected = { selectedAmputationLevel = UserProfile.AmputationLevel.valueOf(it) }
+            onOptionSelected = { selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it) }
         )
 
         // Diagnose
         DropdownMenuField(
             label = "Diagnose",
-            options = listOf("Keine") + UserProfile.Diagnosis.entries.map { it.name },
+            options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
             selectedOption = selectedDiagnosis?.name ?: "Keine",
             onOptionSelected = { 
-                selectedDiagnosis = if (it == "Keine") null else UserProfile.Diagnosis.valueOf(it)
+                selectedDiagnosis = if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
             }
         )
 
@@ -254,8 +254,8 @@ class UserProfileViewModel(
     private val dao: UserProfileDao
 ) : ViewModel() {
 
-    private val _profile = MutableStateFlow<UserProfile?>(null)
-    val profile: StateFlow<UserProfile?> = _profile.asStateFlow()
+    private val _profile = MutableStateFlow<UserProfileEntry?>(null)
+    val profile: StateFlow<UserProfileEntry?> = _profile.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -265,7 +265,7 @@ class UserProfileViewModel(
         }
     }
 
-    fun saveProfile(profile: UserProfile) {
+    fun saveProfile(profile: UserProfileEntry) {
         viewModelScope.launch {
             dao.insertOrUpdate(profile)
         }
@@ -274,19 +274,19 @@ class UserProfileViewModel(
     /**
      * Speichert oder aktualisiert das Profil, ähnlich wie storeRecords().
      */
-    fun storeProfile(profile: UserProfile) {
+    fun storeProfile(profile: UserProfileEntry) {
         saveProfile(profile)
     }
 
-    private fun createPlaceholder(): UserProfile {
-        return UserProfile(
+    private fun createPlaceholder(): UserProfileEntry {
+        return UserProfileEntry(
             userId = "",
             nickname = null,
-            sex = UserProfile.Sex.UNSPECIFIED,
+            sex = UserProfileEntry.Sex.UNSPECIFIED,
             birthYear = null,
             heightCm = null,
             weightKg = null,
-            amputationLevel = UserProfile.AmputationLevel.NONE,
+            amputationLevel = UserProfileEntry.AmputationLevel.NONE,
             fatigueSensitivity = null,
             activityBaseline = null,
             anaerobicThreshold = null,
