@@ -14,32 +14,22 @@ fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiT
         list: List<T>,
         timeSortKey: (T) -> Instant,
         isInvalid: (T) -> Boolean,
-        replaceInvalid: (T) -> T,
         distinctByKey: ((T) -> Any)
     ): Pair<List<T>, Double> {
-        var correctionCount = 0
-
         val cleanedList : List<T> = list
-        .sortedBy(timeSortKey).distinctBy(distinctByKey)
-            .map {
-                if (isInvalid(it)) {
-                    correctionCount++
-                    replaceInvalid(it)
-                } else it
-            }
+        .sortedBy(timeSortKey).distinctBy(distinctByKey).filterNot { isInvalid(it) }
 
-        val correctionRatio = if (cleanedList.isNotEmpty()) {
-            correctionCount.toDouble() / cleanedList.size
-        } else 0.0
+        val acceptedValuesRatio: Double = if (list.isNotEmpty()) {
+            cleanedList.size.toDouble() / list.size.toDouble()
+        } else 1.0
 
-        return Pair(cleanedList, correctionRatio)
+        return Pair(cleanedList, acceptedValuesRatio)
     }
 
     val (cleanedHeartRates, correctionHeartRatio) = cleanData(
         list = raw.heartRate,
         timeSortKey = { it.time },
         isInvalid = { it.bpm < 30 || it.bpm > 220 },
-        replaceInvalid = { HeartRateEntry(it.time, 0) },
         distinctByKey = { it.time } // entfernt Duplikate basierend auf Start + End
     )
 
@@ -47,7 +37,6 @@ fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiT
         list = raw.distance,
         timeSortKey = { it.end },
         isInvalid = { it.length.inMeters() < 0 },
-        replaceInvalid = { DistanceEntry(it.start, it.end, length = Length(0.0)) },
         distinctByKey = { it.start to it.end } // entfernt Duplikate basierend auf Start + End
     )
 
