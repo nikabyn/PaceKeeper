@@ -1,9 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
-import org.htwk.pacing.backend.database.DistanceEntry
-import org.htwk.pacing.backend.database.HeartRateEntry
-import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor
 
