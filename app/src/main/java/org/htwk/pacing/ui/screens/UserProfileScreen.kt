@@ -42,7 +42,6 @@ fun UserProfileScreen(
     var diagnosis by remember { mutableStateOf(initialProfile.diagnosis) }
     var illnessStartDate by remember { mutableStateOf(initialProfile.illnessStartDate) }
 
-    // KORREKTUR: Scaffold und TopAppBar entfernt.
     Column(
         modifier = Modifier
             .fillMaxSize()

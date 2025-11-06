@@ -57,6 +57,8 @@ import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
 import org.htwk.pacing.ui.components.UserProfileCard
+import androidx.navigation.NavHostController
+
 
 /**
  * Verwaltet die Verbindung zu Health Connect.
@@ -131,6 +133,8 @@ fun SettingsScreen(
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.export_data_to_zip_archive))
             }
+
+            UserProfileCard(navController = navController)
         }
     }
 
@@ -195,7 +199,6 @@ fun HealthConnectItem(connected: Boolean, db: PacingDatabase, onClick: () -> Uni
     ImportDataHealthConnect()
     ImportDemoDataHealthConnect()
     ExportAndSendDataCard()
-    UserProfileCard()
 }
 
 class SettingsViewModel(

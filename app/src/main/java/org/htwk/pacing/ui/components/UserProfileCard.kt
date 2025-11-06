@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -24,8 +26,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R // Import notwendig, um auf R.string.* zuzugreifen
-import androidx.navigation.NavHostController
 import org.htwk.pacing.ui.Route
+import androidx.navigation.NavController
+
+
 
 
 /**
@@ -36,68 +40,28 @@ import org.htwk.pacing.ui.Route
  */
 @Composable
 fun UserProfileCard(
-    // Parameter ist optional (Standardwert ist eine leere Aktion),
-    // damit die Card ohne Argumente eingebunden werden kann.
-    onClick: () -> Unit = {},
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // Fügt Klickbarkeit und Ripple-Effekt hinzu
-            .clickable(onClick = onClick)
-            // Stellt sicher, dass der Ripple-Effekt die abgerundeten Ecken respektiert
             .clip(RoundedCornerShape(12.dp))
-            // Visuelle Darstellung wie bei HeartRateCard
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-            .padding(10.dp) // Innere Polsterung
+            .clickable { navController.navigate(Route.USERPROFILE) }
+            .padding(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(6.dp), // Zusätzliche Polsterung innen
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Linke Seite: Icon und Text
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    // Text aus String-Ressource
-                    contentDescription = stringResource(R.string.icon_profile_description),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
-                )
-                Column {
-                    // Text aus String-Ressource
-                    Text(
-                        text = stringResource(R.string.profile_card_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    // Text aus String-Ressource
-                    Text(
-                        text = stringResource(R.string.profile_card_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Rechte Seite: Einstellungs-Icon
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = stringResource(R.string.icon_settings_description),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                imageVector = Icons.Filled.Person,
+                contentDescription = "Profil",
+                modifier = Modifier.size(32.dp)
             )
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text("Benutzerprofil", style = MaterialTheme.typography.titleMedium)
+                Text("Profil bearbeiten", style = MaterialTheme.typography.bodySmall)
+            }
         }
-    }
-    Button(
-        onClick ={navController.navigate(Route.USERPROFILE)},
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("User Profile")
     }
 }

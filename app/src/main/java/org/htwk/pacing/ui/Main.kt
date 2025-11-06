@@ -132,7 +132,6 @@ fun AppNavHost(
             composable(route = Route.HOME) { HomeScreen(navController) }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
             composable(route = Route.SETTINGS) { SettingsScreen(navController) }
-            composable(route = Route.USERPROFILE) { UserProfileScreen(navController) }
         }
 
         composable(
@@ -143,11 +142,8 @@ fun AppNavHost(
             val feeling = Feeling.fromInt(feelingLevel)
             SymptomScreen(navController, feeling)
         }
-        composable(
-            route = route.USERPROFILE,
-        )
-        {
-            UserProfileScreen(navController=navController)
+        composable(Route.USERPROFILE) {
+            UserProfileScreen(navController = navController, onSaveProfile = { /* speichern */ })
         }
     }
 }
