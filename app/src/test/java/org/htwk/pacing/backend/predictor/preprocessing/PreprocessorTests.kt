@@ -37,20 +37,22 @@ class PreprocessorTests {
     }
 
     @Test
-    fun invalidHeartRatesAreReplaced() {
+    fun invalidHeartRatesAreDeleted() {
         val raw = Predictor.MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 20),   // <30 invalid
-                HeartRateEntry(now + 1.minutes, 250) // >220 invalid
+                HeartRateEntry(now + 1.minutes, 250), // >220 invalid
+                HeartRateEntry(now + 1.minutes, 70), // duplicat time -> deleted
+                HeartRateEntry(now + 2.minutes, 70) // keep
             ),
             distance = emptyList()
         )
         val (results, ratios) = cleanInputData(raw)
 
-        val expectedHeartRates = floatArrayOf()
+        val expectedHeartRates = floatArrayOf(70f)
         assertArrayEquals(expectedHeartRates, results.heartRate.map { it.bpm.toFloat() }.toFloatArray(), 0.001f)
-        assertEquals(0.0, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
+        assertEquals(0.25, ratios.cleanedHeartRatesRatio.toDouble(), 0.001)
     }
 
     @Test
@@ -84,13 +86,13 @@ class PreprocessorTests {
 
         val (results, ratios) = cleanInputData(raw)
 
-        val expectedDistances = floatArrayOf(50f, 0f)
+        val expectedDistances = floatArrayOf(50f)
         assertArrayEquals(expectedDistances,results.distance.map { it.length.inMeters().toFloat()}.toFloatArray(),0.001f)
-        assertEquals(1.0, ratios.cleanedDistancesRatio.toDouble(), 0.001)
+        assertEquals(0.5, ratios.cleanedDistancesRatio.toDouble(), 0.001)
     }
 
     @Test
-    fun invalidDistancesAreReplaced() {
+    fun invalidDistancesAreDeleted() {
         val raw = Predictor.MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
@@ -135,9 +137,9 @@ class PreprocessorTests {
 
         val (results, _) = cleanInputData(raw)
         val expectedStart = now - 6.hours
-        val toleranceSeconds = 10
+        val toleranceSeconds = 0
         val diff = abs(results.timeStart.epochSeconds - expectedStart.epochSeconds)
-        assertTrue("timeStart should be roughly 6 hours before now", diff < toleranceSeconds)
+        assertTrue("timeStart should be roughly 6 hours before now", diff <= toleranceSeconds)
     }
 
     // --- Tests zum Preprocessor.run Verhalten ---

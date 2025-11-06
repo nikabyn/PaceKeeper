@@ -33,7 +33,7 @@ fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiT
     val (cleanedDistances, correctionDistancesRatio) = cleanData(
         list = raw.distance,
         timeSortKey = { it.end },
-        isInvalid = { it.length.inMeters() < 0 },
+        isInvalid = { it.length.inMeters() <= 0 },
         distinctByKey = { it.start to it.end } // entfernt Duplikate basierend auf Start + End
     )
 
