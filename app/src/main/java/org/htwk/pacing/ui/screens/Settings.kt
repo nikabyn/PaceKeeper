@@ -40,19 +40,23 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
+import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.koin.androidx.compose.koinViewModel
+import org.htwk.pacing.ui.components.UserProfileCard
 
 /**
  * Verwaltet die Verbindung zu Health Connect.
@@ -63,6 +67,7 @@ import org.koin.androidx.compose.koinViewModel
  */
 @Composable
 fun SettingsScreen(
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = koinViewModel()
 ) {
@@ -108,6 +113,7 @@ fun SettingsScreen(
 
             HealthConnectItem(
                 connected = isConnected,
+                db = viewModel.db,
                 onClick = {
                     if (!isConnected) {
                         requestPermissionsActivity.launch(wantedPermissions)
@@ -166,7 +172,7 @@ fun SectionTitle(title: String) = Text(
  * Ruft `HeartRateScreen()` zur Anzeige von Gesundheitsdaten auf.
  */
 @Composable
-fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
+fun HealthConnectItem(connected: Boolean, db: PacingDatabase, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
@@ -188,11 +194,13 @@ fun HealthConnectItem(connected: Boolean, onClick: () -> Unit) {
     HeartRateCard()
     ImportDataHealthConnect()
     ImportDemoDataHealthConnect()
+    ExportAndSendDataCard()
+    UserProfileCard()
 }
 
 class SettingsViewModel(
     context: Context,
-    private val db: PacingDatabase
+    val db: PacingDatabase
 ) : ViewModel() {
     private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
     private val _isConnected = MutableStateFlow(false)
@@ -212,10 +220,12 @@ class SettingsViewModel(
      * @param uri the target uri for the zip-file which is coming from ActivityResultLauncher
      */
     fun exportDataToZip(context: Context, uri: Uri) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
-                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    exportAllAsZip(db, outputStream)
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        exportAllAsZip(db, outputStream)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("ExportError", "Failed to export data", e)

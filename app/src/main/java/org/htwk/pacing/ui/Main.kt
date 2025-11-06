@@ -34,6 +34,7 @@ import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
+import org.htwk.pacing.ui.screens.UserProfileScreen
 import org.htwk.pacing.ui.theme.PacingTheme
 
 @Composable
@@ -112,6 +113,7 @@ object Route {
     const val HOME = "home"
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
+    const val USERPROFILE = "userprofile"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
@@ -129,7 +131,8 @@ fun AppNavHost(
         navigation(route = "main_nav", startDestination = Route.HOME) {
             composable(route = Route.HOME) { HomeScreen(navController) }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
-            composable(route = Route.SETTINGS) { SettingsScreen() }
+            composable(route = Route.SETTINGS) { SettingsScreen(navController) }
+            composable(route = Route.USERPROFILE) { UserProfileScreen(navController) }
         }
 
         composable(
@@ -139,6 +142,12 @@ fun AppNavHost(
             val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
             val feeling = Feeling.fromInt(feelingLevel)
             SymptomScreen(navController, feeling)
+        }
+        composable(
+            route = route.USERPROFILE,
+        )
+        {
+            UserProfileScreen(navController=navController)
         }
     }
 }

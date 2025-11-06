@@ -69,4 +69,8 @@
     <string name="label_energy_level_high">High energy level</string>
     <string name="label_energy_level_very_high">Very high energy level</string>
     <string name="label_energy_icon_name">Energy level icon</string>
+        <string name="profile_card_title">Benutzerprofil</string>
+        <string name="profile_card_description">Grunddaten für Pacing-Werte eingeben/bearbeiten</string>
+        <string name="icon_profile_description">Profil Icon</string>
+        <string name="icon_settings_description">Einstellungen Icon</string>
 </resources>
