@@ -8,19 +8,11 @@ object LinearExtrapolator {
 
     private val lines: List<Pair<Int, Int>> =
         lineIntervals.map { Pair(it, 0) } +                 // (3,0), (6,0), ...
-        lineIntervals.zipWithNext { a, b -> Pair(b, a) }    // (6,3), (12,6), ..
-    /*lineSpacingSequence.flatMapIndexed { i, a ->
-        lineSpacingSequence.drop(i + 1).map { b -> b to a }
-    }*/
-
-
-
-
+                lineIntervals.zipWithNext { a, b -> Pair(b, a) }    // (6,3), (12,6), ..
 
     //TODO: use fibonacci here for optimal logarithmic coverage
-            //TODO: add shifted lines
-            //TODO: use average windows per line
-        )
+    //TODO: rethink shifted lines
+    //TODO: use average windows per line, that correspond to trend window we're looking at
 
     data class MultiExtrapolationResult(
         val extrapolations: List<Double>
@@ -31,16 +23,15 @@ object LinearExtrapolator {
             (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds).toInt()
 
         return MultiExtrapolationResult(extrapolations = lines.map { line ->
-            val startIdx = timeSeries.size - 1 - line.first
-            val endIdx = timeSeries.size - 1 - line.second
-            val window = endIdx - startIdx
+            val startIdx = timeSeries.size - 1 - line.first   //first discrete timepoint of line
+            val endIdx = timeSeries.size - 1 - line.second    //second discrete timepoint of line
 
-            val startValue = timeSeries[startIdx]
-            val endValue = timeSeries[endIdx]
+            val startY = timeSeries[startIdx] //value at first point
+            val endY = timeSeries[endIdx] //value at second point
 
-            val slope = (endValue - startValue) / (endIdx - startIdx)
-            val result = endValue + slope * (endValue + stepsToExtrapolate)
-            result
+            val slope = (endY - startY) / (endIdx - startIdx) //slope between the points
+            val result = endY + slope * (endY + stepsToExtrapolate) //linear trend extrapolation
+            result //return the result in this lambda expression
         })
     }
 }
