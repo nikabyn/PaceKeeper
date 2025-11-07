@@ -2,14 +2,11 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
 object Preprocessor : IPreprocessor {
     /**
@@ -74,12 +71,10 @@ object Preprocessor : IPreprocessor {
         return MultiTimeSeriesDiscrete(
             timeStart = raw.timeStart,
             heartRate = processContinuous(
-                raw.timeStart, raw.heartRate.map { it ->
-                    GenericTimedDataPoint(it)
-                }),
-            distance = processAggregated(
                 raw.timeStart,
-                raw.distance.map { it -> GenericTimedDataPoint(it) })
+                raw.heartRate.map(::GenericTimedDataPoint)
+            ),
+            distance = processAggregated(raw.timeStart, raw.distance.map(::GenericTimedDataPoint))
         )
     }
 }
