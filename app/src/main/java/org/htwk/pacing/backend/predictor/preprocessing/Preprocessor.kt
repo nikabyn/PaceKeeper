@@ -2,9 +2,14 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.ui.math.discreteDerivative
+import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 object Preprocessor : IPreprocessor {
     /**
@@ -22,14 +27,14 @@ object Preprocessor : IPreprocessor {
             input = input,
             isAggregation = false
         )
-        //TODO: implement functions for discrete integral, derivative, use them here
-        return DiscretePID(p, doubleArrayOf(), doubleArrayOf())
+
+        return DiscretePID(p, p.discreteTrapezoidalIntegral(), p.discreteDerivative())
     }
 
     /**
      * Processes aggregated/counted time series data, like step count.
      * @param input The list of timed data points.
-     * @param timeStart The reference start time for discretization.
+     * @param now10min The reference start time for discretization.
      * @return A [DiscreteIntegral] object containing the discretized series derivative.
      */
     private fun processAggregated(
@@ -41,13 +46,12 @@ object Preprocessor : IPreprocessor {
             input = input,
             isAggregation = true
         )
-        //TODO: implement function for discrete derivative, use it here
-        return DiscreteIntegral(doubleArrayOf())
+        return DiscreteIntegral(p.discreteTrapezoidalIntegral())
     }
 
     //class 3) (unused for now), see ui#38
     private fun processDailyConstant(): Double {
-        return 0.0;
+        return 0.0
     }
 
 

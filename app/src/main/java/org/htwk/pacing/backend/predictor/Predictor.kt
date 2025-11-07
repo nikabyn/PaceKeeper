@@ -16,7 +16,7 @@ class Predictor {
     companion object {
         //time duration/length of input time series
         val TIME_SERIES_DURATION: Duration =
-            1.days; //TODO: see what actually makes sense as duration
+            1.days //TODO: see what actually makes sense as duration
         val TIME_SERIES_SAMPLE_COUNT: Int =
             TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
 

@@ -67,6 +67,14 @@ class PreprocessorTests {
 
     @Test
     fun `run processes heart rate data correctly`() {
+        val now = Clock.System.now()
+        val timeStart = now - TIME_SERIES_DURATION
+
+        val heartRateData = listOf(
+            HeartRateEntry(time = timeStart, bpm = 70),
+            HeartRateEntry(time = timeStart + 1.minutes, bpm = 75)
+        )
+
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
