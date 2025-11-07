@@ -248,14 +248,6 @@ class PreprocessorTests {
 
     @Test
     fun `run processes heart rate data correctly`() {
-        val now = Clock.System.now()
-        val timeStart = now - TIME_SERIES_DURATION
-
-        val heartRateData = listOf(
-            HeartRateEntry(time = timeStart, bpm = 70),
-            HeartRateEntry(time = timeStart + 1.minutes, bpm = 75)
-        )
-
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
@@ -314,6 +306,27 @@ class PreprocessorTests {
         for (i in 0 until expectedResultDistance.size) {
             //assertTrue(expectedResultDistance[i] == result.distance.integral[i]);
         }
+    }
+
+    @Test
+    fun `Preprocessor run needs accept case where timeStart = first entry time`() {
+        val rawData = Predictor.MultiTimeSeriesEntries(
+            timeStart = timeStart,
+            heartRate = listOf(HeartRateEntry(time = timeStart, bpm = 60)),
+            distance = listOf(
+                DistanceEntry(
+                    start = timeStart,
+                    end = timeStart,
+                    length = Length(0.0)
+                )
+            )
+        )
+
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+
+        val result = Preprocessor.run(rawData, fixedParameters)
+
+        assertEquals(timeStart, result.timeStart)
     }
 
     @Test
