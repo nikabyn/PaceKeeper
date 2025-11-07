@@ -18,6 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,16 +64,16 @@ fun BatteryCard(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val latestValidation = viewModel.loadLatestValidatedEnergyLevel()
-    val adjustedEnergy = remember {
-        mutableDoubleStateOf(
-            when (latestValidation?.validation) {
-                Validation.Adjusted -> latestValidation.percentage.toDouble()
-                else -> energy
-            }
-        )
-    }
+    val latestValidation by viewModel.latestValidatedEnergyLevel.collectAsState()
+    val adjustedEnergy = remember { mutableDoubleStateOf(energy) }
     val adjustingEnergy = remember { mutableStateOf(false) }
+
+    LaunchedEffect(latestValidation) {
+        adjustedEnergy.doubleValue = when (latestValidation?.validation) {
+            Validation.Adjusted -> latestValidation!!.percentage.toDouble()
+            else -> energy
+        }
+    }
 
     val gradientColors = arrayOf(
         Color(0xFFEC4242), // Red

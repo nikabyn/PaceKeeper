@@ -131,11 +131,11 @@ class HomeViewModel(
         }
     }
 
-    fun loadLatestValidatedEnergyLevel(): ValidatedEnergyLevelEntry? {
-        var result: ValidatedEnergyLevelEntry? = null
-        CoroutineScope(Dispatchers.IO).launch {
-            result = validatedEnergyLevelDao.getLatest()
-        }
-        return result
-    }
+    val latestValidatedEnergyLevel = validatedEnergyLevelDao
+        .getLatestLive()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 }
