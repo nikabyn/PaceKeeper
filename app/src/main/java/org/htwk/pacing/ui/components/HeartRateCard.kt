@@ -63,7 +63,7 @@ fun HeartRateCard() {
             todaySteps = HealthConnectHelper.readStepsSum(context, todayStart, now.toInstant())
 
         } catch (e: Exception) {
-            Log.e("HeartRateCard", "Fehler beim Abrufen der Daten", e)
+            Log.e("HeartRateCard", "Error while trying to read data.", e)
         }
     }
 
@@ -93,9 +93,13 @@ fun HeartRateCard() {
     // Daten laden bei erstem Render, wenn Berechtigungen vorhanden sind
     LaunchedEffect(Unit) {
         val client = HealthConnectClient.getOrCreate(context)
-        val granted = client.permissionController.getGrantedPermissions()
-        if (granted.containsAll(HealthConnectHelper.requiredPermissions)) {
-            scope.launch { queryData() }
+        try {
+            val granted = client.permissionController.getGrantedPermissions()
+            if (granted.containsAll(HealthConnectHelper.requiredPermissions)) {
+                scope.launch { queryData() }
+            }
+        } catch (_: Exception) {
+            Log.e("HeartRateCard", "Failed to get granted permissions.")
         }
     }
 }
