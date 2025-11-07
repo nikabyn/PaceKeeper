@@ -43,6 +43,7 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
+import org.htwk.pacing.ui.components.HRGraphCard
 import org.htwk.pacing.ui.components.HeartRatePredictionCard
 import org.htwk.pacing.ui.components.PathConfig
 import org.htwk.pacing.ui.components.Series
@@ -98,7 +99,7 @@ fun MeasurementsScreen(
                 return "%02d:%02d:%02d".format(localTime.hour, localTime.minute, localTime.second)
             }
 
-            GraphCard(
+            HRGraphCard(
                 title = stringResource(R.string.heart_rate_last_7_days),
                 modifier = Modifier.height(200.dp),
                 series = series,
