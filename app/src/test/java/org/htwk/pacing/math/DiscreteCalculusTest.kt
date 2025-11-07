@@ -33,10 +33,10 @@ class DiscreteCalculusTest {
 
     @Test
     fun testDerivativeLinearerVerlauf() {
-        // y = 2x → Ableitung = 2
+        // y = 2x -> derivative (unnormalized) = 4, since the function does not divide by 2
         val input = doubleArrayOf(0.0, 2.0, 4.0, 6.0, 8.0)
         val result = input.discreteDerivative()
-        result.forEach { assertEquals(2.0, it, 1e-9) }
+        result.forEach { assertEquals(4.0, it, 1e-9) }
     }
 
     @Test
@@ -66,12 +66,12 @@ class DiscreteCalculusTest {
     @Test
     fun testSinusAbleitung() {
         val n = 90
-        val sinValues: DoubleArray = DoubleArray(n) { i ->
+        val sinValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             sin(x)
         }
 
-        val cosValues: DoubleArray = DoubleArray(n) { i ->
+        val cosValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             cos(x) * (4 * PI / n) //we need to scale here because the higher the sample rate, the lower the change per sample
         }
@@ -92,12 +92,12 @@ class DiscreteCalculusTest {
     @Test
     fun testCosAufleitung() {
         val n = 20
-        val cosValues: DoubleArray = DoubleArray(n) { i ->
+        val cosValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             cos(x)
         }
         val input = cosValues
-        val sinValues: DoubleArray = DoubleArray(n) { i ->
+        val sinValues = DoubleArray(n) { i ->
             val x = 2 * PI * i / n
             sin(x) * PI
         }

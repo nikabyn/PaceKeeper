@@ -209,7 +209,8 @@ class PreprocessorTests {
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = listOf()
+            distance = listOf(DistanceEntry(start = timeStart, end = timeStart + 1.minutes, length = Length(100.0)
+            ))
         )
 
         val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
