@@ -96,10 +96,11 @@ object Preprocessor : IPreprocessor {
         raw: Predictor.MultiTimeSeriesEntries,
         fixedParameters: Predictor.FixedParameters
     ): MultiTimeSeriesDiscrete {
+        val (rawCleaned, quality_ratios) = cleanInputData(raw)
 
         return MultiTimeSeriesDiscrete(
-            timeStart = raw.timeStart,
-            heartRate = processContinuous(raw.timeStart, raw.heartRate.map { it ->
+            timeStart = rawCleaned.timeStart,
+            heartRate = processContinuous(rawCleaned.timeStart, rawCleaned.heartRate.map { it ->
                 GenericTimedDataPoint(
                     it.time,
                     it.bpm.toDouble()

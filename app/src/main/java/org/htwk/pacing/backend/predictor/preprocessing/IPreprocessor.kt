@@ -1,6 +1,7 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
+import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
@@ -32,6 +33,11 @@ interface IPreprocessor {
         val heartRate: DiscretePID,
         //class 2 (aggregated values)
         val distance: DiscreteIntegral
+    )
+
+    data class QualityRatios(
+        val cleanedHeartRatesRatio: Percentage,
+        val cleanedDistancesRatio: Percentage
     )
 
     fun run(
