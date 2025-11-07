@@ -20,7 +20,7 @@ class PreprocessorTests {
 
     private val now = Clock.System.now()
 
-    // --- Tests zur Datenbereinigung ---
+    // --- tests for input data cleansing ---
 
     @Test
     fun validHeartRatesAreKept() {
@@ -194,7 +194,7 @@ class PreprocessorTests {
         assertTrue("timeStart should be roughly 6 hours before now", diff <= toleranceSeconds)
     }
 
-    // --- Tests zum Preprocessor.run Verhalten ---
+    // --- generic preprocessor tests ---
 
     @Test
     fun `run processes heart rate data correctly`() {
@@ -209,11 +209,14 @@ class PreprocessorTests {
         val rawData = Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = listOf(DistanceEntry(start = timeStart, end = timeStart + 1.minutes, length = Length(100.0)
-            ))
+            distance = listOf(
+                DistanceEntry(
+                    start = timeStart, end = timeStart + 1.minutes, length = Length(100.0)
+                )
+            )
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
 
         val result = Preprocessor.run(rawData, fixedParameters)
 
@@ -242,16 +245,16 @@ class PreprocessorTests {
             distance = listOf()
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0);
+        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
 
 
-        var exceptionThrown: Boolean = false;
+        var exceptionThrown = false
         try {
             Preprocessor.run(rawData, fixedParameters)
         } catch (e: IllegalArgumentException) {
-            exceptionThrown = true;
+            exceptionThrown = true
         }
 
-        assertTrue(exceptionThrown);
+        assertTrue(exceptionThrown)
     }
 }
