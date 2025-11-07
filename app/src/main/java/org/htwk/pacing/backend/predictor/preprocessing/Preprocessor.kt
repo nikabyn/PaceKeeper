@@ -68,13 +68,18 @@ object Preprocessor : IPreprocessor {
         raw: Predictor.MultiTimeSeriesEntries,
         fixedParameters: Predictor.FixedParameters
     ): MultiTimeSeriesDiscrete {
+        val (rawCleaned, qualityRatios) = cleanInputData(raw)
+
         return MultiTimeSeriesDiscrete(
-            timeStart = raw.timeStart,
+            timeStart = rawCleaned.timeStart,
             heartRate = processContinuous(
-                raw.timeStart,
-                raw.heartRate.map(::GenericTimedDataPoint)
+                rawCleaned.timeStart,
+                rawCleaned.heartRate.map(::GenericTimedDataPoint)
             ),
-            distance = processAggregated(raw.timeStart, raw.distance.map(::GenericTimedDataPoint))
+            distance = processAggregated(
+                rawCleaned.timeStart,
+                raw.distance.map(::GenericTimedDataPoint)
+            )
         )
     }
 }
