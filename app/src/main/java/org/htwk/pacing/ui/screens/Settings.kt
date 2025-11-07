@@ -200,8 +200,12 @@ class SettingsViewModel(
 
     fun checkPermissions() {
         viewModelScope.launch {
-            val granted = client.permissionController.getGrantedPermissions()
-            _isConnected.value = wantedPermissions.any { it in granted }
+            try {
+                val granted = client.permissionController.getGrantedPermissions()
+                _isConnected.value = wantedPermissions.any { it in granted }
+            } catch (_: Exception) {
+                Log.e("SettingsViewModel", "Failed to get granted permissions.")
+            }
         }
     }
 
