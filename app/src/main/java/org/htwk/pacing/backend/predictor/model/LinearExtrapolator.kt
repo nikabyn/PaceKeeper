@@ -7,30 +7,31 @@ object LinearExtrapolator {
     private val stepsIntoFuture =
         (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds).toInt()
 
-
-    class ExtrapolationStrategy(
+    data class ExtrapolationStrategy(
         val firstAveragingRange: IntRange,
         val secondAveragingRange: IntRange
     ) {
-        private fun linearExtrapolate(x0: Int, y0: Double, x1: Int, y1: Double): Double {
-            val slope = (y1 - y0) / (x1 - x0).toDouble()
+        private fun linearExtrapolate(x0: Double, y0: Double, x1: Double, y1: Double): Double {
+            val slope = (y1 - y0) / (x1 - x0)
             return y1 + slope * (x1 + stepsIntoFuture)
+        }
+
+        private fun IntRange.getAverageValueFrom(timeSeries: DoubleArray): Double {
+            val lastIndex = timeSeries.size - 1
+            return timeSeries.slice((lastIndex - last)..(lastIndex - first)).average()
         }
 
         fun runOnTimeSeries(timeSeries: DoubleArray): Double {
             val latestIndex = timeSeries.size - 1
 
-            val firstPointRange =
-                (latestIndex - firstAveragingRange.first)..(latestIndex - firstAveragingRange.last)
-            val y0 = timeSeries.slice(firstPointRange).average()
-            val x0 = -(firstAveragingRange.first + firstAveragingRange.last) / 2
+            val (x0, y0) =
+                firstAveragingRange.average() to firstAveragingRange.getAverageValueFrom(timeSeries)
+            val (x1, y1) =
+                secondAveragingRange.average() to secondAveragingRange.getAverageValueFrom(
+                    timeSeries
+                )
 
-            val secondPointRange =
-                (latestIndex - secondAveragingRange.first)..(latestIndex - secondAveragingRange.last)
-            val y1 = timeSeries.slice(secondPointRange).average()
-            val x1 = -(secondAveragingRange.first + secondAveragingRange.last) / 2
-
-            return linearExtrapolate(x0, y0, x1, y1)
+            return linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
         }
     }
 
@@ -40,25 +41,25 @@ object LinearExtrapolator {
     enum class EXTRAPOLATION_STRATEGY(val strategy: ExtrapolationStrategy) {
         NOW_VS_30_MINUTES_AGO(
             ExtrapolationStrategy(
-                IntRange(-3, -3),
+                IntRange(3, 3),
                 IntRange(0, 0)
             )
         ),
         NOW_VS_60_MINUTES_AGO(
             ExtrapolationStrategy(
-                IntRange(-6, -6),
+                IntRange(6, 6),
                 IntRange(0, 0)
             )
         ),
         NOW_VS_90_MINUTES_AGO(
             ExtrapolationStrategy(
-                IntRange(-9, -9),
+                IntRange(9, 9),
                 IntRange(0, 0)
             )
         ),
         NOW_VS_120_MINUTES_AGO(
             ExtrapolationStrategy(
-                IntRange(-12, -12),
+                IntRange(12, 12),
                 IntRange(0, 0)
             )
         ),
