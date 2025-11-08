@@ -22,14 +22,12 @@ object LinearExtrapolator {
         }
 
         fun runOnTimeSeries(timeSeries: DoubleArray): Double {
-            val latestIndex = timeSeries.size - 1
-
-            val (x0, y0) =
-                firstAveragingRange.average() to firstAveragingRange.getAverageValueFrom(timeSeries)
-            val (x1, y1) =
-                secondAveragingRange.average() to secondAveragingRange.getAverageValueFrom(
-                    timeSeries
-                )
+            val (x0, y0) = firstAveragingRange.average() to firstAveragingRange.getAverageValueFrom(
+                timeSeries
+            )
+            val (x1, y1) = secondAveragingRange.average() to secondAveragingRange.getAverageValueFrom(
+                timeSeries
+            )
 
             return linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
         }
