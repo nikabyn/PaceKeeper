@@ -109,7 +109,12 @@ class LinearExtrapolatorTest {
         timeSeries = DoubleArray(288) { i ->
             val x = i / 288.0 // Normalize i to 0.0-1.0
             // A base linear trend plus a sine wave to make it go up and down
-            (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) + (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) + 50
+            (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) +
+                    (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) +
+                    (kotlin.math.cos(x * 9.7 * kotlin.math.PI) * 9) +
+                    (kotlin.math.cos(x * 13.4 * kotlin.math.PI) * 7.6) +
+                    (kotlin.math.sin(x * kotlin.math.sin(x * 1.3) * 29.4 * kotlin.math.PI) * 3.6) +
+                    50
         }
     }
 
@@ -119,6 +124,15 @@ class LinearExtrapolatorTest {
         println("Preparing to plot time series data...")
 
         val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
+
+        result.extrapolations.entries.forEach { (strategy, extrapolation) ->
+            println("Strategy: $strategy")
+            val extr = extrapolation
+            println("First Point: ${extr.firstPoint}")
+            println("Second Point: ${extr.secondPoint}")
+            println("Result Point: ${extr.resultPoint}")
+        }
+
         plotWithPython(timeSeries, result.extrapolations)
 
         // ASSERT
@@ -134,31 +148,31 @@ class LinearExtrapolatorTest {
         // This "golden result set" is calculated and pinned for the specific non-linear timeSeries.
         // If any underlying logic changes, these tests will fail, providing a strong regression guard.
         val expectedResults = mapOf(
-            EXTRAPOLATION_STRATEGY.NOW_VS_30_MINUTES_AGO to 283.4398,
-            EXTRAPOLATION_STRATEGY.NOW_VS_60_MINUTES_AGO to 283.4839,
-            EXTRAPOLATION_STRATEGY.NOW_VS_90_MINUTES_AGO to 283.5133,
-            EXTRAPOLATION_STRATEGY.NOW_VS_120_MINUTES_AGO to 283.5350,
+            EXTRAPOLATION_STRATEGY.NOW_VS_30_MINUTES_AGO to 269.6858,
+            EXTRAPOLATION_STRATEGY.NOW_VS_60_MINUTES_AGO to 259.7337,
+            EXTRAPOLATION_STRATEGY.NOW_VS_90_MINUTES_AGO to 246.8574,
+            EXTRAPOLATION_STRATEGY.NOW_VS_120_MINUTES_AGO to 238.2801,
 
-            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_1_HOUR_AGO to 284.1578,
-            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_2_HOURS_AGO to 284.1485,
-            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_3_HOURS_AGO to 284.1374,
+            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_1_HOUR_AGO to 229.6442,
+            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_2_HOURS_AGO to 218.6667,
+            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_3_HOURS_AGO to 212.0154,
 
-            EXTRAPOLATION_STRATEGY.NOW_VS_1_HOUR_TREND to 284.0911,
-            EXTRAPOLATION_STRATEGY.NOW_VS_3_HOUR_TREND to 283.9936,
-            EXTRAPOLATION_STRATEGY.NOW_VS_6_HOUR_TREND to 283.8967,
-            EXTRAPOLATION_STRATEGY.NOW_VS_12_HOUR_TREND to 283.9213,
+            EXTRAPOLATION_STRATEGY.NOW_VS_1_HOUR_TREND to 265.1736,
+            EXTRAPOLATION_STRATEGY.NOW_VS_3_HOUR_TREND to 241.9941,
+            EXTRAPOLATION_STRATEGY.NOW_VS_6_HOUR_TREND to 227.2441,
+            EXTRAPOLATION_STRATEGY.NOW_VS_12_HOUR_TREND to 224.4468,
 
-            EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND to 283.8837,
-            EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND to 283.7845,
-            EXTRAPOLATION_STRATEGY.PAST_12_HOUR_TREND to 284.2882,
+            EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND to 190.9567,
+            EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND to 212.9162,
+            EXTRAPOLATION_STRATEGY.PAST_12_HOUR_TREND to 315.6367,
 
-            EXTRAPOLATION_STRATEGY.LAST_HOUR_AVERAGE_VS_1_DAY_AGO to 285.8080,
-            EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY to 284.8123
+            EXTRAPOLATION_STRATEGY.LAST_HOUR_AVERAGE_VS_1_DAY_AGO to 235.6446,
+            EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY to 290.3910
+
         )
 
         // ACT
         val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
-        plotWithPython(timeSeries, result.extrapolations)
 
         // ASSERT
         assertEquals(
@@ -169,7 +183,7 @@ class LinearExtrapolatorTest {
 
         // Check each individual result against the golden set
         for ((strategy, expectedValue) in expectedResults) {
-            val actualValue = result.extrapolations[strategy]?.resultPoint?.first
+            val actualValue = result.extrapolations[strategy]?.resultPoint?.second
             assertEquals(
                 "Mismatch for strategy: $strategy",
                 expectedValue,
@@ -191,7 +205,7 @@ class LinearExtrapolatorTest {
         val result = strategy.runOnTimeSeries(constantTimeSeries)
 
         // ASSERT
-        assertEquals(expected, result.resultPoint.first, 0.0001)
+        assertEquals(expected, result.resultPoint.second, 0.0001)
     }
 
     // This individual test can be kept for easier debugging of a single complex case.
@@ -199,12 +213,12 @@ class LinearExtrapolatorTest {
     fun `PAST_3_HOUR_TREND strategy calculates correctly for non-linear data`() {
         // ARRANGE
         val strategy = EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND.strategy
-        val expected = 283.8837 // Pinned golden value for this specific case
+        val expected = 190.95672 // Pinned golden value for this specific case
 
         // ACT
         val result = strategy.runOnTimeSeries(timeSeries)
 
         // ASSERT
-        assertEquals(expected, result.resultPoint.first, 0.0001)
+        assertEquals(expected, result.resultPoint.second, 0.0001)
     }
 }
