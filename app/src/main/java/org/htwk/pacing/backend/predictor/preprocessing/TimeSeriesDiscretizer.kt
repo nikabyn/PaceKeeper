@@ -9,22 +9,22 @@ object TimeSeriesDiscretizer {
      * @param instant The [Instant] to discretize.
      * @return The discrete time step as a [ULong].
      */
-    private fun discretizeInstant(instant: Instant): ULong {
+    private fun discretizeInstant(instant: Instant): Long {
         val stepTime =
             instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
-        return stepTime.toULong()
+        return stepTime.toLong()
     }
 
     /**
      * Calculates the average value for each time bucket from a list of timed data points.
-     * @param startTime The start time of the time series.
-     * @param entries A list of [GenericTimedDataPoint]s to be processed.
+     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.type], it either calculates the average
+     * (for continuous data) or the sum (for aggregated data) for each bucket.
+     * @param input The generic time series data to be processed.
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
-     * @throws IllegalArgumentException if the entries list is empty or contains timestamps before startTime.
      */
     private fun calculateTimeBucketAverages(
         input: IPreprocessor.GenericTimeSeriesEntries
-    ): Map<ULong, Double> {
+    ): Map<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
         val timeSeriesType = input.type
@@ -32,11 +32,13 @@ object TimeSeriesDiscretizer {
         require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
         require(entries.minOf { it.time } >= timeStart) { "All entry times must be at or after the start time." }
 
-        val startTimeDiscrete: ULong = discretizeInstant(timeStart)
+        val startTimeDiscrete: Long = discretizeInstant(timeStart)
 
         //sort into discrete time step buckets and calculate average bucket
         val timeBucketGroups = entries.groupBy { it ->
-            discretizeInstant(it.time) - startTimeDiscrete
+            //the absolute step value might be larger than 32-bit integer for small step sizes, hence calculate difference in 64 bit arithmetic
+            //the difference itself can fit into a 32 bit integer, that we later use for indexing
+            (discretizeInstant(it.time) - startTimeDiscrete).toInt()
         }
 
         val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
@@ -58,7 +60,7 @@ object TimeSeriesDiscretizer {
      * @return A [DoubleArray] representing the complete, interpolated time series.
      */
     private fun discretizeWithMissingValues(
-        timeBucketAverages: Map<ULong, Double>,
+        timeBucketAverages: Map<Int, Double>,
         timeSeriesType: IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
     ): DoubleArray {
         require(timeBucketAverages.isNotEmpty())
@@ -72,9 +74,9 @@ object TimeSeriesDiscretizer {
         if (isContinuousTimeSeries) {
             val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())
             val lastValue = sortedBucketAverages.getValue(sortedBucketAverages.lastKey())
-            val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1).toULong()
+            val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
 
-            sortedBucketAverages.putIfAbsent(0u, firstValue)
+            sortedBucketAverages.putIfAbsent(0, firstValue)
             sortedBucketAverages.putIfAbsent(lastKey, lastValue);
         }
 
@@ -103,7 +105,7 @@ object TimeSeriesDiscretizer {
             if (intervalSteps > 1) {
                 val slope = (y1 - y0) / intervalSteps.toDouble()
                 for (i in 1 until intervalSteps) {
-                    val index = x0.toInt() + i
+                    val index = x0 + i
                     if (index in discreteTimeSeries.indices) {
                         discreteTimeSeries[index] = y0 + slope * i
                     }
