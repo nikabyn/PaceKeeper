@@ -7,9 +7,15 @@ object LinearExtrapolator {
     private val stepsIntoFuture =
         (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds).toInt()
 
+    data class ExtrapolationLine(
+        val firstPoint: Pair<Double, Double>,
+        val secondPoint: Pair<Double, Double>,
+        val resultPoint: Pair<Double, Double>
+    )
+
     data class ExtrapolationStrategy(
         val firstAveragingRange: IntRange,
-        val secondAveragingRange: IntRange
+        val secondAveragingRange: IntRange,
     ) {
         private fun linearExtrapolate(x0: Double, y0: Double, x1: Double, y1: Double): Double {
             val slope = (y1 - y0) / -(x1 - x0)
@@ -25,7 +31,7 @@ object LinearExtrapolator {
             return timeSeries.slice((lastIndex - first)..(lastIndex - last)).average()
         }
 
-        fun runOnTimeSeries(timeSeries: DoubleArray): Double {
+        fun runOnTimeSeries(timeSeries: DoubleArray): ExtrapolationLine {
             val (x0, y0) = firstAveragingRange.average() to firstAveragingRange.getAverageValueFrom(
                 timeSeries
             )
@@ -34,8 +40,13 @@ object LinearExtrapolator {
             )
 
             val result = linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
+
             println("($x0 $y0) ($x1 $y1) : $result")
-            return result
+            return ExtrapolationLine(
+                firstPoint = x0 to y0,
+                secondPoint = x1 to y1,
+                resultPoint = (stepsIntoFuture + timeSeries.size).toDouble() to result
+            )
         }
     }
 
@@ -143,7 +154,7 @@ object LinearExtrapolator {
     }
 
     data class MultiExtrapolationResult(
-        val extrapolations: Map<EXTRAPOLATION_STRATEGY, Double>
+        val extrapolations: Map<EXTRAPOLATION_STRATEGY, ExtrapolationLine>
     )
 
     fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {

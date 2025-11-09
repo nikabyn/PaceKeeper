@@ -8,29 +8,55 @@ import org.junit.Test
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-private fun plotWithPython(series: DoubleArray) {
-    //1. Write the DoubleArray to a temporary CSV file
-    val tempFile = File.createTempFile("/tmp/timeseries_data_", ".csv")
-    tempFile.printWriter().use { out ->
+private fun plotWithPython(
+    series: DoubleArray,
+    extrapolations: Map<EXTRAPOLATION_STRATEGY, LinearExtrapolator.ExtrapolationLine> = emptyMap()
+) {
+    // 1. Write the time series data to a temporary CSV file
+    val seriesFile = File.createTempFile("timeseries_data_", ".csv")
+    seriesFile.printWriter().use { out ->
         out.println("index,value")
         series.forEachIndexed { index, value ->
             out.println("$index,$value")
         }
     }
-    println("Data dumped to temporary file: ${tempFile.absolutePath}")
+    println("Data dumped to temporary file: ${seriesFile.absolutePath}")
 
-    // 2. Run the Python script with the temp file path as an argument
+    // 2. Write extrapolation lines to a second temporary file
+    val extrapolationFile = if (extrapolations.isNotEmpty()) {
+        val tempFile = File.createTempFile("extrapolation_data_", ".csv")
+        tempFile.printWriter().use { out ->
+            out.println("name,x1,y1,x2,y2,x_res,y_res")
+            extrapolations.forEach { (name, line) ->
+                out.println(
+                    "${name}," +
+                            "${line.firstPoint.first},${line.firstPoint.second}," +
+                            "${line.secondPoint.first},${line.secondPoint.second}," +
+                            "${line.resultPoint.first},${line.resultPoint.second}"
+                )
+            }
+        }
+        println("Extrapolation data dumped to: ${tempFile.absolutePath}")
+        tempFile
+    } else {
+        null
+    }
+
+
+    // 3. Run the Python script with the temp file paths as arguments
     try {
-        val process = ProcessBuilder("python", "/home/u/plot_data.py", tempFile.absolutePath)
-            .redirectErrorStream(true) // Merges stderr with stdout
+        val command = mutableListOf("python", "/home/u/plot_data2.py", seriesFile.absolutePath)
+        extrapolationFile?.let { command.add(it.absolutePath) }
+
+        val process = ProcessBuilder(command)
+            .redirectErrorStream(true)
             .start()
 
-        // Read the script's output for debugging purposes
         val scriptOutput = process.inputStream.bufferedReader().readText()
-        process.waitFor(1, TimeUnit.MINUTES) // Wait for the script to finish
+        process.waitFor(1, TimeUnit.MINUTES)
 
         if (scriptOutput.isNotBlank()) {
-            println("Python script output:\n$scriptOutput")
+            println("Python script output: $scriptOutput")
         }
 
     } catch (e: Exception) {
@@ -38,8 +64,9 @@ private fun plotWithPython(series: DoubleArray) {
         println("Error: ${e.message}")
         e.printStackTrace()
     } finally {
-        // 3. Clean up the temporary file
-        tempFile.delete()
+        // 4. Clean up the temporary files
+        seriesFile.delete()
+        extrapolationFile?.delete()
     }
 }
 
@@ -71,7 +98,8 @@ class LinearExtrapolatorTest {
     fun `visualize the non-linear timeSeries using an external script`() {
         println("Preparing to plot time series data...")
 
-        plotWithPython(timeSeries)
+        val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
+        plotWithPython(timeSeries, result.extrapolations)
 
         // ASSERT
         // This test's primary purpose is visualization, not assertion.
@@ -108,12 +136,9 @@ class LinearExtrapolatorTest {
             EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY to 284.8123
         )
 
-
         // ACT
         val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
-
-
-        plotWithPython(timeSeries)
+        plotWithPython(timeSeries, result.extrapolations)
 
         // ASSERT
         assertEquals(
@@ -124,7 +149,7 @@ class LinearExtrapolatorTest {
 
         // Check each individual result against the golden set
         for ((strategy, expectedValue) in expectedResults) {
-            val actualValue = result.extrapolations[strategy]
+            val actualValue = result.extrapolations[strategy]?.resultPoint?.first
             assertEquals(
                 "Mismatch for strategy: $strategy",
                 expectedValue,
@@ -146,7 +171,7 @@ class LinearExtrapolatorTest {
         val result = strategy.runOnTimeSeries(constantTimeSeries)
 
         // ASSERT
-        assertEquals(expected, result, 0.0001)
+        assertEquals(expected, result.resultPoint.first, 0.0001)
     }
 
     // This individual test can be kept for easier debugging of a single complex case.
@@ -160,6 +185,6 @@ class LinearExtrapolatorTest {
         val result = strategy.runOnTimeSeries(timeSeries)
 
         // ASSERT
-        assertEquals(expected, result, 0.0001)
+        assertEquals(expected, result.resultPoint.first, 0.0001)
     }
 }
