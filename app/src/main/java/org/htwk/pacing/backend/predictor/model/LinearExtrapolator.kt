@@ -16,9 +16,13 @@ object LinearExtrapolator {
             return y1 + slope * (x1 + stepsIntoFuture)
         }
 
+        private fun IntRange.average(): Double {
+            return (this.first + this.last) / 2.0
+        }
+
         private fun IntRange.getAverageValueFrom(timeSeries: DoubleArray): Double {
             val lastIndex = timeSeries.size - 1
-            return timeSeries.slice((lastIndex - last)..(lastIndex - first)).average()
+            return timeSeries.slice((lastIndex - first)..(lastIndex - last)).average()
         }
 
         fun runOnTimeSeries(timeSeries: DoubleArray): Double {
@@ -132,7 +136,7 @@ object LinearExtrapolator {
         ),
         YESTERDAY_VS_TODAY(
             ExtrapolationStrategy(
-                IntRange((6 * 48), (6 * 24)),
+                IntRange((6 * 48 - 1), (6 * 24 - 1)),
                 IntRange((6 * 24), 0)
             )
         )
@@ -145,6 +149,9 @@ object LinearExtrapolator {
     fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
             print(it.toString())
+            if (it == EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY) {
+                print("$it")
+            }
             it.strategy.runOnTimeSeries(timeSeries)
         })
     }
