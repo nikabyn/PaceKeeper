@@ -17,7 +17,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class PreprocessorTests {
     companion object {
-        private val timeStart = Instant.fromEpochMilliseconds(0);
+        private val timeStart = Instant.parse("2025-05-05T12:00:00Z")
 
         private val heartRateData = listOf(
             //the first two values should fall into first bucket, averaging to 70 bpm in bucket
