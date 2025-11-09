@@ -74,6 +74,7 @@ interface IPreprocessor {
     ) {
         /**
          * Enum to differentiate between time series types.
+         * see ui#38 for explanation of "classes" https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963
          */
         enum class TimeSeriesType {
             /** For values that change continuously over time, like heart rate. */
