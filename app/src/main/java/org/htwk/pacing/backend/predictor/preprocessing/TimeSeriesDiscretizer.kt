@@ -33,20 +33,20 @@ object TimeSeriesDiscretizer {
         val startTimeDiscrete: ULong = discretizeInstant(startTime)
 
         //sort into discrete time step buckets and calculate average bucket
-        val timeBucketAverages: Map<ULong, Double> = entries.groupBy { it ->
-            //group values into buckets based on which time step they belong to
+        val timeBucketGroups = entries.groupBy { it ->
             discretizeInstant(it.time) - startTimeDiscrete
-        }.mapValues { (_, group) ->
-            //map each group to an average value
-            // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
+        }
+
+        val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
+            //for aggregated values (like steps) we don't want averages, but sums
             if (isAggregation) {
                 group.sumOf { it -> it.value }
             } else {
+                // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
                 group.map { it -> it.value }.average()
             }
         }
-
-        return timeBucketAverages
+        return timeBucketValues
     }
 
     /**
