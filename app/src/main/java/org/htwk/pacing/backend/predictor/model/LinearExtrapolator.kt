@@ -41,7 +41,6 @@ object LinearExtrapolator {
 
             val result = linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
 
-            println("($x0 $y0) ($x1 $y1) : $result")
             return ExtrapolationLine(
                 firstPoint = x0 to y0,
                 secondPoint = x1 to y1,
@@ -159,10 +158,6 @@ object LinearExtrapolator {
 
     fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
-            print(it.toString())
-            if (it == EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY) {
-                print("$it")
-            }
             it.strategy.runOnTimeSeries(timeSeries)
         })
     }
