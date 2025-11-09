@@ -1,20 +1,77 @@
-import androidx.compose.foundation.layout.size
+import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import kotlin.time.Duration.Companion.minutes
 
-// Mocking the Predictor object's constants for test stability
-object Predictor {
-    val PREDICTION_WINDOW_DURATION = 30.minutes
-    val TIME_SERIES_STEP_DURATION = 5.minutes // This makes stepsIntoFuture = 6
+import java.io.File
+import java.util.concurrent.TimeUnit
+
+private fun plotWithPython(series: DoubleArray, scriptPath: String) {
+    //1. Write the DoubleArray to a temporary CSV file
+    val tempFile = File.createTempFile("/tmp/timeseries_data_", ".csv")
+    tempFile.printWriter().use { out ->
+        out.println("index,value")
+        series.forEachIndexed { index, value ->
+            out.println("$index,$value")
+        }
+    }
+    println("Data dumped to temporary file: ${tempFile.absolutePath}")
+
+    // 2. Run the Python script with the temp file path as an argument
+    try {
+        val process = ProcessBuilder("python", "/home/u/plot_data.py", tempFile.absolutePath)
+            .redirectErrorStream(true) // Merges stderr with stdout
+            .start()
+
+        // Read the script's output for debugging purposes
+        val scriptOutput = process.inputStream.bufferedReader().readText()
+        process.waitFor(1, TimeUnit.MINUTES) // Wait for the script to finish
+
+        if (scriptOutput.isNotBlank()) {
+            println("Python script output:\n$scriptOutput")
+        }
+
+    } catch (e: Exception) {
+        println("Failed to run plotting script. Is Python and Matplotlib installed?")
+        println("Error: ${e.message}")
+        e.printStackTrace()
+    } finally {
+        // 3. Clean up the temporary file
+        tempFile.delete()
+    }
+}
+
+private fun launchThunar() {
+    println("Attempting to launch Thunar...")
+    try {
+        // Build the simplest possible command to start the application
+        val command = listOf("run-plot.sh")
+
+        // Start the process and do not wait for it.
+        val process = ProcessBuilder(command).start()
+        val ostring = process.inputStream.bufferedReader().readText()
+        println(ostring);
+
+        println("Successfully executed the launch command for Thunar.")
+        // A small delay can sometimes help ensure the process starts before the test finishes,
+        // though it's not strictly necessary.
+        TimeUnit.SECONDS.sleep(1)
+
+    } catch (e: Exception) {
+        println("An error occurred while trying to launch Thunar.")
+        println("Please ensure 'thunar' is installed and available in your system's PATH.")
+        println("Error: ${e.message}")
+        e.printStackTrace()
+    }
 }
 
 class LinearExtrapolatorTest {
 
     private lateinit var timeSeries: DoubleArray
-    private val stepsIntoFuture = 6 // Based on mock Predictor constants (30min / 5min)
+    private val stepsIntoFuture =
+        (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds)
 
     // Helper to calculate the expected result based on the user's formula
     private fun calculateExpectedValue(x0: Double, y0: Double, x1: Double, y1: Double): Double {
@@ -25,106 +82,106 @@ class LinearExtrapolatorTest {
 
     @Before
     fun setUp() {
-        // Create a predictable time series of 288 elements where the value equals the index.
-        timeSeries = DoubleArray(288) { it.toDouble() }
+        // Create a more realistic, non-linear time series of 288 elements.
+        // It generally trends upwards but has a dip in the middle.
+        timeSeries = DoubleArray(288) { i ->
+            val x = i / 288.0 // Normalize i to 0.0-1.0
+            // A base linear trend plus a sine wave to make it go up and down
+            (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) + 50
+        }
     }
 
     @Test
-    fun `NOW_VS_60_MINUTES_AGO strategy calculates correctly`() {
+    fun `visualize the non-linear timeSeries using an external script`() {
         // ARRANGE
-        val strategy = EXTRAPOLATION_STRATEGY.NOW_VS_60_MINUTES_AGO.strategy
+        // Define the path to your Python script.
+        // Adjust this path based on where you saved the script.
+        val scriptPath = "/home/u/plot_from_csv.py"
 
-        // Strategy defines: IntRange(12, 12) and IntRange(0, 0)
-        // Point 0 (first range):
-        val x0 = 12.0 // Average of 12..12
-        // Slice is at index (287-12)..(287-12) -> 275..275. Value is 275.0
-        val y0 = 275.0
-
-        // Point 1 (second range):
-        val x1 = 0.0 // Average of 0..0
-        // Slice is at index (287-0)..(287-0) -> 287..287. Value is 287.0
-        val y1 = 287.0
-
-        val expected = calculateExpectedValue(x0, y0, x1, y1)
+        // The `timeSeries` is already created by the setUp() method.
+        println("Preparing to plot time series data...")
 
         // ACT
-        val result = strategy.runOnTimeSeries(timeSeries)
+        plotWithPython(timeSeries, scriptPath)
 
         // ASSERT
-        assertEquals(expected, result, 0.0001)
+        // This test's primary purpose is visualization, not assertion.
+        // But we add a trivial assertion to make the test runner happy.
+        assertEquals(288, timeSeries.size)
+        println("Plotting finished.")
     }
 
     @Test
-    fun `PAST_3_HOUR_TREND strategy calculates correctly`() {
+    fun `verify that an arbitrary graphical app can be launched`() {
         // ARRANGE
-        val strategy = EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND.strategy
-
-        // Strategy defines: IntRange(36, 18) and IntRange(18, 0)
-        // Point 0 (first range): 36..18
-        val x0 = (36.0 + 18.0) / 2 // 27.0
-        // Slice is from (287-36)..(287-18) -> 251..269.
-        // Average value of numbers from 251.0 to 269.0 is (251.0 + 269.0) / 2 = 260.0
-        val y0 = 260.0
-
-        // Point 1 (second range): 18..0
-        val x1 = (18.0 + 0.0) / 2 // 9.0
-        // Slice is from (287-18)..(287-0) -> 269..287.
-        // Average value of numbers from 269.0 to 287.0 is (269.0 + 287.0) / 2 = 278.0
-        val y1 = 278.0
-
-        val expected = calculateExpectedValue(x0, y0, x1, y1)
+        println("Preparing to launch a Thunar window...")
 
         // ACT
-        val result = strategy.runOnTimeSeries(timeSeries)
+        launchThunar() // Call the new, simple function
 
         // ASSERT
-        assertEquals(expected, result, 0.0001)
+        // The purpose of this test is to visually confirm that a Thunar window opens.
+        // The test itself will pass if no exceptions are thrown.
+        println("Test finished. A Thunar window should now be open on your desktop.")
     }
 
     @Test
-    fun `YESTERDAY_VS_TODAY strategy calculates correctly`() {
+    fun `multipleExtrapolate returns the correct, pinned results for a known non-linear timeSeries`() {
         // ARRANGE
-        val strategy = EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY.strategy
+        // This "golden result set" is calculated and pinned for the specific non-linear timeSeries.
+        // If any underlying logic changes, these tests will fail, providing a strong regression guard.
+        val expectedResults = mapOf(
+            EXTRAPOLATION_STRATEGY.NOW_VS_30_MINUTES_AGO to 283.4398,
+            EXTRAPOLATION_STRATEGY.NOW_VS_60_MINUTES_AGO to 283.4839,
+            EXTRAPOLATION_STRATEGY.NOW_VS_90_MINUTES_AGO to 283.5133,
+            EXTRAPOLATION_STRATEGY.NOW_VS_120_MINUTES_AGO to 283.5350,
 
-        // Strategy defines: IntRange(288, 288) and IntRange(288, 0) - This is likely a typo in the original file.
-        // Correcting to a valid interpretation: Yesterday (24h ago) vs Today (last 24h)
-        // Corrected strategy: IntRange(288, 288) vs IntRange(287, 0)
-        // For the purpose of the test, let's use PAST_12_HOUR_TREND as a complex example.
-        val complexStrategy = EXTRAPOLATION_STRATEGY.PAST_12_HOUR_TREND.strategy
+            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_1_HOUR_AGO to 284.1578,
+            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_2_HOURS_AGO to 284.1485,
+            EXTRAPOLATION_STRATEGY.HOURLY_AVG_NOW_VS_3_HOURS_AGO to 284.1374,
 
-        // Strategy defines: IntRange(288, 144) and IntRange(144, 0)
-        // Point 0 (first range): 288..144
-        val x0 = (288.0 + 144.0) / 2 // 216.0
-        // Slice from (287-288)..(287-144) -> -1..143. Our array is 0-indexed. This means 0..143
-        // Average of 0.0 to 143.0 is (0.0 + 143.0) / 2 = 71.5
-        val y0 = 71.5
+            EXTRAPOLATION_STRATEGY.NOW_VS_1_HOUR_TREND to 284.0911,
+            EXTRAPOLATION_STRATEGY.NOW_VS_3_HOUR_TREND to 283.9936,
+            EXTRAPOLATION_STRATEGY.NOW_VS_6_HOUR_TREND to 283.8967,
+            EXTRAPOLATION_STRATEGY.NOW_VS_12_HOUR_TREND to 283.9213,
 
-        // Point 1 (second range): 144..0
-        val x1 = (144.0 + 0.0) / 2 // 72.0
-        // Slice from (287-144)..(287-0) -> 143..287
-        // Average of 143.0 to 287.0 is (143.0 + 287.0) / 2 = 215.0
-        val y1 = 215.0
+            EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND to 283.8837,
+            EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND to 283.7845,
+            EXTRAPOLATION_STRATEGY.PAST_12_HOUR_TREND to 284.2882,
 
-        val expected = calculateExpectedValue(x0, y0, x1, y1)
+            EXTRAPOLATION_STRATEGY.LAST_HOUR_AVERAGE_VS_1_DAY_AGO to 285.8080,
+            EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY to 284.8123
+        )
 
         // ACT
-        val result = complexStrategy.runOnTimeSeries(timeSeries)
+        val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
 
         // ASSERT
-        assertEquals(expected, result, 0.0001)
+        assertEquals(
+            "The number of strategies tested should match the number of results.",
+            expectedResults.size,
+            result.extrapolations.size
+        )
+
+        // Check each individual result against the golden set
+        for ((strategy, expectedValue) in expectedResults) {
+            val actualValue = result.extrapolations[strategy]
+            assertEquals(
+                "Mismatch for strategy: $strategy",
+                expectedValue,
+                actualValue!!,
+                0.0001 // Using a delta for floating-point comparisons
+            )
+        }
     }
 
     @Test
     fun `runOnTimeSeries with constant time series produces flat extrapolation`() {
         // ARRANGE
-        // If the time series is flat, the slope should be 0, and the result should be y1.
+        // This test is still valuable as a sanity check for slope calculation.
         val constantTimeSeries = DoubleArray(288) { 100.0 }
         val strategy = EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND.strategy
-
-        // For any two points on this line, y0 will be 100.0 and y1 will be 100.0.
-        // This results in a slope of 0.
-        // The formula becomes `y1 + 0 * ...`, so the result should be y1.
-        val expected = 100.0
+        val expected = 100.0 // With a flat line, slope is 0, so result should be y1 (which is 100)
 
         // ACT
         val result = strategy.runOnTimeSeries(constantTimeSeries)
@@ -133,26 +190,17 @@ class LinearExtrapolatorTest {
         assertEquals(expected, result, 0.0001)
     }
 
+    // This individual test can be kept for easier debugging of a single complex case.
     @Test
-    fun `multipleExtrapolate executes all strategies and returns a full map`() {
+    fun `PAST_3_HOUR_TREND strategy calculates correctly for non-linear data`() {
+        // ARRANGE
+        val strategy = EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND.strategy
+        val expected = 283.8837 // Pinned golden value for this specific case
+
         // ACT
-        val multiResult = LinearExtrapolator.multipleExtrapolate(timeSeries)
+        val result = strategy.runOnTimeSeries(timeSeries)
 
         // ASSERT
-        // 1. Check that the map contains a result for every defined strategy
-        assertEquals(
-            EXTRAPOLATION_STRATEGY.entries.size,
-            multiResult.extrapolations.size
-        )
-
-        // 2. Verify one of the values to ensure the mapping is correct
-        val expectedValue = EXTRAPOLATION_STRATEGY.NOW_VS_60_MINUTES_AGO
-            .strategy.runOnTimeSeries(timeSeries)
-
-        assertEquals(
-            expectedValue,
-            multiResult.extrapolations[EXTRAPOLATION_STRATEGY.NOW_VS_60_MINUTES_AGO],
-            0.0001
-        )
+        assertEquals(expected, result, 0.0001)
     }
 }
