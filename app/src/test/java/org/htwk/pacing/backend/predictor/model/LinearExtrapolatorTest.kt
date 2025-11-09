@@ -3,8 +3,8 @@ import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
-
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -29,7 +29,9 @@ private fun plotWithPython(
             out.println("name,x1,y1,x2,y2,x_res,y_res")
             extrapolations.forEach { (name, line) ->
                 out.println(
-                    "${name}," +
+                    // Wrap name in quotes to handle special characters
+                    "\"${name}\"," +
+                            // The points for the trend line
                             "${line.firstPoint.first},${line.firstPoint.second}," +
                             "${line.secondPoint.first},${line.secondPoint.second}," +
                             "${line.resultPoint.first},${line.resultPoint.second}"
@@ -42,10 +44,26 @@ private fun plotWithPython(
         null
     }
 
-
-    // 3. Run the Python script with the temp file paths as arguments
+    // 3. Locate and execute the Python script from resources
+    var scriptFile: File? = null
     try {
-        val command = mutableListOf("python", "/home/u/plot_data2.py", seriesFile.absolutePath)
+        // Load the script from the test resources folder
+        val scriptUrl = {}.javaClass.classLoader?.getResource("plot_data.py")
+        if (scriptUrl == null) {
+            println("ERROR: Could not find 'plot_data.py' in src/test/resources.")
+            return
+        }
+
+        // Create a temporary executable file from the resource URL
+        scriptFile = File.createTempFile("plot_script_", ".py")
+        scriptFile.deleteOnExit() // Ensure cleanup
+        scriptFile.outputStream().use { fileOut ->
+            scriptUrl.openStream().use { resourceIn ->
+                resourceIn.copyTo(fileOut)
+            }
+        }
+
+        val command = mutableListOf("python", scriptFile.absolutePath, seriesFile.absolutePath)
         extrapolationFile?.let { command.add(it.absolutePath) }
 
         val process = ProcessBuilder(command)
@@ -67,6 +85,7 @@ private fun plotWithPython(
         // 4. Clean up the temporary files
         seriesFile.delete()
         extrapolationFile?.delete()
+        scriptFile?.delete() // also cleans up our temporary script copy
     }
 }
 
@@ -94,6 +113,7 @@ class LinearExtrapolatorTest {
         }
     }
 
+    @Ignore("This test is for manual visualization inspection and requires a graphical environment.")
     @Test
     fun `visualize the non-linear timeSeries using an external script`() {
         println("Preparing to plot time series data...")
