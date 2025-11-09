@@ -69,7 +69,8 @@ object TimeSeriesDiscretizer {
         //resulting time series, with interpolated, discrete values
         val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
-        //fill known points
+        //TODO: think about extracting this part into separate function
+        //fill known points from map
         for ((timeStep, value) in timeBucketAverages) {
             val index = timeStep
             if (index in discreteTimeSeries.indices) {
@@ -80,12 +81,13 @@ object TimeSeriesDiscretizer {
         //we don't want interpolation on time series like distance/steps that are aggregated
         if (!doInterpolateBetweenBuckets) return discreteTimeSeries
 
+        //TODO: think about extracting this part into separate function
         //add interpolation steps between those points
         for ((startPoint, endPoint) in timeBucketAverages.entries.zipWithNext()) {
             val (x0, y0) = startPoint
             val (x1, y1) = endPoint
 
-            val intervalSteps = (x1 - x0).toInt()
+            val intervalSteps = (x1 - x0)
             if (intervalSteps > 1) {
                 val slope = (y1 - y0) / intervalSteps.toDouble()
                 for (i in 1 until intervalSteps) {
