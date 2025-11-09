@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
     /**
@@ -9,87 +10,76 @@ object TimeSeriesDiscretizer {
      * @param instant The [Instant] to discretize.
      * @return The discrete time step as a [ULong].
      */
-    private fun discretizeInstant(instant: Instant): ULong {
-        val stepTime =
-            instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
-        return stepTime.toULong()
+    private fun discretizeInstant(instant: Instant): Long {
+        return instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
     }
 
     /**
      * Calculates the average value for each time bucket from a list of timed data points.
-     * @param startTime The start time of the time series.
-     * @param entries A list of [GenericTimedDataPoint]s to be processed.
+     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.type], it either calculates the average
+     * (for continuous data) or the sum (for aggregated data) for each bucket.
+     * @param input The generic time series data to be processed.
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
-     * @throws IllegalArgumentException if the entries list is empty or contains timestamps before startTime.
      */
     private fun calculateTimeBucketAverages(
-        startTime: Instant,
-        entries: List<GenericTimedDataPoint>,
-        isAggregation: Boolean
-    ): Map<ULong, Double> {
-        require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
-        require(entries.minOf { it.time } >= startTime) { "All entry times must be at or after the start time." }
+        input: IPreprocessor.GenericTimeSeriesEntries
+    ): SortedMap<Int, Double> {
+        val timeStart = input.timeStart
+        val entries = input.data
+        val timeSeriesType = input.type
 
-        val startTimeDiscrete: ULong = discretizeInstant(startTime)
+        require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
+        require(entries.minOf { it.time } >= timeStart) { "All entry times must be at or after the start time." }
+
+        val startTimeDiscrete: Long = discretizeInstant(timeStart)
 
         //sort into discrete time step buckets and calculate average bucket
-        val timeBucketAverages: Map<ULong, Double> = entries.groupBy { it ->
-            //group values into buckets based on which time step they belong to
-            discretizeInstant(it.time) - startTimeDiscrete
-        }.mapValues { (_, group) ->
-            //map each group to an average value
-            // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
-            if (isAggregation) {
-                group.sumOf { it -> it.value }
-            } else {
-                group.map { it -> it.value }.average()
+        val timeBucketGroups = entries.groupBy { it ->
+            //the absolute step value might be larger than 32-bit integer for small step sizes, hence calculate difference in 64 bit arithmetic
+            //the difference itself can fit into a 32 bit integer, that we later use for indexing
+            (discretizeInstant(it.time) - startTimeDiscrete).toInt()
+        }
+
+        val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
+            when (timeSeriesType) {
+                IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED ->
+                    group.sumOf { it.value }
+
+                IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS ->
+                    group.map { it.value }
+                        .average() // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
             }
         }
 
-        return timeBucketAverages
+        return timeBucketValues.toSortedMap()
     }
 
     /**
-     * Fills in missing values in a discretized time series using linear interpolation.
-     * @param timeBucketAverages A map of discrete time buckets to their average values.
-     * @param doEdgeExtrapolation Whether to extrapolate the first and last known values.
-     * @return A [DoubleArray] representing the complete, interpolated time series.
+     * Converts a sorted list of time buckets into a discrete time series, with optional interpolation.
+     * @param timeBucketAverages A map of discrete time buckets to their average/sum values.
+     * @param doInterpolateBetweenBuckets If true, performs linear interpolation between known data points.
+     * @return A [DoubleArray] of size [Predictor.TIME_SERIES_SAMPLE_COUNT] representing the final, discrete time series.
      */
-    private fun discretizeWithMissingValues(
-        timeBucketAverages: Map<ULong, Double>,
-        isAggregation: Boolean
+    private fun bucketsToDiscreteTimeSeries(
+        timeBucketAverages: SortedMap<Int, Double>,
+        doInterpolateBetweenBuckets: Boolean,
     ): DoubleArray {
-        require(timeBucketAverages.isNotEmpty())
-        val sortedBucketAverages = timeBucketAverages.toSortedMap()
-
-        //optionally pin the first and last known value to the borders so that we don't get missing
-        //values,this will lead to constant extrapolation at the edges
-        //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
-        val doEdgeExtrapolation = !isAggregation
-        if (doEdgeExtrapolation) {
-            val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())
-            val lastValue = sortedBucketAverages.getValue(sortedBucketAverages.lastKey())
-            val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1).toULong()
-
-            sortedBucketAverages.putIfAbsent(0u, firstValue)
-            sortedBucketAverages.putIfAbsent(lastKey, lastValue);
-        }
-
-        val sortedBucketList = sortedBucketAverages.toList()
-
         //resulting time series, with interpolated, discrete values
-        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
+        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
         //fill known points
-        for ((timeStep, value) in sortedBucketAverages) {
-            val index = timeStep.toInt()
+        for ((timeStep, value) in timeBucketAverages) {
+            val index = timeStep
             if (index in discreteTimeSeries.indices) {
                 discreteTimeSeries[index] = value
             }
         }
 
+        //we don't want interpolation on time series like distance/steps that are aggregated
+        if (!doInterpolateBetweenBuckets) return discreteTimeSeries
+
         //add interpolation steps between those points
-        for ((startPoint, endPoint) in sortedBucketList.zipWithNext()) {
+        for ((startPoint, endPoint) in timeBucketAverages.entries.zipWithNext()) {
             val (x0, y0) = startPoint
             val (x1, y1) = endPoint
 
@@ -97,7 +87,7 @@ object TimeSeriesDiscretizer {
             if (intervalSteps > 1) {
                 val slope = (y1 - y0) / intervalSteps.toDouble()
                 for (i in 1 until intervalSteps) {
-                    val index = x0.toInt() + i
+                    val index = x0 + i
                     if (index in discreteTimeSeries.indices) {
                         discreteTimeSeries[index] = y0 + slope * i
                     }
@@ -106,25 +96,60 @@ object TimeSeriesDiscretizer {
         }
 
         return discreteTimeSeries
+
+    }
+
+    /**
+     * Fills the edge buckets (index 0 and the final index) of a time series map if they are missing.
+     * This method **mutates** the input map. It's designed as a private transformation step.
+     *
+     * This is done by taking the first known value and assigning it to the start bucket (index 0),
+     * and taking the last known value and assigning it to the last bucket. This results in constant
+     * extrapolation at the edges.
+     *
+     * @param timeBucketAverages The sorted map of time buckets to their values, which will be modified in-place.
+     */
+    private fun fillEdgeBuckets(
+        timeBucketAverages: SortedMap<Int, Double>,
+    ) {
+        if (timeBucketAverages.isEmpty()) return
+
+        val firstValue = timeBucketAverages.getValue(timeBucketAverages.firstKey())
+        val lastValue = timeBucketAverages.getValue(timeBucketAverages.lastKey())
+        val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
+
+        timeBucketAverages.putIfAbsent(0, firstValue)
+        timeBucketAverages.putIfAbsent(lastKey, lastValue)
     }
 
     /**
      * Discretizes a list of timed data points into a fixed-size time series array.
-     * @param timeStart The start time for the discretization.
-     * @param input The list of [GenericTimedDataPoint]s to process.
-     * @param isAggregation True if the input data corresponds to aggregated values like steps,
-     *  for such data we should take sums instead of averages in an interval,
-     *  since steps in a time interval accumulate, they don't average
+     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.type], it either calculates averages and interpolates
+     * for continuous data (like heart rate), or sums for aggregated data (like steps) in each time bucket.
+     * For continuous data, it also extrapolates to the start and end of the time series if needed.
+     * @param input The generic time series data to be processed.
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-        isAggregation: Boolean
+        input: IPreprocessor.GenericTimeSeriesEntries
     ): DoubleArray {
-        val timeBucketAverages = calculateTimeBucketAverages(timeStart, input, isAggregation)
+        val timeBucketAverages = calculateTimeBucketAverages(input)
 
-        val discreteTimeSeries = discretizeWithMissingValues(timeBucketAverages, isAggregation)
+        //optionally pin the first and last known value to the borders so that we don't get missing
+        //values,this will lead to constant extrapolation at the edges
+        //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
+        val isContinuous =
+            (input.type == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
+
+        if (isContinuous) {
+            fillEdgeBuckets(timeBucketAverages)
+        }
+
+        val discreteTimeSeries =
+            bucketsToDiscreteTimeSeries(
+                timeBucketAverages,
+                doInterpolateBetweenBuckets = isContinuous
+            )
 
         return discreteTimeSeries
     }

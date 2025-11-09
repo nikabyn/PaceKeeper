@@ -1,6 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class CleanInputDataTests {
-    private val now = Clock.System.now()
+    private val now = Instant.parse("2025-05-05T12:00:00Z")
 
     // --- tests for input data cleansing ---
 
