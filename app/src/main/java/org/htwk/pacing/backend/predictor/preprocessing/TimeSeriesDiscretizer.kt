@@ -11,9 +11,7 @@ object TimeSeriesDiscretizer {
      * @return The discrete time step as a [ULong].
      */
     private fun discretizeInstant(instant: Instant): Long {
-        val stepTime =
-            instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
-        return stepTime.toLong()
+        return instant.toEpochMilliseconds() / Predictor.TIME_SERIES_STEP_DURATION.inWholeMilliseconds
     }
 
     /**
@@ -43,35 +41,34 @@ object TimeSeriesDiscretizer {
         }
 
         val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
-            //for aggregated values (like steps) we don't want averages, but sums
-            if (timeSeriesType == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED) {
-                group.sumOf { it -> it.value }
-            } else {
-                // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
-                group.map { it -> it.value }.average()
+            when (timeSeriesType) {
+                IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED ->
+                    group.sumOf { it.value }
+
+                IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS ->
+                    group.map { it.value }
+                        .average() // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
             }
         }
+
         return timeBucketValues.toSortedMap()
     }
 
     /**
      * Converts a sorted list of time buckets into a discrete time series, with optional interpolation.
      * @param timeBucketAverages A map of discrete time buckets to their average/sum values.
-     * @param timeSeriesType The type of the time series, which determines if interpolation should be applied.
-     * Linear interpolation is applied for [IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS] types.
-     * @return A [DoubleArray] representing the final, discrete time series.
+     * @param doInterpolateBetweenBuckets If true, performs linear interpolation between known data points.
+     * @return A [DoubleArray] of size [Predictor.TIME_SERIES_SAMPLE_COUNT] representing the final, discrete time series.
      */
     private fun bucketsToDiscreteTimeSeries(
         timeBucketAverages: SortedMap<Int, Double>,
         doInterpolateBetweenBuckets: Boolean,
     ): DoubleArray {
-        val sortedBucketList = timeBucketAverages.toList().sortedBy { it.first }
-
         //resulting time series, with interpolated, discrete values
         val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
         //fill known points
-        for ((timeStep, value) in sortedBucketList) {
+        for ((timeStep, value) in timeBucketAverages) {
             val index = timeStep
             if (index in discreteTimeSeries.indices) {
                 discreteTimeSeries[index] = value
@@ -82,7 +79,7 @@ object TimeSeriesDiscretizer {
         if (!doInterpolateBetweenBuckets) return discreteTimeSeries
 
         //add interpolation steps between those points
-        for ((startPoint, endPoint) in sortedBucketList.zipWithNext()) {
+        for ((startPoint, endPoint) in timeBucketAverages.entries.zipWithNext()) {
             val (x0, y0) = startPoint
             val (x1, y1) = endPoint
 
@@ -111,7 +108,6 @@ object TimeSeriesDiscretizer {
      */
     private fun extrapolateEdgeBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
-        timeSeriesType: IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
     ): SortedMap<Int, Double> {
         require(timeBucketAverages.isNotEmpty())
 
@@ -145,7 +141,7 @@ object TimeSeriesDiscretizer {
             (input.type == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
 
         if (isContinuous) {
-            timeBucketAverages = extrapolateEdgeBuckets(timeBucketAverages, input.type)
+            timeBucketAverages = extrapolateEdgeBuckets(timeBucketAverages)
         }
 
         val discreteTimeSeries =
