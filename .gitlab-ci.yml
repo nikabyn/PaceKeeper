@@ -74,6 +74,8 @@ debugUnitTests:
 
 connectedInstrumentationTests:
   extends: .connected_tests_template
+  tags:
+    - kvm
   parallel:
     matrix:
       - ANDROID_API: "28"
