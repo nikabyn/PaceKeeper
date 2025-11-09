@@ -12,7 +12,7 @@ object LinearExtrapolator {
         val secondAveragingRange: IntRange
     ) {
         private fun linearExtrapolate(x0: Double, y0: Double, x1: Double, y1: Double): Double {
-            val slope = (y1 - y0) / (x1 - x0)
+            val slope = (y1 - y0) / -(x1 - x0)
             return y1 + slope * (x1 + stepsIntoFuture)
         }
 
@@ -29,7 +29,9 @@ object LinearExtrapolator {
                 timeSeries
             )
 
-            return linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
+            val result = linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
+            println("($x0 $y0) ($x1 $y1) : $result")
+            return result
         }
     }
 
@@ -142,6 +144,7 @@ object LinearExtrapolator {
 
     fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
+            print(it.toString())
             it.strategy.runOnTimeSeries(timeSeries)
         })
     }

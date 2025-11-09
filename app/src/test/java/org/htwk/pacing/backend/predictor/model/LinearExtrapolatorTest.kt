@@ -8,7 +8,7 @@ import org.junit.Test
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-private fun plotWithPython(series: DoubleArray, scriptPath: String) {
+private fun plotWithPython(series: DoubleArray) {
     //1. Write the DoubleArray to a temporary CSV file
     val tempFile = File.createTempFile("/tmp/timeseries_data_", ".csv")
     tempFile.printWriter().use { out ->
@@ -63,22 +63,15 @@ class LinearExtrapolatorTest {
         timeSeries = DoubleArray(288) { i ->
             val x = i / 288.0 // Normalize i to 0.0-1.0
             // A base linear trend plus a sine wave to make it go up and down
-            (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) + 50
+            (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) + (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) + 50
         }
     }
 
     @Test
     fun `visualize the non-linear timeSeries using an external script`() {
-        // ARRANGE
-        // Define the path to your Python script.
-        // Adjust this path based on where you saved the script.
-        val scriptPath = "/home/u/plot_from_csv.py"
-
-        // The `timeSeries` is already created by the setUp() method.
         println("Preparing to plot time series data...")
 
-        // ACT
-        plotWithPython(timeSeries, scriptPath)
+        plotWithPython(timeSeries)
 
         // ASSERT
         // This test's primary purpose is visualization, not assertion.
@@ -115,8 +108,12 @@ class LinearExtrapolatorTest {
             EXTRAPOLATION_STRATEGY.YESTERDAY_VS_TODAY to 284.8123
         )
 
+
         // ACT
         val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
+
+
+        plotWithPython(timeSeries)
 
         // ASSERT
         assertEquals(
