@@ -1,56 +1,15 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 
 object Preprocessor : IPreprocessor {
-    /**
-     * Processes continuous time series data, like heart rate.
-     * @param input The list of timed data points.
-     * @param now10min The reference start time for discretization.
-     * @return A [DiscretePID] object containing the discretized series and its derivatives/integrals.
-     */
-    private fun processContinuous(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-    ): DiscretePID {
-        val p = TimeSeriesDiscretizer.discretizeTimeSeries(
-            timeStart = timeStart,
-            input = input,
-            isAggregation = false
-        )
-
-        return DiscretePID(p, p.discreteTrapezoidalIntegral(), p.discreteDerivative())
-    }
-
-    /**
-     * Processes aggregated/counted time series data, like step count.
-     * @param input The list of timed data points.
-     * @param now10min The reference start time for discretization.
-     * @return A [DiscreteIntegral] object containing the discretized series derivative.
-     */
-    private fun processAggregated(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-    ): DiscreteIntegral {
-        val p = TimeSeriesDiscretizer.discretizeTimeSeries(
-            timeStart = timeStart,
-            input = input,
-            isAggregation = true
-        )
-        return DiscreteIntegral(p.discreteTrapezoidalIntegral())
-    }
-
     //class 3) (unused for now), see ui#38
     private fun processDailyConstant(): Double {
         return 0.0
     }
-
 
     /**
      * Executes the preprocessing pipeline on raw time series data.
@@ -72,13 +31,23 @@ object Preprocessor : IPreprocessor {
 
         return MultiTimeSeriesDiscrete(
             timeStart = rawCleaned.timeStart,
-            heartRate = processContinuous(
-                rawCleaned.timeStart,
-                rawCleaned.heartRate.map(::GenericTimedDataPoint)
+            heartRate = DiscretePID.from(
+                TimeSeriesDiscretizer.discretizeTimeSeries(
+                    IPreprocessor.GenericTimeSeriesEntries(
+                        timeStart = rawCleaned.timeStart,
+                        data = rawCleaned.heartRate.map(::GenericTimedDataPoint),
+                        type = IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS
+                    )
+                )
             ),
-            distance = processAggregated(
-                rawCleaned.timeStart,
-                raw.distance.map(::GenericTimedDataPoint)
+            distance = DiscreteIntegral.from(
+                TimeSeriesDiscretizer.discretizeTimeSeries(
+                    IPreprocessor.GenericTimeSeriesEntries(
+                        timeStart = rawCleaned.timeStart,
+                        data = raw.distance.map(::GenericTimedDataPoint),
+                        type = IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS
+                    )
+                )
             )
         )
     }
