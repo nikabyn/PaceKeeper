@@ -43,30 +43,6 @@ private fun plotWithPython(series: DoubleArray, scriptPath: String) {
     }
 }
 
-private fun launchThunar() {
-    println("Attempting to launch Thunar...")
-    try {
-        // Build the simplest possible command to start the application
-        val command = listOf("run-plot.sh")
-
-        // Start the process and do not wait for it.
-        val process = ProcessBuilder(command).start()
-        val ostring = process.inputStream.bufferedReader().readText()
-        println(ostring);
-
-        println("Successfully executed the launch command for Thunar.")
-        // A small delay can sometimes help ensure the process starts before the test finishes,
-        // though it's not strictly necessary.
-        TimeUnit.SECONDS.sleep(1)
-
-    } catch (e: Exception) {
-        println("An error occurred while trying to launch Thunar.")
-        println("Please ensure 'thunar' is installed and available in your system's PATH.")
-        println("Error: ${e.message}")
-        e.printStackTrace()
-    }
-}
-
 class LinearExtrapolatorTest {
 
     private lateinit var timeSeries: DoubleArray
@@ -109,20 +85,6 @@ class LinearExtrapolatorTest {
         // But we add a trivial assertion to make the test runner happy.
         assertEquals(288, timeSeries.size)
         println("Plotting finished.")
-    }
-
-    @Test
-    fun `verify that an arbitrary graphical app can be launched`() {
-        // ARRANGE
-        println("Preparing to launch a Thunar window...")
-
-        // ACT
-        launchThunar() // Call the new, simple function
-
-        // ASSERT
-        // The purpose of this test is to visually confirm that a Thunar window opens.
-        // The test itself will pass if no exceptions are thrown.
-        println("Test finished. A Thunar window should now be open on your desktop.")
     }
 
     @Test
