@@ -43,12 +43,12 @@ def plot_data(series_path, extrapolation_path=None):
                 plt.plot([row['x1_abs'], row['x2_abs']], [row['y1'], row['y2']], 'o', 
                          markersize=6, label=f"Points for {row['name']}")
                 
-                # Plot the extrapolation line itself
-                plt.plot([row['x2_abs'], res_x], [row['y2'], res_y], '--', 
+                # Plot the extrapolation line itself, starting from the first point (x1, y1)
+                plt.plot([row['x1_abs'], res_x], [row['y1'], res_y], '--',
                          linewidth=1.5, label=f"Trend for {row['name']}")
 
                 # Plot the final extrapolated point
-                plt.plot(res_x, res_y, '*', markersize=12, 
+                plt.plot(res_x, res_y, '*', markersize=12,
                          label=f"Result for {row['name']}")
 
         except FileNotFoundError:
