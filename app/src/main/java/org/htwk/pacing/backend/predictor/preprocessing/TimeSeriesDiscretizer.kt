@@ -67,9 +67,9 @@ object TimeSeriesDiscretizer {
         //optionally pin the first and last known value to the borders so that we don't get missing
         //values,this will lead to constant extrapolation at the edges
         //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
-        val doEdgeExtrapolation =
-            timeSeriesType != IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED
-        if (doEdgeExtrapolation) {
+        val isContinuousTimeSeries =
+            (timeSeriesType == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
+        if (isContinuousTimeSeries) {
             val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())
             val lastValue = sortedBucketAverages.getValue(sortedBucketAverages.lastKey())
             val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1).toULong()
@@ -81,7 +81,7 @@ object TimeSeriesDiscretizer {
         val sortedBucketList = sortedBucketAverages.toList()
 
         //resulting time series, with interpolated, discrete values
-        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { Double.NaN }
+        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
         //fill known points
         for ((timeStep, value) in sortedBucketAverages) {
@@ -90,6 +90,9 @@ object TimeSeriesDiscretizer {
                 discreteTimeSeries[index] = value
             }
         }
+
+        //we don't want interpolation on time series like distance/steps that are aggregated
+        if (!isContinuousTimeSeries) return discreteTimeSeries
 
         //add interpolation steps between those points
         for ((startPoint, endPoint) in sortedBucketList.zipWithNext()) {
