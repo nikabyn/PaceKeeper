@@ -2,7 +2,8 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
-import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.ui.math.discreteDerivative
@@ -121,7 +122,7 @@ interface IPreprocessor {
      * @return A [MultiTimeSeriesDiscrete] object containing the cleaned, resampled, and feature-engineered data.
      */
     fun run(
-        raw: Predictor.MultiTimeSeriesEntries,
-        fixedParameters: Predictor.FixedParameters
+        raw: MultiTimeSeriesEntries,
+        fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete
 }

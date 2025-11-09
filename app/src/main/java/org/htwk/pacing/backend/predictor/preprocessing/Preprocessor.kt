@@ -1,9 +1,13 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
     //class 3) (unused for now), see ui#38
@@ -25,28 +29,28 @@ object Preprocessor : IPreprocessor {
      * @return A [MultiTimeSeriesDiscrete] object containing the processed and discretized time series data.
      */
     override fun run(
-        raw: Predictor.MultiTimeSeriesEntries,
-        fixedParameters: Predictor.FixedParameters
+        raw: MultiTimeSeriesEntries,
+        fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
 
         return MultiTimeSeriesDiscrete(
             timeStart = rawCleaned.timeStart,
             heartRate = DiscretePID.from(
-                TimeSeriesDiscretizer.discretizeTimeSeries(
-                    IPreprocessor.GenericTimeSeriesEntries(
+                discretizeTimeSeries(
+                    GenericTimeSeriesEntries(
                         timeStart = rawCleaned.timeStart,
                         data = rawCleaned.heartRate.map(::GenericTimedDataPoint),
-                        type = IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS
+                        type = TimeSeriesType.CONTINUOUS
                     )
                 )
             ),
             distance = DiscreteIntegral.from(
-                TimeSeriesDiscretizer.discretizeTimeSeries(
-                    IPreprocessor.GenericTimeSeriesEntries(
+                discretizeTimeSeries(
+                    GenericTimeSeriesEntries(
                         timeStart = rawCleaned.timeStart,
                         data = raw.distance.map(::GenericTimedDataPoint),
-                        type = IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED
+                        type = TimeSeriesType.AGGREGATED
                     )
                 )
             )

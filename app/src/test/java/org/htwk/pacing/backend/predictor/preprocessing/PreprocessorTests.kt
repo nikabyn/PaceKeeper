@@ -7,7 +7,8 @@ import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
+import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -68,13 +69,13 @@ class PreprocessorTests {
 
     @Test
     fun `run processes heart rate data correctly`() {
-        val rawData = Predictor.MultiTimeSeriesEntries(
+        val rawData = MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
             distance = distanceData
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+        val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
 
         val result = Preprocessor.run(rawData, fixedParameters)
 
@@ -82,7 +83,7 @@ class PreprocessorTests {
 
         // The placeholder implementation of discretizeTimeSeries fills the array with the first value.
         // The size should be TIME_SERIES_DURATION / 10.minutes
-        val expectedSize = (TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
+        val expectedSize = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
         assertEquals(expectedSize, result.heartRate.proportional.size)
 
         val expectedResultHeartRate = doubleArrayOf(
@@ -126,13 +127,13 @@ class PreprocessorTests {
         )
 
         for (i in 0 until expectedResultDistance.size) {
-            //assertTrue(expectedResultDistance[i] == result.distance.integral[i]);
+            assertTrue(expectedResultDistance[i] == result.distance.integral[i]);
         }
     }
 
     @Test
     fun `Preprocessor run needs accept case where timeStart = first entry time`() {
-        val rawData = Predictor.MultiTimeSeriesEntries(
+        val rawData = MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = listOf(HeartRateEntry(time = timeStart, bpm = 60)),
             distance = listOf(
@@ -144,7 +145,7 @@ class PreprocessorTests {
             )
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+        val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
 
         val result = Preprocessor.run(rawData, fixedParameters)
 
@@ -156,13 +157,13 @@ class PreprocessorTests {
         // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
         val heartRateData: List<HeartRateEntry> = listOf()
 
-        val rawData = Predictor.MultiTimeSeriesEntries(
+        val rawData = MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
             distance = emptyList()
         )
 
-        val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+        val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
 
 
         var exceptionThrown = false

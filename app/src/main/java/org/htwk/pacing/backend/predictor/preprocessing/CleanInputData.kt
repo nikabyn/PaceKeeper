@@ -2,10 +2,11 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
-import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.QualityRatios
 
 //TODO: add pattern-matching-based invalid data sanitization, so that for different kinds of errors we can respond in different ways
-fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiTimeSeriesEntries, IPreprocessor.QualityRatios> {
+fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, QualityRatios> {
     /**
      * Cleans a generic list of time series data by sorting, removing duplicates, and filtering invalid entries.
      * Calculates the ratio of valid (kept) entries to the original number.
@@ -35,7 +36,7 @@ fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiT
     val (cleanedHeartRates, correctionHeartRatio) = cleanData(
         list = raw.heartRate,
         timeSortKey = { it.time },
-        isInvalid = { it.bpm < 30 || it.bpm > 220 }, //filter out if bpm outside sensible range
+        isInvalid = { it.bpm !in 30..220 }, //filter out if bpm outside sensible range
         distinctByKey = { it.time } //uniqueness based on timestamp
     )
 
@@ -47,13 +48,13 @@ fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiT
     )
 
     return Pair(
-        Predictor.MultiTimeSeriesEntries(
+        MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
             heartRate = cleanedHeartRates,
             distance = cleanedDistances
         ),
 
-        IPreprocessor.QualityRatios(
+        QualityRatios(
             cleanedHeartRatesRatio = Percentage(correctionHeartRatio),
             cleanedDistancesRatio = Percentage(correctionDistancesRatio)
         )
