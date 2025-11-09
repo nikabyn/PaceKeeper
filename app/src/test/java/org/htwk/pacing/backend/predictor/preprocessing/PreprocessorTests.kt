@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 //unit tests for preprocessor.run
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
@@ -152,9 +151,6 @@ class PreprocessorTests {
 
     @Test
     fun `Preprocessor run needs to throw exception of input data is empty`() {
-        val now = Clock.System.now()
-        val timeStart = now - TIME_SERIES_DURATION
-
         // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
         val heartRateData: List<HeartRateEntry> = listOf()
 
