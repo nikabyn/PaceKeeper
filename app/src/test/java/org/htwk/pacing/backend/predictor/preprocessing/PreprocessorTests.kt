@@ -115,12 +115,14 @@ class PreprocessorTests {
         //TODO: add expectation of accumulated sum as soon as we add discrete integration
         val expectedResultDistance = doubleArrayOf(
             0.0, //no value yet
-            /*800.0, //first distance entries
+            400.0, //first distance entries (1/2 of 800.0 here because we're doing trapezoidal integration)
             800.0,
             800.0,
             800.0,
+            875.0,
             950.0,
-            950.0*/
+            950.0,
+            950.0
         )
 
         for (i in 0 until expectedResultDistance.size) {
