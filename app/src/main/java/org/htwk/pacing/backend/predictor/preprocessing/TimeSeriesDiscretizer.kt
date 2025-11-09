@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
     /**
@@ -24,7 +25,7 @@ object TimeSeriesDiscretizer {
      */
     private fun calculateTimeBucketAverages(
         input: IPreprocessor.GenericTimeSeriesEntries
-    ): Map<Int, Double> {
+    ): SortedMap<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
         val timeSeriesType = input.type
@@ -50,51 +51,35 @@ object TimeSeriesDiscretizer {
                 group.map { it -> it.value }.average()
             }
         }
-        return timeBucketValues
+        return timeBucketValues.toSortedMap()
     }
 
     /**
-     * Fills in missing values in a discretized time series using linear interpolation.
+     * Converts a sorted list of time buckets into a discrete time series, with optional interpolation.
      * @param timeBucketAverages A map of discrete time buckets to their average/sum values.
-     * @param timeSeriesType The type of the time series (continuous or aggregated).
-     * @return A [DoubleArray] representing the complete, interpolated time series.
+     * @param timeSeriesType The type of the time series, which determines if interpolation should be applied.
+     * Linear interpolation is applied for [IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS] types.
+     * @return A [DoubleArray] representing the final, discrete time series.
      */
-    private fun discretizeWithMissingValues(
-        timeBucketAverages: Map<Int, Double>,
-        timeSeriesType: IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
+    private fun bucketsToDiscreteTimeSeries(
+        timeBucketAverages: SortedMap<Int, Double>,
+        doInterpolateBetweenBuckets: Boolean,
     ): DoubleArray {
-        require(timeBucketAverages.isNotEmpty())
-        val sortedBucketAverages = timeBucketAverages.toSortedMap()
-
-        //optionally pin the first and last known value to the borders so that we don't get missing
-        //values,this will lead to constant extrapolation at the edges
-        //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
-        val isContinuousTimeSeries =
-            (timeSeriesType == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
-        if (isContinuousTimeSeries) {
-            val firstValue = sortedBucketAverages.getValue(sortedBucketAverages.firstKey())
-            val lastValue = sortedBucketAverages.getValue(sortedBucketAverages.lastKey())
-            val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
-
-            sortedBucketAverages.putIfAbsent(0, firstValue)
-            sortedBucketAverages.putIfAbsent(lastKey, lastValue);
-        }
-
-        val sortedBucketList = sortedBucketAverages.toList()
+        val sortedBucketList = timeBucketAverages.toList().sortedBy { it.first }
 
         //resulting time series, with interpolated, discrete values
         val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
         //fill known points
-        for ((timeStep, value) in sortedBucketAverages) {
-            val index = timeStep.toInt()
+        for ((timeStep, value) in sortedBucketList) {
+            val index = timeStep
             if (index in discreteTimeSeries.indices) {
                 discreteTimeSeries[index] = value
             }
         }
 
         //we don't want interpolation on time series like distance/steps that are aggregated
-        if (!isContinuousTimeSeries) return discreteTimeSeries
+        if (!doInterpolateBetweenBuckets) return discreteTimeSeries
 
         //add interpolation steps between those points
         for ((startPoint, endPoint) in sortedBucketList.zipWithNext()) {
@@ -114,23 +99,60 @@ object TimeSeriesDiscretizer {
         }
 
         return discreteTimeSeries
+
+    }
+
+    /**
+     * Fills in the edge buckets (start and end) of a time series if they are missing.
+     * This is done by taking the first known value and assigning it to the start bucket (index 0),
+     * and taking the last known value and assigning it to the end bucket. This results in constant extrapolation at the edges.
+     * @param timeBucketAverages The sorted map of time buckets to their values.
+     * @return The same map, but potentially with the start and end buckets filled in.
+     */
+    private fun extrapolateEdgeBuckets(
+        timeBucketAverages: SortedMap<Int, Double>,
+        timeSeriesType: IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
+    ): SortedMap<Int, Double> {
+        require(timeBucketAverages.isNotEmpty())
+
+        val firstValue = timeBucketAverages.getValue(timeBucketAverages.firstKey())
+        val lastValue = timeBucketAverages.getValue(timeBucketAverages.lastKey())
+        val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
+
+        timeBucketAverages.putIfAbsent(0, firstValue)
+        timeBucketAverages.putIfAbsent(lastKey, lastValue);
+
+        return timeBucketAverages
     }
 
     /**
      * Discretizes a list of timed data points into a fixed-size time series array.
-     * @param timeStart The start time for the discretization.
-     * @param input The list of [GenericTimedDataPoint]s to process.
-     * @param isAggregation True if the input data corresponds to aggregated values like steps,
-     *  for such data we should take sums instead of averages in an interval,
-     *  since steps in a time interval accumulate, they don't average
+     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.type], it either calculates averages and interpolates
+     * for continuous data (like heart rate), or sums for aggregated data (like steps) in each time bucket.
+     * For continuous data, it also extrapolates to the start and end of the time series if needed.
+     * @param input The generic time series data to be processed.
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
         input: IPreprocessor.GenericTimeSeriesEntries
     ): DoubleArray {
-        val timeBucketAverages = calculateTimeBucketAverages(input)
+        var timeBucketAverages = calculateTimeBucketAverages(input)
 
-        val discreteTimeSeries = discretizeWithMissingValues(timeBucketAverages, input.type)
+        //optionally pin the first and last known value to the borders so that we don't get missing
+        //values,this will lead to constant extrapolation at the edges
+        //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
+        val isContinuous =
+            (input.type == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
+
+        if (isContinuous) {
+            timeBucketAverages = extrapolateEdgeBuckets(timeBucketAverages, input.type)
+        }
+
+        val discreteTimeSeries =
+            bucketsToDiscreteTimeSeries(
+                timeBucketAverages,
+                doInterpolateBetweenBuckets = isContinuous
+            )
 
         return discreteTimeSeries
     }
