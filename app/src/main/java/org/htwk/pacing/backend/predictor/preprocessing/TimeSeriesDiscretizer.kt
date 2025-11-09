@@ -100,25 +100,26 @@ object TimeSeriesDiscretizer {
     }
 
     /**
-     * Fills in the edge buckets (start and end) of a time series if they are missing.
+     * Fills the edge buckets (index 0 and the final index) of a time series map if they are missing.
+     * This method **mutates** the input map. It's designed as a private transformation step.
+     *
      * This is done by taking the first known value and assigning it to the start bucket (index 0),
-     * and taking the last known value and assigning it to the end bucket. This results in constant extrapolation at the edges.
-     * @param timeBucketAverages The sorted map of time buckets to their values.
-     * @return The same map, but potentially with the start and end buckets filled in.
+     * and taking the last known value and assigning it to the last bucket. This results in constant
+     * extrapolation at the edges.
+     *
+     * @param timeBucketAverages The sorted map of time buckets to their values, which will be modified in-place.
      */
-    private fun extrapolateEdgeBuckets(
+    private fun fillEdgeBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
-    ): SortedMap<Int, Double> {
-        require(timeBucketAverages.isNotEmpty())
+    ) {
+        if (timeBucketAverages.isEmpty()) return
 
         val firstValue = timeBucketAverages.getValue(timeBucketAverages.firstKey())
         val lastValue = timeBucketAverages.getValue(timeBucketAverages.lastKey())
         val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
 
         timeBucketAverages.putIfAbsent(0, firstValue)
-        timeBucketAverages.putIfAbsent(lastKey, lastValue);
-
-        return timeBucketAverages
+        timeBucketAverages.putIfAbsent(lastKey, lastValue)
     }
 
     /**
@@ -132,7 +133,7 @@ object TimeSeriesDiscretizer {
     fun discretizeTimeSeries(
         input: IPreprocessor.GenericTimeSeriesEntries
     ): DoubleArray {
-        var timeBucketAverages = calculateTimeBucketAverages(input)
+        val timeBucketAverages = calculateTimeBucketAverages(input)
 
         //optionally pin the first and last known value to the borders so that we don't get missing
         //values,this will lead to constant extrapolation at the edges
@@ -141,7 +142,7 @@ object TimeSeriesDiscretizer {
             (input.type == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
 
         if (isContinuous) {
-            timeBucketAverages = extrapolateEdgeBuckets(timeBucketAverages)
+            fillEdgeBuckets(timeBucketAverages)
         }
 
         val discreteTimeSeries =
