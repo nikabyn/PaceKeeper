@@ -45,7 +45,7 @@ object Preprocessor : IPreprocessor {
                     IPreprocessor.GenericTimeSeriesEntries(
                         timeStart = rawCleaned.timeStart,
                         data = raw.distance.map(::GenericTimedDataPoint),
-                        type = IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS
+                        type = IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED
                     )
                 )
             )
