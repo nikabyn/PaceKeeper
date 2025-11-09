@@ -16,11 +16,20 @@ data class GenericTimedDataPoint(
     val time: Instant,
     val value: Double
 ) {
+    /**
+     * Secondary constructor to create a [GenericTimedDataPoint] from a [HeartRateEntry].
+     * @param src The source [HeartRateEntry].
+     */
     constructor(src: HeartRateEntry) : this(
         time = src.time,
         value = src.bpm.toDouble()
     )
 
+    /**
+     * Secondary constructor to create a [GenericTimedDataPoint] from a [DistanceEntry].
+     * The time is taken from the end of the distance interval, and the value is the length in meters.
+     * @param src The source [DistanceEntry].
+     */
     constructor(src: DistanceEntry) : this(
         time = src.end,
         value = src.length.inMeters()

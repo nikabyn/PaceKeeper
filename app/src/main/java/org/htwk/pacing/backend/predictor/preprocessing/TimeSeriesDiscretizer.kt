@@ -55,8 +55,8 @@ object TimeSeriesDiscretizer {
 
     /**
      * Fills in missing values in a discretized time series using linear interpolation.
-     * @param timeBucketAverages A map of discrete time buckets to their average values.
-     * @param doEdgeExtrapolation Whether to extrapolate the first and last known values.
+     * @param timeBucketAverages A map of discrete time buckets to their average/sum values.
+     * @param timeSeriesType The type of the time series (continuous or aggregated).
      * @return A [DoubleArray] representing the complete, interpolated time series.
      */
     private fun discretizeWithMissingValues(

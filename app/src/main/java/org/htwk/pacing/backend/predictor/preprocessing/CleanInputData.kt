@@ -46,7 +46,6 @@ fun cleanInputData(raw: Predictor.MultiTimeSeriesEntries): Pair<Predictor.MultiT
         distinctByKey = { it.start to it.end } //if same end and start time, we treat as duplicate
     )
 
-    // TODO: see other ticket
     return Pair(
         Predictor.MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
