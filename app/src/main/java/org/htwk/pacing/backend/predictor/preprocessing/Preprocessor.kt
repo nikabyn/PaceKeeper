@@ -9,8 +9,15 @@ import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.datetime.Clock
 
 object Preprocessor : IPreprocessor {
+    //Data class weil wir zwischen Zuständen wechseln und Parameter brauchen (enum reicht nicht aus)
+    sealed class Mode{
+        data class Live(val discreteTimeSeries: MultiTimeSeriesDiscrete) : Mode() //brauche hier die normalen Daten
+        data class Fallback(val systemTime: Clock) : Mode()  // hier Uhrzeit und Datenbankzugriffe (wie geht das?)
+        data class DefaultValues(val personalVitalityThresholds: Predictor.FixedParameters) : Mode() // wenn hier die Standardwerte für eine Person stehen
+    }
 
     /**
      * A generic data structure to unify different time series data types
@@ -64,7 +71,7 @@ object Preprocessor : IPreprocessor {
      * @param input The list of `GenericTimedDataPoint`s to resample. Must not be empty.
      * @param step The time interval for the output grid.
      * @param holdEdges If `true`, uses constant extrapolation for values outside the input time range.
-     * @return A `DoubleArray` with the resampled time series values.
+     * @return A `DoubleArray` with th  e resampled time series values.
      * @throws IllegalArgumentException if `input` is empty.
      */
     private fun discretizeTimeSeries(
@@ -96,6 +103,8 @@ object Preprocessor : IPreprocessor {
         raw: Predictor.MultiTimeSeriesEntries,
         fixedParameters: Predictor.FixedParameters
     ): MultiTimeSeriesDiscrete {
+
+
         val (rawCleaned, quality_ratios) = cleanInputData(raw)
 
         return MultiTimeSeriesDiscrete(
