@@ -14,9 +14,29 @@ import kotlinx.datetime.Clock
 object Preprocessor : IPreprocessor {
     //Data class weil wir zwischen Zuständen wechseln und Parameter brauchen (enum reicht nicht aus)
     sealed class Mode{
-        data class Live(val discreteTimeSeries: MultiTimeSeriesDiscrete) : Mode() //brauche hier die normalen Daten
-        data class Fallback(val systemTime: Clock) : Mode()  // hier Uhrzeit und Datenbankzugriffe (wie geht das?)
-        data class DefaultValues(val personalVitalityThresholds: Predictor.FixedParameters) : Mode() // wenn hier die Standardwerte für eine Person stehen
+        data class Live(val discreteTimeSeries: MultiTimeSeriesDiscrete) : Mode() //hier können schon die diskreditierten Zeitreihen genutzt werden
+        data class Fallback(val entries: Predictor.MultiTimeSeriesEntries) : Mode()  // hier müssen Daten aus der Datenbank genutzt werden (Rohdaten)
+        data class DefaultValues(val personalVitalityThresholds: Predictor.FixedParameters) : Mode()
+    }
+
+    object ModeManager{
+        // Der aktuelle Modus, initial auf DefaultValues
+        private var currentMode: Mode = Mode.DefaultValues(Predictor.FixedParameters(0.0))
+        private const val liveThresholdsMinutes = 30L // Zeit, die die Uhr MAXIMAL Uhr ohne Daten haben darf
+
+        fun switchMode(newMode: Mode) {
+
+        }
+
+        // Muss ich alle Vitalwerte checken wann sie reinkamen oder reicht so einer? Boolean zurückgeben
+        private fun hasRecentData(entries: Predictor.MultiTimeSeriesEntries, liveThresholdsMinutes: Long){
+            val now = Clock.System.now()
+            val threshold = liveThresholdsMinutes.minutes
+
+            return
+        }
+
+        fun getCurrentMode(): Mode = currentMode
     }
 
     /**
