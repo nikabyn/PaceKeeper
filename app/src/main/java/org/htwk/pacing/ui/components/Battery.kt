@@ -29,7 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
@@ -54,9 +55,20 @@ import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.screens.HomeViewModel
 
 /**
- * Shows the current energy level as a continuous gradient that is cut off at the current energy.
- * Allows the user to accept the current energy prediction as correct
- * or adjust it based on how they feel.
+ * Displays a card representing the user's current energy level with interactive validation.
+ *
+ * The card shows a horizontal energy bar with a gradient corresponding to the current energy
+ * level. Users can either accept the predicted energy as correct or adjust it to reflect how
+ * they actually feel.
+ *
+ * Features:
+ * - Shows the current energy as a continuous gradient.
+ * - Makes the bar draggable to adjust energy levels when in editing mode.
+ * - Synchronizes with the [HomeViewModel] to persist user-validated energy levels.
+ *
+ * @param energy The initial predicted energy level (0.0..=1.0) to display in the bar.
+ * @param viewModel The [HomeViewModel] instance used to read and store validated energy levels.
+ * @param modifier Optional [Modifier] for layout, styling, or testing.
  */
 @Composable
 fun BatteryCard(
@@ -93,82 +105,16 @@ fun BatteryCard(
         viewModel.storeValidatedEnergyLevel(Validation.Adjusted, adjustedEnergy.doubleValue)
     }
 
-    val gradientColors = arrayOf(
-        Color(0xFFEC4242), // Red
-        Color(0xFFE1C508), // Yellow
-        Color(0xFF72D207), // Green
-    )
-
     CardWithTitle(
         title = stringResource(R.string.current_energy),
         modifier = modifier.testTag("BatteryCard")
     ) {
-        val cornerShape = MaterialTheme.shapes.large
-        val barWidth = remember { mutableIntStateOf(0) }
-
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .aspectRatio(2.5f)
-                .onGloballyPositioned { layoutCoordinates ->
-                    barWidth.intValue = layoutCoordinates.size.width
-                }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(cornerShape)
-                    .background(MaterialTheme.colorScheme.surfaceDim)
-                    .gradientBackground(
-                        currentEnergy = energy,
-                        adjustedEnergy = adjustedEnergy.doubleValue,
-                        colors = gradientColors,
-                        cornerShape = cornerShape,
-                    )
-                    .pointerInput(adjustingEnergy.value) {
-                        if (!adjustingEnergy.value) return@pointerInput
-
-                        val updateAdjustedEnergy = { x: Float ->
-                            adjustedEnergy.doubleValue = (x / size.width)
-                                .coerceIn(0f, 1f)
-                                .toDouble()
-                        }
-
-                        detectHorizontalDragGestures { change, _ ->
-                            change.consume()
-                            updateAdjustedEnergy(change.position.x)
-                        }
-                    }
-                    .testTag("BatteryBar")
-            )
-
-            if (!adjustingEnergy.value) return@Box
-
-            val handleSize = DpSize(24.dp, 32.dp)
-            Box(
-                modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            (adjustedEnergy.doubleValue * barWidth.intValue - handleSize.width.toPx() / 2).toInt(),
-                            0
-                        )
-                    }
-                    .size(handleSize)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .shadow(32.dp)
-                    .align(Alignment.CenterStart)
-                    .testTag("EnergyDragHandle")
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.rounded_drag_indicator_24),
-                    contentDescription = null,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-        }
+        EnergyBar(
+            currentEnergy = energy,
+            adjustedEnergy = adjustedEnergy.doubleValue,
+            adjusting = adjustingEnergy.value,
+            onAdjust = { adjustedEnergy.doubleValue = it },
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -213,8 +159,106 @@ fun BatteryCard(
     }
 }
 
+/**
+ * Displays a horizontal energy bar with a gradient representing the current energy level
+ * and an overlay for the (user) adjusted energy level.
+ *
+ * Features:
+ * - Shows the current energy as a continuous gradient.
+ * - Allows the user to adjust the energy level by dragging horizontally while `adjusting` is true.
+ * - Automatically clamps adjustments between 0.0 and 1.0.
+ * - Includes a draggable handle that visually aligns with the adjusted energy level.
+ *
+ * @param currentEnergy The baseline energy level (0.0..=1.0) to display in the gradient.
+ * @param adjustedEnergy The user-adjustable energy level (0.0..=1.0) that the overlay/handle represents.
+ * @param adjusting Whether the user is currently allowed to adjust the energy level.
+ * @param onAdjust Callback invoked whenever the user drags the bar to update the energy.
+ */
 @Composable
-fun ActionButton(
+private fun EnergyBar(
+    currentEnergy: Double,
+    adjustedEnergy: Double,
+    adjusting: Boolean,
+    onAdjust: (Double) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val gradientColors = arrayOf(
+        Color(0xFFEC4242), // Red
+        Color(0xFFE1C508), // Yellow
+        Color(0xFF72D207), // Green
+    )
+
+    val cornerShape = MaterialTheme.shapes.large
+    val barWidth = remember { mutableIntStateOf(0) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(2.5f)
+            .onGloballyPositioned { layoutCoordinates ->
+                barWidth.intValue = layoutCoordinates.size.width
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(adjusting) {
+                    if (!adjusting) return@pointerInput
+
+                    detectHorizontalDragGestures { change, _ ->
+                        change.consume()
+                        val updatedEnergyLevel =
+                            (change.position.x / size.width).coerceIn(0f, 1f).toDouble()
+                        onAdjust(updatedEnergyLevel)
+                    }
+                }
+                .clip(cornerShape)
+                .background(MaterialTheme.colorScheme.surfaceDim)
+                .gradientBars(
+                    currentEnergy = currentEnergy,
+                    adjustedEnergy = adjustedEnergy,
+                    colors = gradientColors,
+                    cornerShape = cornerShape,
+                )
+                .testTag("BatteryBar")
+        )
+
+        if (!adjusting) return@Box
+
+        val handleSize = DpSize(24.dp, 32.dp)
+        val handleShape = RoundedCornerShape(8.dp)
+        Box(
+            modifier = Modifier
+                .offset {
+                    // Always center handle on the end of the adjusted energy level bar
+                    IntOffset(
+                        (adjustedEnergy * barWidth.intValue - handleSize.width.toPx() / 2).toInt(),
+                        0
+                    )
+                }
+                .size(handleSize)
+                .dropShadow(
+                    shape = handleShape,
+                    shadow = Shadow(15.dp, spread = 2.dp, alpha = 0.15f),
+                )
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    shape = handleShape
+                )
+                .align(Alignment.CenterStart)
+                .testTag("EnergyDragHandle")
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.rounded_drag_indicator_24),
+                contentDescription = null,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionButton(
     onClick: () -> Unit,
     iconPainter: Painter,
     actionText: String,
@@ -223,7 +267,7 @@ fun ActionButton(
     Button(onClick, modifier) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Icon(
                 painter = iconPainter,
@@ -234,7 +278,20 @@ fun ActionButton(
     }
 }
 
-fun Modifier.gradientBackground(
+/**
+ * Draws a energy comparison bar with gradient fill and diagonal stripe overlay.
+ *
+ * This modifier visualizes the difference between `currentEnergy` and `adjustedEnergy`:
+ * - The base (current) energy is filled with a gradient.
+ * - The changed portion is highlighted with translucent gradient stripes.
+ * - Positive and negative changes are handled with opposite clipping logic.
+ *
+ * @param currentEnergy The original energy level (0.0..=1.0).
+ * @param adjustedEnergy The updated energy level (0.0..=1.0) after adjustment.
+ * @param colors The gradient colors used for both the base and highlight regions.
+ * @param cornerShape The shape used to define the bar corners.
+ */
+private fun Modifier.gradientBars(
     currentEnergy: Double,
     adjustedEnergy: Double,
     colors: Array<Color>,
@@ -257,6 +314,7 @@ fun Modifier.gradientBackground(
             cornerShape = cornerShape,
         )
 
+        // Calculate overlapping and difference paths for clipping regions
         val pathCutoffCurrent = Path.combine(
             when (change) {
                 Change.Negative -> PathOperation.ReverseDifference
@@ -275,6 +333,7 @@ fun Modifier.gradientBackground(
             Change.Positive -> pathAdjusted
         }
 
+        // Draw translucent overlay for the adjusted region
         clipPath(pathCutoffAdjusted) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
@@ -283,12 +342,12 @@ fun Modifier.gradientBackground(
             )
         }
 
+        // Draw diagonal stripes over the translucent region
         val pathStripes = pathDiagonalStripes(
             size = size,
             stripeWidthPx = 2.dp.toPx(),
             stripeSpacingPx = 12.dp.toPx(),
         )
-
         clipPath(Path.combine(PathOperation.Intersect, pathCutoffAdjusted, pathStripes)) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
@@ -296,6 +355,7 @@ fun Modifier.gradientBackground(
             )
         }
 
+        // Draw the solid gradient fill for the current energy level
         clipPath(pathCutoffCurrent) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
@@ -305,7 +365,15 @@ fun Modifier.gradientBackground(
     }
 )
 
-fun pathCurrent(
+/**
+ * Builds a [Path] representing the filled area for the current energy value.
+ *
+ * @param drawScope The current [DrawScope] in which the drawing occurs.
+ * @param currentEnergy The value of current energy (0.0..=1.0).
+ * @param cornerShape The shape defining the corners of the bar.
+ * @return A [Path] covering the current energy portion of the bar.
+ */
+private fun pathCurrent(
     drawScope: DrawScope,
     currentEnergy: Double,
     cornerShape: Shape,
@@ -320,7 +388,20 @@ fun pathCurrent(
     return Path().apply { addOutline(outlineCurrent) }
 }
 
-fun pathAdjusted(
+/**
+ * Builds a [Path] representing the adjusted energy level area.
+ *
+ * Depending on the direction of change, the path is offset so that
+ * positive changes grow rightward and negative changes shrink leftward.
+ *
+ * @param drawScope The current [DrawScope].
+ * @param adjustedEnergy The adjusted energy level (0.0..=1.0).
+ * @param change Whether the energy increased or decreased.
+ * @param cornerShape The shape defining the corners of the bar.
+ *
+ * @return A [Path] representing the adjusted energy region.
+ */
+private fun pathAdjusted(
     drawScope: DrawScope,
     adjustedEnergy: Double,
     change: Change,
@@ -349,7 +430,19 @@ fun pathAdjusted(
     }
 }
 
-fun pathDiagonalStripes(
+/**
+ * Generates a diagonal stripe pattern [Path] used for overlaying texture effects.
+ *
+ * The stripes are drawn at an angle across the component and will be
+ * combined with another [Path] via [PathOperation.Intersect] for masking.
+ *
+ * @param size The total drawable size.
+ * @param stripeWidthPx The width of each stripe in pixels.
+ * @param stripeSpacingPx The horizontal spacing between consecutive stripes in pixels.
+ *
+ * @return A [Path] containing repeating diagonal stripe shapes.
+ */
+private fun pathDiagonalStripes(
     size: Size,
     stripeWidthPx: Float,
     stripeSpacingPx: Float,

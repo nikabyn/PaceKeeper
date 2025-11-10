@@ -99,9 +99,9 @@ class HomeViewModel(
 ) : ViewModel() {
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = predictedEnergyLevelDao
-        .getAllLive()                            // Flow<List<Entry>>
-        .filter { it.isNotEmpty() }              // skip the “[]” emission
-        .debounce(200)                           // 200 ms of silence = stable
+        .getAllLive()
+        .filter { it.isNotEmpty() }
+        .debounce(200)
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
 
@@ -113,9 +113,9 @@ class HomeViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = Series<List<Double>>(
-                listOf(0.0, 0.0), // dummy value
-                listOf(0.0, 0.0)  // dummy value
+            initialValue = Series(
+                listOf(0.0, 0.0),
+                listOf(0.0, 0.0),
             )
         )
 
