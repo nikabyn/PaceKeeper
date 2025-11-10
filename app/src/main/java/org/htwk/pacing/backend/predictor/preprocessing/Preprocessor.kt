@@ -1,5 +1,7 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
@@ -42,9 +44,14 @@ object Preprocessor : IPreprocessor {
                 val entries = discretizeTimeSeries(
                     GenericTimeSeriesEntries(
                         timeStart = rawCleaned.timeStart,
-                        data = rawCleaned.metrics[metric]?.map {
-                            GenericTimedDataPoint(time = it.time, value = it.value)
-                        } ?: emptyList(),
+                        data = rawCleaned.metrics[metric]!!
+                            .map { it ->
+                                when (it) {
+                                    is HeartRateEntry -> GenericTimedDataPoint(it)
+                                    is DistanceEntry -> GenericTimedDataPoint(it)
+                                    else -> throw Exception("Unknown entry type")
+                                }
+                            },
                         type = metric.signalClass
                     )
                 )
