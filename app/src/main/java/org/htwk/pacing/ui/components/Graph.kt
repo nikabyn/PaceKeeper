@@ -18,14 +18,18 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.copy
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -34,7 +38,6 @@ import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
 import org.htwk.pacing.ui.moveTo
-import kotlin.math.abs
 
 /**
  * A series of values to be displayed by a graph component.
@@ -146,7 +149,7 @@ fun <C : Collection<Double>> Annotation(
     slot: @Composable ((yRange: ClosedRange<Double>, xRange: ClosedRange<Double>) -> Unit) =
         { _, _ -> Box(modifier = Modifier.fillMaxSize()) { } },
 ) {
-    val xRange = xConfig.range ?: defaultRange(series.x)
+    val xRange = xConfig.range ?: Graph.defaultRange(series.x)
     val xSteps = xConfig.steps ?: 3u;
     val xLabels: List<String> = when (xSteps) {
         0u -> emptyList()
@@ -158,7 +161,7 @@ fun <C : Collection<Double>> Annotation(
         }
     }
 
-    val yRange = yConfig.range ?: defaultRange(series.y)
+    val yRange = yConfig.range ?: Graph.defaultRange(series.y)
     val ySteps = yConfig.steps ?: 3u;
     val yLabels: List<String> = when (ySteps) {
         0u -> emptyList()
@@ -250,70 +253,95 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
 fun <C : Collection<Double>> Graph(
     series: Series<C>,
     modifier: Modifier = Modifier,
-    xRange: ClosedRange<Double> = defaultRange(series.x),
-    yRange: ClosedRange<Double> = defaultRange(series.y),
+    xRange: ClosedRange<Double> = Graph.defaultRange(series.x),
+    yRange: ClosedRange<Double> = Graph.defaultRange(series.y),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
-    val defaultColor = if (isSystemInDarkTheme()) Color.White else Color.Black
-    val defaultStyle = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-    val defaultFill =
-        if (isSystemInDarkTheme()) Color(1.0f, 1.0f, 1.0f, 0.1f) else Color(0.0f, 0.0f, 0.0f, 0.1f)
+    val fillColor = pathConfig.fill ?: Graph.defaultFillColor()
+    val strokeColor = pathConfig.color ?: Graph.defaultStrokeColor()
+    val strokeStyle = pathConfig.style ?: Graph.defaultStrokeStyle()
 
+    GraphCanvas(modifier) {
+        val paths = graphToPaths(series, size, xRange, yRange)
 
-    val relativeX = series.x.map { xValue ->
-        (xValue - xRange.start) / abs(xRange.endInclusive - xRange.start)
-    }
-    val relativeY = series.y.map { yValue ->
-        (yValue - yRange.start) / abs(yRange.endInclusive - yRange.start)
-    }
-
-    Canvas(
-        modifier = modifier
-            .fillMaxSize()
-            .clipToBounds()
-            .testTag("Graph")
-    ) {
-        val scope = this
-
-        fun toXCoord(x: Double) = x.toFloat()
-        fun toYCoord(y: Double) = (1.0f - y).toFloat()
-        fun toGraphCoords(x: Double, y: Double) = Float2D(toXCoord(x), toYCoord(y))
-
-        val path = Path()
-
-        if (series.x.isEmpty() || series.y.isEmpty()) {
-            return@Canvas
-        }
-
-        val start = toGraphCoords(relativeX.first(), relativeY.first())
-        path.moveTo(scope, start)
-
-        var end = start
-        for ((time, value) in relativeX.drop(1).zip(relativeY.drop(1))) {
-            end = toGraphCoords(time, value)
-            path.lineTo(scope, end)
+        if (pathConfig.hasFill) {
+            drawPath(paths.fill, fillColor)
         }
 
         if (pathConfig.hasStroke) {
-            drawPath(
-                path,
-                color = pathConfig.color ?: defaultColor,
-                style = pathConfig.style ?: defaultStyle
-            )
-        }
-
-        if (pathConfig.hasFill) {
-            path.lineTo(scope, Float2D(end.x, toYCoord(0.0)))
-            path.lineTo(scope, Float2D(start.x, toYCoord(0.0)))
-            path.lineTo(scope, start)
-
-            drawPath(path, color = pathConfig.fill ?: defaultFill)
+            drawPath(paths.line, strokeColor, style = strokeStyle)
         }
     }
 }
 
-private fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
-    val min = values.minOrNull() ?: 0.0
-    val max = values.maxOrNull() ?: 0.0
-    return min..max
+object Graph {
+    @Composable
+    fun defaultStrokeColor() = if (isSystemInDarkTheme()) Color.White else Color.Black
+
+    @Composable
+    fun defaultStrokeStyle() = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+
+    @Composable
+    fun defaultFillColor() =
+        if (isSystemInDarkTheme()) Color.Red.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.1f)
+
+    fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
+        val min = values.minOrNull() ?: 0.0
+        val max = values.maxOrNull() ?: 0.0
+        return min..max
+    }
+}
+
+
+@Composable
+fun GraphCanvas(
+    modifier: Modifier = Modifier,
+    onDraw: DrawScope.() -> Unit = { drawRect(color = Color.Magenta) }
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+            .graphicsLayer() {
+                // Cache the drawing as a GPU texture
+                compositingStrategy = CompositingStrategy.Offscreen
+                clip = true
+            }
+            .testTag("Graph"),
+        onDraw = onDraw,
+    )
+}
+
+data class GraphPaths(val line: Path, val fill: Path)
+
+fun <C : Collection<Double>> graphToPaths(
+    series: Series<C>,
+    size: Size,
+    xRange: ClosedRange<Double> = Graph.defaultRange(series.x),
+    yRange: ClosedRange<Double> = Graph.defaultRange(series.y),
+): GraphPaths {
+    val linePath = Path()
+
+    if (series.x.isEmpty() || series.y.isEmpty()) {
+        return GraphPaths(linePath, Path())
+    }
+
+    val posX = series.x.map { xValue ->
+        (((xValue - xRange.start) / (xRange.endInclusive - xRange.start)).toFloat() * size.width)
+    }
+    val posY = series.y.map { yValue ->
+        ((1f - ((yValue - yRange.start) / (yRange.endInclusive - yRange.start))).toFloat() * size.height)
+    }
+
+    linePath.moveTo(posX.first(), posY.first())
+    for ((x, y) in posX.drop(1).zip(posY.drop(1))) {
+        linePath.lineTo(x, y)
+    }
+
+    val fillPath = linePath.copy().apply {
+        lineTo(linePath.getBounds().right, size.height)
+        lineTo(linePath.getBounds().left, size.height)
+        close()
+    }
+
+    return GraphPaths(linePath, fillPath)
 }
