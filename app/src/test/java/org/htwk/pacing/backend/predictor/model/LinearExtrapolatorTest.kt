@@ -3,7 +3,6 @@ import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -95,13 +94,6 @@ class LinearExtrapolatorTest {
     private val stepsIntoFuture =
         (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds)
 
-    // Helper to calculate the expected result based on the user's formula
-    private fun calculateExpectedValue(x0: Double, y0: Double, x1: Double, y1: Double): Double {
-        if (x1 == x0) return y1 // Prevent division by zero, mirroring implicit behavior
-        val slope = (y1 - y0) / (x1 - x0)
-        return y1 + slope * (x1 + stepsIntoFuture)
-    }
-
     @Before
     fun setUp() {
         // Create a more realistic, non-linear time series of 288 elements.
@@ -118,7 +110,7 @@ class LinearExtrapolatorTest {
         }
     }
 
-    @Ignore("This test is for manual visualization inspection and requires a graphical environment.")
+    //@Ignore("This test is for manual visualization inspection and requires a graphical environment.")
     @Test
     fun `visualize the non-linear timeSeries using an external script`() {
         println("Preparing to plot time series data...")

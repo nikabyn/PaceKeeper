@@ -8,6 +8,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTim
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
+import kotlin.time.Duration
 
 /**
  * The IPreprocessor interface defines the contract for preprocessing raw time series data.
@@ -96,12 +97,13 @@ interface IPreprocessor {
      */
     data class MultiTimeSeriesDiscrete(
         val timeStart: Instant,
+        val duration: Duration,
 
         //will be expanded with more vitals
         //class 1 (continuous values)
         val heartRate: DiscretePID,
         //class 2 (aggregated values)
-        val distance: DiscreteIntegral
+        val distance: DiscreteIntegral,
     )
 
     /**

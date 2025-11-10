@@ -36,6 +36,7 @@ object Preprocessor : IPreprocessor {
 
         return MultiTimeSeriesDiscrete(
             timeStart = rawCleaned.timeStart,
+            duration = rawCleaned.duration,
             heartRate = DiscretePID.from(
                 discretizeTimeSeries(
                     GenericTimeSeriesEntries(

@@ -136,6 +136,9 @@ dependencies {
     //Splash Screen
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.material)
+
+    //Multik for Matrix Math
+    implementation(libs.multik.kotlin)
 }
 
 val exclusions = listOf(

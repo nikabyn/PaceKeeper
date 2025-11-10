@@ -26,6 +26,11 @@ class Predictor {
             10.minutes; //TODO: see what actually makes sense as duration
     }
 
+    enum class METRIC {
+        HEART_RATE,
+        DISTANCE
+    }
+
     /**
      * A container for raw, unprocessed, synchronized data from database, like heart rate.
      *
@@ -34,6 +39,7 @@ class Predictor {
      */
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
+        val duration: Duration = TIME_SERIES_DURATION,
 
         //we have to add more data sources later
         val heartRate: List<HeartRateEntry>,

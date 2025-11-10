@@ -3,7 +3,6 @@ package org.htwk.pacing.backend.predictor.model
 import org.htwk.pacing.backend.predictor.Predictor
 
 object LinearExtrapolator {
-
     private val stepsIntoFuture =
         (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds).toInt()
 
@@ -47,6 +46,16 @@ object LinearExtrapolator {
                 resultPoint = (stepsIntoFuture + timeSeries.size).toDouble() to result
             )
         }
+    }
+
+    data class MultiExtrapolationResult(
+        val extrapolations: Map<EXTRAPOLATION_STRATEGY, ExtrapolationLine>
+    )
+
+    fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
+        return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
+            it.strategy.runOnTimeSeries(timeSeries)
+        })
     }
 
     //TODO: use fibonacci here for optimal logarithmic coverage
@@ -150,15 +159,5 @@ object LinearExtrapolator {
                 IntRange((6 * 24), 0)
             )
         )
-    }
-
-    data class MultiExtrapolationResult(
-        val extrapolations: Map<EXTRAPOLATION_STRATEGY, ExtrapolationLine>
-    )
-
-    fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
-        return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
-            it.strategy.runOnTimeSeries(timeSeries)
-        })
     }
 }
