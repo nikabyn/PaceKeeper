@@ -35,7 +35,7 @@ interface ValidatedEnergyLevelDao : TimedSeries<ValidatedEnergyLevelEntry> {
     override suspend fun getLatest(): ValidatedEnergyLevelEntry?
 
     @Query("select * from validated_energy_level order by time desc limit 1")
-    fun getLatestLive(): Flow<ValidatedEnergyLevelEntry>
+    fun getLatestLive(): Flow<ValidatedEnergyLevelEntry?>
 
     @Query("select * from validated_energy_level where time between :begin and :end")
     override suspend fun getInRange(begin: Instant, end: Instant): List<ValidatedEnergyLevelEntry>
