@@ -245,9 +245,17 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
 }
 
 /**
- * A line graph.
+ * Draws a simple line graph for the given numeric [series].
  *
- * User must set Modifier.height(...)!
+ * The graph supports both stroke and fill rendering through [pathConfig].
+ * A height must be set with `Modifier.height(...)`.
+ *
+ * @param C The type of collection containing numeric data points.
+ * @param series The data series to render.
+ * @param modifier Modifier for layout and styling.
+ * @param xRange Range of X-axis values to display. Defaults to the min–max of [series.x].
+ * @param yRange Range of Y-axis values to display. Defaults to the min–max of [series.y].
+ * @param pathConfig Configuration for stroke and fill styles.
  */
 @Composable
 fun <C : Collection<Double>> Graph(
@@ -274,6 +282,9 @@ fun <C : Collection<Double>> Graph(
     }
 }
 
+/**
+ * Contains default configuration and helper functions for [Graph].
+ */
 object Graph {
     @Composable
     fun defaultStrokeColor() = if (isSystemInDarkTheme()) Color.White else Color.Black
@@ -291,7 +302,14 @@ object Graph {
     }
 }
 
-
+/**
+ * Composable canvas optimized for graph rendering.
+ *
+ * Applies GPU offscreen compositing for efficient redrawing.
+ *
+ * @param modifier Modifier for layout and styling.
+ * @param onDraw Drawing logic executed inside the [DrawScope].
+ */
 @Composable
 fun GraphCanvas(
     modifier: Modifier = Modifier,
@@ -305,13 +323,30 @@ fun GraphCanvas(
                 compositingStrategy = CompositingStrategy.Offscreen
                 clip = true
             }
-            .testTag("Graph"),
+            .testTag("GraphCanvas"),
         onDraw = onDraw,
     )
 }
 
+/**
+ * Holds the paths used for rendering a graph: the main line and the filled area beneath it.
+ *
+ * @property line The path representing the graph line.
+ * @property fill The path representing the filled region under the graph.
+ */
 data class GraphPaths(val line: Path, val fill: Path)
 
+/**
+ * Converts a numeric [series] into drawable [Path] objects representing
+ * the line and filled area of a graph.
+ *
+ * @param C The type of numeric collection.
+ * @param series The data series to convert into paths.
+ * @param size The canvas size for coordinate mapping.
+ * @param xRange The visible X-axis range.
+ * @param yRange The visible Y-axis range.
+ * @return A [GraphPaths] object containing line and fill paths.
+ */
 fun <C : Collection<Double>> graphToPaths(
     series: Series<C>,
     size: Size,
