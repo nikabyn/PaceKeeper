@@ -3,6 +3,7 @@ package org.htwk.pacing.ui
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
@@ -12,14 +13,19 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -41,22 +47,36 @@ fun Main() {
     PacingTheme {
         val navController = rememberNavController()
         val navBackStackEntry = navController.currentBackStackEntryAsState()
-        val parentRoute = navBackStackEntry?.value?.destination?.parent?.route
+        val parentRoute = navBackStackEntry.value?.destination?.parent?.route
         val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
+        val snackbarHostState = remember { SnackbarHostState() }
+
 
         if (parentRoute == "main_nav") {
             Scaffold(
                 bottomBar = { NavBar(navController, selectedDestination) },
+                snackbarHost = {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        snackbar = { data ->
+                            Snackbar(data, shape = RoundedCornerShape(10.dp))
+                        })
+                }
             ) { contentPadding ->
                 AppNavHost(
-                    navController,
+                    navController = navController,
+                    snackbarHostState = snackbarHostState,
                     modifier = Modifier
                         .padding(contentPadding)
                         .fillMaxSize()
                 )
             }
         } else {
-            AppNavHost(navController, modifier = Modifier.fillMaxSize())
+            AppNavHost(
+                navController = navController,
+                snackbarHostState = snackbarHostState,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
@@ -119,6 +139,7 @@ object Route {
 @Composable
 fun AppNavHost(
     navController: NavHostController,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier,
 ) {
     NavHost(
@@ -127,7 +148,12 @@ fun AppNavHost(
         modifier = modifier
     ) {
         navigation(route = "main_nav", startDestination = Route.HOME) {
-            composable(route = Route.HOME) { HomeScreen(navController) }
+            composable(route = Route.HOME) {
+                HomeScreen(
+                    navController = navController,
+                    snackbarHostState = snackbarHostState
+                )
+            }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
             composable(route = Route.SETTINGS) { SettingsScreen() }
         }

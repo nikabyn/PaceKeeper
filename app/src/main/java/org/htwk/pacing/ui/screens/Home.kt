@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,8 +44,9 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     navController: NavController,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = koinViewModel()
+    viewModel: HomeViewModel = koinViewModel(),
 ) {
     val latest by viewModel.predictedEnergyLevel.collectAsState()
 
@@ -86,7 +88,11 @@ fun HomeScreen(
                 maxPrediction = maxPrediction,
                 modifier = Modifier.height(300.dp)
             )
-            BatteryCard(energy = currentEnergy, viewModel)
+            BatteryCard(
+                energy = currentEnergy,
+                viewModel = viewModel,
+                snackbarHostState = snackbarHostState,
+            )
             LabelCard(energy = currentEnergy)
             FeelingSelectionCard(navController)
         }

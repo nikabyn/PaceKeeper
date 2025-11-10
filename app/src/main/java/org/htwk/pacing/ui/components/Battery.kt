@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,6 +27,7 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,12 +47,14 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.screens.HomeViewModel
@@ -74,8 +79,12 @@ import org.htwk.pacing.ui.screens.HomeViewModel
 fun BatteryCard(
     @FloatRange(from = 0.0, to = 1.0) energy: Double,
     viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val localContext = LocalContext.current
+
     val latestValidation by viewModel.latestValidatedEnergyLevel.collectAsState()
     val adjustedEnergy = remember { mutableDoubleStateOf(energy) }
     val adjustingEnergy = remember { mutableStateOf(false) }
@@ -88,9 +97,19 @@ fun BatteryCard(
     }
 
     var previousAdjustedEnergy = 0.0
+    val showSnackbar: (String) -> Unit = { message ->
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(
+                message = message,
+                withDismissAction = true,
+                duration = SnackbarDuration.Short,
+            )
+        }
+    }
     val onCorrect = {
         adjustedEnergy.doubleValue = energy
         viewModel.storeValidatedEnergyLevel(Validation.Correct, energy)
+        showSnackbar(localContext.getString(R.string.current_energy_saved))
     }
     val onAdjust = {
         previousAdjustedEnergy = adjustedEnergy.doubleValue
@@ -103,6 +122,7 @@ fun BatteryCard(
     val onSave = {
         adjustingEnergy.value = false;
         viewModel.storeValidatedEnergyLevel(Validation.Adjusted, adjustedEnergy.doubleValue)
+        showSnackbar(localContext.getString(R.string.adjusted_energy_saved))
     }
 
     CardWithTitle(

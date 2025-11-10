@@ -72,4 +72,6 @@
     <string name="label_energy_level_high">High energy level</string>
     <string name="label_energy_level_very_high">Very high energy level</string>
     <string name="label_energy_icon_name">Energy level icon</string>
+    <string name="current_energy_saved">Current energy level saved as correct.</string>
+    <string name="adjusted_energy_saved">Adjusted energy level saved as correct.</string>
 </resources>
