@@ -2,6 +2,8 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
@@ -22,7 +24,7 @@ object TimeSeriesDiscretizer {
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
      */
     private fun calculateTimeBucketAverages(
-        input: IPreprocessor.GenericTimeSeriesEntries
+        input: GenericTimeSeriesEntries
     ): SortedMap<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
@@ -42,10 +44,10 @@ object TimeSeriesDiscretizer {
 
         val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
             when (timeSeriesType) {
-                IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.AGGREGATED ->
+                TimeSeriesType.AGGREGATED ->
                     group.sumOf { it.value }
 
-                IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS ->
+                TimeSeriesType.CONTINUOUS ->
                     group.map { it.value }
                         .average() // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
             }
@@ -67,7 +69,8 @@ object TimeSeriesDiscretizer {
         //resulting time series, with interpolated, discrete values
         val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
-        //fill known points
+        //TODO: think about extracting this part into separate function
+        //fill known points from map
         for ((timeStep, value) in timeBucketAverages) {
             val index = timeStep
             if (index in discreteTimeSeries.indices) {
@@ -78,12 +81,13 @@ object TimeSeriesDiscretizer {
         //we don't want interpolation on time series like distance/steps that are aggregated
         if (!doInterpolateBetweenBuckets) return discreteTimeSeries
 
+        //TODO: think about extracting this part into separate function
         //add interpolation steps between those points
         for ((startPoint, endPoint) in timeBucketAverages.entries.zipWithNext()) {
             val (x0, y0) = startPoint
             val (x1, y1) = endPoint
 
-            val intervalSteps = (x1 - x0).toInt()
+            val intervalSteps = (x1 - x0)
             if (intervalSteps > 1) {
                 val slope = (y1 - y0) / intervalSteps.toDouble()
                 for (i in 1 until intervalSteps) {
@@ -131,7 +135,7 @@ object TimeSeriesDiscretizer {
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
-        input: IPreprocessor.GenericTimeSeriesEntries
+        input: GenericTimeSeriesEntries
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
@@ -139,7 +143,7 @@ object TimeSeriesDiscretizer {
         //values,this will lead to constant extrapolation at the edges
         //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
         val isContinuous =
-            (input.type == IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType.CONTINUOUS)
+            (input.type == TimeSeriesType.CONTINUOUS)
 
         if (isContinuous) {
             fillEdgeBuckets(timeBucketAverages)

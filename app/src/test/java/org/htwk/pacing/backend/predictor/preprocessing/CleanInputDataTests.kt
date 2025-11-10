@@ -4,7 +4,7 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
-import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -20,7 +20,7 @@ class CleanInputDataTests {
 
     @Test
     fun validHeartRatesAreKept() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 80),
@@ -42,7 +42,7 @@ class CleanInputDataTests {
 
     @Test
     fun invalidHeartRatesAreDeleted() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 20),   // <30 invalid
@@ -66,7 +66,7 @@ class CleanInputDataTests {
 
     @Test
     fun invalidAndDuplicateHeartRatesAreDeleted() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 20),              // <30 invalid
@@ -89,7 +89,7 @@ class CleanInputDataTests {
 
     @Test
     fun duplicateHeartRateEntriesAreRemoved() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 80),
@@ -111,7 +111,7 @@ class CleanInputDataTests {
 
     @Test
     fun validDistancesAreKept() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = listOf(
@@ -133,7 +133,7 @@ class CleanInputDataTests {
 
     @Test
     fun invalidDistancesAreDeleted() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = listOf(
@@ -155,7 +155,7 @@ class CleanInputDataTests {
 
     @Test
     fun duplicateDistanceEntriesAreRemoved() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = listOf(
@@ -177,7 +177,7 @@ class CleanInputDataTests {
 
     @Test
     fun timeStartIsRoughly6HoursBeforeNow() {
-        val raw = Predictor.MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = emptyList()
