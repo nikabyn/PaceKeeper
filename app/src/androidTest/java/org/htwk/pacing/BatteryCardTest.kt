@@ -1,5 +1,6 @@
 package org.htwk.pacing
 
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.animateMoveTo
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -32,9 +33,10 @@ class BatteryCardTest : KoinComponent {
     @Test
     fun testCorrectEnergyLevel() {
         val currentEnergy = 0.5
+        val snackbarHostState = SnackbarHostState()
 
         composeTestRule.setContent {
-            BatteryCard(currentEnergy, koinViewModel())
+            BatteryCard(currentEnergy, koinViewModel(), snackbarHostState)
         }
 
         composeTestRule.onNodeWithTag("ValidationCorrectButton").performClick()
@@ -50,9 +52,10 @@ class BatteryCardTest : KoinComponent {
     fun testAdjustEnergyLevel() {
         val currentEnergy = 0.5
         val adjustedEnergy = 1.0
+        val snackbarHostState = SnackbarHostState()
 
         composeTestRule.setContent {
-            BatteryCard(currentEnergy, koinViewModel())
+            BatteryCard(currentEnergy, koinViewModel(), snackbarHostState)
         }
 
         val adjustButton = composeTestRule.onNodeWithTag("ValidationAdjustButton")
