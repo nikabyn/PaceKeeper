@@ -58,7 +58,7 @@ class Predictor {
      * @param fixedParameters Static user-specific parameters, such as the anaerobic threshold, that do not change over the time series.
      * @return A [PredictedEnergyLevelEntry] containing the forecasted energy level percentage and the timestamp for which the prediction is valid.
      */
-    fun run(
+    fun predict(
         inputTimeSeries: MultiTimeSeriesEntries, /*fixed parameters like anaerobic threshold*/
         fixedParameters: FixedParameters,
     ): PredictedEnergyLevelEntry {
