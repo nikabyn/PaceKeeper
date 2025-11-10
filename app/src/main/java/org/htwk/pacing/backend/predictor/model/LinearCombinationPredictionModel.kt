@@ -3,6 +3,7 @@ package org.htwk.pacing.backend.predictor.model
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.ui.math.sigmoidStable
+import org.jetbrains.kotlinx.multik.api.identity
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.linalg.solve
 import org.jetbrains.kotlinx.multik.api.mk
@@ -11,26 +12,58 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import org.jetbrains.kotlinx.multik.ndarray.operations.plus
+import org.jetbrains.kotlinx.multik.ndarray.operations.times
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
+import kotlin.time.Duration.Companion.hours
 
 object LinearCombinationPredictionModel : IPredictionModel {
     val scaleParam = 1.0f; //TODO: replace with non-dummy, dynamic weight/offset parameters
     private var linearCoefficients: List<Double> = listOf()
 
-    fun leastSquares(A: D2Array<Double>, b: D1Array<Double>): D1Array<Double> {
-        val transposedA = A.transpose()                                 // (A^T)
-        val transposedATimesA = mk.linalg.dot(transposedA, A)   // (A^T) * A
-        val transposedATimesb = mk.linalg.dot(transposedA, b)       // (A^T) * b
-        val x =
-            mk.linalg.solve(
-                transposedATimesA,
-                transposedATimesb
-            )  //Solution of ((A^T)*A)*x = (A^T)*b
-        return x
+    /**
+     * Calculates the solution to the least squares problem Ax = b.
+     * This method finds the vector x that minimizes the Euclidean 2-norm ||Ax - b||^2.
+     * To solve for x, the normal equation (A^T * A)x = A^T * b is used.
+     * To improve numerical stability and prevent overfitting, this implementation uses Tikhonov regularization (also known as ridge regression).
+     * A small regularization term (lambda * I) is added to the A^T * A matrix, making the equation
+     * (A^T * A + lambda * I)x = A^T * b. This ensures the matrix is invertible.
+     *
+     * @param A The design matrix (m x n), where m is the number of observations and n is the number of features.
+     * @param b The vector of observed values (m-dimensional).
+     * @param regularization The regularization parameter (lambda), a small positive value to ensure the matrix is well-conditioned.
+     * @return The vector x (n-dimensional) that represents the least squares solution, typically the coefficients of the linear model.
+     */
+    fun leastSquares(
+        A: D2Array<Double>,
+        b: D1Array<Double>,
+        regularization: Double = 1e-6
+    ): D1Array<Double> {
+        //we solve this system of equations using the least squares method.
+        //the normal equation for least squares is (A^T * A)x = A^T * b.
+        //firstly, we compute the components of this equation.
+
+        //transpose the matrix A to get A^T.
+        val matrixAt = A.transpose()
+        //compute the matrix-matrix product A^T * A.
+        val matrixAtA = mk.linalg.dot(matrixAt, A)
+        //compute matrix-vector product A^T * b.
+        val vectorAtb = mk.linalg.dot(matrixAt, b)
+
+        //to improve numerical stability and prevent issues with singular or ill-conditioned matrices,
+        //apply Tikhonov regularization (also known as ridge regression).
+        //this involves adding a small multiple of the identity matrix (lambda * I) to A^T * A.
+        //this ensures that the matrix (A^T * A + lambda * I) is invertible.
+        val n = matrixAtA.shape[0]
+        val regularizedAtA = matrixAtA + mk.identity<Double>(n) * regularization
+
+        //solve regularized system of linear equations (A^T * A + lambda * I)x = A^T * b for x.
+        return mk.linalg.solve(regularizedAtA, vectorAtb)
     }
 
+
     fun train(regressionInput: IPreprocessor.MultiTimeSeriesDiscrete) {
-        require(regressionInput.duration > Predictor.TIME_SERIES_DURATION) //we can only run regression if we have enough data
+        require(regressionInput.duration > Predictor.TIME_SERIES_DURATION + 12.hours) //we can only run regression if we have enough data
 
         //split regressionInput into by 6 elements overlapping windows and determine extrapolations for each window
         val timeSeriesExtrapolationSources = regressionInput.metrics.flatMap {
