@@ -75,6 +75,24 @@ fun BatteryCard(
         }
     }
 
+    var previousAdjustedEnergy = 0.0
+    val onCorrect = {
+        adjustedEnergy.doubleValue = energy
+        viewModel.storeValidatedEnergyLevel(Validation.Correct, energy)
+    }
+    val onAdjust = {
+        previousAdjustedEnergy = adjustedEnergy.doubleValue
+        adjustingEnergy.value = true
+    }
+    val onCancel = {
+        adjustingEnergy.value = false
+        adjustedEnergy.doubleValue = previousAdjustedEnergy
+    }
+    val onSave = {
+        adjustingEnergy.value = false;
+        viewModel.storeValidatedEnergyLevel(Validation.Adjusted, adjustedEnergy.doubleValue)
+    }
+
     val gradientColors = arrayOf(
         Color(0xFFEC4242), // Red
         Color(0xFFE1C508), // Yellow
@@ -158,10 +176,7 @@ fun BatteryCard(
         ) {
             if (!adjustingEnergy.value) {
                 ActionButton(
-                    onClick = {
-                        adjustedEnergy.doubleValue = energy
-                        viewModel.storeValidatedEnergyLevel(Validation.Correct, energy)
-                    },
+                    onClick = onCorrect,
                     iconPainter = painterResource(R.drawable.rounded_check_24),
                     actionText = stringResource(R.string.correct),
                     modifier = Modifier
@@ -169,7 +184,7 @@ fun BatteryCard(
                         .testTag("ValidationCorrectButton")
                 )
                 ActionButton(
-                    onClick = { adjustingEnergy.value = true },
+                    onClick = onAdjust,
                     iconPainter = painterResource(R.drawable.rounded_edit_24px),
                     actionText = "Adjust",
                     modifier = Modifier
@@ -178,10 +193,7 @@ fun BatteryCard(
                 )
             } else {
                 TextButton(
-                    onClick = {
-                        adjustingEnergy.value = false
-                        adjustedEnergy.doubleValue = energy
-                    },
+                    onClick = onCancel,
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationAdjustCancelButton")
@@ -189,13 +201,7 @@ fun BatteryCard(
                     Text("Cancel")
                 }
                 Button(
-                    onClick = {
-                        adjustingEnergy.value = false;
-                        viewModel.storeValidatedEnergyLevel(
-                            Validation.Adjusted,
-                            adjustedEnergy.doubleValue
-                        )
-                    },
+                    onClick = onSave,
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationAdjustSaveButton")
