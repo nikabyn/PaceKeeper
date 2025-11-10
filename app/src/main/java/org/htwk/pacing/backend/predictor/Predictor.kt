@@ -35,7 +35,7 @@ class Predictor {
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
         val duration: Duration = TIME_SERIES_DURATION,
-        
+
         val heartRate: List<HeartRateEntry>,
         val distance: List<DistanceEntry>
     )
@@ -48,6 +48,14 @@ class Predictor {
         //we have to add more fixed vital parameters later
         val anaerobicThresholdBPM: Double
     )
+
+    fun train(
+        inputTimeSeries: MultiTimeSeriesEntries,
+        fixedParameters: FixedParameters,
+    ) {
+        val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
+        LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete);
+    }
 
     /**
      * Runs the prediction model to forecast the energy level.
