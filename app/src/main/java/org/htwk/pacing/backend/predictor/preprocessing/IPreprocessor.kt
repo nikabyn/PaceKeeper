@@ -4,8 +4,6 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
@@ -19,6 +17,23 @@ import kotlin.time.Duration
  * and derivatives.
  */
 interface IPreprocessor {
+
+    /**
+     * Enum to differentiate between time series types.
+     * see ui#38 for explanation of "classes" https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963
+     */
+    enum class TimeSeriesSignalClass {
+        /** For values that change continuously over time, like heart rate. */
+        CONTINUOUS,
+
+        /** For values that accumulate over time, like total steps or distance. */
+        AGGREGATED,
+    }
+
+    enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
+        HEART_RATE(TimeSeriesSignalClass.CONTINUOUS),
+        DISTANCE(TimeSeriesSignalClass.AGGREGATED),
+    }
 
     /**
      * A sealed interface representing the results of preprocessing on a single time series.
@@ -72,38 +87,20 @@ interface IPreprocessor {
     data class GenericTimeSeriesEntries(
         val timeStart: Instant,
         val data: List<GenericTimedDataPoint>,
-        val type: TimeSeriesType,
-    ) {
-        /**
-         * Enum to differentiate between time series types.
-         * see ui#38 for explanation of "classes" https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963
-         */
-        enum class TimeSeriesType {
-            /** For values that change continuously over time, like heart rate. */
-            CONTINUOUS,
-
-            /** For values that accumulate over time, like total steps or distance. */
-            AGGREGATED,
-        }
-    }
+        val type: TimeSeriesSignalClass,
+    )
 
 
     /**
      * A container for multiple, preprocessed, and discrete time series, ready for the model.
      * This is an internal data structure used between the preprocessor and the model.
      * @property timeStart The common starting timestamp for all contained time series.
-     * @property heartRate The preprocessed [DiscretePID] for heart rate.
-     * @property distance The preprocessed [DiscreteIntegral] for distance.
+     * @property metrics The preprocessed time series data, keyed by metric type.
      */
     data class MultiTimeSeriesDiscrete(
         val timeStart: Instant,
         val duration: Duration,
-
-        //will be expanded with more vitals
-        //class 1 (continuous values)
-        val heartRate: DiscretePID,
-        //class 2 (aggregated values)
-        val distance: DiscreteIntegral,
+        val metrics: Map<TimeSeriesMetric, DiscreteTimeSeriesResult>
     )
 
     /**

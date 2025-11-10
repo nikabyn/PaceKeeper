@@ -33,35 +33,44 @@ object LinearCombinationPredictionModel : IPredictionModel {
         require(regressionInput.duration > Predictor.TIME_SERIES_DURATION) //we can only run regression if we have enough data
 
         //split regressionInput into by 6 elements overlapping windows and determine extrapolations for each window
-        val timeSeriesExtrapolationSources: List<DoubleArray> = listOf(
-            regressionInput.heartRate.proportional,
-            regressionInput.heartRate.integral,
-            regressionInput.heartRate.derivative,
-            regressionInput.distance.integral,
-        )
+        val timeSeriesExtrapolationSources = regressionInput.metrics.flatMap {
+            when (val result = it.value) {
+                is IPreprocessor.DiscreteTimeSeriesResult.DiscretePID -> listOf(
+                    result.proportional,
+                    result.integral,
+                    result.derivative
+                )
+
+                is IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral -> listOf(
+                    result.integral
+                )
+            }
+        }
 
         val lastWindowBeginHour =
-            regressionInput.duration.inWholeHours - Predictor.TIME_SERIES_DURATION.inWholeHours - 6
+            (regressionInput.duration.inWholeHours - Predictor.TIME_SERIES_DURATION.inWholeHours - 6).toInt()
 
         val allExtrapolationResults: MutableList<List<Double>> = mutableListOf()
         val allExpectedFutureValues: MutableList<Double> = mutableListOf()
         for (hour in 0 until lastWindowBeginHour) {
             val sliceIndices =
                 IntRange(
-                    (hour * 6).toInt(),
-                    (Predictor.TIME_SERIES_DURATION.inWholeHours.toInt() + hour * 6).toInt()
+                    (hour * 6),
+                    (Predictor.TIME_SERIES_DURATION.inWholeHours.toInt() + hour * 6)
                 )
 
-            val flatExtrapolationResults = timeSeriesExtrapolationSources.flatMap {
-                LinearExtrapolator.multipleExtrapolate(it.sliceArray(sliceIndices)).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.resultPoint.second }
+            val flatExtrapolationResults = timeSeriesExtrapolationSources.flatMap { series ->
+                LinearExtrapolator.multipleExtrapolate(series.sliceArray(sliceIndices)).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.resultPoint.second }
             }
 
             allExtrapolationResults.add(flatExtrapolationResults)
 
             val futureIndex = sliceIndices.last + 2
             //set future expected value target
+            val heartRateMetric =
+                regressionInput.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE] as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
             allExpectedFutureValues.add(
-                regressionInput.heartRate.proportional[futureIndex]
+                heartRateMetric.proportional[futureIndex]
             )
         }
         //convert extrapolationResults to matrix
@@ -88,6 +97,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
     override fun predict(input: IPreprocessor.MultiTimeSeriesDiscrete): Double {
         //TODO: use integral and other derived time series in a linear combination model once they're
         // implemented in the preprocessor
-        return sigmoidStable(scaleParam * input.heartRate.proportional.last());
+        val heartRateMetric =
+            input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE] as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+        return sigmoidStable(scaleParam * heartRateMetric.proportional.last());
     }
 }

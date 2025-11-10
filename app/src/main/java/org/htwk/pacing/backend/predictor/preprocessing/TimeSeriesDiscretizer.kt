@@ -3,7 +3,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
@@ -44,10 +44,10 @@ object TimeSeriesDiscretizer {
 
         val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
             when (timeSeriesType) {
-                TimeSeriesType.AGGREGATED ->
+                TimeSeriesSignalClass.AGGREGATED ->
                     group.sumOf { it.value }
 
-                TimeSeriesType.CONTINUOUS ->
+                TimeSeriesSignalClass.CONTINUOUS ->
                     group.map { it.value }
                         .average() // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
             }
@@ -143,7 +143,7 @@ object TimeSeriesDiscretizer {
         //values,this will lead to constant extrapolation at the edges
         //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
         val isContinuous =
-            (input.type == TimeSeriesType.CONTINUOUS)
+            (input.type == TimeSeriesSignalClass.CONTINUOUS)
 
         if (isContinuous) {
             fillEdgeBuckets(timeBucketAverages)

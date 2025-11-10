@@ -1,10 +1,10 @@
 package org.htwk.pacing.backend.predictor
 
-import org.htwk.pacing.backend.database.DistanceEntry
-import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -26,24 +26,16 @@ class Predictor {
             10.minutes; //TODO: see what actually makes sense as duration
     }
 
-    enum class METRIC {
-        HEART_RATE,
-        DISTANCE
-    }
-
     /**
      * A container for raw, unprocessed, synchronized data from database, like heart rate.
      *
      * @property timeStart The common start time for all data streams.
-     * @property heartRate A list of [HeartRateEntry] objects.
+     * @property metrics A map of metric types to their corresponding time series data.
      */
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
         val duration: Duration = TIME_SERIES_DURATION,
-
-        //we have to add more data sources later
-        val heartRate: List<HeartRateEntry>,
-        val distance: List<DistanceEntry>
+        val metrics: Map<IPreprocessor.TimeSeriesMetric, List<TimedEntry>>
     )
 
     /**

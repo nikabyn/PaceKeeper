@@ -5,8 +5,9 @@ import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
@@ -37,24 +38,22 @@ object Preprocessor : IPreprocessor {
         return MultiTimeSeriesDiscrete(
             timeStart = rawCleaned.timeStart,
             duration = rawCleaned.duration,
-            heartRate = DiscretePID.from(
-                discretizeTimeSeries(
+            metrics = TimeSeriesMetric.entries.associateWith { metric ->
+                val entries = discretizeTimeSeries(
                     GenericTimeSeriesEntries(
                         timeStart = rawCleaned.timeStart,
-                        data = rawCleaned.heartRate.map(::GenericTimedDataPoint),
-                        type = TimeSeriesType.CONTINUOUS
+                        data = rawCleaned.metrics[metric]?.map {
+                            GenericTimedDataPoint(time = it.time, value = it.value)
+                        } ?: emptyList(),
+                        type = metric.signalClass
                     )
                 )
-            ),
-            distance = DiscreteIntegral.from(
-                discretizeTimeSeries(
-                    GenericTimeSeriesEntries(
-                        timeStart = rawCleaned.timeStart,
-                        data = raw.distance.map(::GenericTimedDataPoint),
-                        type = TimeSeriesType.AGGREGATED
-                    )
-                )
-            )
+
+                when (metric.signalClass) {
+                    TimeSeriesSignalClass.CONTINUOUS -> DiscretePID.from(entries)
+                    TimeSeriesSignalClass.AGGREGATED -> DiscreteIntegral.from(entries)
+                }
+            }
         )
     }
 }
