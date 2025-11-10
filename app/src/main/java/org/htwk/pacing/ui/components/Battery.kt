@@ -164,7 +164,7 @@ fun BatteryCard(
                         .weight(1f)
                         .testTag("ValidationAdjustCancelButton")
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
                 Button(
                     onClick = onSave,
@@ -172,7 +172,7 @@ fun BatteryCard(
                         .weight(1f)
                         .testTag("ValidationAdjustSaveButton")
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             }
         }
@@ -484,7 +484,7 @@ private fun pathDiagonalStripes(
     return path
 }
 
-enum class Change {
+private enum class Change {
     Negative,
     Positive,
 }
