@@ -1,10 +1,10 @@
 package org.htwk.pacing.backend.predictor
 
+import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
-import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -35,7 +35,9 @@ class Predictor {
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
         val duration: Duration = TIME_SERIES_DURATION,
-        val metrics: Map<IPreprocessor.TimeSeriesMetric, List<TimedEntry>>
+        
+        val heartRate: List<HeartRateEntry>,
+        val distance: List<DistanceEntry>
     )
 
     /**

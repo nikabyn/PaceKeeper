@@ -1,13 +1,11 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import org.htwk.pacing.backend.database.DistanceEntry
-import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
@@ -38,27 +36,24 @@ object Preprocessor : IPreprocessor {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
 
         return MultiTimeSeriesDiscrete(
-            timeStart = rawCleaned.timeStart,
-            duration = rawCleaned.duration,
+            timeStart = raw.timeStart,
+            duration = raw.duration,
             metrics = TimeSeriesMetric.entries.associateWith { metric ->
-                val entries = discretizeTimeSeries(
-                    GenericTimeSeriesEntries(
-                        timeStart = rawCleaned.timeStart,
-                        data = rawCleaned.metrics[metric]!!
-                            .map { it ->
-                                when (it) {
-                                    is HeartRateEntry -> GenericTimedDataPoint(it)
-                                    is DistanceEntry -> GenericTimedDataPoint(it)
-                                    else -> throw Exception("Unknown entry type")
-                                }
-                            },
-                        type = metric.signalClass
+                val discreteProportional = discretizeTimeSeries(
+                    SingleGenericTimeSeriesEntries(
+                        timeStart = raw.timeStart,
+                        duration = raw.duration,
+                        metric = metric,
+                        data = when (metric) {
+                            TimeSeriesMetric.HEART_RATE -> rawCleaned.heartRate.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.DISTANCE -> rawCleaned.distance.map(::GenericTimedDataPoint)
+                        }
                     )
                 )
 
                 when (metric.signalClass) {
-                    TimeSeriesSignalClass.CONTINUOUS -> DiscretePID.from(entries)
-                    TimeSeriesSignalClass.AGGREGATED -> DiscreteIntegral.from(entries)
+                    TimeSeriesSignalClass.CONTINUOUS -> DiscretePID.from(discreteProportional)
+                    TimeSeriesSignalClass.AGGREGATED -> DiscreteIntegral.from(discreteProportional)
                 }
             }
         )

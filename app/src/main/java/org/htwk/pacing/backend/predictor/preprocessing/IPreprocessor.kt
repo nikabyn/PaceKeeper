@@ -82,12 +82,13 @@ interface IPreprocessor {
      * A generic container for a single time series before preprocessing.
      * @property timeStart The starting timestamp of the time series.
      * @property data The list of timed data points.
-     * @property type The type of the time series (continuous or aggregated).
+     * @property signalClass The type of the time series (continuous or aggregated).
      */
-    data class GenericTimeSeriesEntries(
+    data class SingleGenericTimeSeriesEntries(
         val timeStart: Instant,
+        val duration: Duration,
+        val metric: TimeSeriesMetric,
         val data: List<GenericTimedDataPoint>,
-        val type: TimeSeriesSignalClass,
     )
 
 

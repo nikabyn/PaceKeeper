@@ -2,7 +2,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import java.util.SortedMap
 
@@ -18,17 +18,17 @@ object TimeSeriesDiscretizer {
 
     /**
      * Calculates the average value for each time bucket from a list of timed data points.
-     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.type], it either calculates the average
+     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.signalClass], it either calculates the average
      * (for continuous data) or the sum (for aggregated data) for each bucket.
      * @param input The generic time series data to be processed.
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
      */
     private fun calculateTimeBucketAverages(
-        input: GenericTimeSeriesEntries
+        input: SingleGenericTimeSeriesEntries
     ): SortedMap<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
-        val timeSeriesType = input.type
+        val timeSeriesType = input.metric.signalClass
 
         require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
         require(entries.minOf { it.time } >= timeStart) { "All entry times must be at or after the start time." }
@@ -128,14 +128,14 @@ object TimeSeriesDiscretizer {
 
     /**
      * Discretizes a list of timed data points into a fixed-size time series array.
-     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.type], it either calculates averages and interpolates
+     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.signalClass], it either calculates averages and interpolates
      * for continuous data (like heart rate), or sums for aggregated data (like steps) in each time bucket.
      * For continuous data, it also extrapolates to the start and end of the time series if needed.
      * @param input The generic time series data to be processed.
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
-        input: GenericTimeSeriesEntries
+        input: SingleGenericTimeSeriesEntries
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
@@ -143,7 +143,7 @@ object TimeSeriesDiscretizer {
         //values,this will lead to constant extrapolation at the edges
         //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
         val isContinuous =
-            (input.type == TimeSeriesSignalClass.CONTINUOUS)
+            (input.metric.signalClass == TimeSeriesSignalClass.CONTINUOUS)
 
         if (isContinuous) {
             fillEdgeBuckets(timeBucketAverages)
