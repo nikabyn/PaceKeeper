@@ -3,6 +3,7 @@ import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -110,7 +111,7 @@ class LinearExtrapolatorTest {
         }
     }
 
-    //@Ignore("This test is for manual visualization inspection and requires a graphical environment.")
+    @Ignore("This test is for manual visualization inspection and requires a graphical environment.")
     @Test
     fun `visualize the non-linear timeSeries using an external script`() {
         println("Preparing to plot time series data...")
