@@ -132,7 +132,7 @@ fun MeasurementsScreen(
                 zonesResult = HeartRateZones.calculateZones(input)
             )
 
-            GraphCard(
+            HRGraphCard(
                 title = stringResource(R.string.heart_rate_last_12_hours),
                 series = heartRate,
                 xConfig = AxisConfig(
@@ -149,7 +149,9 @@ fun MeasurementsScreen(
                     range = 40.0..160.0
                 ),
                 pathConfig = pathConfig,
+                zonesResult = HeartRateZones.calculateZones(input)
             )
+            /*
             HRGraphCard(
                 title = stringResource(R.string.heart_rate_last_12_hours),
                 series = heartRate,
@@ -173,7 +175,7 @@ fun MeasurementsScreen(
                 pathConfig = pathConfig,
                 zonesResult = HeartRateZones.calculateZones(input)
             )
-
+*/
             HistogramCard(
                 title = stringResource(R.string.heart_rate_histogram_last_24_hours),
                 series = heartRateHistogram,
