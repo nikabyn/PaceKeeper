@@ -22,33 +22,39 @@ object HeartRateZones {
 
     private fun calculateMaxHeartRate(age: Int, gender: Gender): Double {
         return when (gender) {
-            Gender.MALE -> 223 - (0.9 * age)
-            Gender.FEMALE -> 223 - age
-        } as Double
+            Gender.MALE -> 223.0 - (0.9 * age)
+            Gender.FEMALE -> 223.0 - age
+        }
     }
 
     private fun calculateAnaerobicThreshold(maxHeartRate: Double): Double {
         return maxHeartRate * 0.55
     }
 
+
     fun calculateZones(input: HeartRateInput): HeartRateZonesResult {
         val maxHR = calculateMaxHeartRate(input.age, input.gender)
         val threshold = calculateAnaerobicThreshold(maxHR)
 
-        // Sicherstellen, dass die Werte aufsteigend sind
-        val healthUpper = maxOf(input.restingHeartRate + 1, (input.restingHeartRate * 1.10).toInt())
-        val recoveryUpper = maxOf(healthUpper + 1, (input.restingHeartRate * 1.20).toInt())
-        val exertionUpper = maxOf(recoveryUpper + 1, threshold.toInt())
+        // Berechne die Zonen basierend auf Prozentsätzen vom Ruhepuls
+        val healthZoneUpper = (input.restingHeartRate * 1.10).toInt() // 0-10%
+        val recoveryZoneUpper = (input.restingHeartRate * 1.20).toInt() // 10-20%
+        val exertionZoneUpper = threshold.toInt() // 20% bis AS
 
-        // Validieren, dass exertionUpper nicht größer als maxHR ist
-        val safeExertionUpper = minOf(exertionUpper, maxHR.toInt() - 1)
+        // Sicherstellen, dass die Werte aufsteigend sind und keine Überschneidungen
+        val safeHealthUpper = maxOf(input.restingHeartRate + 1, healthZoneUpper)
+        val safeRecoveryUpper = maxOf(safeHealthUpper + 1, recoveryZoneUpper)
+        val safeExertionUpper = maxOf(safeRecoveryUpper + 1, exertionZoneUpper)
+
+        // Validieren, dass die obere Grenze nicht über der maximalen Herzfrequenz liegt
+        val finalExertionUpper = minOf(safeExertionUpper, maxHR.toInt() - 1)
 
         return HeartRateZonesResult(
             maxHeartRate = maxHR,
             anaerobicThreshold = threshold,
-            healthZone = input.restingHeartRate..healthUpper,
-            recoveryZone = (healthUpper + 1)..recoveryUpper, // Überschneidungen vermeiden
-            exertionZone = (recoveryUpper + 1)..safeExertionUpper
+            healthZone = input.restingHeartRate..safeHealthUpper,
+            recoveryZone = (safeHealthUpper + 1)..safeRecoveryUpper,
+            exertionZone = (safeRecoveryUpper + 1)..finalExertionUpper
         )
     }
 }

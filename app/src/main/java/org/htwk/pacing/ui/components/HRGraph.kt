@@ -32,6 +32,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
@@ -43,7 +44,7 @@ import kotlin.math.abs
  *
  * User should ensure that values are sorted!
  */
-data class HRSeries<C : Collection<Double>>(val x: C, val y: C)
+//data class HRSeries<C : Collection<Double>>(val x: C, val y: C)
 
 /**
  * Options for how the line graph should be drawn.
@@ -97,6 +98,7 @@ fun <C : Collection<Double>> HRGraphCard(
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
+    zonesResult: HeartRateZones.HeartRateZonesResult
 ) {
     CardWithTitle(
         title = title,
@@ -109,6 +111,7 @@ fun <C : Collection<Double>> HRGraphCard(
             xConfig = xConfig,
             yConfig = yConfig,
             pathConfig = pathConfig,
+            zonesResult = zonesResult
         )
     }
 }
@@ -125,6 +128,7 @@ fun <C : Collection<Double>> HRAnnotatedGraph(
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
+    zonesResult: HeartRateZones.HeartRateZonesResult
 ) {
     HRAnnotation(series, modifier, xConfig, yConfig) { xRange, yRange ->
         HRGraph(
@@ -132,6 +136,7 @@ fun <C : Collection<Double>> HRAnnotatedGraph(
             yRange = yRange,
             xRange = xRange,
             pathConfig = pathConfig,
+            zonesResult = zonesResult
         )
     }
 }
@@ -255,6 +260,7 @@ fun <C : Collection<Double>> HRGraph(
     xRange: ClosedRange<Double> = defaultRange(series.x),
     yRange: ClosedRange<Double> = defaultRange(series.y),
     pathConfig: PathConfig = PathConfig.withStroke(),
+    zonesResult: HeartRateZones.HeartRateZonesResult
 ) {
     val defaultColor = if (isSystemInDarkTheme()) Color.White else Color.Black
     val defaultStyle = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
@@ -269,6 +275,7 @@ fun <C : Collection<Double>> HRGraph(
         (yValue - yRange.start) / abs(yRange.endInclusive - yRange.start)
     }
 
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
@@ -276,11 +283,49 @@ fun <C : Collection<Double>> HRGraph(
             .testTag("Graph")
     ) {
         val scope = this
+        val zoneColors = listOf(
+            Color(0x3300FF00), // Grün für Health Zone
+            Color(0x3300FFFF), // Cyan für Recovery Zone
+            Color(0x33FFFF00), // Gelb für Exertion Zone
+            Color(0x33FF0000)  // Rot für den Bereich über der anaeroben Schwelle
+        )
+        listOf(
+            zonesResult.healthZone,
+            zonesResult.recoveryZone,
+            zonesResult.exertionZone
+        ).forEachIndexed { index, zone ->
 
-        val highlightMin = yRange.start
-        val highlightMax = 20.0
+            val highlightMin = zone.start.toDouble()
+            val highlightMax = zone.endInclusive.toDouble()
 
-        if (highlightMax > highlightMin && highlightMax < yRange.endInclusive) {
+            // Stelle sicher, dass die Zone innerhalb des sichtbaren Y-Bereichs liegt
+            if (highlightMax > yRange.start && highlightMin < yRange.endInclusive) {
+
+                // Begrenze die Werte auf den sichtbaren Bereich
+                val visibleMin = maxOf(highlightMin, yRange.start)
+                val visibleMax = minOf(highlightMax, yRange.endInclusive)
+
+                // Berechne die relativen Positionen
+                val relativeMin = (visibleMin - yRange.start) / (yRange.endInclusive - yRange.start)
+                val relativeMax = (visibleMax - yRange.start) / (yRange.endInclusive - yRange.start)
+
+                // Berechne die Canvas-Positionen
+                val yCanvasTop = size.height * (1f - relativeMax.toFloat())
+                val yCanvasBottom = size.height * (1f - relativeMin.toFloat())
+
+                // Zeichne den farbigen Bereich mit der entsprechenden Farbe
+                drawRect(
+                    color = zoneColors.getOrNull(index) ?: Color(0x33AAAAAA),
+                    topLeft = Offset(0f, yCanvasTop),
+                    size = Size(size.width, yCanvasBottom - yCanvasTop)
+                )
+            }
+        }
+        // Zusätzlich: Zeichne den Bereich über der anaeroben Schwelle (falls gewünscht)
+        val anaerobicThreshold = zonesResult.anaerobicThreshold
+        if (anaerobicThreshold > yRange.start && anaerobicThreshold < yRange.endInclusive) {
+            val highlightMin = anaerobicThreshold
+            val highlightMax = yRange.endInclusive
 
             val relativeMin = (highlightMin - yRange.start) / (yRange.endInclusive - yRange.start)
             val relativeMax = (highlightMax - yRange.start) / (yRange.endInclusive - yRange.start)
@@ -289,7 +334,7 @@ fun <C : Collection<Double>> HRGraph(
             val yCanvasBottom = size.height * (1f - relativeMin.toFloat())
 
             drawRect(
-                color = Color(0x33FF0000),
+                color = zoneColors[3], // Rote Farbe für Bereich über anaerober Schwelle
                 topLeft = Offset(0f, yCanvasTop),
                 size = Size(size.width, yCanvasBottom - yCanvasTop)
             )
