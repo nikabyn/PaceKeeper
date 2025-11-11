@@ -20,6 +20,8 @@ kotlinCsvJvm = "1.10.0"
 coreSplashScreen = "1.0.1"
 litert = "1.4.0"
 material = "1.12.0"
+multik = "0.2.3"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -55,6 +57,10 @@ litert-gpu = { module = "com.google.ai.edge.litert:litert-gpu", version.ref = "l
 litert-gpu-api = { module = "com.google.ai.edge.litert:litert-gpu-api", version.ref = "litert" }
 litert-support = { module = "com.google.ai.edge.litert:litert-support", version.ref = "litert" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+multik-core = { module = "org.jetbrains.kotlinx:multik-core", version.ref = "multik" }
+multik-kotlin = { module = "org.jetbrains.kotlinx:multik-kotlin", version.ref = "multik" }
+multik-default = { module = "org.jetbrains.kotlinx:multik-default", version.ref = "multik" }
+multik-openblas = { module = "org.jetbrains.kotlinx:multik-openblas", version.ref = "multik" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
