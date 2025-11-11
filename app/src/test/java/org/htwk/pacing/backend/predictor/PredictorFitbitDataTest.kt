@@ -220,6 +220,6 @@ class PredictorFitbitDataTest {
         println("prediction value: ${predictionResult.percentage}")
         println("training done")
 
-        assertEquals(true, true)
+        assertEquals(predictionResult.percentage.toDouble(), 66.92, delta = 0.1)
     }
 }

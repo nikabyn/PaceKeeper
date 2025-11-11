@@ -16,8 +16,14 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.times
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 
 object LinearCombinationPredictionModel : IPredictionModel {
-    val scaleParam = 1.0f; //TODO: replace with non-dummy, dynamic weight/offset parameters
     private var linearCoefficients: List<Double> = listOf()
+
+    data class TrainingSample(
+        val multiExtrapolations: List<Double>,
+        val expectedEnergyLevel: Double
+    )
+
+    private val trainingSamples: MutableList<TrainingSample> = mutableListOf()
 
     /**
      * Calculates the solution to the least squares problem Ax = b.
@@ -58,13 +64,6 @@ object LinearCombinationPredictionModel : IPredictionModel {
         //solve regularized system of linear equations (A^T * A + lambda * I)x = A^T * b for x.
         return mk.linalg.solve(regularizedAtA, vectorAtb)
     }
-
-    data class TrainingSample(
-        val multiExtrapolations: List<Double>,
-        val expectedEnergyLevel: Double
-    )
-
-    private val trainingSamples: MutableList<TrainingSample> = mutableListOf()
 
     private fun generateFlattenedMultiExtrapolationResults(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
