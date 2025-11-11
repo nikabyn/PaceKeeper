@@ -1,15 +1,16 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.*
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.*
-import org.htwk.pacing.backend.predictor.Predictor.Companion.TIME_SERIES_DURATION
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.Clock
+import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
     //Data class weil wir zwischen Zuständen wechseln und Parameter brauchen (enum reicht nicht aus)
@@ -39,108 +40,50 @@ object Preprocessor : IPreprocessor {
         fun getCurrentMode(): Mode = currentMode
     }
 
-    /**
-     * A generic data structure to unify different time series data types
-     * before passing them to the common processing functions.
-     */
-    private data class GenericTimedDataPoint(
-        val time: Instant,
-        val value: Double,
-    )
-
-    /**
-     * Processes continuous time series data, like heart rate.
-     * @param input The list of timed data points.
-     * @param now10min The reference start time for discretization.
-     * @return A [DiscretePID] object containing the discretized series and its derivatives/integrals.
-     */
-    private fun processContinuous(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-    ): DiscretePID {
-        val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
-        return DiscretePID(p, p.discreteTrapezoidalIntegral(), p.discreteDerivative())
-    }
-
-    /**
-     * Processes aggregated/counted time series data, like step count.
-     * @param input The list of timed data points.
-     * @param now10min The reference start time for discretization.
-     * @return A [DiscreteIntegral] object containing the discretized series derivative.
-     */
-    private fun processAggregated(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-    ): DiscreteIntegral {
-        val p = discretizeTimeSeries(timeStart + TIME_SERIES_DURATION, input)
-        return DiscreteIntegral(p.discreteTrapezoidalIntegral())
-    }
-
     //class 3) (unused for now), see ui#38
     private fun processDailyConstant(): Double {
         return 0.0
     }
 
     /**
-     * Resamples a time series to a uniform time grid.
-     *
-     * This function converts arbitrarily timed data points into a uniformly spaced series
-     * starting at `timeStart`, with a fixed `step` duration.
-     *
-     * @param timeStart The start time for the resampling grid.
-     * @param input The list of `GenericTimedDataPoint`s to resample. Must not be empty.
-     * @param step The time interval for the output grid.
-     * @param holdEdges If `true`, uses constant extrapolation for values outside the input time range.
-     * @return A `DoubleArray` with th  e resampled time series values.
-     * @throws IllegalArgumentException if `input` is empty.
-     */
-    private fun discretizeTimeSeries(
-        timeStart: Instant,
-        input: List<GenericTimedDataPoint>,
-        step: Duration = 10.minutes,
-        holdEdges: Boolean = true // bei false: lin. Extrapolation
-    ): DoubleArray {
-        //constant extrapolation of first value in time series
-        require(input.isNotEmpty())
-
-        //TODO: replace with actual resampling code (this is just a placeholder for a constant fill)
-        return DoubleArray((TIME_SERIES_DURATION.inWholeHours * 6).toInt()) { input[0].value }
-    }
-
-    /**
      * Executes the preprocessing pipeline on raw time series data.
      *
-     * This function takes raw, continuous time series data for various metrics (like heart rate)
-     * and transforms it into a discrete, uniformly sampled format suitable for the prediction model.
-     * It handles the conversion of each metric into a common `GenericTimedDataPoint` format
-     * before passing it to specialized processing functions (e.g., `processContinuous`).
+     * This function first cleans the input data and then transforms the raw, continuous time series
+     * data for various metrics (like heart rate and distance) into a discrete, uniformly sampled
+     * format suitable for the prediction model. It converts each metric into a common
+     * [IPreprocessor.GenericTimeSeriesEntries] format before passing it to the [TimeSeriesDiscretizer]
+     * for processing.
      *
      * @param raw The raw time series data, containing lists of data points for different metrics.
-     * @param fixedParameters Additional fixed parameters that might influence the preprocessing, though currently unused.
-     * @return A [MultiTimeSeriesDiscrete] object containing the processed, discretized time series data.
+     * @param fixedParameters Additional fixed parameters that might influence the preprocessing. (Currently unused).
+     * @return A [MultiTimeSeriesDiscrete] object containing the processed and discretized time series data.
      */
     override fun run(
-        raw: Predictor.MultiTimeSeriesEntries,
-        fixedParameters: Predictor.FixedParameters
+        raw: MultiTimeSeriesEntries,
+        fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
-
-
-        val (rawCleaned, quality_ratios) = cleanInputData(raw)
+        val (rawCleaned, qualityRatios) = cleanInputData(raw)
 
         return MultiTimeSeriesDiscrete(
             timeStart = rawCleaned.timeStart,
-            heartRate = processContinuous(rawCleaned.timeStart, rawCleaned.heartRate.map { it ->
-                GenericTimedDataPoint(
-                    it.time,
-                    it.bpm.toDouble()
+            heartRate = DiscretePID.from(
+                discretizeTimeSeries(
+                    GenericTimeSeriesEntries(
+                        timeStart = rawCleaned.timeStart,
+                        data = rawCleaned.heartRate.map(::GenericTimedDataPoint),
+                        type = TimeSeriesType.CONTINUOUS
+                    )
                 )
-            }),
-            distance = processAggregated(raw.timeStart, raw.distance.map { it ->
-                GenericTimedDataPoint(
-                    it.end,
-                    it.length.inMeters()
+            ),
+            distance = DiscreteIntegral.from(
+                discretizeTimeSeries(
+                    GenericTimeSeriesEntries(
+                        timeStart = rawCleaned.timeStart,
+                        data = raw.distance.map(::GenericTimedDataPoint),
+                        type = TimeSeriesType.AGGREGATED
+                    )
                 )
-            })
+            )
         )
     }
 }
