@@ -20,14 +20,14 @@ object HeartRateZones {
         val exertionZone: IntRange
     )
 
-    private fun calculateMaxHeartRate(age: Int, gender: Gender): Double {
+    fun calculateMaxHeartRate(age: Int, gender: Gender): Double {
         return when (gender) {
             Gender.MALE -> 223.0 - (0.9 * age)
             Gender.FEMALE -> 223.0 - age
         }
     }
 
-    private fun calculateAnaerobicThreshold(maxHeartRate: Double): Double {
+    fun calculateAnaerobicThreshold(maxHeartRate: Double): Double {
         return maxHeartRate * 0.55
     }
 
@@ -36,7 +36,7 @@ object HeartRateZones {
         val maxHR = calculateMaxHeartRate(input.age, input.gender)
         val threshold = calculateAnaerobicThreshold(maxHR)
 
-        val healthZoneLower = maxOf(30, (input.restingHeartRate * 0.90).toInt())
+        //val healthZoneLower = maxOf(30, (input.restingHeartRate * 0.90).toInt())
 
         // Berechne die Zonen basierend auf Prozentsätzen vom Ruhepuls
         val healthZoneUpper = (input.restingHeartRate * 1.10).toInt() // 0-10%
@@ -56,7 +56,7 @@ object HeartRateZones {
             anaerobicThreshold = threshold,
             healthZone = 0..safeHealthUpper,
             recoveryZone = (safeHealthUpper + 1)..safeRecoveryUpper,
-            exertionZone = (safeRecoveryUpper + 1)..(safeExertionUpper - 1)
+            exertionZone = (safeRecoveryUpper + 1)..safeExertionUpper
         )
     }
 }
