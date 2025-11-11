@@ -12,6 +12,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGener
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
+import org.htwk.pacing.backend.database.HeartRateEntry
 
 object Preprocessor : IPreprocessor {
     //Data class weil wir zwischen Zuständen wechseln und Parameter brauchen (enum reicht nicht aus)
@@ -64,6 +65,10 @@ object Preprocessor : IPreprocessor {
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
+
+        // --- Fallback-System für jede Metrik ---
+        val hrSeries = HeartRateFallback.ensureData(rawCleaned.heartRate, rawCleaned.timeStart)
+        val distSeries = DistanceFallback.ensureData(rawCleaned.distance, rawCleaned.timeStart)
 
         return MultiTimeSeriesDiscrete(
             timeStart = raw.timeStart,
