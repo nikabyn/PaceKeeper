@@ -7,6 +7,7 @@
     <string name="heart_rate_prediction">Heart Rate [bpm], Prediction</string>
     <string name="heart_rate_last_7_days">Heart Rate, last 7 days</string>
     <string name="heart_rate_last_12_hours">Heart Rate, last 12 hours</string>
+    <string name="heart_rate_histogram_last_24_hours">Heart Rate Histogram, last 24 hours</string>
     <string name="home">Home</string>
     <string name="measurements">Measurements</string>
     <string name="settings">Settings</string>

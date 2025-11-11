@@ -8,6 +8,7 @@
     <string name="heart_rate_prediction">Herzfrequenz [bpm], Vorhersage</string>
     <string name="heart_rate_last_7_days">Herzfrequenz, letzte 7 Tage</string>
     <string name="heart_rate_last_12_hours">Herzfrequenz, letzte 12 Stunden</string>
+    <string name="heart_rate_histogram_last_24_hours">Herzfrequenz-Histogram, letzte 24 Stunden</string>
     <string name="home">Home</string>
     <string name="measurements">Messungen</string>
     <string name="settings">Einstellungen</string>
