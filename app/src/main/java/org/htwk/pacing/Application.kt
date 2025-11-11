@@ -13,8 +13,11 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.appModule
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
+import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.productionModule
 import org.htwk.pacing.backend.scheduleEnergyCheckWorker
@@ -33,6 +36,12 @@ open class ProductionApplication : Application(), KoinComponent {
         startInjection()
         val wm = getWorkManager(this)
         enqueueWorkers(wm)
+        runBlocking {
+            val dao = getKoin().get<UserProfileDao>()
+            if (dao.getCurrentProfileDirect() == null) {
+                dao.insertOrUpdate(UserProfileEntry.createInitial())
+            }
+        }
     }
 
     open fun startInjection() {

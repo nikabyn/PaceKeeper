@@ -28,7 +28,6 @@ import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.backend.database.UserProfileDao
-import org.htwk.pacing.ui.screens.UserProfileScreen
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -72,7 +71,10 @@ val appModule = module {
 
     single<MLModel> { MLModel(get()) }
 
-    single<UserProfileDao> { get<PacingDatabase>().userProfileDao() }
+    //initialen Eintrag für User Profile laden
+    single<UserProfileDao> {
+        get<PacingDatabase>().userProfileDao()
+    }
 
     viewModel { HomeViewModel(get(), get()) }
     viewModel { MeasurementsViewModel(get(), get(), get(), get()) }

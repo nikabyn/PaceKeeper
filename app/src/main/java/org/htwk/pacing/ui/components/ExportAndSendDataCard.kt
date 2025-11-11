@@ -9,12 +9,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.export.sendDatabaseToServer
+import org.htwk.pacing.backend.export.exportAndSendData
+import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.R
 
 @Composable
-fun ExportAndSendDataCard() {
+fun ExportAndSendDataCard(
+    userProfileViewModel: UserProfileViewModel
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -22,14 +27,18 @@ fun ExportAndSendDataCard() {
     var statusMessage by remember { mutableStateOf("") }
     var isSuccess by remember { mutableStateOf(false) }
 
+    val statusErrorSendingDatabase = stringResource(R.string.status_error_sending_database)
+    val statusSuccessDatabaseSent = stringResource(R.string.status_success_database_sent)
+    val statusErrorGenericSending = stringResource(R.string.status_error_generic_sending)
+
     suspend fun performSend() {
         try {
-            val success = sendDatabaseToServer(context)
+            val success = exportAndSendData(context, userProfileViewModel)
             isSuccess = success
             statusMessage = if (success)
-                "Datenbank erfolgreich versendet!"
+                statusSuccessDatabaseSent
             else
-                "Fehler beim Versenden der Datenbank"
+                statusErrorSendingDatabase
         } catch (e: Exception) {
             Log.e("ExportAndSend", "Fehler beim Senden", e)
             isSuccess = false
@@ -54,10 +63,10 @@ fun ExportAndSendDataCard() {
             .clip(RoundedCornerShape(8.dp))
             .padding(16.dp)
     ) {
-        Text("Datenbank exportieren und versenden", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.title_export_send_database), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(12.dp))
         Text(
-            "Sendet die komplette Datenbank an den Server.",
+            stringResource(R.string.description_export_send_database),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -75,9 +84,9 @@ fun ExportAndSendDataCard() {
                         .height(20.dp),
                     strokeWidth = 2.dp
                 )
-                Text("Wird versendet...")
+                Text(stringResource(R.string.button_sending))
             } else {
-                Text("Jetzt versenden")
+                Text(stringResource(R.string.button_send_now))
             }
         }
 

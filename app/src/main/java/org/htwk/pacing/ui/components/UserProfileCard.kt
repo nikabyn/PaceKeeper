@@ -13,6 +13,8 @@ import androidx.navigation.NavController
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import org.htwk.pacing.R
 import org.htwk.pacing.ui.Route
 
 
@@ -21,20 +23,19 @@ fun UserProfileCard(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(top = 16.dp)
             .clip(RoundedCornerShape(12.dp))
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
             .clickable { navController.navigate(Route.USERPROFILE) }
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Person, contentDescription = "Profil", modifier = Modifier.size(32.dp))
+            Icon(Icons.Filled.Person, contentDescription = stringResource(R.string.icon_profile_description), modifier = Modifier.size(32.dp))
             Spacer(Modifier.width(16.dp))
             Column {
-                Text("Benutzerprofil", style = MaterialTheme.typography.titleMedium)
-                Text("Profil bearbeiten", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.profile_card_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.profile_card_description), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
-
-

@@ -2,6 +2,10 @@ package org.htwk.pacing.backend.database
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
+
+val cleanUuid: String = UUID.randomUUID().toString().replace("-", "")
+val shortUserId: String = cleanUuid.substring(0, 15)
 
 @Entity(tableName = "user_profile")
 data class UserProfileEntry(
@@ -52,6 +56,27 @@ data class UserProfileEntry(
         ASTHMA,
         OTHER
     }
+    companion object {
+        fun createInitial(): UserProfileEntry {
+            return UserProfileEntry(
+                // id wird von Room generiert (0L)
+                userId = shortUserId,
+                nickname = null,
+                sex = Sex.UNSPECIFIED,
+                birthYear = null,
+                heightCm = null,
+                weightKg = null,
+                amputationLevel = null,
+                fatigueSensitivity = null,
+                activityBaseline = null,
+                anaerobicThreshold = null,
+                bellScale = null,
+                illnessStartDate = null,
+                diagnosis = null,
+                fitnessTracker = null
+            )
+        }
+    }
 }
 
 @Dao
@@ -64,4 +89,7 @@ interface UserProfileDao {
 
     @Query("DELETE FROM user_profile")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM user_profile LIMIT 1")
+    suspend fun getCurrentProfileDirect(): UserProfileEntry?
 }

@@ -70,7 +70,8 @@ import org.htwk.pacing.ui.components.UserProfileCard
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = koinViewModel()
+    viewModel: SettingsViewModel = koinViewModel(),
+    userProfileViewModel: UserProfileViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val isConnected by viewModel.isConnected.collectAsState()
@@ -134,7 +135,9 @@ fun SettingsScreen(
             }
 
             UserProfileCard(navController = navController)
+            ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
         }
+
     }
 
     if (showDialog) {
@@ -197,7 +200,7 @@ fun HealthConnectItem(connected: Boolean, db: PacingDatabase, onClick: () -> Uni
     HeartRateCard()
     ImportDataHealthConnect()
     ImportDemoDataHealthConnect()
-    ExportAndSendDataCard()
+
 }
 
 class SettingsViewModel(

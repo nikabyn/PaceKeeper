@@ -44,7 +44,7 @@ fun Main() {
     PacingTheme {
         val navController = rememberNavController()
         val navBackStackEntry = navController.currentBackStackEntryAsState()
-        val parentRoute = navBackStackEntry?.value?.destination?.parent?.route
+        val parentRoute = navBackStackEntry.value?.destination?.parent?.route
         val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
 
         if (parentRoute == "main_nav") {
@@ -86,7 +86,7 @@ fun NavBar(
 
 enum class NavBarEntries(
     val route: String,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val icon: @Composable () -> Unit,
 ) {
     HOME(
@@ -138,8 +138,7 @@ fun AppNavHost(
                 val userProfileViewModel: UserProfileViewModel = koinViewModel()
                 UserProfileScreen(
                     navController = navController,
-                    viewModel = userProfileViewModel,
-                    onSaveProfile = { profile -> userProfileViewModel.saveProfile(profile) }
+                    viewModel = userProfileViewModel
                 )
             }
         }

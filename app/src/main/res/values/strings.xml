@@ -69,8 +69,37 @@
     <string name="label_energy_level_high">High energy level</string>
     <string name="label_energy_level_very_high">Very high energy level</string>
     <string name="label_energy_icon_name">Energy level icon</string>
-        <string name="profile_card_title">Benutzerprofil</string>
-        <string name="profile_card_description">Grunddaten für Pacing-Werte eingeben/bearbeiten</string>
-        <string name="icon_profile_description">Profil Icon</string>
-        <string name="icon_settings_description">Einstellungen Icon</string>
+    <string name="profile_card_title">User Profile</string>
+    <string name="profile_card_description">Enter/edit basic data for Pacing values</string>
+    <string name="icon_profile_description">Profile Icon</string>
+    <string name="icon_settings_description">Settings Icon</string>
+    <string name="title_export_send_database">Export and Send Database</string>
+    <string name="description_export_send_database">Sends the complete database to the server.</string>
+    <string name="button_send_now">Send Now</string>
+    <string name="button_sending">Sending...</string>
+    <string name="status_success_database_sent">Database successfully sent!</string>
+    <string name="status_error_sending_database">Error sending the database</string>
+    <string name="status_error_generic_sending">Error:</string>
+    <string name="label_back">Back</string>
+    <string name="title_user_profile">User Profile</string>
+    <string name="button_save_profile">Save Profile</string>
+
+    <string name="label_nickname">Nickname</string>
+    <string name="label_birth_year">Birth Year</string>
+    <string name="label_height_cm">Height (cm)</string>
+    <string name="label_weight_kg">Weight (kg)</string>
+    <string name="label_sex">Sex</string>
+    <string name="label_amputation_level">Amputation Level</string>
+    <string name="label_diagnosis">Diagnosis</string>
+    <string name="label_fatigue_sensitivity">Fatigue Sensitivity</string>
+    <string name="label_activity_baseline">Activity Baseline</string>
+    <string name="label_anaerobic_threshold">Anaerobic Threshold</string>
+    <string name="label_bell_scale">Bell Scale</string>
+    <string name="label_fitness_tracker">Fitness Tracker</string>
+    <string name="option_none">None</string>
+
+    <string name="dialog_unsaved_title">Unsaved Changes</string>
+    <string name="dialog_unsaved_message">Do you want to leave this page? Unsaved changes will be lost.</string>
+    <string name="dialog_unsaved_confirm_leave">Leave</string>
+    <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 </resources>

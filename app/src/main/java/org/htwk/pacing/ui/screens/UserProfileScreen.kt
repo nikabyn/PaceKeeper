@@ -1,19 +1,21 @@
 package org.htwk.pacing.ui.screens
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -24,14 +26,12 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.Route
-import java.text.SimpleDateFormat
-import java.util.*
+import org.htwk.pacing.R
 
 @Composable
 fun UserProfileScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel,
-    onSaveProfile: (UserProfileEntry) -> Unit
+    viewModel: UserProfileViewModel
 ) {
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return
@@ -50,6 +50,42 @@ fun UserProfileScreen(
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
+    // States für Dialog und ob Änderungen vorliegen
+    var showUnsavedChangesDialog by remember { mutableStateOf(false) }
+    
+    // 1. Funktion zur Prüfung auf Änderungen
+    val hasUnsavedChanges by remember(
+        nickname, birthYear, heightCm, weightKg, selectedSex, selectedAmputationLevel,
+        selectedDiagnosis, fatigueSensitivity, activityBaseline, anaerobicThreshold,
+        bellScale, fitnessTracker
+    ) {
+        // Erstellen Sie das aktuelle Profil-Objekt basierend auf den lokalen States
+        val currentProfile = profile.copy(
+            nickname = nickname.takeIf { it.isNotBlank() },
+            birthYear = birthYear.toIntOrNull(),
+            heightCm = heightCm.toIntOrNull(),
+            weightKg = weightKg.toIntOrNull(),
+            sex = selectedSex,
+            amputationLevel = selectedAmputationLevel,
+            diagnosis = selectedDiagnosis,
+            fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
+            activityBaseline = activityBaseline.toIntOrNull(),
+            anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
+            bellScale = bellScale.toIntOrNull(),
+            fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
+        )
+        // Prüfen Sie, ob das aktuelle Objekt vom originalen Objekt abweicht
+        mutableStateOf(currentProfile != profile)
+    }
+    // A. Logik für physischen/Gesten-Zurück-Button
+    BackHandler(enabled = true) {
+        if (hasUnsavedChanges) {
+            showUnsavedChangesDialog = true
+        } else {
+            navController.popBackStack()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,16 +99,24 @@ fun UserProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+            IconButton(
+                onClick = {
+                    if (hasUnsavedChanges) {
+                        showUnsavedChangesDialog = true
+                    } else {
+                        navController.popBackStack()
+                    }
+                }
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.label_back))
             }
-            Text("Benutzerprofil", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
         }
 
         OutlinedTextField(
             value = nickname,
             onValueChange = { nickname = it },
-            label = { Text("Spitzname") },
+            label = { Text(stringResource(R.string.label_nickname)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -80,7 +124,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = birthYear,
             onValueChange = { birthYear = it.filter { c -> c.isDigit() }.take(4) },
-            label = { Text("Geburtsjahr") },
+            label = { Text(stringResource(R.string.label_birth_year)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -89,7 +133,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = heightCm,
             onValueChange = { heightCm = it.filter { c -> c.isDigit() } },
-            label = { Text("Größe (cm)") },
+            label = { Text(stringResource(R.string.label_height_cm)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -98,7 +142,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = weightKg,
             onValueChange = { weightKg = it.filter { c -> c.isDigit() } },
-            label = { Text("Gewicht (kg)") },
+            label = { Text(stringResource(R.string.label_weight_kg)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -106,7 +150,7 @@ fun UserProfileScreen(
 
         // Geschlecht
         DropdownMenuField(
-            label = "Geschlecht",
+            label = stringResource(R.string.label_sex),
             options = UserProfileEntry.Sex.entries.map { it.name },
             selectedOption = selectedSex.name,
             onOptionSelected = { selectedSex = UserProfileEntry.Sex.valueOf(it) }
@@ -114,7 +158,7 @@ fun UserProfileScreen(
 
         // Amputationslevel
         DropdownMenuField(
-            label = "Amputationslevel",
+            label = stringResource(R.string.label_amputation_level),
             options = UserProfileEntry.AmputationLevel.entries.map { it.name },
             selectedOption = selectedAmputationLevel?.name ?: "NONE",
             onOptionSelected = { selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it) }
@@ -122,7 +166,7 @@ fun UserProfileScreen(
 
         // Diagnose
         DropdownMenuField(
-            label = "Diagnose",
+            label = stringResource(R.string.label_diagnosis),
             options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
             selectedOption = selectedDiagnosis?.name ?: "Keine",
             onOptionSelected = { 
@@ -133,7 +177,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = fatigueSensitivity,
             onValueChange = { fatigueSensitivity = it.filter { c -> c.isDigit() } },
-            label = { Text("Müdigkeitsempfindlichkeit") },
+            label = { Text(stringResource(R.string.label_fatigue_sensitivity)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -142,7 +186,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = activityBaseline,
             onValueChange = { activityBaseline = it.filter { c -> c.isDigit() } },
-            label = { Text("Aktivitäts-Baseline") },
+            label = { Text(stringResource(R.string.label_activity_baseline)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -151,7 +195,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = anaerobicThreshold,
             onValueChange = { anaerobicThreshold = it.filter { c -> c.isDigit() } },
-            label = { Text("Anaerobische Schwelle") },
+            label = { Text(stringResource(R.string.label_anaerobic_threshold)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -160,7 +204,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = bellScale,
             onValueChange = { bellScale = it.filter { c -> c.isDigit() } },
-            label = { Text("Bell-Skala") },
+            label = { Text(stringResource(R.string.label_bell_scale)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -169,7 +213,7 @@ fun UserProfileScreen(
         OutlinedTextField(
             value = fitnessTracker,
             onValueChange = { fitnessTracker = it },
-            label = { Text("Fitness-Tracker") },
+            label = { Text(stringResource(R.string.label_fitness_tracker)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -194,6 +238,7 @@ fun UserProfileScreen(
                 )
                 Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
                 viewModel.saveProfile(updatedProfile)
+                //onSaveProfile(updatedProfile)
                 Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
                 navController.navigate(Route.SETTINGS) {
                     popUpTo(Route.USERPROFILE) { inclusive = true }
@@ -201,8 +246,32 @@ fun UserProfileScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Profil speichern")
+            Text(stringResource(R.string.button_save_profile))
         }
+    }
+    if (showUnsavedChangesDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedChangesDialog = false },
+            title = { Text(stringResource(R.string.dialog_unsaved_title)) },
+            text = { Text(stringResource(R.string.dialog_unsaved_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnsavedChangesDialog = false
+                        navController.popBackStack() // Seite verlassen
+                    }
+                ) {
+                    Text(stringResource(R.string.dialog_unsaved_confirm_leave))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showUnsavedChangesDialog = false } // Dialog schließen, auf Seite bleiben
+                ) {
+                    Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -274,9 +343,6 @@ class UserProfileViewModel(
     /**
      * Speichert oder aktualisiert das Profil, ähnlich wie storeRecords().
      */
-    fun storeProfile(profile: UserProfileEntry) {
-        saveProfile(profile)
-    }
 
     private fun createPlaceholder(): UserProfileEntry {
         return UserProfileEntry(
