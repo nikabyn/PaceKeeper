@@ -126,30 +126,7 @@ fun MeasurementsScreen(
                 pathConfig = pathConfig,
                 zonesResult = HeartRateZones.calculateZones(input)
             )
-            /*
-                        GraphCard(
-                            title = stringResource(R.string.heart_rate_last_12_hours),
-                            series = series,
-                            xConfig = AxisConfig(
-                                formatFunction = {
-                                    val localTime = Instant.fromEpochMilliseconds(it.toLong())
-                                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                                    "%02d:%02d:%02d".format(
-                                        localTime.hour,
-                                        localTime.minute,
-                                        localTime.second
-                                    )
-                                },
-                                range = time12hoursAgo.toEpochMilliseconds().toDouble()
-                                        ..timeNow.toEpochMilliseconds().toDouble(),
-                                steps = 2u,
-                            ),
-                            yConfig = AxisConfig(
-                                range = 40.0..160.0
-                            ),
-                            pathConfig = pathConfig,
-                        )
-               */
+
             HRGraphCard(
                 title = stringResource(R.string.heart_rate_last_12_hours),
                 series = series,
