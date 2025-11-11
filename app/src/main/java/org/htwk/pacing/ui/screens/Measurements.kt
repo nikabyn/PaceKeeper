@@ -41,6 +41,7 @@ import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
+import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.HRGraphCard
@@ -63,6 +64,7 @@ fun MeasurementsScreen(
     val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
     val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
 
+    val input = HeartRateZones.HeartRateInput(23, HeartRateZones.Gender.FEMALE, 50)
     var timeNow by remember { mutableStateOf(Clock.System.now()) }
     var time7daysAgo by remember { mutableStateOf(timeNow - 7.days) }
     var time12hoursAgo by remember { mutableStateOf(timeNow - 12.hours) }
@@ -122,6 +124,7 @@ fun MeasurementsScreen(
                     steps = 3u,
                 ),
                 pathConfig = pathConfig,
+                zonesResult = HeartRateZones.calculateZones(input)
             )
 
             GraphCard(
