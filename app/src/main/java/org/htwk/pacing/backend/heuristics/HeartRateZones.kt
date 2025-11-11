@@ -16,6 +16,7 @@ object HeartRateZones {
         val maxHeartRate: Double,
         val anaerobicThreshold: Double,
         val healthZone: IntRange,
+        val visualHealthZone: IntRange,
         val recoveryZone: IntRange,
         val exertionZone: IntRange
     )
@@ -36,27 +37,28 @@ object HeartRateZones {
         val maxHR = calculateMaxHeartRate(input.age, input.gender)
         val threshold = calculateAnaerobicThreshold(maxHR)
 
-        //val healthZoneLower = maxOf(30, (input.restingHeartRate * 0.90).toInt())
 
-        // Berechne die Zonen basierend auf Prozentsätzen vom Ruhepuls
+        // Calculate Zones based on restingHeartRate
         val healthZoneUpper = (input.restingHeartRate * 1.10).toInt() // 0-10%
         val recoveryZoneUpper = (input.restingHeartRate * 1.20).toInt() // 10-20%
         val exertionZoneUpper = threshold.toInt() // 20% bis AS
+        val healthZoneLower = maxOf(30, (input.restingHeartRate * 0.90).toInt())
 
-        // Sicherstellen, dass die Werte aufsteigend sind und keine Überschneidungen
+        // Check order of zones
         val safeHealthUpper = maxOf(input.restingHeartRate + 1, healthZoneUpper)
         val safeRecoveryUpper = maxOf(safeHealthUpper + 1, recoveryZoneUpper)
         val safeExertionUpper = maxOf(safeRecoveryUpper + 1, exertionZoneUpper)
 
-        // Validieren, dass die obere Grenze nicht über der maximalen Herzfrequenz liegt
+        // Validate that upper limit does not exceed maxHeartRate
         val finalExertionUpper = minOf(safeExertionUpper, maxHR.toInt() - 1)
 
         return HeartRateZonesResult(
             maxHeartRate = maxHR,
             anaerobicThreshold = threshold,
-            healthZone = 0..safeHealthUpper,
+            healthZone = healthZoneLower..safeHealthUpper,
+            visualHealthZone = 0..safeHealthUpper,
             recoveryZone = (safeHealthUpper + 1)..safeRecoveryUpper,
-            exertionZone = (safeRecoveryUpper + 1)..safeExertionUpper
+            exertionZone = (safeRecoveryUpper + 1)..finalExertionUpper
         )
     }
 }

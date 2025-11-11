@@ -39,58 +39,7 @@ import org.htwk.pacing.ui.math.interpolate
 import org.htwk.pacing.ui.moveTo
 import kotlin.math.abs
 
-/**
- * A series of values to be displayed by a graph component.
- *
- * User should ensure that values are sorted!
- */
-//data class HRSeries<C : Collection<Double>>(val x: C, val y: C)
 
-/**
- * Options for how the line graph should be drawn.
- *
- * User should change values based on dark/light theme!
- */
-/*
-open class HRPathConfig(
-    internal val color: Color? = null,
-    internal val style: Stroke? = null,
-    internal val fill: Color? = null,
-    internal val hasStroke: Boolean = false,
-    internal val hasFill: Boolean = false,
-) {
-    companion object : PathConfig()
-}
-
-/**
- * Draw lines between all points (linear, no special interpolation)
- */
-fun HRPathConfig.withStroke(color: Color? = null, style: Stroke? = null) =
-    PathConfig(color, style, this.fill, hasStroke = true, this.hasFill)
-
-/**
- * Fill area under the graph with a flat color
- */
-fun HRPathConfig.withFill(color: Color? = null) =
-    PathConfig(this.color, this.style, color, this.hasStroke, hasFill = true)
-
-/**
- * Options for displaying an axis (range, labels).
- *
- * @param range minimum and maximum values to be shown,
- *              dynamic by default: minimum and maximum of entire series
- * @param steps number of labels to be shown
- * @param formatFunction how a labels text should be formatted
- */
-data class HRAxisConfig(
-    val range: ClosedRange<Double>? = null,
-    val steps: UInt? = null,
-    val formatFunction: (value: Double) -> String = { value -> "%.1f".format(value) }
-)
-*/
-/**
- * A Card with a title that displays a line graph with two labelled axes.
- */
 @Composable
 fun <C : Collection<Double>> HRGraphCard(
     title: String,
@@ -105,7 +54,7 @@ fun <C : Collection<Double>> HRGraphCard(
         title = title,
         modifier = modifier
             .height(300.dp)
-            .testTag("GraphCard")
+            .testTag("HRGraphCard")
     ) {
         HRAnnotatedGraph(
             series = series,
@@ -250,7 +199,7 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
 }
 
 /**
- * A line graph.
+ * A line graph including colored heart rate zones.
  *
  * User must set Modifier.height(...)!
  */
@@ -285,13 +234,13 @@ fun <C : Collection<Double>> HRGraph(
     ) {
         val scope = this
         val zoneColors = listOf(
-            Color(0x3300FF00), // Grün für Health Zone
-            Color(0x3300FFFF), // Cyan für Recovery Zone
-            Color(0x33FFFF00), // Gelb für Exertion Zone
-            Color(0x33FF0000)  // Rot für den Bereich über der anaeroben Schwelle
+            Color(0x3300FF00), // green: healthZone
+            Color(0x3300FFFF), // cyan: recoveryZone
+            Color(0x33FFFF00), // yellow: exertionZone
+            Color(0x33FF0000)  // red: area above threshold
         )
         listOf(
-            zonesResult.healthZone,
+            zonesResult.visualHealthZone,
             zonesResult.recoveryZone,
             zonesResult.exertionZone
         ).forEachIndexed { index, zone ->
@@ -299,23 +248,21 @@ fun <C : Collection<Double>> HRGraph(
             val highlightMin = zone.start.toDouble()
             val highlightMax = zone.endInclusive.toDouble()
 
-            // Stelle sicher, dass die Zone innerhalb des sichtbaren Y-Bereichs liegt
-            //if (highlightMax > yRange.start && highlightMin < yRange.endInclusive)
+            // Draw zones only within y-range
             if (highlightMax >= yRange.start && highlightMin <= yRange.endInclusive) {
 
-                // Begrenze die Werte auf den sichtbaren Bereich
                 val visibleMin = maxOf(highlightMin, yRange.start)
                 val visibleMax = minOf(highlightMax, yRange.endInclusive)
 
-                // Berechne die relativen Positionen
+                // calculate rel. position
                 val relativeMin = (visibleMin - yRange.start) / (yRange.endInclusive - yRange.start)
                 val relativeMax = (visibleMax - yRange.start) / (yRange.endInclusive - yRange.start)
 
-                // Berechne die Canvas-Positionen
+                // calculate position on canvas
                 val yCanvasTop = size.height * (1f - relativeMax.toFloat())
                 val yCanvasBottom = size.height * (1f - relativeMin.toFloat())
 
-                // Zeichne den farbigen Bereich mit der entsprechenden Farbe
+                // draw zones
                 drawRect(
                     color = zoneColors.getOrNull(index) ?: Color(0x33AAAAAA),
                     topLeft = Offset(0f, yCanvasTop),
@@ -323,7 +270,7 @@ fun <C : Collection<Double>> HRGraph(
                 )
             }
         }
-        // Zusätzlich: Zeichne den Bereich über der anaeroben Schwelle (falls gewünscht)
+        // Fill area above threshold
         val anaerobicThreshold = zonesResult.anaerobicThreshold
         if (anaerobicThreshold > yRange.start && anaerobicThreshold < yRange.endInclusive) {
             val highlightMin = anaerobicThreshold
@@ -336,15 +283,15 @@ fun <C : Collection<Double>> HRGraph(
             val yCanvasBottom = size.height * (1f - relativeMin.toFloat())
 
             drawRect(
-                color = zoneColors[3], // Rote Farbe für Bereich über anaerober Schwelle
+                color = zoneColors[3], // red
                 topLeft = Offset(0f, yCanvasTop),
                 size = Size(size.width, yCanvasBottom - yCanvasTop)
             )
         }
 
-        fun toXCoord(x: Double) = x.toFloat()
-        fun toYCoord(y: Double) = (1.0f - y).toFloat()
-        fun toGraphCoords(x: Double, y: Double) = Float2D(toXCoord(x), toYCoord(y))
+        fun toXCord(x: Double) = x.toFloat()
+        fun toYCord(y: Double) = (1.0f - y).toFloat()
+        fun toGraphCords(x: Double, y: Double) = Float2D(toXCord(x), toYCord(y))
 
         val path = Path()
 
@@ -352,12 +299,12 @@ fun <C : Collection<Double>> HRGraph(
             return@Canvas
         }
 
-        val start = toGraphCoords(relativeX.first(), relativeY.first())
+        val start = toGraphCords(relativeX.first(), relativeY.first())
         path.moveTo(scope, start)
 
         var end = start
         for ((time, value) in relativeX.drop(1).zip(relativeY.drop(1))) {
-            end = toGraphCoords(time, value)
+            end = toGraphCords(time, value)
             path.lineTo(scope, end)
         }
 
@@ -370,8 +317,8 @@ fun <C : Collection<Double>> HRGraph(
         }
 
         if (pathConfig.hasFill) {
-            path.lineTo(scope, Float2D(end.x, toYCoord(0.0)))
-            path.lineTo(scope, Float2D(start.x, toYCoord(0.0)))
+            path.lineTo(scope, Float2D(end.x, toYCord(0.0)))
+            path.lineTo(scope, Float2D(start.x, toYCord(0.0)))
             path.lineTo(scope, start)
 
             drawPath(path, color = pathConfig.fill ?: defaultFill)

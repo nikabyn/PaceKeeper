@@ -69,11 +69,11 @@ class HeartRateZonesTest {
         // Recovery Zone Upper: 50*1.20=60
         // Exertion Zone Upper: 110
 
-        assertEquals(200.0, result.maxHeartRate.roundToInt())
+        assertEquals(200.0, result.maxHeartRate)
         assertEquals(110, result.anaerobicThreshold.roundToInt())
 
         // Check zones are properly defined and ascending
-        assertEquals(0..55, result.healthZone) // Health zone from 0 to 55
+        assertEquals(45..55, result.healthZone) // Health zone from 0 to 55
         assertEquals(56..60, result.recoveryZone) // Recovery zone from 56 to 60
         assertEquals(61..110, result.exertionZone) // Exertion zone from 61 to 109 (below threshold)
 
@@ -108,7 +108,7 @@ class HeartRateZonesTest {
         assertEquals(102.85, result.anaerobicThreshold, 0.01)
 
         // Check zones
-        assertEquals(0..66, result.healthZone)
+        assertEquals(54..66, result.healthZone)
         assertEquals(67..72, result.recoveryZone)
         assertEquals(73..102, result.exertionZone) // Should end at 101 (below threshold 102.85)
 
@@ -131,7 +131,7 @@ class HeartRateZonesTest {
 
         // Then
         // Health Zone Lower should be at least 30 due to maxOf(30, 40*0.9=36)
-        assertEquals(0..44, result.healthZone) // 40*1.10=44
+        assertEquals(36..44, result.healthZone) // 40*1.10=44
         assertEquals(45..48, result.recoveryZone) // 40*1.20=48
         assertEquals(49..108, result.exertionZone) // (223-25)*0.55=108.9 → 108
 
@@ -160,7 +160,7 @@ class HeartRateZonesTest {
         assertEquals(178.0, result.maxHeartRate, 0.01)
         assertEquals(97.9, result.anaerobicThreshold, 0.01)
 
-        assertEquals(0..88, result.healthZone) // 80*1.10=88
+        assertEquals(72..88, result.healthZone) // 80*1.10=88
         assertEquals(89..96, result.recoveryZone) // 80*1.20=96
         assertEquals(97..97, result.exertionZone) // This case might need adjustment
 
