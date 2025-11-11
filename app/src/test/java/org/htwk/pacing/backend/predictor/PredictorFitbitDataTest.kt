@@ -18,9 +18,16 @@ import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
+import org.htwk.pacing.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -91,13 +98,15 @@ class PredictorFitbitDataTest {
         // No longer need serializersModule if using @Serializable(with=...) directly
     }
 
-    private lateinit var recordsHeartRate: List<HeartRateRecord>
-    private lateinit var recordsDistance: List<DistanceRecord>
+    private lateinit var heartRateEntries: List<HeartRateEntry>
+    private lateinit var distanceEntries: List<DistanceEntry>
+    private lateinit var timeSeriesStart: Instant
+    private lateinit var timeSeriesEnd: Instant
 
     @Before
     fun setUp() {
         val folderHeartRate = File("src/test/resources/fitbit/heart_rate")
-        recordsHeartRate = folderHeartRate.listFiles { f -> f.extension == "json" }
+        val recordsHeartRate = folderHeartRate.listFiles { f -> f.extension == "json" }
             ?.flatMap { file ->
                 json.decodeFromString<List<HeartRateRecord>>(file.readText())
             }.orEmpty().sortedBy { it.dateTime }
@@ -106,34 +115,19 @@ class PredictorFitbitDataTest {
         println("First: ${recordsHeartRate.firstOrNull()}")
 
         val folderDistance = File("src/test/resources/fitbit/distance")
-        recordsDistance = folderDistance.listFiles { f -> f.extension == "json" }
+        val recordsDistance = folderDistance.listFiles { f -> f.extension == "json" }
             ?.flatMap { file ->
                 json.decodeFromString<List<DistanceRecord>>(file.readText())
             }.orEmpty().sortedBy { it.dateTime }
 
         println("Loaded ${recordsDistance.size} distance samples")
         println("First: ${recordsDistance.firstOrNull()}")
-    }
 
-    @Test
-    fun nonEmptyHeartRateRecords() {
-        assert(recordsHeartRate.isNotEmpty())
-    }
-
-    @Test
-    fun nonEmptyDistanceRecords() {
-        assert(recordsDistance.isNotEmpty())
-    }
-
-    @Test
-    fun trainPredictorOnRecords() {
-        val predictor = Predictor()
-
-        val heartRateEntries = recordsHeartRate.map { record ->
+        heartRateEntries = recordsHeartRate.map { record ->
             HeartRateEntry(record.dateTime, record.value.bpm.toLong())
         }
 
-        val distanceEntries = recordsDistance.map { record ->
+        distanceEntries = recordsDistance.map { record ->
             DistanceEntry(
                 start = record.dateTime,
                 end = record.dateTime + 1.minutes,
@@ -148,11 +142,52 @@ class PredictorFitbitDataTest {
         }
 
         val earliestEntryTime = minOf(heartRateEntries.first().time, distanceEntries.first().start)
-        val latestEntryTime = minOf(heartRateEntries.last().time, distanceEntries.last().start)
+        val latestEntryTime = maxOf(heartRateEntries.last().time, distanceEntries.last().start)
+
+        timeSeriesStart = earliestEntryTime
+        timeSeriesEnd = latestEntryTime + 5.minutes
+    }
+
+    @Test
+    fun testExtrapolationsPlotWithRealData() {
+        println("Preparing to plot time series data...")
+
+        val derivedTimeSeries =
+            IPreprocessor.DiscreteTimeSeriesResult.DiscretePID.from(
+                proportionalInput =
+                    TimeSeriesDiscretizer.discretizeTimeSeries(
+                        IPreprocessor.SingleGenericTimeSeriesEntries(
+                            timeStart = timeSeriesStart,
+                            duration = timeSeriesEnd - timeSeriesStart,
+                            metric = TimeSeriesMetric.HEART_RATE,
+                            data = heartRateEntries.filter { it -> true || it.start > timeSeriesEnd - 2.days }
+                                .map(::GenericTimedDataPoint)
+                        )
+                    )
+            ).proportional
+
+        val result = LinearExtrapolator.multipleExtrapolate(derivedTimeSeries)
+
+        result.extrapolations.entries.forEach { (strategy, extrapolation) ->
+            println("Strategy: $strategy")
+            val extr = extrapolation
+            println("First Point: ${extr.firstPoint}")
+            println("Second Point: ${extr.secondPoint}")
+            println("Result Point: ${extr.resultPoint}")
+        }
+
+        plotTimeSeriesExtrapolationsWithPython(derivedTimeSeries, result.extrapolations)
+
+        println("Plotting finished.")
+    }
+
+    @Test
+    fun trainPredictorOnRecords() {
+        val predictor = Predictor()
 
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries(
-            timeStart = earliestEntryTime,
-            duration = latestEntryTime - earliestEntryTime,
+            timeStart = timeSeriesStart,
+            duration = timeSeriesEnd - timeSeriesStart,
             heartRate = heartRateEntries,
             distance = distanceEntries
         )
