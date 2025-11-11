@@ -4,81 +4,85 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.predictor.Predictor
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration
+import kotlin.time.times
+import org.htwk.pacing.backend.database.Length
 
-/**
- * Generisches Interface für ein Fallback-System.
- */
-interface FallbackHandler<T> {
-    fun ensureData(raw: List<T>, timeStart: Instant): List<T>
-}
+object FallbackHandler {
 
-/**
- * Fallback für Herzfrequenzdaten.
- */
-object HeartRateFallback : FallbackHandler<HeartRateEntry> {
+    fun ensureData(raw: Predictor.MultiTimeSeriesEntries): Predictor.MultiTimeSeriesEntries {
+        val hr = ensureHeartRateData(raw.heartRate, raw.timeStart, raw.duration)
+        val dist = ensureDistanceData(raw.distance, raw.timeStart, raw.duration)
 
-    override fun ensureData(raw: List<HeartRateEntry>, timeStart: Instant): List<HeartRateEntry> {
-        // 1) Live-Modus: Prüfen auf gültige Werte
-        val live = raw.filter { it.bpm in 30..220 }
-        if (live.isNotEmpty()) return live
-
-        // 2) Fallback: historische Daten aus der DB laden
-        val history = loadHistoricalHeartRateData(timeStart)
-        if (history.isNotEmpty()) return history
-
-        // 3) Default-Werte
-        val default = generateDefaultHeartRateSeries(timeStart)
-        if (default.isNotEmpty()) return default
-
-        // 4) Kein Weg gefunden → Fehler
-        throw IllegalStateException("Keine Herzfrequenzdaten verfügbar – keine Prognose möglich.")
+        return Predictor.MultiTimeSeriesEntries(
+            timeStart = raw.timeStart,
+            duration = raw.duration,
+            heartRate = hr,
+            distance = dist
+        )
     }
 
-    private fun loadHistoricalHeartRateData(start: Instant): List<HeartRateEntry> {
-        // TODO: Datenbankabfrage implementieren
+    private fun ensureHeartRateData(
+        raw: List<HeartRateEntry>,
+        timeStart: Instant,
+        duration: Duration
+    ): List<HeartRateEntry> {
+        if (raw.isNotEmpty()) return raw
+
+        val history = loadHistoricalHeartRateData(timeStart, duration)
+        if (history.isNotEmpty()) return history
+
+        val default = generateDefaultHeartRateSeries(timeStart, duration)
+        if (default.isNotEmpty()) return default
+
+        throw IllegalStateException("no heartrate data available – no prediction possible.")
+    }
+
+    private fun ensureDistanceData(
+        raw: List<DistanceEntry>,
+        timeStart: Instant,
+        duration: Duration
+    ): List<DistanceEntry> {
+        if (raw.isNotEmpty()) return raw
+
+        val history = loadHistoricalDistanceData(timeStart, duration)
+        if (history.isNotEmpty()) return history
+
+        val default = generateDefaultDistanceSeries(timeStart, duration)
+        if (default.isNotEmpty()) return default
+
+        throw IllegalStateException("no distance data available – no prediction possible.")
+    }
+
+    private fun loadHistoricalHeartRateData(start: Instant, duration: Duration): List<HeartRateEntry> {
+        // TODO: Depends on cache implementation
         return emptyList()
     }
 
-    private fun generateDefaultHeartRateSeries(start: Instant): List<HeartRateEntry> {
-        val step = 10.minutes
-        val points = (Predictor.TIME_SERIES_DURATION / step).toInt()
-        val defaultBpm = 75
+    private fun loadHistoricalDistanceData(start: Instant, duration: Duration): List<DistanceEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    // The daily curve should be applied using a neutral average over the time period to generate more realistic values
+    //defaultBpm needs to be dynamic
+    private fun generateDefaultHeartRateSeries(start: Instant, duration: Duration): List<HeartRateEntry> {
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
+        val defaultBpm = 75L
         return List(points) { i -> HeartRateEntry(start + (i * step), defaultBpm) }
     }
-}
 
-/**
- * Fallback für Distanzdaten.
- */
-object DistanceFallback : FallbackHandler<DistanceEntry> {
-
-    override fun ensureData(raw: List<DistanceEntry>, timeStart: Instant): List<DistanceEntry> {
-        // 1) Live-Modus: gültige Distanzwerte
-        val live = raw.filter { it.length.inMeters() >= 0.0 }
-        if (live.isNotEmpty()) return live
-
-        // 2) Fallback: historische Distanzdaten aus der DB
-        val history = loadHistoricalDistanceData(timeStart)
-        if (history.isNotEmpty()) return history
-
-        // 3) Default-Werte (z. B. 0 Meter)
-        val default = generateDefaultDistanceSeries(timeStart)
-        if (default.isNotEmpty()) return default
-
-        // 4) Kein Weg gefunden → Fehler
-        throw IllegalStateException("Keine Distanzdaten verfügbar – keine Prognose möglich.")
-    }
-
-    private fun loadHistoricalDistanceData(start: Instant): List<DistanceEntry> {
-        // TODO: Datenbankabfrage implementieren
-        return emptyList()
-    }
-
-    private fun generateDefaultDistanceSeries(start: Instant): List<DistanceEntry> {
-        val step = 10.minutes
-        val points = (Predictor.TIME_SERIES_DURATION / step).toInt()
+    private fun generateDefaultDistanceSeries(start: Instant, duration: Duration): List<DistanceEntry> {
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
         val defaultLength = 0.0
-        return List(points) { i -> DistanceEntry(start + (i * step), start + ((i+1) * step), org.htwk.pacing.backend.database.Length(defaultLength)) }
+        return List(points) { i ->
+            DistanceEntry(
+                start + (i * step),
+                start + ((i + 1) * step),
+                Length(defaultLength)
+            )
+        }
     }
 }
