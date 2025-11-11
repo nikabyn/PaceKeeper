@@ -1,7 +1,7 @@
+import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
-import org.htwk.pacing.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Ignore
