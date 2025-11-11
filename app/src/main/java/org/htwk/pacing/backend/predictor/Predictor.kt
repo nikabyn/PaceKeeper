@@ -16,7 +16,7 @@ class Predictor {
     companion object {
         //time duration/length of input time series
         val TIME_SERIES_DURATION: Duration =
-            1.days //TODO: see what actually makes sense as duration
+            2.days //TODO: see what actually makes sense as duration
         val TIME_SERIES_SAMPLE_COUNT: Int =
             TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
 
@@ -30,12 +30,12 @@ class Predictor {
      * A container for raw, unprocessed, synchronized data from database, like heart rate.
      *
      * @property timeStart The common start time for all data streams.
-     * @property heartRate A list of [HeartRateEntry] objects.
+     * @property metrics A map of metric types to their corresponding time series data.
      */
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
+        val duration: Duration = TIME_SERIES_DURATION,
 
-        //we have to add more data sources later
         val heartRate: List<HeartRateEntry>,
         val distance: List<DistanceEntry>
     )
@@ -49,6 +49,14 @@ class Predictor {
         val anaerobicThresholdBPM: Double
     )
 
+    fun train(
+        inputTimeSeries: MultiTimeSeriesEntries,
+        fixedParameters: FixedParameters,
+    ) {
+        val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
+        LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete);
+    }
+
     /**
      * Runs the prediction model to forecast the energy level.
      *
@@ -60,7 +68,7 @@ class Predictor {
      * @param fixedParameters Static user-specific parameters, such as the anaerobic threshold, that do not change over the time series.
      * @return A [PredictedEnergyLevelEntry] containing the forecasted energy level percentage and the timestamp for which the prediction is valid.
      */
-    fun run(
+    fun predict(
         inputTimeSeries: MultiTimeSeriesEntries, /*fixed parameters like anaerobic threshold*/
         fixedParameters: FixedParameters,
     ): PredictedEnergyLevelEntry {

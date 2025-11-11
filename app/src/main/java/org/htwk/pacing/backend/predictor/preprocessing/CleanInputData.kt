@@ -50,6 +50,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     return Pair(
         MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
+            duration = raw.duration,
             heartRate = cleanedHeartRates,
             distance = cleanedDistances
         ),
