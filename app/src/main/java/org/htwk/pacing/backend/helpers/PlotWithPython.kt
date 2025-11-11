@@ -1,4 +1,4 @@
-package org.htwk.pacing.helpers
+package org.htwk.pacing.backend.helpers
 
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY

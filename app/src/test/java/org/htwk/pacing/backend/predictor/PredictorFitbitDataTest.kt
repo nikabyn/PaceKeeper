@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor
 
+import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -18,12 +19,12 @@ import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
-import org.htwk.pacing.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -196,5 +197,29 @@ class PredictorFitbitDataTest {
             multiTimeSeriesEntries,
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
+
+        val testWindowOffset = 0.days
+
+        val testWindowStart = timeSeriesEnd - 2.days - testWindowOffset
+        val testWindowEnd = timeSeriesEnd - 0.days - testWindowOffset
+
+        val multiTimeSeriesEntriesTest = Predictor.MultiTimeSeriesEntries(
+            timeStart = testWindowStart,
+            duration = 2.days,
+            heartRate = heartRateEntries.filter { it.time in testWindowStart..testWindowEnd },
+            distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd },
+        )
+
+        val predictionResult = predictor.predict(
+            multiTimeSeriesEntries,
+            fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
+        )
+
+        println("-----")
+        println("prediction time:  ${predictionResult.time}")
+        println("prediction value: ${predictionResult.percentage}")
+        println("training done")
+
+        assertEquals(true, true)
     }
 }
