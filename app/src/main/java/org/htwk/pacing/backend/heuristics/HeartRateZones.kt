@@ -50,7 +50,7 @@ object HeartRateZones {
         val safeExertionUpper = maxOf(safeRecoveryUpper + 1, exertionZoneUpper)
 
         // Validate that upper limit does not exceed maxHeartRate
-        val finalExertionUpper = minOf(safeExertionUpper, maxHR.toInt() - 1)
+        //  val finalExertionUpper = minOf(safeExertionUpper, maxHR.toInt() - 1)
 
         return HeartRateZonesResult(
             maxHeartRate = maxHR,
@@ -58,7 +58,7 @@ object HeartRateZones {
             healthZone = healthZoneLower..safeHealthUpper,
             visualHealthZone = 0..safeHealthUpper,
             recoveryZone = (safeHealthUpper + 1)..safeRecoveryUpper,
-            exertionZone = (safeRecoveryUpper + 1)..finalExertionUpper
+            exertionZone = (safeRecoveryUpper + 1)..safeExertionUpper
         )
     }
 }

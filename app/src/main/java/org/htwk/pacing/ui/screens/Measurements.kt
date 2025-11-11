@@ -45,7 +45,7 @@ import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
-import org.htwk.pacing.ui.components.HRGraphCard
+import org.htwk.pacing.ui.components.HeartRateGraphCard
 import org.htwk.pacing.ui.components.HeartRatePredictionCard
 import org.htwk.pacing.ui.components.HistogramCard
 import org.htwk.pacing.ui.components.PathConfig
@@ -106,7 +106,7 @@ fun MeasurementsScreen(
                 return "%02d:%02d".format(localTime.hour, localTime.minute)
             }
 
-            HRGraphCard(
+            HeartRateGraphCard(
                 title = stringResource(R.string.heart_rate_last_7_days),
                 modifier = Modifier.height(200.dp),
                 series = heartRate,
@@ -128,13 +128,13 @@ fun MeasurementsScreen(
                     range = 0.0..160.0,
                     steps = 3u,
                 ),
-                pathConfig = pathConfig,
                 zonesResult = HeartRateZones.calculateZones(input)
             )
 
-            HRGraphCard(
+            HeartRateGraphCard(
                 title = stringResource(R.string.heart_rate_last_12_hours),
                 series = heartRate,
+                modifier = Modifier.height(300.dp),
                 xConfig = AxisConfig(
                     formatFunction = {
                         val localTime = Instant.fromEpochMilliseconds(it.toLong())
@@ -148,7 +148,6 @@ fun MeasurementsScreen(
                 yConfig = AxisConfig(
                     range = 40.0..160.0
                 ),
-                pathConfig = pathConfig,
                 zonesResult = HeartRateZones.calculateZones(input)
             )
             /*
