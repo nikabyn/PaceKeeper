@@ -1,7 +1,19 @@
 package org.htwk.pacing.backend.predictor
 
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
@@ -11,16 +23,58 @@ import org.junit.Test
 import java.io.File
 import kotlin.time.Duration.Companion.minutes
 
+/**
+ * Custom serializer for handling Fitbit's "MM/dd/yy HH:mm:ss" date format.
+ */
+object FitbitDateTimeSerializer : KSerializer<Instant> {
+    // Define the expected format of the date string from the JSON
+    private val format = LocalDateTime.Format {
+        monthNumber(padding = Padding.NONE)
+        char('/')
+        dayOfMonth(padding = Padding.NONE)
+        char('/')
+        yearTwoDigits(2000) // Assumes a 2-digit year, with a base of 2000
+        char(' ')
+        hour()
+        char(':')
+        minute()
+        char(':')
+        second()
+    }
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("FitbitInstant", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: Instant) {
+        // We don't need to write back to this format for this test, but it's here for completeness
+        // The format specifies a 2-digit year. `kotlinx-datetime` formats years with 4 digits by default,
+        // so we need to provide a base year to correctly format it as 2 digits.
+        // See https://github.com/Kotlin/kotlinx-datetime/issues/215
+        val localDateTime = value.toLocalDateTime(TimeZone.UTC)
+        encoder.encodeString(format.format(localDateTime))
+    }
+
+    override fun deserialize(decoder: Decoder): Instant {
+        val string = decoder.decodeString()
+        // Parse the string using our custom format and convert it to an Instant (assuming UTC)
+        return format.parse(string).toInstant(TimeZone.UTC)
+    }
+}
+
 class PredictorFitbitDataTest {
 
     @Serializable
     data class DistanceRecord(
+        // Tell the compiler to use our custom serializer for this field
+        @Serializable(with = FitbitDateTimeSerializer::class)
         val dateTime: Instant,
         val value: String
     )
 
     @Serializable
     data class HeartRateRecord(
+        // Also apply the serializer here
+        @Serializable(with = FitbitDateTimeSerializer::class)
         val dateTime: Instant,
         val value: HeartRateValue
     )
@@ -31,8 +85,10 @@ class PredictorFitbitDataTest {
         val confidence: Int
     )
 
+    // --- UPDATE THE JSON INSTANCE ---
     private val json = Json {
         ignoreUnknownKeys = true
+        // No longer need serializersModule if using @Serializable(with=...) directly
     }
 
     private lateinit var recordsHeartRate: List<HeartRateRecord>
@@ -46,8 +102,8 @@ class PredictorFitbitDataTest {
                 json.decodeFromString<List<HeartRateRecord>>(file.readText())
             }.orEmpty().sortedBy { it.dateTime }
 
-        println("Loaded ${'$'}{recordsHeartRate.size} heart rate samples")
-        println("First: ${'$'}{recordsHeartRate.firstOrNull()}")
+        println("Loaded ${recordsHeartRate.size} heart rate samples")
+        println("First: ${recordsHeartRate.firstOrNull()}")
 
         val folderDistance = File("src/test/resources/fitbit/distance")
         recordsDistance = folderDistance.listFiles { f -> f.extension == "json" }
@@ -55,8 +111,8 @@ class PredictorFitbitDataTest {
                 json.decodeFromString<List<DistanceRecord>>(file.readText())
             }.orEmpty().sortedBy { it.dateTime }
 
-        println("Loaded ${'$'}{recordsDistance.size} distance samples")
-        println("First: ${'$'}{recordsDistance.firstOrNull()}")
+        println("Loaded ${recordsDistance.size} distance samples")
+        println("First: ${recordsDistance.firstOrNull()}")
     }
 
     @Test
@@ -73,7 +129,6 @@ class PredictorFitbitDataTest {
     fun trainPredictorOnRecords() {
         val predictor = Predictor()
 
-        //convert the records to listOf<HeartRateEntry>
         val heartRateEntries = recordsHeartRate.map { record ->
             HeartRateEntry(record.dateTime, record.value.bpm.toLong())
         }
@@ -84,6 +139,12 @@ class PredictorFitbitDataTest {
                 end = record.dateTime + 1.minutes,
                 length = Length(lengthMeters = record.value.toDouble())
             )
+        }
+
+        // Add a check to prevent crash if lists are empty after a failed load
+        if (heartRateEntries.isEmpty() || distanceEntries.isEmpty()) {
+            // Fail the test explicitly if data loading failed
+            throw IllegalStateException("Test data could not be loaded. Check JSON files and paths.")
         }
 
         val earliestEntryTime = minOf(heartRateEntries.first().time, distanceEntries.first().start)
@@ -100,6 +161,5 @@ class PredictorFitbitDataTest {
             multiTimeSeriesEntries,
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
-        //val predictions = predictor.predict(multiTimeSeriesEntries)
     }
 }
