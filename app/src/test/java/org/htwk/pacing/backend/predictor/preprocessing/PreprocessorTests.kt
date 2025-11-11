@@ -136,7 +136,7 @@ class PreprocessorTests {
         )
 
         val discreteDistanceResult =
-            (result.metrics[TimeSeriesMetric.HEART_RATE]!! as DiscreteIntegral)
+            (result.metrics[TimeSeriesMetric.DISTANCE]!! as DiscreteIntegral)
 
         for (i in 0 until expectedResultDistance.size) {
             assertTrue(expectedResultDistance[i] == discreteDistanceResult.integral[i]);
@@ -152,7 +152,7 @@ class PreprocessorTests {
                 DistanceEntry(
                     start = timeStart,
                     end = timeStart,
-                    length = Length(0.0)
+                    length = Length(100.0)
                 )
             )
         )
