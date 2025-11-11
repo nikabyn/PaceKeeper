@@ -51,6 +51,7 @@ import kotlin.math.abs
  *
  * User should change values based on dark/light theme!
  */
+/*
 open class HRPathConfig(
     internal val color: Color? = null,
     internal val style: Stroke? = null,
@@ -86,7 +87,7 @@ data class HRAxisConfig(
     val steps: UInt? = null,
     val formatFunction: (value: Double) -> String = { value -> "%.1f".format(value) }
 )
-
+*/
 /**
  * A Card with a title that displays a line graph with two labelled axes.
  */
@@ -299,7 +300,8 @@ fun <C : Collection<Double>> HRGraph(
             val highlightMax = zone.endInclusive.toDouble()
 
             // Stelle sicher, dass die Zone innerhalb des sichtbaren Y-Bereichs liegt
-            if (highlightMax > yRange.start && highlightMin < yRange.endInclusive) {
+            //if (highlightMax > yRange.start && highlightMin < yRange.endInclusive)
+            if (highlightMax >= yRange.start && highlightMin <= yRange.endInclusive) {
 
                 // Begrenze die Werte auf den sichtbaren Bereich
                 val visibleMin = maxOf(highlightMin, yRange.start)
