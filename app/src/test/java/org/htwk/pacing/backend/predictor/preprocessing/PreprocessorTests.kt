@@ -9,6 +9,9 @@ import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -84,7 +87,13 @@ class PreprocessorTests {
         // The placeholder implementation of discretizeTimeSeries fills the array with the first value.
         // The size should be TIME_SERIES_DURATION / 10.minutes
         val expectedSize = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
-        assertEquals(expectedSize, result.heartRate.proportional.size)
+
+        val discreteHeartRateResult =
+            (result.metrics[TimeSeriesMetric.HEART_RATE]!! as DiscretePID)
+        assertEquals(
+            expectedSize,
+            discreteHeartRateResult.proportional.size
+        )
 
         val expectedResultHeartRate = doubleArrayOf(
             75.0,
@@ -109,7 +118,7 @@ class PreprocessorTests {
         )
 
         for (i in 0 until expectedResultHeartRate.size) {
-            assertTrue(expectedResultHeartRate[i] == result.heartRate.proportional[i]);
+            assertTrue(expectedResultHeartRate[i] == discreteHeartRateResult.proportional[i]);
         }
 
         //expected accumulated (running sum, since we're doing an integral for the distance)
@@ -126,8 +135,11 @@ class PreprocessorTests {
             950.0
         )
 
+        val discreteDistanceResult =
+            (result.metrics[TimeSeriesMetric.DISTANCE]!! as DiscreteIntegral)
+
         for (i in 0 until expectedResultDistance.size) {
-            assertTrue(expectedResultDistance[i] == result.distance.integral[i]);
+            assertTrue(expectedResultDistance[i] == discreteDistanceResult.integral[i]);
         }
     }
 
@@ -140,7 +152,7 @@ class PreprocessorTests {
                 DistanceEntry(
                     start = timeStart,
                     end = timeStart,
-                    length = Length(0.0)
+                    length = Length(100.0)
                 )
             )
         )

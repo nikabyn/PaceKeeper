@@ -1,6 +1,8 @@
 package org.htwk.pacing.backend.predictor.model
 
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.htwk.pacing.ui.math.sigmoidStable
 
 
@@ -19,9 +21,9 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *              time series data, such as heart rate.
      * @return A [Double] representing the extrapolated energy level, scaled between 0.0 and 1.0.
      */
-    override fun predict(input: IPreprocessor.MultiTimeSeriesDiscrete): Double {
+    override fun predict(input: MultiTimeSeriesDiscrete): Double {
         //TODO: use integral and other derived time series in a linear combination model once they're
         // implemented in the preprocessor
-        return sigmoidStable(scaleParam * input.heartRate.proportional.last());
+        return sigmoidStable(scaleParam * (input.metrics[TimeSeriesMetric.HEART_RATE]!! as DiscretePID).proportional.last());
     }
 }

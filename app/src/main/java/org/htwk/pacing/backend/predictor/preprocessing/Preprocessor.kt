@@ -4,24 +4,20 @@ import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimeSeriesEntries.TimeSeriesType
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
-    //class 3) (unused for now), see ui#38
-    private fun processDailyConstant(): Double {
-        return 0.0
-    }
-
     /**
      * Executes the preprocessing pipeline on raw time series data.
      *
      * This function first cleans the input data and then transforms the raw, continuous time series
      * data for various metrics (like heart rate and distance) into a discrete, uniformly sampled
      * format suitable for the prediction model. It converts each metric into a common
-     * [IPreprocessor.GenericTimeSeriesEntries] format before passing it to the [TimeSeriesDiscretizer]
+     * [IPreprocessor.SingleGenericTimeSeriesEntries] format before passing it to the [TimeSeriesDiscretizer]
      * for processing.
      *
      * @param raw The raw time series data, containing lists of data points for different metrics.
@@ -35,25 +31,26 @@ object Preprocessor : IPreprocessor {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
 
         return MultiTimeSeriesDiscrete(
-            timeStart = rawCleaned.timeStart,
-            heartRate = DiscretePID.from(
-                discretizeTimeSeries(
-                    GenericTimeSeriesEntries(
-                        timeStart = rawCleaned.timeStart,
-                        data = rawCleaned.heartRate.map(::GenericTimedDataPoint),
-                        type = TimeSeriesType.CONTINUOUS
+            timeStart = raw.timeStart,
+            duration = raw.duration,
+            metrics = TimeSeriesMetric.entries.associateWith { metric ->
+                val discreteProportional = discretizeTimeSeries(
+                    SingleGenericTimeSeriesEntries(
+                        timeStart = raw.timeStart,
+                        duration = raw.duration,
+                        metric = metric,
+                        data = when (metric) {
+                            TimeSeriesMetric.HEART_RATE -> rawCleaned.heartRate.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.DISTANCE -> rawCleaned.distance.map(::GenericTimedDataPoint)
+                        }
                     )
                 )
-            ),
-            distance = DiscreteIntegral.from(
-                discretizeTimeSeries(
-                    GenericTimeSeriesEntries(
-                        timeStart = rawCleaned.timeStart,
-                        data = raw.distance.map(::GenericTimedDataPoint),
-                        type = TimeSeriesType.AGGREGATED
-                    )
-                )
-            )
+
+                when (metric.signalClass) {
+                    TimeSeriesSignalClass.CONTINUOUS -> DiscretePID.from(discreteProportional)
+                    TimeSeriesSignalClass.AGGREGATED -> DiscreteIntegral.from(discreteProportional)
+                }
+            }
         )
     }
 }
