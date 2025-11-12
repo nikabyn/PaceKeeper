@@ -14,8 +14,8 @@ import org.htwk.pacing.backend.heuristics.HeartRateZones
  *
  * @param title The title to display in the card header
  * @param series The data series containing heart rate values to plot
- * @param xConfig Configuration for the X-axis (defaults to AxisConfig())
- * @param yConfig Configuration for the Y-axis (defaults to AxisConfig())
+ * @param xConfig Configuration for the X-axis
+ * @param yConfig Configuration for the Y-axis
  * @param modifier Modifier for styling and layout
  * @param zonesResult Contains the heart rate zone boundaries for coloring the graph background
  * @param C The type of collection containing the heart rate data (must extend Collection<Double>)
@@ -24,9 +24,9 @@ import org.htwk.pacing.backend.heuristics.HeartRateZones
 fun <C : Collection<Double>> HeartRateGraphCard(
     title: String,
     series: Series<C>,
+    modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
-    modifier: Modifier = Modifier,
     zonesResult: HeartRateZones.HeartRateZonesResult
 ) = CardWithTitle(title, modifier) {
 
@@ -60,28 +60,25 @@ fun <C : Collection<Double>> HeartRateGraphCard(
             // Draw colored rectangles for each heart rate zone
             // Pair each boundary with the next one to create zones, then draw them
             boundaries.zip(boundaries.drop(1)).forEachIndexed { index, (start, end) ->
-                if (index < zoneColors.size) {
+                // Calculate canvas position for upper border
+                // Note: Canvas Y=0 is at top, so we invert the calculation
+                val canvasTop =
+                    size.height * (1f - ((end - yRange.start) / totalRange).toFloat())
+                // Calculate canvas position for lower border
+                val canvasBottom =
+                    size.height * (1f - ((start - yRange.start) / totalRange).toFloat())
 
-                    // Calculate canvas position for upper border
-                    // Note: Canvas Y=0 is at top, so we invert the calculation
-                    val canvasTop =
-                        size.height * (1f - ((end - yRange.start) / totalRange).toFloat())
-                    // Calculate canvas position for lower border
-                    val canvasBottom =
-                        size.height * (1f - ((start - yRange.start) / totalRange).toFloat())
+                // Calculate height of zone in pixels
+                val height = canvasBottom - canvasTop
 
-                    // Calculate height of zone in pixels
-                    val height = canvasBottom - canvasTop
+                // Only draw if zone has positive height (avoids rendering errors)
+                if (height <= 0f) return@forEachIndexed
 
-                    // Only draw if zone has positive height (avoids rendering errors)
-                    if (height > 0f) {
-                        drawRect(
-                            color = zoneColors[index],
-                            topLeft = Offset(0f, canvasTop),
-                            size = Size(size.width, height)
-                        )
-                    }
-                }
+                drawRect(
+                    color = zoneColors[index],
+                    topLeft = Offset(0f, canvasTop),
+                    size = Size(size.width, height)
+                )
             }
 
             val paths = graphToPaths(series, size, xRange, yRange)
