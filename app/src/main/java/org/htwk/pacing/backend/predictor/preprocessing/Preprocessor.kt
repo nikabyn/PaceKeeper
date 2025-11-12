@@ -13,18 +13,13 @@ import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.dis
 
 object Preprocessor : IPreprocessor {
 
-    //class 3) (unused for now), see ui#38
-    private fun processDailyConstant(): Double {
-        return 0.0
-    }
-
     /**
      * Executes the preprocessing pipeline on raw time series data.
      *
      * This function first cleans the input data and then transforms the raw, continuous time series
      * data for various metrics (like heart rate and distance) into a discrete, uniformly sampled
      * format suitable for the prediction model. It converts each metric into a common
-     * [IPreprocessor.GenericTimeSeriesEntries] format before passing it to the [TimeSeriesDiscretizer]
+     * [IPreprocessor.SingleGenericTimeSeriesEntries] format before passing it to the [TimeSeriesDiscretizer]
      * for processing.
      *
      * @param raw The raw time series data, containing lists of data points for different metrics.
