@@ -90,6 +90,7 @@
     <string name="label_birth_year">Geburtsjahr</string>
     <string name="label_height_cm">Größe (cm)</string>
     <string name="label_weight_kg">Gewicht (kg)</string>
+    <string name="label_restingHeartRateBpm">Ruhepuls (min^−1)</string>
     <string name="label_sex">Geschlecht</string>
     <string name="label_amputation_level">Amputationslevel</string>
     <string name="label_diagnosis">Diagnose</string>

@@ -41,6 +41,7 @@ fun UserProfileScreen(
     var birthYear by remember { mutableStateOf(profile.birthYear?.toString() ?: "") }
     var heightCm by remember { mutableStateOf(profile.heightCm?.toString() ?: "") }
     var weightKg by remember { mutableStateOf(profile.weightKg?.toString() ?: "") }
+    var restingHeartRateBpm by remember { mutableStateOf(profile.restingHeartRateBpm?.toString() ?: "") }
     var selectedSex by remember { mutableStateOf(profile.sex) }
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
@@ -55,7 +56,7 @@ fun UserProfileScreen(
     
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname, birthYear, heightCm, weightKg, selectedSex, selectedAmputationLevel,
+        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
         selectedDiagnosis, fatigueSensitivity, activityBaseline, anaerobicThreshold,
         bellScale, fitnessTracker
     ) {
@@ -65,6 +66,7 @@ fun UserProfileScreen(
             birthYear = birthYear.toIntOrNull(),
             heightCm = heightCm.toIntOrNull(),
             weightKg = weightKg.toIntOrNull(),
+            restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
             sex = selectedSex,
             amputationLevel = selectedAmputationLevel,
             diagnosis = selectedDiagnosis,
@@ -143,6 +145,14 @@ fun UserProfileScreen(
             value = weightKg,
             onValueChange = { weightKg = it.filter { c -> c.isDigit() } },
             label = { Text(stringResource(R.string.label_weight_kg)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = restingHeartRateBpm,
+            onValueChange = { restingHeartRateBpm = it.filter { c -> c.isDigit() } },
+            label = { Text(stringResource(R.string.label_restingHeartRateBpm)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -227,6 +237,7 @@ fun UserProfileScreen(
                     birthYear = birthYear.toIntOrNull(),
                     heightCm = heightCm.toIntOrNull(),
                     weightKg = weightKg.toIntOrNull(),
+                    restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
                     sex = selectedSex,
                     amputationLevel = selectedAmputationLevel,
                     diagnosis = selectedDiagnosis,
@@ -352,6 +363,7 @@ class UserProfileViewModel(
             birthYear = null,
             heightCm = null,
             weightKg = null,
+            restingHeartRateBpm = null,
             amputationLevel = UserProfileEntry.AmputationLevel.NONE,
             fatigueSensitivity = null,
             activityBaseline = null,

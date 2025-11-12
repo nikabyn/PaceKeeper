@@ -19,6 +19,7 @@ data class UserProfileEntry(
     val birthYear: Int?,
     val heightCm: Int?,
     val weightKg: Int?,
+    val restingHeartRateBpm: Int?,
 
     val amputationLevel: AmputationLevel?,
     val fatigueSensitivity: Int?,
@@ -66,6 +67,7 @@ data class UserProfileEntry(
                 birthYear = null,
                 heightCm = null,
                 weightKg = null,
+                restingHeartRateBpm = 60,
                 amputationLevel = null,
                 fatigueSensitivity = null,
                 activityBaseline = null,

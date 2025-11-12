@@ -88,6 +88,7 @@
     <string name="label_birth_year">Birth Year</string>
     <string name="label_height_cm">Height (cm)</string>
     <string name="label_weight_kg">Weight (kg)</string>
+    <string name="label_restingHeartRateBpm">Resting Heart Rate (Bpm)</string>
     <string name="label_sex">Sex</string>
     <string name="label_amputation_level">Amputation Level</string>
     <string name="label_diagnosis">Diagnosis</string>
