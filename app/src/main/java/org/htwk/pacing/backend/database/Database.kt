@@ -32,6 +32,8 @@ import kotlinx.datetime.Instant
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class,
 
+        UserProfileEntry::class,
+
         ReadEvent::class,
     ],
     version = 2,
@@ -52,6 +54,8 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun stepsDao(): StepsDao
 
     abstract fun validatedEnergyLevelDao(): ValidatedEnergyLevelDao
+
+    abstract fun userProfileDao(): UserProfileDao
 
     /*These two tables are different than the others in the sense that they represent
     future data (ml model predictions). Also, when accessing them for writing, their whole table
@@ -110,4 +114,24 @@ class Converters {
 
     @TypeConverter
     fun toValidation(value: Int): Validation = Validation.entries.first { it.code == value }
+
+    @TypeConverter
+    fun fromSex(value: UserProfileEntry.Sex): String = value.name
+
+    @TypeConverter
+    fun toSex(value: String): UserProfileEntry.Sex = enumValueOf(value)
+
+    @TypeConverter
+    fun fromAmputationLevel(value: UserProfileEntry.AmputationLevel?): String? = value?.name
+
+    @TypeConverter
+    fun toAmputationLevel(value: String?): UserProfileEntry.AmputationLevel? =
+        value?.let { enumValueOf<UserProfileEntry.AmputationLevel>(it) }
+
+    @TypeConverter
+    fun fromDiagnosis(value: UserProfileEntry.Diagnosis?): String? = value?.name
+
+    @TypeConverter
+    fun toDiagnosis(value: String?): UserProfileEntry.Diagnosis? =
+        value?.let { enumValueOf<UserProfileEntry.Diagnosis>(it) }
 }

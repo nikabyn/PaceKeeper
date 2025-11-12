@@ -94,7 +94,7 @@ class GraphTest {
             )
         }
 
-        composeTestRule.onNodeWithTag("Graph")
+        composeTestRule.onNodeWithTag("GraphCanvas")
             .assertIsDisplayed()
             .assertHeightIsEqualTo(height)
     }

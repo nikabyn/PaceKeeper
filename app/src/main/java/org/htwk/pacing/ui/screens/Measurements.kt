@@ -38,12 +38,14 @@ import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateDao
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.HeartRatePredictionCard
+import org.htwk.pacing.ui.components.HistogramCard
 import org.htwk.pacing.ui.components.PathConfig
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.components.withFill
@@ -51,23 +53,25 @@ import org.htwk.pacing.ui.components.withStroke
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @Composable
 fun MeasurementsScreen(
     modifier: Modifier = Modifier,
     viewModel: MeasurementsViewModel = koinViewModel(),
 ) {
-    val series by viewModel.heartRate.collectAsState()
+    val heartRate by viewModel.heartRate.collectAsState()
+    val heartRateHistogram by viewModel.heartRateHistogram.collectAsState()
     val feelingLevels by viewModel.feelingLevels.collectAsState()
     val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
     val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
 
     var timeNow by remember { mutableStateOf(Clock.System.now()) }
-    var time7daysAgo by remember { mutableStateOf(timeNow - 7.days) }
     var time12hoursAgo by remember { mutableStateOf(timeNow - 12.hours) }
+    var time7daysAgo by remember { mutableStateOf(timeNow - 7.days) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000)
+            delay(1.minutes.inWholeMilliseconds)
             timeNow = Clock.System.now()
             time7daysAgo = timeNow - 7.days
             time12hoursAgo = timeNow - 12.hours
@@ -95,13 +99,13 @@ fun MeasurementsScreen(
                 val localTime =
                     Instant.fromEpochMilliseconds(value.toLong())
                         .toLocalDateTime(TimeZone.currentSystemDefault())
-                return "%02d:%02d:%02d".format(localTime.hour, localTime.minute, localTime.second)
+                return "%02d:%02d".format(localTime.hour, localTime.minute)
             }
 
             GraphCard(
                 title = stringResource(R.string.heart_rate_last_7_days),
                 modifier = Modifier.height(200.dp),
-                series = series,
+                series = heartRate,
                 xConfig = AxisConfig(
                     formatFunction = {
                         val localTime = Instant.fromEpochMilliseconds(it.toLong())
@@ -125,16 +129,12 @@ fun MeasurementsScreen(
 
             GraphCard(
                 title = stringResource(R.string.heart_rate_last_12_hours),
-                series = series,
+                series = heartRate,
                 xConfig = AxisConfig(
                     formatFunction = {
                         val localTime = Instant.fromEpochMilliseconds(it.toLong())
                             .toLocalDateTime(TimeZone.currentSystemDefault())
-                        "%02d:%02d:%02d".format(
-                            localTime.hour,
-                            localTime.minute,
-                            localTime.second
-                        )
+                        "%02d:%02d".format(localTime.hour, localTime.minute)
                     },
                     range = time12hoursAgo.toEpochMilliseconds().toDouble()
                             ..timeNow.toEpochMilliseconds().toDouble(),
@@ -146,9 +146,16 @@ fun MeasurementsScreen(
                 pathConfig = pathConfig,
             )
 
+            HistogramCard(
+                title = stringResource(R.string.heart_rate_histogram_last_24_hours),
+                series = heartRateHistogram,
+                zonesToColorId = viewModel.heartRateHistogramZones,
+                modifier = Modifier.height(300.dp),
+            )
+
             HeartRatePredictionCard(
                 title = stringResource(R.string.heart_rate_prediction),
-                series = series,
+                series = heartRate,
                 seriesPredicted = predictedHeartRate,
                 yConfig = AxisConfig(range = 40.0..160.0, steps = 7u),
                 modifier = Modifier.height(300.dp)
@@ -217,6 +224,47 @@ class MeasurementsViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = Series(emptyList(), emptyList())
         )
+
+    val heartRateHistogram = heartRateDao
+        .getLastLive(1.days)
+        .map { entries: List<HeartRateEntry> ->
+            val bpmValues = entries.map { it.bpm }
+
+            val minBpm = bpmValues.minOrNull() ?: 0L
+            val maxBpm = bpmValues.maxOrNull() ?: 0L
+            val binCount = (maxBpm - minBpm).toInt()
+            val binSize = ((maxBpm - minBpm).coerceAtLeast(1)) / binCount.toDouble()
+
+            // Compute histogram
+            val bins = (0 until binCount).map { i ->
+                minBpm + i * binSize
+            }
+
+            val counts = MutableList(binCount) { 0 }
+
+            bpmValues.forEach { bpm ->
+                val index = ((bpm - minBpm) / binSize).toInt().coerceIn(0, binCount - 1)
+                counts[index] += 1
+            }
+
+            Series(
+                x = bins,
+                y = counts.map { it.toDouble() }
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = Series(emptyList(), emptyList())
+        )
+
+    // TODO: Calculate these based on the user defined body data
+    val heartRateHistogramZones = mapOf(
+        Double.NEGATIVE_INFINITY..<60.0 to R.color.cyan_700,
+        60.0..<70.0 to R.color.green_700,
+        70.0..<90.0 to R.color.yellow_700,
+        90.0..<110.0 to R.color.orange_700,
+        110.0..<Double.POSITIVE_INFINITY to R.color.red_700,
+    )
 
     val predictedHeartRate = predictedHeartRateDao
         .getAllLive()

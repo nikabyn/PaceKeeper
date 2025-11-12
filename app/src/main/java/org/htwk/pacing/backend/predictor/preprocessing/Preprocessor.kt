@@ -12,7 +12,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDat
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
-
     /**
      * Executes the preprocessing pipeline on raw time series data.
      *

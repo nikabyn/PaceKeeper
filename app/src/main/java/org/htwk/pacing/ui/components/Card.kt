@@ -19,9 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CardWithTitle(title: String, modifier: Modifier = Modifier, inner: @Composable (() -> Unit)) {
     OutlinedCard(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = modifier
             .fillMaxWidth()
