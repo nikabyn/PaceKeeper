@@ -19,7 +19,7 @@ healthConnectClient = "1.1.0-rc02"
 kotlinCsvJvm = "1.10.0"
 coreSplashScreen = "1.0.1"
 litert = "1.4.0"
-material = "1.12.0"
+material = "1.13.0"
 multik = "0.2.3"
 
 
