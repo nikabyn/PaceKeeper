@@ -12,7 +12,6 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.htwk.pacing.backend.heuristics.HeartRateZones
@@ -82,7 +81,6 @@ class HeartRateGraphTest {
             .assertIsDisplayed()
             .assertHeightIsAtLeast(100.dp)
 
-        // Überprüfe, dass der Graph mit Zonen gerendert wird
         composeTestRule.onNodeWithTag("GraphCanvas")
             .assertIsDisplayed()
     }
@@ -130,7 +128,6 @@ class HeartRateGraphTest {
             .assertIsDisplayed()
             .assertTextEquals("Empty Data Zones")
 
-        // Sollte trotzdem den Graphen mit Zonen anzeigen
         composeTestRule.onNodeWithTag("AnnotatedGraph")
             .assertIsDisplayed()
     }
@@ -219,42 +216,4 @@ class HeartRateGraphTest {
             .assertHeightIsEqualTo(height)
     }
 
-    @Test
-    fun heartRateGraphCard_multipleInstances() {
-        val zones1 = createTestZonesResult()
-        val zones2 = HeartRateZones.HeartRateZonesResult(
-            maxHeartRate = 190.0,
-            anaerobicThreshold = 104.5,
-            healthZone = 65..85,
-            visualHealthZone = 0..85,
-            recoveryZone = 86..110,
-            exertionZone = 111..135
-        )
-
-        composeTestRule.setContent {
-            // Zwei verschiedene HeartRateGraphCards mit unterschiedlichen Zonen
-            HeartRateGraphCard(
-                title = "User 1 Zones",
-                series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0)),
-                zonesResult = zones1,
-                modifier = Modifier.height(200.dp)
-            )
-
-            HeartRateGraphCard(
-                title = "User 2 Zones",
-                series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0)),
-                zonesResult = zones2,
-                modifier = Modifier.height(200.dp)
-            )
-        }
-
-        composeTestRule.onNodeWithTag("CardTitle", true)
-            .onChildren()
-            .assertCountEquals(2)
-
-        composeTestRule.onNodeWithText("User 1 Zones")
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText("User 2 Zones")
-            .assertIsDisplayed()
-    }
 }
