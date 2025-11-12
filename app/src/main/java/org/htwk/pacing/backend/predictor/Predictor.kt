@@ -72,7 +72,7 @@ class Predictor {
         val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
-            Percentage(predictedEnergy / 100.0)
+            Percentage(predictedEnergy)
         );
     }
 }
