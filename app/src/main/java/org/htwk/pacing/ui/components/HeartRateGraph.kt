@@ -33,83 +33,43 @@ fun <C : Collection<Double>> HeartRateGraphCard(
         yConfig = yConfig,
     ) { xRange, yRange ->
         GraphCanvas {
-            listOf(
-                zonesResult.visualHealthZone,
-                zonesResult.recoveryZone,
-                zonesResult.exertionZone
-            ).forEachIndexed { index, zone ->
-/*
-                val zoneBoundaries = listOf(
-                    yRange.start,
-                    zonesResult.visualHealthZone.endInclusive.toDouble(),
-                    zonesResult.recoveryZone.endInclusive.toDouble(),
-                    zonesResult.exertionZone.endInclusive.toDouble(),
-                    yRange.endInclusive
-                )
-                zoneBoundaries.zip(other = zoneBoundaries.drop(n = 1))
-                    .forEachIndexed { index, (zoneStart, zoneEnd) ->
-                        if (index < zoneColors.size) {
-                            val relativeMin =
-                                (zoneStart - yRange.start) / (yRange.endInclusive - yRange.start)
-                            val relativeMax =
-                                (zoneStart - yRange.start) / (yRange.endInclusive - yRange.start)
-*/
+            val totalRange = yRange.endInclusive - yRange.start
 
-                val highlightMin = zone.start.toDouble()
-                val highlightMax = zone.endInclusive.toDouble()
+            // Definiere alle Grenzpunkte als Double
+            val boundaries = listOf(
+                yRange.start,
+                zonesResult.visualHealthZone.endInclusive.toDouble(),
+                zonesResult.recoveryZone.endInclusive.toDouble(),
+                zonesResult.exertionZone.endInclusive.toDouble(),
+                //zonesResult.anaerobicThreshold,
+                yRange.endInclusive
+            )
 
-                // Draw zones only within y-range
-                if (highlightMax >= yRange.start && highlightMin <= yRange.endInclusive) {
+            // Zeichne kontinuierliche Bereiche zwischen den Grenzen
+            boundaries.zip(boundaries.drop(1)).forEachIndexed { index, (start, end) ->
+                if (index < zoneColors.size) {
+                    val canvasTop =
+                        size.height * (1f - ((end - yRange.start) / totalRange).toFloat())
+                    val canvasBottom =
+                        size.height * (1f - ((start - yRange.start) / totalRange).toFloat())
+                    val height = canvasBottom - canvasTop
 
-                    val visibleMin = maxOf(highlightMin, yRange.start)
-                    val visibleMax = minOf(highlightMax, yRange.endInclusive)
-
-                    // calculate rel. position
-                    val relativeMin =
-                        (visibleMin - yRange.start) / (yRange.endInclusive - yRange.start)
-                    val relativeMax =
-                        (visibleMax - yRange.start) / (yRange.endInclusive - yRange.start)
-
-
-                    // calculate position on canvas
-                    val yCanvasTop = size.height * (1f - relativeMax.toFloat())
-                    val yCanvasBottom = size.height * (1f - relativeMin.toFloat())
-
-                    // draw zones
-                    drawRect(
-                        color = zoneColors.getOrNull(index) ?: Color(0x33AAAAAA),
-                        topLeft = Offset(0f, yCanvasTop),
-                        size = Size(size.width, yCanvasBottom - yCanvasTop)
-                    )
+                    if (height > 0f) {
+                        drawRect(
+                            color = zoneColors[index],
+                            topLeft = Offset(0f, canvasTop),
+                            size = Size(size.width, height)
+                        )
+                    }
                 }
             }
 
-
-            // Fill area above threshold
-            val anaerobicThreshold = zonesResult.anaerobicThreshold
-            if (anaerobicThreshold > yRange.start && anaerobicThreshold < yRange.endInclusive) {
-                val highlightMin = anaerobicThreshold
-                val highlightMax = yRange.endInclusive
-
-                val relativeMin =
-                    (highlightMin - yRange.start) / (yRange.endInclusive - yRange.start)
-                val relativeMax =
-                    (highlightMax - yRange.start) / (yRange.endInclusive - yRange.start)
-
-                val yCanvasTop = size.height * (1f - relativeMax.toFloat())
-                val yCanvasBottom = size.height * (1f - relativeMin.toFloat())
-
-                drawRect(
-                    color = zoneColors[3], // red
-                    topLeft = Offset(0f, yCanvasTop),
-                    size = Size(size.width, yCanvasBottom - yCanvasTop)
-                )
-            }
-
             val paths = graphToPaths(series, size, xRange, yRange)
-
             drawPath(paths.line, color = Color.White, style = strokeStyle)
         }
     }
 }
+
+
+
 
