@@ -28,6 +28,11 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.R
 
+/**
+ * Defines the Android user profile editing screen built with Jetpack Compose.
+ * It handles the display, modification, and persistence of the user's personal
+ * and health-related data, including metrics essential for the pacing system.
+ */
 @Composable
 fun UserProfileScreen(
     navController: NavController,
@@ -36,7 +41,6 @@ fun UserProfileScreen(
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return
 
-    // lokale States für Textfelder
     var nickname by remember { mutableStateOf(profile.nickname ?: "") }
     var birthYear by remember { mutableStateOf(profile.birthYear?.toString() ?: "") }
     var heightCm by remember { mutableStateOf(profile.heightCm?.toString() ?: "") }
@@ -60,7 +64,6 @@ fun UserProfileScreen(
         selectedDiagnosis, fatigueSensitivity, activityBaseline, anaerobicThreshold,
         bellScale, fitnessTracker
     ) {
-        // Erstellen Sie das aktuelle Profil-Objekt basierend auf den lokalen States
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },
             birthYear = birthYear.toIntOrNull(),
@@ -76,10 +79,9 @@ fun UserProfileScreen(
             bellScale = bellScale.toIntOrNull(),
             fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
         )
-        // Prüfen Sie, ob das aktuelle Objekt vom originalen Objekt abweicht
         mutableStateOf(currentProfile != profile)
     }
-    // A. Logik für physischen/Gesten-Zurück-Button
+
     BackHandler(enabled = true) {
         if (hasUnsavedChanges) {
             showUnsavedChangesDialog = true
@@ -96,7 +98,7 @@ fun UserProfileScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Zurück Button
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -158,7 +160,6 @@ fun UserProfileScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Geschlecht
         DropdownMenuField(
             label = stringResource(R.string.label_sex),
             options = UserProfileEntry.Sex.entries.map { it.name },
@@ -166,7 +167,6 @@ fun UserProfileScreen(
             onOptionSelected = { selectedSex = UserProfileEntry.Sex.valueOf(it) }
         )
 
-        // Amputationslevel
         DropdownMenuField(
             label = stringResource(R.string.label_amputation_level),
             options = UserProfileEntry.AmputationLevel.entries.map { it.name },
@@ -174,7 +174,6 @@ fun UserProfileScreen(
             onOptionSelected = { selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it) }
         )
 
-        // Diagnose
         DropdownMenuField(
             label = stringResource(R.string.label_diagnosis),
             options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
@@ -350,10 +349,6 @@ class UserProfileViewModel(
             dao.insertOrUpdate(profile)
         }
     }
-
-    /**
-     * Speichert oder aktualisiert das Profil, ähnlich wie storeRecords().
-     */
 
     private fun createPlaceholder(): UserProfileEntry {
         return UserProfileEntry(

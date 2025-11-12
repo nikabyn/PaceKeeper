@@ -17,7 +17,11 @@ import androidx.compose.ui.res.stringResource
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.Route
 
-
+/**
+ * A reusable UI component (Composable) that displays a clickable card
+ * representing the User Profile. This card serves as a navigation element,
+ * directing the user to the UserProfileScreen when clicked.
+ */
 @Composable
 fun UserProfileCard(navController: NavController) {
     Box(

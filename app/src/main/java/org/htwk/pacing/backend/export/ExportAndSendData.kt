@@ -14,31 +14,34 @@ import org.htwk.pacing.ui.screens.UserProfileViewModel
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-// zentrale Server-Konfiguration
+
+/**
+ * Executes the entire process of securely exporting the application's database,
+ * compressing it into a ZIP file, and then uploading that file to a remote server.
+ * It handles resource cleanup by deleting the temporary ZIP file afterward.
+ */
+//TODO: edit server configuration
+//TODO: server secret
 private const val SERVER_URL = "https://pacekeeper.pixelpioniere.de/receive/index.php"
 private const val SERVER_SECRET = "DN9d82ohd20iooinlknceOI"
 
-/**
- * Sendet die bestehende lokale Datenbank an den Server.
- */
+
 suspend fun exportAndSendData(
     context: Context,
     viewModel: UserProfileViewModel,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ): Boolean = withContext(ioDispatcher) {
     try {
-        // Datenbank-Instanz direkt abrufen
 
 
         val cacheDir = context.cacheDir
 
 
-        val userProfile = viewModel.profile.firstOrNull() // Flow sammeln
+        val userProfile = viewModel.profile.firstOrNull()
 
         val userId = userProfile?.userId ?: "unknown"
         Log.d("USER ID", userId)
 
-        // ZIP-Dateinamen erstellen (mit UserID und Zeitstempel)
         val zipFileName = "pacing_database_export_userid_${userId}_${System.currentTimeMillis()}.zip"
         val zipFile = File(cacheDir, zipFileName)
         val dbFile = context.getDatabasePath("pacing.db")
@@ -60,7 +63,6 @@ suspend fun exportAndSendData(
 
         val success = sendFileToServer(zipFile, SERVER_URL, ioDispatcher)
 
-        // 5. Temporäre ZIP-Datei löschen
         if (zipFile.exists()) {
             val deleted = zipFile.delete()
             if (deleted) {
@@ -78,9 +80,6 @@ suspend fun exportAndSendData(
     }
 }
 
-/**
- * Generische Funktion zum Senden einer Datei an den Server.
- */
 private suspend fun sendFileToServer(
     file: File,
     serverUrl: String,

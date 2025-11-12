@@ -8,8 +8,10 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Unit Tests für UserProfile DAO-Operationen
- *
+ * Test class for verifying the functionality and interaction contract of the UserProfileDao.
+ * It uses a mock implementation, FakeUserProfileDao, to isolate the data access logic
+ * and ensure that profile entries, whether full or partial, are correctly inserted/updated,
+ * retrieved, and deleted.
  */
 class UserProfileDaoTest {
 
@@ -22,7 +24,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testInsertProfileWithFullData() {
-        // Given
         val profile = UserProfileEntry(
             userId = "test-user",
             nickname = "TestUser",
@@ -41,12 +42,10 @@ class UserProfileDaoTest {
             fitnessTracker = "Fitbit"
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile)
         }
 
-        // Then
         assert(fakeDao.insertOrUpdateCalled)
         assert(fakeDao.lastInsertedProfile == profile)
         assert(fakeDao.lastInsertedProfile?.nickname == "TestUser")
@@ -57,7 +56,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testInsertProfileWithPartialData() {
-        // Given
         val profile = UserProfileEntry(
             userId = "partial-user",
             nickname = "PartialUser",
@@ -76,12 +74,10 @@ class UserProfileDaoTest {
             fitnessTracker = null
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile)
         }
 
-        // Then
         assert(fakeDao.insertOrUpdateCalled)
         assert(fakeDao.lastInsertedProfile?.nickname == "PartialUser")
         assert(fakeDao.lastInsertedProfile?.birthYear == null)
@@ -90,7 +86,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testInsertProfileWithDiagnosis() {
-        // Given
         val profile = UserProfileEntry(
             userId = "diagnosis-user",
             nickname = "DiagnosisUser",
@@ -109,12 +104,10 @@ class UserProfileDaoTest {
             fitnessTracker = "Apple Watch"
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile)
         }
 
-        // Then
         assert(fakeDao.lastInsertedProfile?.diagnosis == UserProfileEntry.Diagnosis.MECFS)
         assert(fakeDao.lastInsertedProfile?.fatigueSensitivity == 7)
         assert(fakeDao.lastInsertedProfile?.bellScale == 8)
@@ -122,7 +115,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testInsertProfileWithAmputationLevel() {
-        // Given
         val profile = UserProfileEntry(
             userId = "amputation-user",
             nickname = "AmputationUser",
@@ -141,19 +133,16 @@ class UserProfileDaoTest {
             fitnessTracker = null
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile)
         }
 
-        // Then
         assert(fakeDao.lastInsertedProfile?.amputationLevel == UserProfileEntry.AmputationLevel.ABOVE_KNEE_LEFT)
         assert(fakeDao.lastInsertedProfile?.nickname == "AmputationUser")
     }
 
     @Test
     fun testMultipleInsertCalls() {
-        // Given
         val profile1 = UserProfileEntry(
             userId = "user1",
             nickname = "User1",
@@ -177,13 +166,11 @@ class UserProfileDaoTest {
             birthYear = 1995
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile1)
             fakeDao.insertOrUpdate(profile2)
         }
 
-        // Then
         assert(fakeDao.insertOrUpdateCallCount == 2)
         assert(fakeDao.lastInsertedProfile?.nickname == "User2")
         assert(fakeDao.lastInsertedProfile?.birthYear == 1995)
@@ -191,7 +178,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testUpdateExistingProfile() {
-        // Given
         val initialProfile = UserProfileEntry(
             userId = "user123",
             nickname = "InitialName",
@@ -216,13 +202,11 @@ class UserProfileDaoTest {
             heightCm = 175
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(initialProfile)
             fakeDao.insertOrUpdate(updatedProfile)
         }
 
-        // Then
         assert(fakeDao.insertOrUpdateCallCount == 2)
         assert(fakeDao.lastInsertedProfile?.nickname == "UpdatedName")
         assert(fakeDao.lastInsertedProfile?.birthYear == 1995)
@@ -231,7 +215,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testDeleteAll() {
-        // Given
         val profile = UserProfileEntry(
             userId = "test-user",
             nickname = "TestUser",
@@ -250,13 +233,11 @@ class UserProfileDaoTest {
             fitnessTracker = null
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile)
             fakeDao.deleteAll()
         }
 
-        // Then
         assert(fakeDao.deleteAllCalled)
         runBlocking {
             val currentProfile = fakeDao.getCurrentProfileDirect()
@@ -266,7 +247,6 @@ class UserProfileDaoTest {
 
     @Test
     fun testGetCurrentProfileDirect() {
-        // Given
         val profile = UserProfileEntry(
             userId = "test-user",
             nickname = "TestUser",
@@ -285,12 +265,10 @@ class UserProfileDaoTest {
             fitnessTracker = null
         )
 
-        // When
         runBlocking {
             fakeDao.insertOrUpdate(profile)
             val retrieved = fakeDao.getCurrentProfileDirect()
 
-            // Then
             assert(retrieved != null)
             assert(retrieved?.userId == "test-user")
             assert(retrieved?.nickname == "TestUser")
@@ -299,7 +277,6 @@ class UserProfileDaoTest {
     }
 }
 
-// Fake DAO Implementation für Tests
 class FakeUserProfileDao : UserProfileDao {
 
     var insertOrUpdateCalled = false
