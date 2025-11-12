@@ -110,7 +110,7 @@ class LinearAlgebraSolverTest {
         val x = leastSquares(a, b)
 
         for (i in 0 until x.size) {
-            assertTrue("x[$i] = ${x[i]} stimmt nicht mit erwartetem Wert ${expectedSolutionMatrix[i]} überein",
+            assertTrue("x[$i] = ${x[i]} does not match expected value ${expectedSolutionMatrix[i]}",
                 abs(x[i] - expectedSolutionMatrix[i]) < tolerance)
         }
     }
