@@ -70,9 +70,7 @@ fun MeasurementsScreen(
     val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
     val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
     val heartRateZonesResult by viewModel.heartRateZonesResult.collectAsState()
-    // provisorische Werte, werden aus der
-    // val input = HeartRateZones.HeartRateInput(, HeartRateZones.Sex.FEMALE, 50)
-    //
+
     var timeNow by remember { mutableStateOf(Clock.System.now()) }
     var time12hoursAgo by remember { mutableStateOf(timeNow - 12.hours) }
     var time7daysAgo by remember { mutableStateOf(timeNow - 7.days) }
