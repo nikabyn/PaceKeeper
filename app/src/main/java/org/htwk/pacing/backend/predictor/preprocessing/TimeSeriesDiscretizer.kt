@@ -67,13 +67,7 @@ object TimeSeriesDiscretizer {
         doInterpolateBetweenBuckets: Boolean,
     ): DoubleArray {
         //resulting time series, with interpolated, discrete values
-        val discreteTimeSeries = DoubleArray(
-            //maxOf(
-            Predictor.TIME_SERIES_SAMPLE_COUNT,
-            //allow larger-spaced time series //TODO: rather use parametrized discrete time interval/duration to use here
-            //(timeBucketAverages.maxBy { it.key }.key - timeBucketAverages.minBy { it.key }.key)
-            //)
-        ) { 0.0 }
+        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
 
         //TODO: think about extracting this part into separate function
         //fill known points from map
