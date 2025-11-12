@@ -219,37 +219,6 @@ class HeartRateGraphTest {
             .assertHeightIsEqualTo(height)
     }
 
-    /*
-        @Test
-        fun heartRateGraphCard_withCustomAxisConfig() {
-            //val customXConfig = AxisConfig(label = "Time", unit = "min", steps = 5u)
-            //val customYConfig = AxisConfig(label = "BPM", unit = "bpm", steps = 6u)
-
-            composeTestRule.setContent {
-                HeartRateGraphCard(
-                    title = "Custom Axis",
-                    series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0)),
-                    xConfig = customXConfig,
-                    yConfig = customYConfig,
-                    zonesResult = createTestZonesResult(),
-                    modifier = Modifier.height(320.dp)
-                )
-            }
-
-            composeTestRule.onNodeWithTag("CardTitle")
-                .assertIsDisplayed()
-                .assertTextEquals("Custom Axis")
-
-            composeTestRule.onNodeWithTag("AnnotatedGraph")
-                .assertIsDisplayed()
-
-            // Überprüfe Achsen-Beschriftungen
-            val xAxis = composeTestRule.onNodeWithTag("xAxis")
-            val yAxis = composeTestRule.onNodeWithTag("yAxis")
-            xAxis.assertIsDisplayed()
-            yAxis.assertIsDisplayed()
-        }
-    */
     @Test
     fun heartRateGraphCard_multipleInstances() {
         val zones1 = createTestZonesResult()
