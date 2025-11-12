@@ -64,7 +64,7 @@ data class UserProfileEntry(
                 userId = shortUserId,
                 nickname = null,
                 sex = Sex.UNSPECIFIED,
-                birthYear = null,
+                birthYear = 1990,
                 heightCm = null,
                 weightKg = null,
                 restingHeartRateBpm = 60,
