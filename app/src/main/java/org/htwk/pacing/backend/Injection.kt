@@ -20,6 +20,7 @@ import org.htwk.pacing.backend.database.SkinTemperatureDao
 import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
+import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.mlmodel.MLModel
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
@@ -28,7 +29,6 @@ import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
-import org.htwk.pacing.backend.database.UserProfileDao
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -74,13 +74,12 @@ val appModule = module {
 
     single<MLModel> { MLModel(get()) }
 
-    //initialen Eintrag für User Profile laden
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
     }
 
     viewModel { HomeViewModel(get(), get()) }
-    viewModel { MeasurementsViewModel(get(), get(), get(), get()) }
+    viewModel { MeasurementsViewModel(get(), get(), get(), get(), userProfileDao = get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(androidContext(), get()) }
     viewModel { UserProfileViewModel(get()) }

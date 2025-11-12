@@ -42,6 +42,8 @@ import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
+import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
@@ -67,9 +69,9 @@ fun MeasurementsScreen(
     val feelingLevels by viewModel.feelingLevels.collectAsState()
     val predictedHeartRate by viewModel.predictedHeartRate.collectAsState()
     val predictedEnergyLevel by viewModel.predictedEnergyLevel.collectAsState()
-
+    val heartRateZonesResult by viewModel.heartRateZonesResult.collectAsState()
     // provisorische Werte, werden aus der
-    val input = HeartRateZones.HeartRateInput(23, HeartRateZones.Sex.FEMALE, 50)
+    // val input = HeartRateZones.HeartRateInput(, HeartRateZones.Sex.FEMALE, 50)
     //
     var timeNow by remember { mutableStateOf(Clock.System.now()) }
     var time12hoursAgo by remember { mutableStateOf(timeNow - 12.hours) }
@@ -129,7 +131,7 @@ fun MeasurementsScreen(
                     range = 0.0..160.0,
                     steps = 3u,
                 ),
-                zonesResult = HeartRateZones.calculateZones(input)
+                zonesResult = heartRateZonesResult
             )
 
             HeartRateGraphCard(
@@ -149,7 +151,7 @@ fun MeasurementsScreen(
                 yConfig = AxisConfig(
                     range = 40.0..160.0
                 ),
-                zonesResult = HeartRateZones.calculateZones(input)
+                zonesResult = heartRateZonesResult
             )
 
             HistogramCard(
@@ -199,7 +201,41 @@ class MeasurementsViewModel(
     manualSymptomDao: ManualSymptomDao,
     predictedHeartRateDao: PredictedHeartRateDao,
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val userProfileDao: UserProfileDao
 ) : ViewModel() {
+
+    val userProfile = userProfileDao.getCurrentProfile()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+    val heartRateZonesResult = userProfile.map { profile ->
+        if (profile != null) {
+            val age = profile.birthYear?.let { calculateAge(it) }
+            val sex = when (profile.sex) {
+                UserProfileEntry.Sex.MALE -> HeartRateZones.Sex.MALE
+                UserProfileEntry.Sex.FEMALE -> HeartRateZones.Sex.FEMALE
+                else -> HeartRateZones.Sex.FEMALE // Fallback
+            }
+            val restingHeartRate = profile.restingHeartRateBpm ?: 60 // Fallback
+
+            if (age != null && restingHeartRate > 0) {
+                val input = HeartRateZones.HeartRateInput(age, sex, restingHeartRate)
+                HeartRateZones.calculateZones(input)
+            } else {
+                // Fallback mit Standardwerten
+                createFallbackZones()
+            }
+        } else {
+            // Fallback wenn kein Profil existiert
+            createFallbackZones()
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = createFallbackZones()
+    )
     val feelingLevels = manualSymptomDao
         .getLastLive(1.days)
         .map {
@@ -301,4 +337,14 @@ class MeasurementsViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = Series(emptyList(), emptyList())
         )
+
+    private fun calculateAge(birthYear: Int): Int {
+        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        return currentYear - birthYear
+    }
+
+    private fun createFallbackZones(): HeartRateZones.HeartRateZonesResult {
+        val fallbackInput = HeartRateZones.HeartRateInput(30, HeartRateZones.Sex.FEMALE, 60)
+        return HeartRateZones.calculateZones(fallbackInput)
+    }
 }
