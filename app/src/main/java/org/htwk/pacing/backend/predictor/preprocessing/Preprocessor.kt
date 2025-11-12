@@ -1,8 +1,5 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import org.htwk.pacing.backend.predictor.Predictor
-import kotlin.time.Duration.Companion.minutes
-import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
@@ -15,32 +12,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDat
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
-    //Data class weil wir zwischen Zuständen wechseln und Parameter brauchen (enum reicht nicht aus)
-    sealed class Mode{
-        data class Live(val discreteTimeSeries: MultiTimeSeriesDiscrete) : Mode() //hier können schon die diskreditierten Zeitreihen genutzt werden
-        data class Fallback(val entries: Predictor.MultiTimeSeriesEntries) : Mode()  // hier müssen Daten aus der Datenbank genutzt werden (Rohdaten)
-        data class DefaultValues(val personalVitalityThresholds: Predictor.FixedParameters) : Mode()
-    }
-
-    object ModeManager{
-        // Der aktuelle Modus, initial auf DefaultValues
-        private var currentMode: Mode = Mode.DefaultValues(Predictor.FixedParameters(0.0))
-        private const val liveThresholdsMinutes = 30L // Zeit, die die Uhr MAXIMAL Uhr ohne Daten haben darf
-
-        fun switchMode(newMode: Mode) {
-
-        }
-
-        // Muss ich alle Vitalwerte checken wann sie reinkamen oder reicht so einer? Boolean zurückgeben
-        private fun hasRecentData(entries: Predictor.MultiTimeSeriesEntries, liveThresholdsMinutes: Long){
-            val now = Clock.System.now()
-            val threshold = liveThresholdsMinutes.minutes
-
-            return
-        }
-
-        fun getCurrentMode(): Mode = currentMode
-    }
 
     //class 3) (unused for now), see ui#38
     private fun processDailyConstant(): Double {
@@ -65,8 +36,6 @@ object Preprocessor : IPreprocessor {
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
-
-        // --- Fallback-System für jede Metrik ---
         val ensuredData = ensureData(rawCleaned)
 
         return MultiTimeSeriesDiscrete(
