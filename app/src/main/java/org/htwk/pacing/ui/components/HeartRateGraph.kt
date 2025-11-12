@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.heuristics.HeartRateZones
@@ -37,9 +39,9 @@ fun <C : Collection<Double>> HeartRateGraphCard(
         colorResource(R.color.yellow_700), // yellow: exertionZone
         colorResource(R.color.red_700)  // red: area above threshold
     )
-    val isDarkTheme = isSystemInDarkTheme()
     val strokeStyle = Graph.defaultStrokeStyle()
-    val strokeColor = Graph.defaultStrokeColor()
+    val strokeColor =
+        if (isSystemInDarkTheme()) Color.hsv(0f, 0f, 0.9f) else Color.hsv(0f, 0f, 0.1f)
 
     Annotation(
         series = series,
@@ -78,14 +80,19 @@ fun <C : Collection<Double>> HeartRateGraphCard(
 
                 drawRect(
                     color = zoneColors[index],
-                    alpha = if (isDarkTheme) 0.5f else 0.3f,
+                    alpha = 0.25f,
                     topLeft = Offset(0f, canvasTop),
                     size = Size(size.width, height),
                 )
             }
 
             val paths = graphToPaths(series, size, xRange, yRange)
-            drawPath(paths.line, color = strokeColor, style = strokeStyle)
+            drawPath(
+                paths.line,
+                color = strokeColor,
+                style = strokeStyle,
+                blendMode = BlendMode.Overlay
+            )
         }
     }
 }
