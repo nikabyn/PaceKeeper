@@ -11,7 +11,6 @@ import kotlinx.datetime.Instant
         // Data received from Health Connect
         DistanceEntry::class,
         ElevationGainedEntry::class,
-        FeelingEntry::class,
         HeartRateEntry::class,
         HeartRateVariabilityEntry::class,
         MenstruationPeriodEntry::class,
