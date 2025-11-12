@@ -8,6 +8,7 @@ import org.junit.Ignore
 import org.junit.Test
 
 class LinearExtrapolatorTest {
+    //some random time series with a general upward trend, used in the tests
     private var timeSeries: DoubleArray = DoubleArray(288) { i ->
         val x = i / 288.0 //time normalization to array range
         (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) +
