@@ -293,7 +293,7 @@ object Graph {
     fun defaultFillColor() =
         if (isSystemInDarkTheme()) Color.Red.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.1f)
 
-    fun defaultStrokeStyle() = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    fun defaultStrokeStyle() = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
     fun defaultRange(values: Collection<Double>): ClosedRange<Double> {
         val min = values.minOrNull() ?: 0.0
