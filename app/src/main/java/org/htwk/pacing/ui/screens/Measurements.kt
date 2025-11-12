@@ -337,7 +337,8 @@ class MeasurementsViewModel(
         )
 
     private fun calculateAge(birthYear: Int): Int {
-        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        val currentYear =
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
         return currentYear - birthYear
     }
 
@@ -346,3 +347,5 @@ class MeasurementsViewModel(
         return HeartRateZones.calculateZones(fallbackInput)
     }
 }
+
+
