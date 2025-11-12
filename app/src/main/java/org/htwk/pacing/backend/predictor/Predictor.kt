@@ -5,7 +5,6 @@ import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -49,48 +48,6 @@ class Predictor {
         //we have to add more fixed vital parameters later
         val anaerobicThresholdBPM: Double
     )
-
-    fun train(
-        inputTimeSeries: MultiTimeSeriesEntries,
-        fixedParameters: FixedParameters,
-    ) {
-        val trainingSampleCount =
-            (inputTimeSeries.duration / Predictor.TIME_SERIES_DURATION).toInt()
-
-        val trainingSamples = (0 until trainingSampleCount).map { i ->
-            //create a copy of inputTimeSeries that only contains the data for two days, offset by i * 2 days
-            val offset = TIME_SERIES_DURATION * i
-            val sampleStartTime = inputTimeSeries.timeStart + offset
-            val sampleEndTime = sampleStartTime + TIME_SERIES_DURATION
-
-            val sampleHeartRate =
-                inputTimeSeries.heartRate.filter { it.time in sampleStartTime..sampleEndTime }
-            val sampleDistance =
-                inputTimeSeries.distance.filter { it.end in sampleStartTime..sampleEndTime }
-
-            val sampleTimeSeries = inputTimeSeries.copy(
-                timeStart = sampleStartTime,
-                heartRate = sampleHeartRate,
-                distance = sampleDistance
-            )
-
-            Preprocessor.run(sampleTimeSeries, fixedParameters)
-        }
-
-        //iterate through training samples, leaving out the last one
-        for (i in 0 until trainingSampleCount - 1) {
-            val predictionTarget =
-                (trainingSamples[i + 1].metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional[12]
-
-            LinearCombinationPredictionModel.addTrainingSampleFromMultiTimeSeriesDiscrete(
-                trainingSamples[i],
-                predictionTarget
-            )
-        }
-
-
-        LinearCombinationPredictionModel.trainOnStoredSamples()
-    }
 
     /**
      * Runs the prediction model to forecast the energy level.
