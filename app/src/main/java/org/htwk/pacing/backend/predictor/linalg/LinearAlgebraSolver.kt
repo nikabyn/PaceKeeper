@@ -62,11 +62,10 @@ object LinearAlgebraSolver {
     private fun D2Array<Double>.getColumn(colIndex: Int): DoubleArray =
         DoubleArray(this.shape[0]) { rowIndex -> this[rowIndex, colIndex] }
 
-
     /**
      * Performs modified Gram-Schmidt orthogonalization on a given matrix.
      *
-     * This function takes a matrix `inputMatrixA` with dimensions (m × n) and calculates
+     * This function takes a matrix `inputMatrixA` with dimensions (m x n) and calculates
      * two matrices `Q` and `R` such that: `inputMatrixA = Q * R`. Here, `Q` is an orthogonal
      * matrix and `R` is an upper triangular matrix.
      *
@@ -76,7 +75,7 @@ object LinearAlgebraSolver {
      *
      * Before computation, the function validates that:
      * - The input matrix is two-dimensional and non-empty.
-     * - The number of rows is greater than or equal to the number of columns (m ≥ n),
+     * - The number of rows is greater than or equal to the number of columns (m >= n),
      *   which is required to produce a full-rank orthogonal basis.
      *
      * @param inputMatrixA The input matrix with `Double` values whose columns are to be orthogonalized.
@@ -85,8 +84,7 @@ object LinearAlgebraSolver {
      *   - `r`: an upper triangular matrix with the projection coefficients and norms
      * @throws IllegalArgumentException if the matrix has empty dimensions or more columns than rows.
      */
-
-    private fun gramSchmidt (inputMatrixA: D2Array<Double>): Pair<D2Array<Double>, D2Array<Double>> {
+    private fun gramSchmidt(inputMatrixA: D2Array<Double>): Pair<D2Array<Double>, D2Array<Double>> {
         val numRows = inputMatrixA.shape[0]
         val numCols = inputMatrixA.shape[1]
 
@@ -95,7 +93,7 @@ object LinearAlgebraSolver {
         }
 
         require(numRows >= numCols) {
-            "Gram-Schmidt requires m ≥ n. The input matrix has $numRows rows and $numCols columns."
+            "Gram-Schmidt requires m >= n. The input matrix has $numRows rows and $numCols columns."
         }
 
         val q: D2Array<Double> = mk.zeros(numRows, numCols)
@@ -111,7 +109,7 @@ object LinearAlgebraSolver {
             }
 
             val norm = kotlin.math.sqrt(currentVector.sumOf { it * it })
-            require(norm > 1e-10) { "Column $colIndex is linearly dependent — norm ≈ 0." }
+            require(norm > 1e-10) { "Column $colIndex is linearly dependent — norm ~ 0." }
 
             r[colIndex, colIndex] = norm
             val normalized = normalizeVector(currentVector, norm)
@@ -124,41 +122,44 @@ object LinearAlgebraSolver {
     /**
      * Multiplies the transposed matrix `orthogonalMatrix` by the vector `b`.
      *
-     * This function calculates the matrix-vector product `Qᵗ * b`, where `Qᵗ` is the transpose
+     * This function calculates the matrix-vector product `Q^T * b`, where `Q^T` is the transpose
      * of an orthogonal matrix and `b` is a column vector. This is a typical step
-     * in solving linear systems of equations using QR decomposition, in particular for calculating `Qᵗ * b`
+     * in solving linear systems of equations using QR decomposition, in particular for calculating `Q^T * b`
      * before backward substitution with `R`.
      *
-     * @param orthogonalMatrix An orthogonal matrix `Q` with dimensions (m × n).
+     * @param orthogonalMatrix An orthogonal matrix `Q` with dimensions (m x n).
      * @param b A vector `b` with length m.
-     * @return The result of the matrix-vector multiplication `Qᵗ * b` as a vector of length n.
+     * @return The result of the matrix-vector multiplication `Q^T * b` as a vector of length n.
      */
-    private fun transposeMultiply(orthogonalMatrix: D2Array<Double>, b: D1Array<Double>): D1Array<Double>{
+    private fun transposeMultiply(orthogonalMatrix: D2Array<Double>, b: D1Array<Double>): D1Array<Double> {
         return orthogonalMatrix.transpose() dot b
     }
 
     /**
-    * Performs backward substitution to solve a linear system of equations.
-    *
-    * This function solves a system of equations of the form `R * x = y`, where `R` is an upper triangular matrix
-    * (by QR decomposition) and `y` is a vector. The solution is obtained by backward substitution,
-    * starting from the last row and proceeding upwards to the first.
-    *
-    * @param r An upper triangular matrix `R` with dimensions (n × n).
-    * @param vectorOfTransposedMultiply A vector `y` of length n, the result of `Qᵗ * b`.
-    * @return The solution vector `x` of length n that satisfies the system of equations.
-    * @throws IllegalArgumentException if dimensions are inconsistent or diagonal entries are zero.
-    */
-    private fun backSubstitution(r: D2Array<Double>, vektorOfTransposedMultiply: D1Array<Double>): D1Array<Double>{
+     * Performs backward substitution to solve a linear system of equations.
+     *
+     * This function solves a system of equations of the form `R * x = y`, where `R` is an upper triangular matrix
+     * (by QR decomposition) and `y` is a vector. The solution is obtained by backward substitution,
+     * starting from the last row and proceeding upwards to the first.
+     *
+     * @param r An upper triangular matrix `R` with dimensions (n x n).
+     * @param vectorOfTransposedMultiply A vector `y` of length n, the result of `Q^T * b`.
+     * @return The solution vector `x` of length n that satisfies the system of equations.
+     * @throws IllegalArgumentException if dimensions are inconsistent or diagonal entries are zero.
+     */
+    private fun backSubstitution(
+        r: D2Array<Double>,
+        vectorOfTransposedMultiply: D1Array<Double>
+    ): D1Array<Double> {
         val numRows = r.shape[0]
         val numCols = r.shape[1]
 
         require(numRows == numCols) {
-            "Matrix must be square (R is $numRows × $numCols)."
+            "Matrix must be square (R is $numRows x $numCols)."
         }
 
-        require(vektorOfTransposedMultiply.size == numCols) {
-            "Vector length (${vektorOfTransposedMultiply.size}) must match matrix dimensions ($numCols)."
+        require(vectorOfTransposedMultiply.size == numCols) {
+            "Vector length (${vectorOfTransposedMultiply.size}) must match matrix dimensions ($numCols)."
         }
 
         val solutionVector = mk.zeros<Double>(numCols)
@@ -173,7 +174,8 @@ object LinearAlgebraSolver {
                 "Zero on diagonal at row $rowIndex — system cannot be solved (division by zero)."
             }
 
-            solutionVector[rowIndex] = (vektorOfTransposedMultiply[rowIndex] - sum) / r[rowIndex, rowIndex]
+            solutionVector[rowIndex] =
+                (vectorOfTransposedMultiply[rowIndex] - sum) / r[rowIndex, rowIndex]
         }
 
         return solutionVector
@@ -182,16 +184,16 @@ object LinearAlgebraSolver {
     /**
      * Calculates the solution to a linear least squares problem using QR decomposition.
      *
-     * This function solves an overdetermined linear equation system of the form `A * x ≈ b`,
+     * This function solves an overdetermined linear equation system of the form `A * x ~ b`,
      * where `A` is a matrix with more rows than columns. The solution minimizes the error
      * in the sense of least squares.
      *
      * The algorithm uses the QR decomposition of `A` using modified Gram-Schmidt orthogonalization:
      * - `A = Q * R`, where `Q` is an orthogonal matrix and `R` is an upper triangular matrix.
-     * - Then `Qᵗ * b` is calculated.
-     * - The solution `x` is obtained by backward substitution from `R * x = Qᵗ * b`.
+     * - Then `Q^T * b` is calculated.
+     * - The solution `x` is obtained by backward substitution from `R * x = Q^T * b`.
      *
-     * @param a The input matrix `A` with dimensions (m × n), where m ≥ n.
+     * @param a The input matrix `A` with dimensions (m x n), where m >= n.
      * @param b The target vector `b` with length m.
      * @return The solution vector `x` of length n, which represents the least squares solution.
      */
