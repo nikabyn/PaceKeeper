@@ -8,25 +8,14 @@ import org.junit.Ignore
 import org.junit.Test
 
 class LinearExtrapolatorTest {
-
-    private lateinit var timeSeries: DoubleArray
-    private val stepsIntoFuture =
-        (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds)
-
-    @Before
-    fun setUp() {
-        // Create a more realistic, non-linear time series of 288 elements.
-        // It generally trends upwards but has a dip in the middle.
-        timeSeries = DoubleArray(288) { i ->
-            val x = i / 288.0 // Normalize i to 0.0-1.0
-            // A base linear trend plus a sine wave to make it go up and down
-            (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) +
-                    (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) +
-                    (kotlin.math.cos(x * 9.7 * kotlin.math.PI) * 9) +
-                    (kotlin.math.cos(x * 13.4 * kotlin.math.PI) * 7.6) +
-                    (kotlin.math.sin(x * kotlin.math.sin(x * 1.3) * 29.4 * kotlin.math.PI) * 3.6) +
-                    50
-        }
+    private var timeSeries: DoubleArray = DoubleArray(288) { i ->
+        val x = i / 288.0 //time normalization to array range
+        (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) +
+                (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) +
+                (kotlin.math.cos(x * 9.7 * kotlin.math.PI) * 9) +
+                (kotlin.math.cos(x * 13.4 * kotlin.math.PI) * 7.6) +
+                (kotlin.math.sin(x * kotlin.math.sin(x * 1.3) * 29.4 * kotlin.math.PI) * 3.6) +
+                50
     }
 
     @Ignore("This test is for manual visualization inspection and requires a graphical environment.")
@@ -46,17 +35,15 @@ class LinearExtrapolatorTest {
 
         plotTimeSeriesExtrapolationsWithPython(timeSeries, result.extrapolations)
 
-        // ASSERT
-        // This test's primary purpose is visualization, not assertion.
-        // But we add a trivial assertion to make the test runner happy.
+        //this test's primary purpose is visualization, not assertion.
+        //add a trivial assertion to not confuse test runner
         assertEquals(288, timeSeries.size)
         println("Plotting finished.")
     }
 
     @Test
     fun `multipleExtrapolate returns the correct, pinned results for a known non-linear timeSeries`() {
-        // ARRANGE
-        // This "golden result set" is calculated and pinned for the specific non-linear timeSeries.
+        // This "golden result set" is calculated and pinned for the specific non-linear timeSeries in setUp().
         // If any underlying logic changes, these tests will fail, providing a strong regression guard.
         val expectedResults = mapOf(
             EXTRAPOLATION_STRATEGY.NOW_VS_30_MINUTES_AGO to 269.6858,
@@ -82,10 +69,8 @@ class LinearExtrapolatorTest {
 
         )
 
-        // ACT
         val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
 
-        // ASSERT
         assertEquals(
             "The number of strategies tested should match the number of results.",
             expectedResults.size,
@@ -99,37 +84,31 @@ class LinearExtrapolatorTest {
                 "Mismatch for strategy: $strategy",
                 expectedValue,
                 actualValue!!,
-                0.0001 // Using a delta for floating-point comparisons
+                0.0001
             )
         }
     }
 
     @Test
     fun `runOnTimeSeries with constant time series produces flat extrapolation`() {
-        // ARRANGE
-        // This test is still valuable as a sanity check for slope calculation.
+        // test as sanity check for slope calculation.
         val constantTimeSeries = DoubleArray(288) { 100.0 }
         val strategy = EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND.strategy
-        val expected = 100.0 // With a flat line, slope is 0, so result should be y1 (which is 100)
+        val expected = 100.0 //flat line, slope is 0, so result should be y1 (which is 100)
 
-        // ACT
         val result = strategy.runOnTimeSeries(constantTimeSeries)
 
-        // ASSERT
         assertEquals(expected, result.resultPoint.second, 0.0001)
     }
 
-    // This individual test can be kept for easier debugging of a single complex case.
+
     @Test
     fun `PAST_3_HOUR_TREND strategy calculates correctly for non-linear data`() {
-        // ARRANGE
         val strategy = EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND.strategy
-        val expected = 190.95672 // Pinned golden value for this specific case
+        val expected = 190.95672 //expected value for this specific case
 
-        // ACT
         val result = strategy.runOnTimeSeries(timeSeries)
 
-        // ASSERT
         assertEquals(expected, result.resultPoint.second, 0.0001)
     }
 }
