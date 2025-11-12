@@ -8,7 +8,7 @@ object HeartRateZones {
 
     data class HeartRateInput(
         val age: Int,
-        val gender: Gender,
+        val sex: Gender,
         val restingHeartRate: Int
     )
 
@@ -34,7 +34,7 @@ object HeartRateZones {
 
 
     fun calculateZones(input: HeartRateInput): HeartRateZonesResult {
-        val maxHR = calculateMaxHeartRate(input.age, input.gender)
+        val maxHR = calculateMaxHeartRate(input.age, input.sex)
         val threshold = calculateAnaerobicThreshold(maxHR)
 
 

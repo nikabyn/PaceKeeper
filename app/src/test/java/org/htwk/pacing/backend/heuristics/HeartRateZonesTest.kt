@@ -53,7 +53,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 23,
-            gender = HeartRateZones.Gender.FEMALE,
+            sex = HeartRateZones.Gender.FEMALE,
             restingHeartRate = 50
         )
 
@@ -88,7 +88,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 40,
-            gender = HeartRateZones.Gender.MALE,
+            sex = HeartRateZones.Gender.MALE,
             restingHeartRate = 60
         )
 
@@ -122,7 +122,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 25,
-            gender = HeartRateZones.Gender.FEMALE,
+            sex = HeartRateZones.Gender.FEMALE,
             restingHeartRate = 40
         )
 
@@ -147,7 +147,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 50,
-            gender = HeartRateZones.Gender.MALE,
+            sex = HeartRateZones.Gender.MALE,
             restingHeartRate = 80
         )
 
@@ -173,7 +173,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 20,
-            gender = HeartRateZones.Gender.FEMALE,
+            sex = HeartRateZones.Gender.FEMALE,
             restingHeartRate = 70
         )
 
@@ -191,7 +191,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 30,
-            gender = HeartRateZones.Gender.MALE,
+            sex = HeartRateZones.Gender.MALE,
             restingHeartRate = 55
         )
 

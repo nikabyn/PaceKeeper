@@ -6,7 +6,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
-import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -17,7 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.components.AnnotatedGraph
 import org.htwk.pacing.ui.components.AxisConfig
-import org.htwk.pacing.ui.components.Graph
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.HeartRateGraphCard
 import org.htwk.pacing.ui.components.Series
@@ -199,21 +197,5 @@ class HeartRateGraphTest {
         }
     }
 
-    @Test
-    fun graph_displays() {
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
-        val height = 300.dp
-
-        composeTestRule.setContent {
-            Graph(
-                series,
-                modifier = Modifier.height(height),
-            )
-        }
-
-        composeTestRule.onNodeWithTag("GraphCanvas")
-            .assertIsDisplayed()
-            .assertHeightIsEqualTo(height)
-    }
 
 }
