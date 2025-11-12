@@ -11,10 +11,10 @@ class HeartRateZonesTest {
     fun `calculateMaxHeartRate for male`() {
         // Given
         val age = 30
-        val gender = HeartRateZones.Gender.MALE
+        val sex = HeartRateZones.Sex.MALE
 
         // When
-        val result = HeartRateZones.calculateMaxHeartRate(age, gender)
+        val result = HeartRateZones.calculateMaxHeartRate(age, sex)
 
         // Then
         val expected = 223.0 - (0.9 * 30) // 223 - 27 = 196
@@ -25,10 +25,10 @@ class HeartRateZonesTest {
     fun `calculateMaxHeartRate for female`() {
         // Given
         val age = 25
-        val gender = HeartRateZones.Gender.FEMALE
+        val sex = HeartRateZones.Sex.FEMALE
 
         // When
-        val result = HeartRateZones.calculateMaxHeartRate(age, gender)
+        val result = HeartRateZones.calculateMaxHeartRate(age, sex)
 
         // Then
         val expected = 223.0 - 25.0 // 198
@@ -53,7 +53,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 23,
-            sex = HeartRateZones.Gender.FEMALE,
+            sex = HeartRateZones.Sex.FEMALE,
             restingHeartRate = 50
         )
 
@@ -88,7 +88,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 40,
-            sex = HeartRateZones.Gender.MALE,
+            sex = HeartRateZones.Sex.MALE,
             restingHeartRate = 60
         )
 
@@ -122,7 +122,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 25,
-            sex = HeartRateZones.Gender.FEMALE,
+            sex = HeartRateZones.Sex.FEMALE,
             restingHeartRate = 40
         )
 
@@ -147,7 +147,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 50,
-            sex = HeartRateZones.Gender.MALE,
+            sex = HeartRateZones.Sex.MALE,
             restingHeartRate = 80
         )
 
@@ -173,7 +173,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 20,
-            sex = HeartRateZones.Gender.FEMALE,
+            sex = HeartRateZones.Sex.FEMALE,
             restingHeartRate = 70
         )
 
@@ -191,7 +191,7 @@ class HeartRateZonesTest {
         // Given
         val input = HeartRateZones.HeartRateInput(
             age = 30,
-            sex = HeartRateZones.Gender.MALE,
+            sex = HeartRateZones.Sex.MALE,
             restingHeartRate = 55
         )
 

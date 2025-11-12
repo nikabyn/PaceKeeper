@@ -2,13 +2,13 @@ package org.htwk.pacing.backend.heuristics
 
 object HeartRateZones {
 
-    enum class Gender {
+    enum class Sex {
         MALE, FEMALE
     }
 
     data class HeartRateInput(
         val age: Int,
-        val sex: Gender,
+        val sex: Sex,
         val restingHeartRate: Int
     )
 
@@ -21,10 +21,10 @@ object HeartRateZones {
         val exertionZone: IntRange
     )
 
-    fun calculateMaxHeartRate(age: Int, gender: Gender): Double {
-        return when (gender) {
-            Gender.MALE -> 223.0 - (0.9 * age)
-            Gender.FEMALE -> 223.0 - age
+    fun calculateMaxHeartRate(age: Int, sex: Sex): Double {
+        return when (sex) {
+            Sex.MALE -> 223.0 - (0.9 * age)
+            Sex.FEMALE -> 223.0 - age
         }
     }
 
