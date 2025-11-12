@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
-    alias(libs.plugins.kotlin.serialization)
     id("org.sonarqube")
     jacoco
 }
@@ -140,8 +139,6 @@ dependencies {
 
     //Multik for Matrix Math
     implementation(libs.multik.kotlin)
-    testImplementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.serialization.json)
 }
 
 val exclusions = listOf(

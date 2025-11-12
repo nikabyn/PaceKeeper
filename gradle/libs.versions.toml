@@ -58,7 +58,6 @@ litert-gpu-api = { module = "com.google.ai.edge.litert:litert-gpu-api", version.
 litert-support = { module = "com.google.ai.edge.litert:litert-support", version.ref = "litert" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 multik-kotlin = { module = "org.jetbrains.kotlinx:multik-kotlin", version.ref = "multik" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -66,4 +65,3 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version = "2.2.20-2.0.4" }
 androidx-room = { id = "androidx.room", version.ref = "roomCompiler" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
