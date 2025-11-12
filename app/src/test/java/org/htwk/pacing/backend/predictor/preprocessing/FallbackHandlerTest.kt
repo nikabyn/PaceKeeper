@@ -1,36 +1,40 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import kotlin.time.Duration.Companion.minutes
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.htwk.pacing.backend.database.Length
 
 class FallbackHandlerTest {
 
-    private val timeStart = Clock.System.now()
+    private val timeStart = Instant.fromEpochMilliseconds(0)
     private val duration = 60.minutes
 
     @Test
-    fun ensureData_generatesDefaultHeartRateAndDistanceIfEmpty() {
+    fun ensureDataGeneratesDefaultHeartRateAndDistanceIfEmpty() {
         val raw = Predictor.MultiTimeSeriesEntries(timeStart, duration, emptyList(), emptyList())
 
-        val result = FallbackHandler.ensureData(raw)
+        val result = FallbackHandler.ensureDataFallback(raw)
 
         // HeartRate Defaults
-        assertEquals(6, result.heartRate.size) // 60min / 10min step
-        assertEquals(75L, result.heartRate.first().bpm)
+        assertEquals(6, result.heartRate.size)
+        assertTrue(result.heartRate.all { it.bpm == 75L })
 
         // Distance Defaults
         assertEquals(6, result.distance.size)
-        assertEquals(0.0, result.distance.first().length.inMeters(), 0.0)
+        val totalDistance = result.distance.sumOf { it.length.inMeters() }
+        val expectedDistance = 6 * 8.0
+        assertEquals(expectedDistance, totalDistance, 0.0)
+
     }
 
     @Test
-    fun ensureData_returnsRawDataIfPresent() {
+    fun ensureDataReturnsRawDataIfPresent() {
         val hr = listOf(
             HeartRateEntry(timeStart, 80),
             HeartRateEntry(timeStart + 10.minutes, 82)
@@ -41,7 +45,7 @@ class FallbackHandlerTest {
         )
         val raw = Predictor.MultiTimeSeriesEntries(timeStart, duration, hr, dist)
 
-        val result = FallbackHandler.ensureData(raw)
+        val result = FallbackHandler.ensureDataFallback(raw)
 
         assertEquals(hr, result.heartRate)
         assertEquals(dist, result.distance)

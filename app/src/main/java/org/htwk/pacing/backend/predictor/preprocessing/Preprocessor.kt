@@ -8,7 +8,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSe
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
-import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureData
+import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDataFallback
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
@@ -31,7 +31,7 @@ object Preprocessor : IPreprocessor {
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
-        val ensuredData = ensureData(rawCleaned)
+        val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
 
         return MultiTimeSeriesDiscrete(
             timeStart = raw.timeStart,
@@ -43,8 +43,8 @@ object Preprocessor : IPreprocessor {
                         duration = raw.duration,
                         metric = metric,
                         data = when (metric) {
-                            TimeSeriesMetric.HEART_RATE -> ensuredData.heartRate.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.DISTANCE -> ensuredData.distance.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.HEART_RATE -> ensuredDataUsingFallback.heartRate.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.DISTANCE -> ensuredDataUsingFallback.distance.map(::GenericTimedDataPoint)
                         }
                     )
                 )

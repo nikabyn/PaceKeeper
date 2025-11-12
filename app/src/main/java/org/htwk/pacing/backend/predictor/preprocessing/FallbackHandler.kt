@@ -10,101 +10,101 @@ import org.htwk.pacing.backend.database.Length
 
 object FallbackHandler {
 
+
     /**
-     * Ensures that the provided multi-time series data contains entries for both heart rate and distance.
-     * If either of the series in the input `raw` data is empty, this function attempts to fill it
-     * by first looking for historical data, and then by generating a default series as a last resort.
+     * Ensures that the provided multi-time series data contains entries for all metrics.
      *
-     * This acts as a primary entry point for the fallback mechanism, delegating the specific logic for
-     * heart rate and distance to `ensureHeartRateData` and `ensureDistanceData` respectively.
+     * This function acts as a primary entry point for the data fallback mechanism. If the input `raw` data
+     * has an empty list for either heart rate or distance, it delegates to the generic `ensureData` function
+     * to fill the gap. The `ensureData` function first attempts to load historical data and, if that fails,
+     * generates a default, constant series as a final fallback.
      *
      * @param raw The initial `Predictor.MultiTimeSeriesEntries` which may have empty lists for its series.
-     * @return A new `Predictor.MultiTimeSeriesEntries` instance with guaranteed non-empty data series.
-     * @throws IllegalStateException if data cannot be provided for any series, even after all fallback attempts.
+     * @return A new `Predictor.MultiTimeSeriesEntries` instance with guaranteed non-empty data for both
+     *         heart rate and distance series.
+     * @see ensureData
+     * @see loadHistoricalHeartRateData
+     * @see generateDefaultHeartRateSeries
+     * @see loadHistoricalDistanceData
+     * @see generateDefaultDistanceSeries
      */
-    fun ensureData(raw: Predictor.MultiTimeSeriesEntries): Predictor.MultiTimeSeriesEntries {
-        val hr = ensureHeartRateData(raw.heartRate, raw.timeStart, raw.duration)
-        val dist = ensureDistanceData(raw.distance, raw.timeStart, raw.duration)
+    fun ensureDataFallback(raw: Predictor.MultiTimeSeriesEntries): Predictor.MultiTimeSeriesEntries {
+        val heartRate = ensureData (raw.heartRate, raw.timeStart, raw.duration,::loadHistoricalHeartRateData,::generateDefaultHeartRateSeries)
+        val distance = ensureData(raw.distance, raw.timeStart, raw.duration,::loadHistoricalDistanceData,::generateDefaultDistanceSeries)
 
         return Predictor.MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
             duration = raw.duration,
-            heartRate = hr,
-            distance = dist
+            heartRate = heartRate,
+            distance = distance
         )
     }
 
     /**
-     * Ensures that a list of [HeartRateEntry] is available for the given time period.
+     * A generic data provisioning function that ensures a non-empty list of data is returned.
      *
-     * This function implements a fallback mechanism to provide heart rate data if the initial
-     * raw data is empty. The fallback order is as follows:
-     * 1.  Use the provided `raw` data if it's not empty.
-     * 2.  Attempt to load historical heart rate data for the specified time range.
-     * 3.  Generate a default, constant heart rate series if no historical data is found.
+     * This function implements a three-step fallback strategy:
+     * 1.  It first checks if the provided `raw` list is not empty. If so, it returns it directly.
+     * 2.  If `raw` is empty, it calls the `historicalDataFunction` to attempt to load historical data.
+     *     If historical data is found, it is returned.
+     * 3.  If no historical data is available, it calls the `defaultDataFunction` as a last resort to
+     *     generate a default dataset. If this is successful, the default data is returned.
      *
-     * If all methods fail to produce data (which is unlikely as the default generation should always succeed),
-     * it throws an exception.
+     * If all three steps fail to produce a non-empty list, it signifies that no data is available
+     * for the requested time period, and an exception is thrown.
      *
-     * @param raw The initial list of heart rate entries, which might be empty.
-     * @param timeStart The start time of the time series.
-     * @param duration The total duration of the time series.
-     * @return A non-empty list of [HeartRateEntry] for the specified period.
-     * @throws IllegalStateException if no heart rate data can be provided by any of the fallback mechanisms.
+     * @param T The type of data in the time series (e.g., `HeartRateEntry`, `DistanceEntry`).
+     * @param raw The initial list of data, which might be empty.
+     * @param timeStart The start time for which data is required.
+     * @param duration The duration for which data is required.
+     * @param historicalDataFunction A function that attempts to load historical data for the given time range.
+     * @param defaultDataFunction A function that generates a default dataset for the given time range.
+     * @return A non-empty `List<T>` containing the data.
+     * @throws IllegalStateException if all fallback mechanisms fail and no data can be provided.
      */
-    private fun ensureHeartRateData(
-        raw: List<HeartRateEntry>,
+    private fun <T> ensureData(
+        raw: List<T>,
         timeStart: Instant,
-        duration: Duration
-    ): List<HeartRateEntry> {
+        duration: Duration,
+        historicalDataFunction: (Instant, Duration) -> List<T>,
+        defaultDataFunction: (Instant, Duration) -> List<T>,
+        ): List<T> {
         if (raw.isNotEmpty()) return raw
 
-        val history = loadHistoricalHeartRateData(timeStart, duration)
+        val history = historicalDataFunction(timeStart, duration)
         if (history.isNotEmpty()) return history
 
-        val default = generateDefaultHeartRateSeries(timeStart, duration)
+        val default = defaultDataFunction(timeStart, duration)
         if (default.isNotEmpty()) return default
 
-        throw IllegalStateException("no heartrate data available – no prediction possible.")
+        throw IllegalStateException("no data available – no prediction possible.")
     }
+
 
     /**
-     * Ensures that a list of distance data is available for a given time period.
+     * Attempts to load historical data from the cache.
      *
-     * This function implements a fallback mechanism to provide distance data if the initial `raw` list is empty.
-     * The fallback order is as follows:
-     * 1. If `raw` is not empty, it is returned immediately.
-     * 2. Tries to load historical distance data for the specified time range.
-     * 3. If no historical data is found, generates a default series with zero distance covered.
-     * 4. If all attempts fail, it throws an [IllegalStateException].
+     * This function is intended to retrieve past heart rate measurements for a specified time range.
+     * It serves as a secondary data source when real-time data is unavailable. The current
+     * implementation is a placeholder and returns an empty list, because the cache is not implemented yet.
      *
-     * @param raw The initial list of distance entries, which might be empty.
-     * @param timeStart The start time of the period for which data is required.
-     * @param duration The duration of the period.
-     * @return A non-empty list of [DistanceEntry] objects.
-     * @throws IllegalStateException if no distance data can be provided (i.e., raw, historical, and default are all empty).
+     * @param start The [Instant] marking the beginning of the time range for which to load data.
+     * @param duration The [Duration] of the time range.
+     * @return A [List] of [HeartRateEntry] objects containing the historical data. Returns an empty
+     *         list if no data is found or if the implementation is not yet complete.
      */
-    private fun ensureDistanceData(
-        raw: List<DistanceEntry>,
-        timeStart: Instant,
-        duration: Duration
-    ): List<DistanceEntry> {
-        if (raw.isNotEmpty()) return raw
-
-        val history = loadHistoricalDistanceData(timeStart, duration)
-        if (history.isNotEmpty()) return history
-
-        val default = generateDefaultDistanceSeries(timeStart, duration)
-        if (default.isNotEmpty()) return default
-
-        throw IllegalStateException("no distance data available – no prediction possible.")
-    }
-
     private fun loadHistoricalHeartRateData(start: Instant, duration: Duration): List<HeartRateEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
-
+/**
+     * See loadHistoricalHeartRateData
+     *
+    * @param start The [Instant] marking the beginning of the time range for which to load data.
+    * @param duration The [Duration] of the time range.
+    * @return A [List] of [DistanceEntry] objects containing the historical data. Returns an empty
+    *         list if no data is found or if the implementation is not yet complete.
+    */
     private fun loadHistoricalDistanceData(start: Instant, duration: Duration): List<DistanceEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
@@ -148,7 +148,7 @@ object FallbackHandler {
     private fun generateDefaultDistanceSeries(start: Instant, duration: Duration): List<DistanceEntry> {
         val step = Predictor.TIME_SERIES_STEP_DURATION
         val points = (duration / step).toInt()
-        val defaultLength = 0.0
+        val defaultLength = 8.0
         return List(points) { i ->
             DistanceEntry(
                 start + (i * step),
