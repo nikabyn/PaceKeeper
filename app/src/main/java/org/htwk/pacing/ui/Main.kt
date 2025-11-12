@@ -40,7 +40,10 @@ import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
+import org.htwk.pacing.ui.screens.UserProfileScreen
+import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.theme.PacingTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun Main() {
@@ -103,7 +106,7 @@ fun NavBar(
 
 enum class NavBarEntries(
     val route: String,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val icon: @Composable () -> Unit,
 ) {
     HOME(
@@ -132,6 +135,7 @@ object Route {
     const val HOME = "home"
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
+    const val USERPROFILE = "userprofile"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
@@ -155,7 +159,14 @@ fun AppNavHost(
                 )
             }
             composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
-            composable(route = Route.SETTINGS) { SettingsScreen() }
+            composable(route = Route.SETTINGS) { SettingsScreen(navController) }
+            composable(Route.USERPROFILE) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                UserProfileScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel
+                )
+            }
         }
 
         composable(
