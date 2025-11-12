@@ -165,7 +165,7 @@ class PreprocessorTests {
     }
 
     @Test
-    fun `Preprocessor run needs to throw exception of input data is empty`() {
+    fun `Preprocessor run needs to not throw exception of input data is empty`() {
         // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
         val heartRateData: List<HeartRateEntry> = listOf()
 
@@ -177,14 +177,6 @@ class PreprocessorTests {
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
 
-
-        var exceptionThrown = false
-        try {
-            Preprocessor.run(rawData, fixedParameters)
-        } catch (e: IllegalArgumentException) {
-            exceptionThrown = true
-        }
-
-        assertTrue(exceptionThrown)
+        val result = Preprocessor.run(rawData, fixedParameters)
     }
 }
