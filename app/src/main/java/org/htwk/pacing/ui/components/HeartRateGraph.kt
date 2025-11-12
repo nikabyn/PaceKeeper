@@ -9,7 +9,17 @@ import androidx.compose.ui.res.colorResource
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.heuristics.HeartRateZones
 
-
+/**
+ * A composable that displays a heart rate graph with colored zones indicating different intensity levels.
+ *
+ * @param title The title to display in the card header
+ * @param series The data series containing heart rate values to plot
+ * @param xConfig Configuration for the X-axis (defaults to AxisConfig())
+ * @param yConfig Configuration for the Y-axis (defaults to AxisConfig())
+ * @param modifier Modifier for styling and layout
+ * @param zonesResult Contains the heart rate zone boundaries for coloring the graph background
+ * @param C The type of collection containing the heart rate data (must extend Collection<Double>)
+ */
 @Composable
 fun <C : Collection<Double>> HeartRateGraphCard(
     title: String,
@@ -19,6 +29,8 @@ fun <C : Collection<Double>> HeartRateGraphCard(
     modifier: Modifier = Modifier,
     zonesResult: HeartRateZones.HeartRateZonesResult
 ) = CardWithTitle(title, modifier) {
+
+    // Define colors for different heart rate zones (from low to high intensity)
     val zoneColors = listOf(
         colorResource(R.color.green_700), // green: healthZone
         colorResource(R.color.cyan_700), // cyan: recoveryZone
@@ -35,25 +47,33 @@ fun <C : Collection<Double>> HeartRateGraphCard(
         GraphCanvas {
             val totalRange = yRange.endInclusive - yRange.start
 
-            // Definiere alle Grenzpunkte als Double
+            // Define the boundaries between heart rate zones
+            // These values determine where each color zone starts and ends
             val boundaries = listOf(
                 yRange.start,
                 zonesResult.visualHealthZone.endInclusive.toDouble(),
                 zonesResult.recoveryZone.endInclusive.toDouble(),
                 zonesResult.exertionZone.endInclusive.toDouble(),
-                //zonesResult.anaerobicThreshold,
                 yRange.endInclusive
             )
 
-            // Zeichne kontinuierliche Bereiche zwischen den Grenzen
+            // Draw colored rectangles for each heart rate zone
+            // Pair each boundary with the next one to create zones, then draw them
             boundaries.zip(boundaries.drop(1)).forEachIndexed { index, (start, end) ->
                 if (index < zoneColors.size) {
+
+                    // Calculate canvas position for upper border
+                    // Note: Canvas Y=0 is at top, so we invert the calculation
                     val canvasTop =
                         size.height * (1f - ((end - yRange.start) / totalRange).toFloat())
+                    // Calculate canvas position for lower border
                     val canvasBottom =
                         size.height * (1f - ((start - yRange.start) / totalRange).toFloat())
+
+                    // Calculate height of zone in pixels
                     val height = canvasBottom - canvasTop
 
+                    // Only draw if zone has positive height (avoids rendering errors)
                     if (height > 0f) {
                         drawRect(
                             color = zoneColors[index],
