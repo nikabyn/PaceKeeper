@@ -49,6 +49,9 @@ object LinearExtrapolator {
      * All indices are relative to the end of the time series. An index of 0 represents the most recent data point.
      */
     sealed interface SamplingDescriptor {
+        val validRange: IntRange
+            get() = 0..<(Predictor.TIME_SERIES_DURATION / Predictor.TIME_SERIES_STEP_DURATION).toInt()
+
         /**
          * Retrieves a sample value (the Y-coordinate) from the given time series.
          *
@@ -82,6 +85,9 @@ object LinearExtrapolator {
          *                 `0` represents the most recent data point, `1` represents the one before that, and so on.
          */
         data class SinglePoint(val index: Int) : SamplingDescriptor {
+            init {
+                require(index in validRange) { "earliestIndex must be in $validRange, but was $index" }
+            }
             override fun getSamplePositionX(): Double {
                 return index.toDouble()
             }
@@ -104,7 +110,6 @@ object LinearExtrapolator {
          */
         data class AverageOverRange(val earliestIndex: Int, val latestIndex: Int) : SamplingDescriptor {
             init {
-                val validRange = 0..(Predictor.TIME_SERIES_DURATION / Predictor.TIME_SERIES_STEP_DURATION).toInt()
                 require(earliestIndex in validRange) { "earliestIndex must be in $validRange, but was $earliestIndex" }
                 require(latestIndex in validRange) { "latestIndex must be in $validRange, but was $latestIndex" }
                 require(earliestIndex >= latestIndex) { "earliestIndex must be greater than or equal to latestIndex" }
@@ -184,9 +189,7 @@ object LinearExtrapolator {
         })
     }
 
-    //TODO: use fibonacci here for optimal logarithmic coverage
-    //TODO: rethink shifted lines
-    //TODO: use average windows per line, that correspond to trend window we're looking at
+    //IDEA: use fibonacci here for optimal logarithmic coverage, add time-shifted point trend lines
     enum class EXTRAPOLATION_STRATEGY(val strategy: ExtrapolationStrategy) {
         NOW_VS_30_MINUTES_AGO(
             ExtrapolationStrategy(
