@@ -141,7 +141,7 @@ create_major_release:
     - job: assembleRelease
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^sprint\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^sprint\d+(?:-result)?$/'
       when: always
   script:
     - *apk_finder_script
