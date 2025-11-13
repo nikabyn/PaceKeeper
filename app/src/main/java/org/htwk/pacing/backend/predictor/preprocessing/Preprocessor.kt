@@ -11,10 +11,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesS
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
-    //class 3) (unused for now), see ui#38
-    private fun processDailyConstant(): Double {
-        return 0.0
-    }
 
     /**
      * Executes the preprocessing pipeline on raw time series data.
