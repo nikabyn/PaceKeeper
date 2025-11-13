@@ -37,7 +37,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         input: IPreprocessor.MultiTimeSeriesDiscrete,
     ) {
         val heartRateTimeSeries = (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
-        val timeSeriesSize = heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2
+        val timeSeriesSize = heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
         for(offset in 0..timeSeriesSize step trainingTimeStepSize) {
             val expected = heartRateTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
@@ -64,8 +64,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
         }
 
         val flatExtrapolationResults = input.metrics.flatMap { (key, discreteTimeSeriesResult) ->
-            when(key) {
-                IPreprocessor.TimeSeriesMetric.HEART_RATE -> {
+            when(key.signalClass) {
+                IPreprocessor.TimeSeriesSignalClass.CONTINUOUS -> {
                     val discretePID = discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
                     listOf(
                         extrapolate(discretePID.proportional),
@@ -73,7 +73,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
                         extrapolate(discretePID.derivative)
                     )
                 }
-                IPreprocessor.TimeSeriesMetric.DISTANCE -> {
+                IPreprocessor.TimeSeriesSignalClass.AGGREGATED -> {
                     val discreteIntegral = discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
                     listOf(extrapolate(discreteIntegral.integral, subtractFirst = true))
                 }
