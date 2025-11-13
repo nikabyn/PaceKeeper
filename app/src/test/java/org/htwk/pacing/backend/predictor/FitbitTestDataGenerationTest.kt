@@ -18,7 +18,6 @@ import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
-import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import java.io.File
@@ -85,11 +84,10 @@ class FitbitTestDataGenerationTest {
         ignoreUnknownKeys = true
     }
 
-    private lateinit var heartRateEntries: List<HeartRateEntry>
-    private lateinit var distanceEntries: List<DistanceEntry>
+    private var heartRateEntries: List<HeartRateEntry> = listOf()
+    private var distanceEntries: List<DistanceEntry> = listOf()
 
-    @Before
-    fun setUp() {
+    fun setUpLoadJsons() {
         val folderHeartRate = File("src/test/resources/fitbit/heart_rate")
         val recordsHeartRate = folderHeartRate.listFiles { f -> f.extension == "json" }
             ?.flatMap { file ->
@@ -127,7 +125,7 @@ class FitbitTestDataGenerationTest {
         }
     }
 
-    private val minEntryDistanceForExport = 10.minutes
+    private val minEntryDistanceForExport = 307.minutes
 
     fun exportHeartRateEntriesToCSV() {
         val file = File("src/test/resources/heart_rate_test_data.csv")
@@ -178,6 +176,7 @@ class FitbitTestDataGenerationTest {
     @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExportCSV() {
+        setUpLoadJsons()
         exportHeartRateEntriesToCSV()
         exportDistanceEntriesToCSV()
     }
