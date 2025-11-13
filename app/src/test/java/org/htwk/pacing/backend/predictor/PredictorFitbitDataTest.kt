@@ -218,8 +218,11 @@ class PredictorFitbitDataTest {
         println("-----")
         println("prediction time:  ${predictionResult.time}")
         println("prediction value: ${predictionResult.percentage}")
+        //expected 62.12140545973156
+
+        //after adding initial value relative offset to integral, derivative: 61.80762600761695
         println("training done")
 
-        assertEquals(predictionResult.percentage.toDouble(), 0.6692, 0.1)
+        assertEquals(62.12140545973156, predictionResult.percentage.toDouble() * 100.0, 0.1)
     }
 }

@@ -187,7 +187,7 @@ object LinearExtrapolator {
         val extrapolations: Map<EXTRAPOLATION_STRATEGY, ExtrapolationLine>
     )
 
-    fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
+    fun multipleExtrapolate(timeSeries: DoubleArray, indexOffset: Int = 0): MultiExtrapolationResult {
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
             it.strategy.runOnTimeSeries(timeSeries)
         })

@@ -25,7 +25,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private fun generateFlattenedMultiExtrapolationResults(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
     ): List<Double> {
-        val timeSeriesExtrapolationSources = input.metrics.flatMap {
+        val timeSeriesExtrapolationSources = input.metrics.mapValues {
             when (val result = it.value) {
                 is IPreprocessor.DiscreteTimeSeriesResult.DiscretePID -> listOf(
                     result.proportional,
@@ -39,8 +39,20 @@ object LinearCombinationPredictionModel : IPredictionModel {
             }
         }
 
-        val flatExtrapolationResults = timeSeriesExtrapolationSources.flatMap { series ->
-            LinearExtrapolator.multipleExtrapolate(series).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
+        val indexOffset = 0
+
+        val flatExtrapolationResults = timeSeriesExtrapolationSources.flatMap { (key, series) ->
+            val a = when(key) {
+                IPreprocessor.TimeSeriesMetric.HEART_RATE -> listOf(
+                    LinearExtrapolator.multipleExtrapolate(series[0], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() },
+                    LinearExtrapolator.multipleExtrapolate(series[1], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - series[1][0]},
+                    LinearExtrapolator.multipleExtrapolate(series[2], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - series[2][0] }
+                )
+                IPreprocessor.TimeSeriesMetric.DISTANCE -> listOf(
+                    LinearExtrapolator.multipleExtrapolate(series[0], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
+                )
+            }.flatten()
+            a
         }
 
         return flatExtrapolationResults
