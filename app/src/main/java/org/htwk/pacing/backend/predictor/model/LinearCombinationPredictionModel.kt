@@ -19,6 +19,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private var linearCoefficients: List<Double> = listOf()
 
     data class TrainingSample(
+        //TODO: (see ui#62) map to actual metric enum -> rework representation of all time series
+        // as abstraction with views into a multik matrix
         val multiExtrapolations: List<Double>,
         val expectedEnergyLevel: Double
     )
@@ -92,6 +94,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
     }
 
     fun trainOnStoredSamples() {
+        require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
+
         val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
         val allExpectedFutureValues = trainingSamples.map { it.expectedEnergyLevel }
 

@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor
 
+import android.util.Log
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
@@ -7,19 +8,21 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
+import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 
 object Predictor {
+    private const val TAG = "Predictor"
+
     //time duration/length of input time series
-    val TIME_SERIES_DURATION: Duration = 2.days
-    val TIME_SERIES_STEP_DURATION: Duration = 10.minutes;
+    val TIME_SERIES_DURATION: Duration = Duration.parse("2d")
+    val TIME_SERIES_STEP_DURATION: Duration = Duration.parse("10m");
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
     val PREDICTION_WINDOW_DURATION: Duration = 2.hours
-    val PREDICTION_WINDOW_SAMPLE_COUNT: Int = (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
+    val PREDICTION_WINDOW_SAMPLE_COUNT: Int =
+        (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 
     /**
      * A container for raw, unprocessed, synchronized data from database, like heart rate.
@@ -48,22 +51,22 @@ object Predictor {
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        val timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
-        val startTime = System.currentTimeMillis()
+        var timeSeriesDiscrete: IPreprocessor.MultiTimeSeriesDiscrete
+        val preprocessorDuration = measureTimeMillis {
+            timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
+        }
+        Log.d(TAG, "Preprocessor.run duration: $preprocessorDuration ms")
 
-        LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(timeSeriesDiscrete)
+        val addSamplesDuration = measureTimeMillis {
+            LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
+                timeSeriesDiscrete
+            )
+        }
+        Log.d(TAG, "addTrainingSamplesFromMultiTimeSeriesDiscrete duration: $addSamplesDuration ms")
 
-        val endTime = System.currentTimeMillis()
-        val duration = endTime - startTime // duration in nanoseconds
-        print("Duration: $duration")
-
-        val startTime1 = System.currentTimeMillis()
-
-        LinearCombinationPredictionModel.trainOnStoredSamples()
-
-        val endTime1 = System.currentTimeMillis()
-        val duration1 = endTime1 - startTime1 // duration in nanoseconds
-        print("Duration: $duration1")
+        val trainDuration =
+            measureTimeMillis { LinearCombinationPredictionModel.trainOnStoredSamples() }
+        Log.d(TAG, "trainOnStoredSamples duration: $trainDuration ms")
     }
 
     /**
@@ -85,6 +88,7 @@ object Predictor {
         val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
         // (1.5) TODO: cache (don't need that for now)
 
+        //TODO: return actual energy prediction and a heartRate disguised as PredictedEnergyLevelEntry
         // 2.) run model and return energy prediction
         val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
