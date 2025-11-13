@@ -142,19 +142,28 @@ class FitbitTestDataGenerationTest {
         }
     }
 
+    private val minEntryDistanceForExport = 10.minutes
+
     fun exportHeartRateEntriesToCSV() {
         val file = File("src/test/resources/heart_rate_test_data.csv")
         val earliestEntryTime = heartRateEntries.first().time
         var lastTimeTaken = Instant.fromEpochMilliseconds(0)
 
+        var currentSumBPM = 0.0
+        var currentCountEntriesBPM = 0
         //export as csv
         file.printWriter().use { out ->
             out.println("minutes,bpm")
             for (entry in heartRateEntries) {
-                if (entry.time - lastTimeTaken > 10.minutes) {
+                currentSumBPM += entry.bpm
+                currentCountEntriesBPM++
+                if (entry.time - lastTimeTaken > minEntryDistanceForExport) {
                     val minutes = (entry.time - earliestEntryTime).inWholeMinutes
-                    out.println("$minutes,${entry.bpm}")
+                    val bpmAverage = currentSumBPM / currentCountEntriesBPM.toDouble()
+                    out.println("$minutes,${bpmAverage.toLong()}")
                     lastTimeTaken = entry.time
+                    currentSumBPM = 0.0
+                    currentCountEntriesBPM = 0
                 }
             }
         }
@@ -171,7 +180,7 @@ class FitbitTestDataGenerationTest {
             out.println("minutes,distanceMeters")
             for (entry in distanceEntries) {
                 currentDistanceMeters += entry.length.inMeters()
-                if (entry.end - lastTimeTaken > 10.minutes) {
+                if (entry.end - lastTimeTaken > minEntryDistanceForExport) {
                     val minutes = (entry.end - earliestEntryTime).inWholeMinutes
                     out.println("$minutes,${currentDistanceMeters}")
                     lastTimeTaken = entry.end

@@ -150,8 +150,9 @@ class PredictorFitbitDataTest {
         //after removing erroniouos offset for DiscretePID.derivative:            62.214037264119625 (we pass again yay)
         //after adding new, more efficient training implementation:               66.11579001334712
         //after adding downsampled csv export/reload:                             70.98160649015591
+        //after adding averaging for csv downsampling:                            70.94812981216073
         println("training done")
 
-        assertEquals(70.98160649015591, predictionResult.percentage.toDouble() * 100.0, 0.1)
+        assertEquals(70.94812981216073, predictionResult.percentage.toDouble() * 100.0, 0.1)
     }
 }
