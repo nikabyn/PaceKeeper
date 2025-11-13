@@ -16,15 +16,11 @@ import kotlin.time.Duration.Companion.minutes
 class Predictor {
     companion object {
         //time duration/length of input time series
-        val TIME_SERIES_DURATION: Duration =
-            2.days //TODO: see what actually makes sense as duration
-        val TIME_SERIES_SAMPLE_COUNT: Int =
-            TIME_SERIES_DURATION.inWholeHours.toInt() * 6 // 2 days of 10-min steps
-
+        val TIME_SERIES_DURATION: Duration = 2.days
+        val TIME_SERIES_STEP_DURATION: Duration = 10.minutes;
+        val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
         val PREDICTION_WINDOW_DURATION: Duration = 2.hours
-
-        val TIME_SERIES_STEP_DURATION: Duration =
-            10.minutes; //TODO: see what actually makes sense as duration
+        val PREDICTION_WINDOW_SAMPLE_COUNT: Int = (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
     }
 
     /**
@@ -54,36 +50,7 @@ class Predictor {
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-
-
-        /*val trainingSamples = (0 until 2).map { i ->
-            val offset = (3.hours + 10.minutes) * i
-            val sampleStartTime = inputTimeSeries.timeStart + offset
-            val sampleEndTime = sampleStartTime + TIME_SERIES_DURATION
-
-            val sampleTimeSeries = MultiTimeSeriesEntries(
-                timeStart = sampleStartTime,
-                heartRate = inputTimeSeries.heartRate.filter { it.time in sampleStartTime..sampleEndTime },
-                distance = inputTimeSeries.distance.filter { it.end in sampleStartTime..sampleEndTime }
-            )
-
-            Preprocessor.run(sampleTimeSeries, fixedParameters)
-        }*/
-
         val timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
-
-
-
-
-        /*trainingSamples.zipWithNext { currentSample, nextSample ->
-            val predictionTarget = (nextSample.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional[12]
-            LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
-                currentSample,
-                predictionTarget,
-            )
-        }*/
-
-
         val startTime = System.currentTimeMillis()
 
         LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(timeSeriesDiscrete)

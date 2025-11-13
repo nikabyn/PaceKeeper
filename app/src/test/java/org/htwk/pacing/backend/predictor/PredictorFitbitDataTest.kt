@@ -226,8 +226,9 @@ class PredictorFitbitDataTest {
         //after improving syntax in generateFlattenedMultiExtrapolationResults:   61.943445172629794
         //after adding offset for discreteIntegral i forgot earlier:              61.943445172629794
         //after removing erroniouos offset for DiscretePID.derivative:            62.214037264119625 (we pass again yay)
+        //after adding new, more efficient training implementation:               66.11579001334712
         println("training done")
 
-        assertEquals(62.12140545973156, predictionResult.percentage.toDouble() * 100.0, 0.1)
+        assertEquals(66.11579001334712, predictionResult.percentage.toDouble() * 100.0, 0.1)
     }
 }

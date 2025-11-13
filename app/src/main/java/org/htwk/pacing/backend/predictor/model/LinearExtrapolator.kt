@@ -3,8 +3,7 @@ package org.htwk.pacing.backend.predictor.model
 import org.htwk.pacing.backend.predictor.Predictor
 
 object LinearExtrapolator {
-    private val stepsIntoFuture =
-        (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds).toInt()
+    private val stepsIntoFuture = Predictor.PREDICTION_WINDOW_SAMPLE_COUNT
 
     /**
      * Represents the outcome of a linear extrapolation.
