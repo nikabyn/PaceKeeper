@@ -56,6 +56,9 @@ object LinearExtrapolator {
         val validRange: IntRange
             get() = 0..<(Predictor.TIME_SERIES_DURATION / Predictor.TIME_SERIES_STEP_DURATION).toInt()
 
+        companion object {
+            var indexOffset: Int = 0
+        }
         /**
          * Retrieves a sample value (the Y-coordinate) from the given time series.
          *
@@ -97,8 +100,8 @@ object LinearExtrapolator {
             }
 
             override fun getSampleResultY(timeSeries: DoubleArray): Double {
-                val lastIndex = timeSeries.size - 1
-                return timeSeries[lastIndex - index]
+                val lastIndex = validRange.last
+                return timeSeries[lastIndex - index + indexOffset]
             }
         }
 
@@ -124,8 +127,8 @@ object LinearExtrapolator {
             }
 
             override fun getSampleResultY(timeSeries: DoubleArray): Double {
-                val lastIndex = timeSeries.size - 1
-                return timeSeries.slice((lastIndex - earliestIndex)..(lastIndex - latestIndex))
+                val lastIndex = validRange.last
+                return timeSeries.slice((lastIndex - earliestIndex + indexOffset)..(lastIndex - latestIndex + indexOffset))
                     .average()
             }
         }
@@ -188,6 +191,8 @@ object LinearExtrapolator {
     )
 
     fun multipleExtrapolate(timeSeries: DoubleArray, indexOffset: Int = 0): MultiExtrapolationResult {
+        SamplingDescriptor.indexOffset = indexOffset
+
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
             it.strategy.runOnTimeSeries(timeSeries)
         })
