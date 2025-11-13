@@ -87,8 +87,6 @@ class FitbitTestDataGenerationTest {
 
     private lateinit var heartRateEntries: List<HeartRateEntry>
     private lateinit var distanceEntries: List<DistanceEntry>
-    private lateinit var timeSeriesStart: Instant
-    private lateinit var timeSeriesEnd: Instant
 
     @Before
     fun setUp() {
