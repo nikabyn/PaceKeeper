@@ -64,7 +64,7 @@ class PredictorFitbitDataTest {
         timeSeriesEnd = latestEntryTime + 5.minutes
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+    //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExtrapolationsPlotWithRealData() {
         println("Preparing to plot time series data...")
@@ -74,10 +74,10 @@ class PredictorFitbitDataTest {
                 proportionalInput =
                     TimeSeriesDiscretizer.discretizeTimeSeries(
                         IPreprocessor.SingleGenericTimeSeriesEntries(
-                            timeStart = timeSeriesStart,
-                            duration = timeSeriesEnd - timeSeriesStart,
+                            timeStart = timeSeriesEnd - 2.days,
+                            duration = 2.days,
                             metric = TimeSeriesMetric.HEART_RATE,
-                            data = heartRateEntries.filter { it -> true || it.start > timeSeriesEnd - 2.days }
+                            data = heartRateEntries.filter { it -> it.time in (timeSeriesEnd - 2.days)..timeSeriesEnd }
                                 .map(::GenericTimedDataPoint)
                         )
                     )
