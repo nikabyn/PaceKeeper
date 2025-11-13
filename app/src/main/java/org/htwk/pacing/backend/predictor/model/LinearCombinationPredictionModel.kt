@@ -53,7 +53,10 @@ object LinearCombinationPredictionModel : IPredictionModel {
                 IPreprocessor.TimeSeriesMetric.DISTANCE -> {
                     val discreteIntegral = series as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
                     listOf(
-                    LinearExtrapolator.multipleExtrapolate(discreteIntegral.integral, indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
+                        LinearExtrapolator.multipleExtrapolate(
+                            discreteIntegral.integral,
+                            indexOffset = indexOffset
+                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - discreteIntegral.integral[0]}
                     )}
             }.flatten()
             a
