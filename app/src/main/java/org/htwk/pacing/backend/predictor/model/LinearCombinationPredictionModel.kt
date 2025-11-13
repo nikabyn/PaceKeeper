@@ -26,21 +26,25 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private val trainingSamples: MutableList<TrainingSample> = mutableListOf()
 
     fun setTrainingStepSize(stepSize: Int) {
-        require(stepSize in 1..<Predictor.TIME_SERIES_SAMPLE_COUNT) {"Invalid step size: $stepSize"}
+        require(stepSize in 1..<Predictor.TIME_SERIES_SAMPLE_COUNT) { "Invalid training step size: $stepSize" }
         trainingTimeStepSize = stepSize
     }
 
-    private var DEFAULT_TRAINING_STEPSIZE: Int = ((17.hours + 10.minutes) / Predictor.TIME_SERIES_STEP_DURATION).toInt()
+    private var DEFAULT_TRAINING_STEPSIZE: Int =
+        ((17.hours + 10.minutes) / Predictor.TIME_SERIES_STEP_DURATION).toInt()
     private var trainingTimeStepSize: Int = DEFAULT_TRAINING_STEPSIZE
 
     fun addTrainingSamplesFromMultiTimeSeriesDiscrete(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
     ) {
-        val heartRateTimeSeries = (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
-        val timeSeriesSize = heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
+        val heartRateTimeSeries =
+            (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
+        val timeSeriesSize =
+            heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
-        for(offset in 0..timeSeriesSize step trainingTimeStepSize) {
-            val expected = heartRateTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
+        for (offset in 0..timeSeriesSize step trainingTimeStepSize) {
+            val expected =
+                heartRateTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
 
             trainingSamples.add(
                 TrainingSample(
@@ -56,7 +60,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
         indexOffset: Int = 0
     ): List<Double> {
         fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
-            val extrapolations = LinearExtrapolator.multipleExtrapolate(series, indexOffset).extrapolations
+            val extrapolations =
+                LinearExtrapolator.multipleExtrapolate(series, indexOffset).extrapolations
             return extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
                 if (subtractFirst) result - series[indexOffset] else result
@@ -64,17 +69,20 @@ object LinearCombinationPredictionModel : IPredictionModel {
         }
 
         val flatExtrapolationResults = input.metrics.flatMap { (key, discreteTimeSeriesResult) ->
-            when(key.signalClass) {
+            when (key.signalClass) {
                 IPreprocessor.TimeSeriesSignalClass.CONTINUOUS -> {
-                    val discretePID = discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+                    val discretePID =
+                        discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
                     listOf(
                         extrapolate(discretePID.proportional),
                         extrapolate(discretePID.integral, subtractFirst = true),
                         extrapolate(discretePID.derivative)
                     )
                 }
+
                 IPreprocessor.TimeSeriesSignalClass.AGGREGATED -> {
-                    val discreteIntegral = discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
+                    val discreteIntegral =
+                        discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
                     listOf(extrapolate(discreteIntegral.integral, subtractFirst = true))
                 }
             }.flatten()

@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor
 
-import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -19,16 +18,10 @@ import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
-import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
-import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPoint
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import java.io.File
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -54,10 +47,6 @@ object FitbitDateTimeSerializer : KSerializer<Instant> {
         PrimitiveSerialDescriptor("FitbitInstant", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: Instant) {
-        // We don't need to write back to this format for this test, but it's here for completeness
-        // The format specifies a 2-digit year. `kotlinx-datetime` formats years with 4 digits by default,
-        // so we need to provide a base year to correctly format it as 2 digits.
-        // See https://github.com/Kotlin/kotlinx-datetime/issues/215
         val localDateTime = value.toLocalDateTime(TimeZone.UTC)
         encoder.encodeString(format.format(localDateTime))
     }
@@ -92,10 +81,8 @@ class FitbitTestDataGenerationTest {
         val confidence: Int
     )
 
-    // --- UPDATE THE JSON INSTANCE ---
     private val json = Json {
         ignoreUnknownKeys = true
-        // No longer need serializersModule if using @Serializable(with=...) directly
     }
 
     private lateinit var heartRateEntries: List<HeartRateEntry>
@@ -190,6 +177,7 @@ class FitbitTestDataGenerationTest {
         }
     }
 
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExportCSV() {
         exportHeartRateEntriesToCSV()

@@ -2,20 +2,6 @@ package org.htwk.pacing.backend.predictor
 
 import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format.Padding
-import kotlinx.datetime.format.char
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
@@ -26,6 +12,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 import kotlin.time.Duration.Companion.days
@@ -40,7 +27,7 @@ class PredictorFitbitDataTest {
 
     @Before
     fun setUp() {
-        fun loadHeartRateEntriesFromCSV() : List<HeartRateEntry>{
+        fun loadHeartRateEntriesFromCSV(): List<HeartRateEntry> {
             val firstEntryTime = Instant.parse("2025-10-29T18:22:16Z")
             val file = File("src/test/resources/heart_rate_test_data.csv")
             return file.readLines()
@@ -51,7 +38,7 @@ class PredictorFitbitDataTest {
                 }
         }
 
-        fun loadDistanceEntriesFromCSV() : List<DistanceEntry>{
+        fun loadDistanceEntriesFromCSV(): List<DistanceEntry> {
             val firstEntryTime = Instant.parse("2025-09-30T16:58:00Z")
             val file = File("src/test/resources/distance_test_data.csv")
             return file.readLines()
@@ -59,7 +46,11 @@ class PredictorFitbitDataTest {
                 .map { line ->
                     val (minutes, distanceMeters) = line.split(',').map { it.trim() }
                     val timeEnd = firstEntryTime + minutes.toLong().minutes
-                    DistanceEntry(start = timeEnd - 1.minutes, end = timeEnd, Length(distanceMeters.toDouble()))
+                    DistanceEntry(
+                        start = timeEnd - 1.minutes,
+                        end = timeEnd,
+                        Length(distanceMeters.toDouble())
+                    )
                 }
         }
 
@@ -73,6 +64,7 @@ class PredictorFitbitDataTest {
         timeSeriesEnd = latestEntryTime + 5.minutes
     }
 
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExtrapolationsPlotWithRealData() {
         println("Preparing to plot time series data...")
@@ -106,6 +98,7 @@ class PredictorFitbitDataTest {
         println("Plotting finished.")
     }
 
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries(
@@ -147,7 +140,7 @@ class PredictorFitbitDataTest {
         //after going from 3.hours+33.minutes to 3.hours+ 0.minutes for stepSize: 61.943445172629794
         //after improving syntax in generateFlattenedMultiExtrapolationResults:   61.943445172629794
         //after adding offset for discreteIntegral i forgot earlier:              61.943445172629794
-        //after removing erroniouos offset for DiscretePID.derivative:            62.214037264119625 (we pass again yay)
+        //after removing erroneous offset for DiscretePID.derivative:            62.214037264119625 (we pass again yay)
         //after adding new, more efficient training implementation:               66.11579001334712
         //after adding downsampled csv export/reload:                             70.98160649015591
         //after adding averaging for csv downsampling:                            70.94812981216073
