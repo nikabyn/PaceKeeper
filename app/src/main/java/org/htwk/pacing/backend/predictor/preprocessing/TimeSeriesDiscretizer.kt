@@ -65,9 +65,10 @@ object TimeSeriesDiscretizer {
     private fun bucketsToDiscreteTimeSeries(
         timeBucketAverages: SortedMap<Int, Double>,
         doInterpolateBetweenBuckets: Boolean,
+        targetLength: Int
     ): DoubleArray {
         //resulting time series, with interpolated, discrete values
-        val discreteTimeSeries = DoubleArray(Predictor.TIME_SERIES_SAMPLE_COUNT) { 0.0 }
+        val discreteTimeSeries = DoubleArray(targetLength) { 0.0 }
 
         //TODO: think about extracting this part into separate function
         //fill known points from map
@@ -115,12 +116,13 @@ object TimeSeriesDiscretizer {
      */
     private fun fillEdgeBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
+        targetLength: Int
     ) {
         if (timeBucketAverages.isEmpty()) return
 
         val firstValue = timeBucketAverages.getValue(timeBucketAverages.firstKey())
         val lastValue = timeBucketAverages.getValue(timeBucketAverages.lastKey())
-        val lastKey = (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
+        val lastKey = (targetLength - 1)
 
         timeBucketAverages.putIfAbsent(0, firstValue)
         timeBucketAverages.putIfAbsent(lastKey, lastValue)
@@ -135,7 +137,8 @@ object TimeSeriesDiscretizer {
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
-        input: SingleGenericTimeSeriesEntries
+        input: SingleGenericTimeSeriesEntries,
+        targetLength: Int = Predictor.TIME_SERIES_SAMPLE_COUNT
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
@@ -146,13 +149,14 @@ object TimeSeriesDiscretizer {
             (input.metric.signalClass == TimeSeriesSignalClass.CONTINUOUS)
 
         if (isContinuous) {
-            fillEdgeBuckets(timeBucketAverages)
+            fillEdgeBuckets(timeBucketAverages, targetLength)
         }
 
         val discreteTimeSeries =
             bucketsToDiscreteTimeSeries(
                 timeBucketAverages,
-                doInterpolateBetweenBuckets = isContinuous
+                doInterpolateBetweenBuckets = isContinuous,
+                targetLength = targetLength
             )
 
         return discreteTimeSeries
