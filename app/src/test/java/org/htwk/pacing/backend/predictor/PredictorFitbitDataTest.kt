@@ -31,73 +31,7 @@ import java.io.File
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
-/**
- * Custom serializer for handling Fitbit's "MM/dd/yy HH:mm:ss" date format.
- */
-object FitbitDateTimeSerializer : KSerializer<Instant> {
-    // Define the expected format of the date string from the JSON
-    private val format = LocalDateTime.Format {
-        monthNumber(padding = Padding.NONE)
-        char('/')
-        dayOfMonth(padding = Padding.NONE)
-        char('/')
-        yearTwoDigits(2000) // Assumes a 2-digit year, with a base of 2000
-        char(' ')
-        hour()
-        char(':')
-        minute()
-        char(':')
-        second()
-    }
-
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("FitbitInstant", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: Instant) {
-        // We don't need to write back to this format for this test, but it's here for completeness
-        // The format specifies a 2-digit year. `kotlinx-datetime` formats years with 4 digits by default,
-        // so we need to provide a base year to correctly format it as 2 digits.
-        // See https://github.com/Kotlin/kotlinx-datetime/issues/215
-        val localDateTime = value.toLocalDateTime(TimeZone.UTC)
-        encoder.encodeString(format.format(localDateTime))
-    }
-
-    override fun deserialize(decoder: Decoder): Instant {
-        val string = decoder.decodeString()
-        // Parse the string using our custom format and convert it to an Instant (assuming UTC)
-        return format.parse(string).toInstant(TimeZone.UTC)
-    }
-}
-
 class PredictorFitbitDataTest {
-
-    @Serializable
-    data class DistanceRecord(
-        // Tell the compiler to use our custom serializer for this field
-        @Serializable(with = FitbitDateTimeSerializer::class)
-        val dateTime: Instant,
-        val value: String
-    )
-
-    @Serializable
-    data class HeartRateRecord(
-        // Also apply the serializer here
-        @Serializable(with = FitbitDateTimeSerializer::class)
-        val dateTime: Instant,
-        val value: HeartRateValue
-    )
-
-    @Serializable
-    data class HeartRateValue(
-        val bpm: Int,
-        val confidence: Int
-    )
-
-    // --- UPDATE THE JSON INSTANCE ---
-    private val json = Json {
-        ignoreUnknownKeys = true
-        // No longer need serializersModule if using @Serializable(with=...) directly
-    }
 
     private lateinit var heartRateEntries: List<HeartRateEntry>
     private lateinit var distanceEntries: List<DistanceEntry>
@@ -106,41 +40,31 @@ class PredictorFitbitDataTest {
 
     @Before
     fun setUp() {
-        val folderHeartRate = File("src/test/resources/fitbit/heart_rate")
-        val recordsHeartRate = folderHeartRate.listFiles { f -> f.extension == "json" }
-            ?.flatMap { file ->
-                json.decodeFromString<List<HeartRateRecord>>(file.readText())
-            }.orEmpty().sortedBy { it.dateTime }
-
-        println("Loaded ${recordsHeartRate.size} heart rate samples")
-        println("First: ${recordsHeartRate.firstOrNull()}")
-
-        val folderDistance = File("src/test/resources/fitbit/distance")
-        val recordsDistance = folderDistance.listFiles { f -> f.extension == "json" }
-            ?.flatMap { file ->
-                json.decodeFromString<List<DistanceRecord>>(file.readText())
-            }.orEmpty().sortedBy { it.dateTime }
-
-        println("Loaded ${recordsDistance.size} distance samples")
-        println("First: ${recordsDistance.firstOrNull()}")
-
-        heartRateEntries = recordsHeartRate.map { record ->
-            HeartRateEntry(record.dateTime, record.value.bpm.toLong())
+        fun loadHeartRateEntriesFromCSV() : List<HeartRateEntry>{
+            val firstEntryTime = Instant.parse("2025-10-29T18:22:16Z")
+            val file = File("src/test/resources/heart_rate_test_data.csv")
+            return file.readLines()
+                .drop(1) //skip header
+                .map { line ->
+                    val (minutes, bpm) = line.split(',').map { it.trim() }
+                    HeartRateEntry(firstEntryTime + minutes.toLong().minutes, bpm.toLong())
+                }
         }
 
-        distanceEntries = recordsDistance.map { record ->
-            DistanceEntry(
-                start = record.dateTime,
-                end = record.dateTime + 1.minutes,
-                length = Length(lengthMeters = record.value.toDouble())
-            )
+        fun loadDistanceEntriesFromCSV() : List<DistanceEntry>{
+            val firstEntryTime = Instant.parse("2025-09-30T16:58:00Z")
+            val file = File("src/test/resources/distance_test_data.csv")
+            return file.readLines()
+                .drop(1) //skip header
+                .map { line ->
+                    val (minutes, distanceMeters) = line.split(',').map { it.trim() }
+                    val timeEnd = firstEntryTime + minutes.toLong().minutes
+                    DistanceEntry(start = timeEnd - 1.minutes, end = timeEnd, Length(distanceMeters.toDouble()))
+                }
         }
 
-        // Add a check to prevent crash if lists are empty after a failed load
-        if (heartRateEntries.isEmpty() || distanceEntries.isEmpty()) {
-            // Fail the test explicitly if data loading failed
-            throw IllegalStateException("Test data could not be loaded. Check JSON files and paths.")
-        }
+        heartRateEntries = loadHeartRateEntriesFromCSV()
+        distanceEntries = loadDistanceEntriesFromCSV()
 
         val earliestEntryTime = minOf(heartRateEntries.first().time, distanceEntries.first().start)
         val latestEntryTime = maxOf(heartRateEntries.last().time, distanceEntries.last().start)
@@ -184,8 +108,6 @@ class PredictorFitbitDataTest {
 
     @Test
     fun trainPredictorOnRecords() {
-        val predictor = Predictor()
-
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries(
             timeStart = timeSeriesStart,
             duration = timeSeriesEnd - timeSeriesStart,
@@ -193,7 +115,7 @@ class PredictorFitbitDataTest {
             distance = distanceEntries
         )
 
-        predictor.train(
+        Predictor.train(
             multiTimeSeriesEntries,
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
@@ -210,7 +132,7 @@ class PredictorFitbitDataTest {
             distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd },
         )
 
-        val predictionResult = predictor.predict(
+        val predictionResult = Predictor.predict(
             multiTimeSeriesEntries,
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
@@ -227,8 +149,9 @@ class PredictorFitbitDataTest {
         //after adding offset for discreteIntegral i forgot earlier:              61.943445172629794
         //after removing erroniouos offset for DiscretePID.derivative:            62.214037264119625 (we pass again yay)
         //after adding new, more efficient training implementation:               66.11579001334712
+        //after adding downsampled csv export/reload:                             70.98160649015591
         println("training done")
 
-        assertEquals(66.11579001334712, predictionResult.percentage.toDouble() * 100.0, 0.1)
+        assertEquals(70.98160649015591, predictionResult.percentage.toDouble() * 100.0, 0.1)
     }
 }
