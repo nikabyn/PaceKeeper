@@ -64,7 +64,7 @@ class PredictorFitbitDataTest {
         timeSeriesEnd = latestEntryTime + 5.minutes
     }
 
-    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExtrapolationsPlotWithRealData() {
         println("Preparing to plot time series data...")
