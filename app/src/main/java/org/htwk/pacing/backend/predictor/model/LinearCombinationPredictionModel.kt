@@ -24,14 +24,13 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
     private fun generateFlattenedMultiExtrapolationResults(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
+        indexOffset: Int = 0
     ): List<Double> {
-        val indexOffset = 0
-
         fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
             val extrapolations = LinearExtrapolator.multipleExtrapolate(series, indexOffset).extrapolations
             return extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                if (subtractFirst) result - series[0] else result
+                if (subtractFirst) result - series[indexOffset] else result
             }
         }
 
@@ -55,16 +54,23 @@ object LinearCombinationPredictionModel : IPredictionModel {
         return flatExtrapolationResults
     }
 
-    fun addTrainingSampleFromMultiTimeSeriesDiscrete(
+    fun addTrainingSamplesFromMultiTimeSeriesDiscrete(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
-        expectedEnergyLevel: Double
     ) {
-        trainingSamples.add(
-            TrainingSample(
-                generateFlattenedMultiExtrapolationResults(input),
-                expectedEnergyLevel
+        val heartRateTimeSeries = (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
+        val timeSeriesSize = 288//heartRateTimeSeries.size -  300
+
+
+        for(offset in 0..timeSeriesSize step 7) {
+            val expected = heartRateTimeSeries[offset + 287 + 12]
+
+            trainingSamples.add(
+                TrainingSample(
+                    generateFlattenedMultiExtrapolationResults(input, offset),
+                    expected
+                )
             )
-        )
+        }
     }
 
     fun trainOnStoredSamples() {

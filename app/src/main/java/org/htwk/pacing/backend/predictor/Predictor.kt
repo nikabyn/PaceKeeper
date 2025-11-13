@@ -55,9 +55,8 @@ class Predictor {
         fixedParameters: FixedParameters,
     ) {
 
-        val startTime = System.currentTimeMillis()
 
-        val trainingSamples = (0 until (inputTimeSeries.duration / TIME_SERIES_STEP_DURATION).toInt()).map { i ->
+        /*val trainingSamples = (0 until 2).map { i ->
             val offset = (3.hours + 10.minutes) * i
             val sampleStartTime = inputTimeSeries.timeStart + offset
             val sampleEndTime = sampleStartTime + TIME_SERIES_DURATION
@@ -69,20 +68,29 @@ class Predictor {
             )
 
             Preprocessor.run(sampleTimeSeries, fixedParameters)
-        }
+        }*/
+
+        val timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
+
+
+
+
+        /*trainingSamples.zipWithNext { currentSample, nextSample ->
+            val predictionTarget = (nextSample.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional[12]
+            LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
+                currentSample,
+                predictionTarget,
+            )
+        }*/
+
+
+        val startTime = System.currentTimeMillis()
+
+        LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(timeSeriesDiscrete)
 
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime // duration in nanoseconds
         print("Duration: $duration")
-
-
-        trainingSamples.zipWithNext { currentSample, nextSample ->
-            val predictionTarget = (nextSample.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional[12]
-            LinearCombinationPredictionModel.addTrainingSampleFromMultiTimeSeriesDiscrete(
-                currentSample,
-                predictionTarget,
-            )
-        }
 
         val startTime1 = System.currentTimeMillis()
 

@@ -138,7 +138,7 @@ object TimeSeriesDiscretizer {
      */
     fun discretizeTimeSeries(
         input: SingleGenericTimeSeriesEntries,
-        targetLength: Int = Predictor.TIME_SERIES_SAMPLE_COUNT
+        targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
