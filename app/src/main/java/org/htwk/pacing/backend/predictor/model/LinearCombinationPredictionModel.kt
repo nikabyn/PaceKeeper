@@ -26,31 +26,35 @@ object LinearCombinationPredictionModel : IPredictionModel {
         input: IPreprocessor.MultiTimeSeriesDiscrete,
     ): List<Double> {
         val timeSeriesExtrapolationSources = input.metrics.mapValues {
-            when (val result = it.value) {
-                is IPreprocessor.DiscreteTimeSeriesResult.DiscretePID -> listOf(
-                    result.proportional,
-                    result.integral,
-                    result.derivative
-                )
-
-                is IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral -> listOf(
-                    result.integral
-                )
-            }
+            it.value
         }
 
         val indexOffset = 0
 
         val flatExtrapolationResults = timeSeriesExtrapolationSources.flatMap { (key, series) ->
             val a = when(key) {
-                IPreprocessor.TimeSeriesMetric.HEART_RATE -> listOf(
-                    LinearExtrapolator.multipleExtrapolate(series[0], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() },
-                    LinearExtrapolator.multipleExtrapolate(series[1], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - series[1][0]},
-                    LinearExtrapolator.multipleExtrapolate(series[2], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - series[2][0] }
-                )
-                IPreprocessor.TimeSeriesMetric.DISTANCE -> listOf(
-                    LinearExtrapolator.multipleExtrapolate(series[0], indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
-                )
+                IPreprocessor.TimeSeriesMetric.HEART_RATE -> {
+                    val discretePID = series as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+                    listOf(
+                        LinearExtrapolator.multipleExtrapolate(
+                            discretePID.proportional,
+                            indexOffset = indexOffset
+                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() },
+                        LinearExtrapolator.multipleExtrapolate(
+                            discretePID.integral,
+                            indexOffset = indexOffset
+                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - discretePID.integral[0] },
+                        LinearExtrapolator.multipleExtrapolate(
+                            discretePID.derivative,
+                            indexOffset = indexOffset
+                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - discretePID.derivative[0] }
+                    )
+                }
+                IPreprocessor.TimeSeriesMetric.DISTANCE -> {
+                    val discreteIntegral = series as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
+                    listOf(
+                    LinearExtrapolator.multipleExtrapolate(discreteIntegral.integral, indexOffset = indexOffset).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
+                    )}
             }.flatten()
             a
         }
