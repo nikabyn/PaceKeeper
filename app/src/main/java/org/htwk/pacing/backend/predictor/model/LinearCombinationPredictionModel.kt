@@ -25,41 +25,31 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private fun generateFlattenedMultiExtrapolationResults(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
     ): List<Double> {
-        val timeSeriesExtrapolationSources = input.metrics.mapValues {
-            it.value
-        }
-
         val indexOffset = 0
 
-        val flatExtrapolationResults = timeSeriesExtrapolationSources.flatMap { (key, series) ->
-            val a = when(key) {
+        fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
+            val extrapolations = LinearExtrapolator.multipleExtrapolate(series, indexOffset).extrapolations
+            return extrapolations.map { (_, line) ->
+                val result = line.getExtrapolationResult()
+                if (subtractFirst) result - series[0] else result
+            }
+        }
+
+        val flatExtrapolationResults = input.metrics.flatMap { (key, discreteTimeSeriesResult) ->
+            when(key) {
                 IPreprocessor.TimeSeriesMetric.HEART_RATE -> {
-                    val discretePID = series as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
+                    val discretePID = discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
                     listOf(
-                        LinearExtrapolator.multipleExtrapolate(
-                            discretePID.proportional,
-                            indexOffset = indexOffset
-                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() },
-                        LinearExtrapolator.multipleExtrapolate(
-                            discretePID.integral,
-                            indexOffset = indexOffset
-                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - discretePID.integral[0] },
-                        LinearExtrapolator.multipleExtrapolate(
-                            discretePID.derivative,
-                            indexOffset = indexOffset
-                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
+                        extrapolate(discretePID.proportional),
+                        extrapolate(discretePID.integral, subtractFirst = true),
+                        extrapolate(discretePID.derivative)
                     )
                 }
                 IPreprocessor.TimeSeriesMetric.DISTANCE -> {
-                    val discreteIntegral = series as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-                    listOf(
-                        LinearExtrapolator.multipleExtrapolate(
-                            discreteIntegral.integral,
-                            indexOffset = indexOffset
-                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - discreteIntegral.integral[0]}
-                    )}
+                    val discreteIntegral = discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
+                    listOf(extrapolate(discreteIntegral.integral, subtractFirst = true))
+                }
             }.flatten()
-            a
         }
 
         return flatExtrapolationResults
