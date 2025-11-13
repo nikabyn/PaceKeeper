@@ -1,6 +1,11 @@
 package org.htwk.pacing.backend.database
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -57,13 +62,14 @@ data class UserProfileEntry(
         ASTHMA,
         OTHER
     }
+
     companion object {
         fun createInitial(): UserProfileEntry {
             return UserProfileEntry(
                 // id wird von Room generiert (0L)
                 userId = shortUserId,
                 nickname = null,
-                sex = Sex.UNSPECIFIED,
+                sex = Sex.FEMALE,
                 birthYear = 1990,
                 heightCm = null,
                 weightKg = null,

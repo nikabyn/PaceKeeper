@@ -2,9 +2,9 @@
 <resources>
     <color name="red_700">#FFFF3131</color>
     <color name="orange_700">#FFFC9F3C</color>
-    <color name="yellow_700">#FFFFCB29</color>
-    <color name="green_700">#FFD9FF1F</color>
-    <color name="cyan_700">#FF67FF5B</color>
+    <color name="yellow_700">#FFf9d920</color>
+    <color name="green_700">#FF92ed12</color>
+    <color name="cyan_700">#FF1de082</color>
 
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
