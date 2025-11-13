@@ -21,7 +21,11 @@ object LinearExtrapolator {
         val firstPoint: Pair<Double, Double>,
         val secondPoint: Pair<Double, Double>,
         val resultPoint: Pair<Double, Double>
-    )
+    ) {
+        fun getExtrapolationResult(): Double {
+            return resultPoint.second
+        }
+    }
 
     /**
      * Extrapolates a future value based on a linear trend defined by two points.

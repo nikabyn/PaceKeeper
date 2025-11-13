@@ -54,12 +54,14 @@ class Predictor {
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        val trainingSampleCount =
-            (inputTimeSeries.duration / Predictor.TIME_SERIES_DURATION).toInt()
+        val stepSize = 3.hours + 33.minutes
+
+        val trainingSampleCount = 100
+            //(inputTimeSeries.duration / Predictor.TIME_SERIES_DURATION).toInt()
 
         val trainingSamples = (0 until trainingSampleCount).map { i ->
             //create a copy of inputTimeSeries that only contains the data for two days, offset by i * 2 days
-            val offset = TIME_SERIES_DURATION * i
+            val offset = stepSize * i
             val sampleStartTime = inputTimeSeries.timeStart + offset
             val sampleEndTime = sampleStartTime + TIME_SERIES_DURATION
 
