@@ -14,10 +14,24 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
-
+/**
+ * A linear regression–based prediction model that combines multiple extrapolated time series signals
+ * (e.g., heart rate, integrals, derivatives) into a single predicted energy level.
+ *
+ * The model learns linear coefficients via Tikhonov regularized least squares regression
+ * using preprocessed time-series data provided by an [IPreprocessor].
+ */
 object LinearCombinationPredictionModel : IPredictionModel {
+    //stores "learned" / regressed linear coefficients
     private var linearCoefficients: List<Double> = listOf()
 
+    /**
+     * Represents a single training sample containing extrapolated multi-signal data
+     * and its corresponding expected energy level (target output).
+     *
+     * @property multiExtrapolations Flattened list of extrapolated feature values from multiple signals.
+     * @property expectedEnergyLevel The expected (ground truth) energy level for this sample.
+     */
     data class TrainingSample(
         //TODO: (see ui#62) map to actual metric enum -> rework representation of all time series
         // as abstraction with views into a multik matrix
@@ -27,6 +41,12 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
     private val trainingSamples: MutableList<TrainingSample> = mutableListOf()
 
+    /**
+     * Sets the number of samples to skip between training samples when generating training data.
+     *
+     * @param stepSize The number of time steps between training samples.
+     * @throws IllegalArgumentException if [stepSize] is outside the valid range.
+     */
     fun setTrainingStepSize(stepSize: Int) {
         require(stepSize in 1..<Predictor.TIME_SERIES_SAMPLE_COUNT) { "Invalid training step size: $stepSize" }
         trainingTimeStepSize = stepSize
@@ -57,6 +77,14 @@ object LinearCombinationPredictionModel : IPredictionModel {
         }
     }
 
+    /**
+     * Generates a flattened list of extrapolation results across all input time series.
+     * This includes proportional, integral, and derivative components depending on the signal type.
+     *
+     * @param input The multi-time-series data to extrapolate.
+     * @param indexOffset The index offset into the time series for which extrapolation is performed.
+     * @return A flattened list of extrapolated feature values.
+     */
     private fun generateFlattenedMultiExtrapolationResults(
         input: IPreprocessor.MultiTimeSeriesDiscrete,
         indexOffset: Int = 0
@@ -93,6 +121,12 @@ object LinearCombinationPredictionModel : IPredictionModel {
         return flatExtrapolationResults
     }
 
+    /**
+     * Performs regression training on the currently stored training samples to compute
+     * the linear coefficients for the prediction model using Tikhonov regularization.
+     *
+     * @throws IllegalStateException if no training samples have been added.
+     */
     fun trainOnStoredSamples() {
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
 
