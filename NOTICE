@@ -1,0 +1,88 @@
+PaceKeeper
+Copyright (c) 2025 Projekt PaceKeeper
+Licensed under the Apache License, Version 2.0 (see LICENSE file).
+
+This product includes third-party components licensed under the Apache License 2.0,
+unless otherwise noted.
+
+Android Gradle Plugin (AGP)
+© The Android Open Source Project
+https://developer.android.com/studio/releases/gradle-plugin
+
+AndroidX Activity Compose (androidx.activity:activity-compose)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/activity
+
+AndroidX Core KTX (androidx.core:core-ktx)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/core
+
+AndroidX Core SplashScreen (androidx.core:core-splashscreen)
+© The Android Open Source Project
+https://developer.android.com/develop/ui/views/launch/splash-screen
+
+AndroidX Lifecycle Runtime KTX (androidx.lifecycle:lifecycle-runtime-ktx)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/lifecycle
+
+AndroidX Navigation Compose (androidx.navigation:navigation-compose)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/navigation
+
+AndroidX Room Compiler (androidx.room:room-compiler)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/room
+
+AndroidX Work Runtime KTX (androidx.work:work-runtime-ktx)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/work
+
+AndroidX Work Testing (androidx.work:work-testing)
+© The Android Open Source Project
+https://developer.android.com/jetpack/androidx/releases/work
+
+Android Material Components (com.google.android.material:material)
+© The Android Open Source Project / Google LLC
+https://github.com/material-components/material-components-android
+
+Compose Bill of Materials (androidx.compose:compose-bom)
+© The Android Open Source Project
+https://developer.android.com/jetpack/compose/bom
+
+Espresso Core (androidx.test.espresso:espresso-core)
+© The Android Open Source Project
+https://developer.android.com/training/testing/espresso
+
+Kotlin Standard Library (org.jetbrains.kotlin:kotlin-stdlib)
+© 2010–2025 JetBrains s.r.o. and Kotlin Contributors
+https://github.com/JetBrains/kotlin
+
+kotlinx.datetime (org.jetbrains.kotlinx:kotlinx-datetime)
+© JetBrains s.r.o. and Kotlin Contributors
+https://github.com/Kotlin/kotlinx-datetime
+
+Health Connect Client (androidx.health.connect:connect-client)
+© Google LLC / The Android Open Source Project
+https://developer.android.com/guide/health-and-fitness/health-connect
+
+Koin Android (io.insert-koin:koin-android)
+© 2017–2025 InsertKoin.io
+https://insert-koin.io/
+
+Google Guava (com.google.guava:guava)
+© Google LLC
+https://github.com/google/guava
+
+liteRT (com.google.ai.litert:litert)
+© Google LLC
+https://ai.google.dev/litert
+
+
+kotlin-csv JVM (com.github.jsoizo:kotlin-csv-jvm)
+© jsoizo
+https://github.com/jsoizo/kotlin-csv
+
+
+All components listed above are licensed under the Apache License, Version 2.0,
+unless otherwise noted. A copy of this license is provided in the LICENSE file
+or available at: https://www.apache.org/licenses/LICENSE-2.0
