@@ -225,6 +225,7 @@ class PredictorFitbitDataTest {
         //after going from 3.hours+33.minutes to 3.hours+ 0.minutes for stepSize: 61.943445172629794
         //after improving syntax in generateFlattenedMultiExtrapolationResults:   61.943445172629794
         //after adding offset for discreteIntegral i forgot earlier:              61.943445172629794
+        //after removing erroniouos offset for DiscretePID.derivative:            62.214037264119625 (we pass again yay)
         println("training done")
 
         assertEquals(62.12140545973156, predictionResult.percentage.toDouble() * 100.0, 0.1)

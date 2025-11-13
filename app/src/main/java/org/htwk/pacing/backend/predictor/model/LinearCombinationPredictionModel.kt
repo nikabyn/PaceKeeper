@@ -47,7 +47,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
                         LinearExtrapolator.multipleExtrapolate(
                             discretePID.derivative,
                             indexOffset = indexOffset
-                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() - discretePID.derivative[0] }
+                        ).extrapolations.map { (_, extrapolationLine) -> extrapolationLine.getExtrapolationResult() }
                     )
                 }
                 IPreprocessor.TimeSeriesMetric.DISTANCE -> {
