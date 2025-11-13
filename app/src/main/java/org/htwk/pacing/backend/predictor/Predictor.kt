@@ -58,7 +58,7 @@ class Predictor {
         val startTime = System.currentTimeMillis()
 
         val trainingSamples = (0 until (inputTimeSeries.duration / TIME_SERIES_STEP_DURATION).toInt()).map { i ->
-            val offset = (3.hours + 33.minutes) * i
+            val offset = (3.hours + 10.minutes) * i
             val sampleStartTime = inputTimeSeries.timeStart + offset
             val sampleEndTime = sampleStartTime + TIME_SERIES_DURATION
 
