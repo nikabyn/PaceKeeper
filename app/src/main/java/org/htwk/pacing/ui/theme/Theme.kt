@@ -8,29 +8,17 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+object PacingTheme {
+    val colors
+        @Composable @ReadOnlyComposable get() = LocalExtendedColors.current
+}
 
 @Composable
 fun PacingTheme(
@@ -49,9 +37,60 @@ fun PacingTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+    val extendedColors = if (darkTheme) ExtendedColors(
+        red = ColorPalette.red80,
+        orange = ColorPalette.orange80,
+        yellow = ColorPalette.yellow80,
+        green = ColorPalette.green80,
+        cyan = ColorPalette.green80,
+        blue = ColorPalette.green80,
+    ) else ExtendedColors(
+        red = ColorPalette.red60,
+        orange = ColorPalette.orange60,
+        yellow = ColorPalette.yellow60,
+        green = ColorPalette.green60,
+        cyan = ColorPalette.green60,
+        blue = ColorPalette.green60,
+    )
+
+    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
+}
+
+private val DarkColorScheme = darkColorScheme(
+    primary = Purple80,
+    secondary = PurpleGrey80,
+    tertiary = Pink80
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = Purple40,
+    secondary = PurpleGrey40,
+    tertiary = Pink40
+)
+
+@Immutable
+data class ExtendedColors(
+    val red: Color,
+    val orange: Color,
+    val yellow: Color,
+    val green: Color,
+    val cyan: Color,
+    val blue: Color,
+)
+
+private val LocalExtendedColors = staticCompositionLocalOf {
+    ExtendedColors(
+        red = Color.Unspecified,
+        orange = Color.Unspecified,
+        yellow = Color.Unspecified,
+        green = Color.Unspecified,
+        cyan = Color.Unspecified,
+        blue = Color.Unspecified,
     )
 }

@@ -4,13 +4,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
+import org.htwk.pacing.ui.theme.PacingTheme
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -64,15 +64,13 @@ fun <C : Collection<Double>, D : Collection<Double>> HeartRatePredictionCard(
                     modifier = Modifier.weight(1f),
                 )
 
-                val pc = PathConfig(Color(0xFFF96B6B), null, null, hasStroke = true, false)
-
                 Graph(
                     series = seriesPredicted,
                     xRange = (current - 0.hours).toEpochMilliseconds()
                         .toDouble()..(current + 6.hours).toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
-                    pathConfig = pc
+                    pathConfig = PathConfig.withStroke(PacingTheme.colors.red)
                 )
             }
         }

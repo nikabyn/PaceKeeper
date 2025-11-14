@@ -1,7 +1,6 @@
 package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,13 +16,14 @@ import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.theme.PacingTheme
 
 @Composable
 fun FeelingSelectionCard(navController: NavController) {
-    val red = if (isSystemInDarkTheme()) Color(0xFFEF9A9A) else Color(0xFFEF5350)
-    val orange = if (isSystemInDarkTheme()) Color(0xFFFFCC80) else Color(0xFFEC9C29)
-    val yellow = if (isSystemInDarkTheme()) Color(0xFFE6EE9C) else Color(0xFFA8B90C)
-    val green = if (isSystemInDarkTheme()) Color(0xFFA5D6A7) else Color(0xFF66BB6A)
+    val red = PacingTheme.colors.red
+    val orange = PacingTheme.colors.orange
+    val yellow = PacingTheme.colors.yellow
+    val green = PacingTheme.colors.green
 
     fun background(color: Color) = Modifier.background(color.copy(alpha = 0.3f))
 
