@@ -42,15 +42,15 @@ fun PacingTheme(
         orange = ColorPalette.orange80,
         yellow = ColorPalette.yellow80,
         green = ColorPalette.green80,
-        cyan = ColorPalette.green80,
-        blue = ColorPalette.green80,
+        cyan = ColorPalette.cyan80,
+        blue = ColorPalette.blue80,
     ) else ExtendedColors(
         red = ColorPalette.red60,
         orange = ColorPalette.orange60,
         yellow = ColorPalette.yellow60,
         green = ColorPalette.green60,
-        cyan = ColorPalette.green60,
-        blue = ColorPalette.green60,
+        cyan = ColorPalette.cyan60,
+        blue = ColorPalette.blue60,
     )
 
     CompositionLocalProvider(LocalExtendedColors provides extendedColors) {

@@ -51,7 +51,29 @@ object ColorPalette {
     val green20 = Color(0xff2d4214)
     val green10 = Color(0xff161d0d)
 
-    // TODO Add cyan and blue
+    val cyan99 = Color(0xffddf7f0)
+    val cyan95 = Color(0xffb8f0e3)
+    val cyan90 = Color(0xff93ecd6)
+    val cyan80 = Color(0xff6ce8c9)
+    val cyan70 = Color(0xff6ce8c9)
+    val cyan60 = Color(0xff45e4bd)
+    val cyan50 = Color(0xff1db891)
+    val cyan40 = Color(0xff1a9072)
+    val cyan30 = Color(0xff186854)
+    val cyan20 = Color(0xff144136)
+    val cyan10 = Color(0xff0d1d19)
+
+    val blue99 = Color(0xffddfcff)
+    val blue95 = Color(0xffcff0ff)
+    val blue90 = Color(0xffbde2ff)
+    val blue80 = Color(0xff9ac6ff)
+    val blue70 = Color(0xff77abff)
+    val blue60 = Color(0xff5491ea)
+    val blue50 = Color(0xff3078ce)
+    val blue40 = Color(0xff00488e)
+    val blue30 = Color(0xff00316b)
+    val blue20 = Color(0xff052a57)
+    val blue10 = Color(0xff051429)
 }
 
 val Purple80 = Color(0xFFD0BCFF)
