@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -10,7 +11,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
-import org.htwk.pacing.ui.theme.PacingTheme
+import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -70,7 +71,7 @@ fun <C : Collection<Double>, D : Collection<Double>> HeartRatePredictionCard(
                         .toDouble()..(current + 6.hours).toEpochMilliseconds().toDouble(),
                     yRange = yRange,
                     modifier = Modifier.weight(1f),
-                    pathConfig = PathConfig.withStroke(PacingTheme.colors.red)
+                    pathConfig = PathConfig.withStroke(MaterialTheme.extendedColors.red)
                 )
             }
         }

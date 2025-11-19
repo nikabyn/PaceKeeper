@@ -9,16 +9,12 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-object PacingTheme {
-    val colors
-        @Composable @ReadOnlyComposable get() = LocalExtendedColors.current
-}
+val MaterialTheme.extendedColors: ExtendedColors
+    @Composable @ReadOnlyComposable
+    get() = LocalExtendedColors.current
 
 @Composable
 fun PacingTheme(
@@ -37,21 +33,7 @@ fun PacingTheme(
         else -> lightColorScheme()
     }
 
-    val extendedColors = if (darkTheme) ExtendedColors(
-        red = ColorPalette.red80,
-        orange = ColorPalette.orange80,
-        yellow = ColorPalette.yellow80,
-        green = ColorPalette.green80,
-        cyan = ColorPalette.cyan80,
-        blue = ColorPalette.blue80,
-    ) else ExtendedColors(
-        red = ColorPalette.red60,
-        orange = ColorPalette.orange60,
-        yellow = ColorPalette.yellow60,
-        green = ColorPalette.green60,
-        cyan = ColorPalette.cyan60,
-        blue = ColorPalette.blue60,
-    )
+    val extendedColors = currentExtendedColors(darkTheme)
 
     CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
         MaterialTheme(
@@ -60,25 +42,4 @@ fun PacingTheme(
             content = content
         )
     }
-}
-
-@Immutable
-data class ExtendedColors(
-    val red: Color,
-    val orange: Color,
-    val yellow: Color,
-    val green: Color,
-    val cyan: Color,
-    val blue: Color,
-)
-
-private val LocalExtendedColors = staticCompositionLocalOf {
-    ExtendedColors(
-        red = Color.Unspecified,
-        orange = Color.Unspecified,
-        yellow = Color.Unspecified,
-        green = Color.Unspecified,
-        cyan = Color.Unspecified,
-        blue = Color.Unspecified,
-    )
 }

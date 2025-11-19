@@ -1,6 +1,46 @@
 package org.htwk.pacing.ui.theme
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+
+fun currentExtendedColors(darkTheme: Boolean) =
+    if (darkTheme) ExtendedColors(
+        red = ColorPalette.red80,
+        orange = ColorPalette.orange80,
+        yellow = ColorPalette.yellow80,
+        green = ColorPalette.green80,
+        cyan = ColorPalette.cyan80,
+        blue = ColorPalette.blue80,
+    ) else ExtendedColors(
+        red = ColorPalette.red60,
+        orange = ColorPalette.orange60,
+        yellow = ColorPalette.yellow60,
+        green = ColorPalette.green60,
+        cyan = ColorPalette.cyan60,
+        blue = ColorPalette.blue60,
+    )
+
+@Immutable
+data class ExtendedColors(
+    val red: Color,
+    val orange: Color,
+    val yellow: Color,
+    val green: Color,
+    val cyan: Color,
+    val blue: Color,
+)
+
+internal val LocalExtendedColors = staticCompositionLocalOf {
+    ExtendedColors(
+        red = Color.Unspecified,
+        orange = Color.Unspecified,
+        yellow = Color.Unspecified,
+        green = Color.Unspecified,
+        cyan = Color.Unspecified,
+        blue = Color.Unspecified,
+    )
+}
 
 object ColorPalette {
     val red99 = Color(0xfff8dcdc)

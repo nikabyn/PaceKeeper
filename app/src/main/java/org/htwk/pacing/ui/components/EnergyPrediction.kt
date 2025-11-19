@@ -3,6 +3,7 @@ package org.htwk.pacing.ui.components
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,7 +23,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.moveTo
-import org.htwk.pacing.ui.theme.PacingTheme
+import org.htwk.pacing.ui.theme.extendedColors
 import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
 
@@ -75,9 +76,9 @@ fun <C : Collection<Double>> EnergyPredictionCard(
                     minPrediction,
                     avgPrediction,
                     maxPrediction,
-                    predictionPositiveColor = PacingTheme.colors.green,
-                    predictionConstantColor = PacingTheme.colors.yellow,
-                    predictionNegativeColor = PacingTheme.colors.red,
+                    predictionPositiveColor = MaterialTheme.extendedColors.green,
+                    predictionConstantColor = MaterialTheme.extendedColors.yellow,
+                    predictionNegativeColor = MaterialTheme.extendedColors.red,
                 )
             ) {
                 Graph(

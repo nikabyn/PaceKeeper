@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -8,7 +9,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import org.htwk.pacing.backend.heuristics.HeartRateZones
-import org.htwk.pacing.ui.theme.PacingTheme
+import org.htwk.pacing.ui.theme.extendedColors
 
 /**
  * A composable that displays a heart rate graph with colored zones indicating different intensity levels.
@@ -33,10 +34,10 @@ fun <C : Collection<Double>> HeartRateGraphCard(
 
     // Define colors for different heart rate zones (from low to high intensity)
     val zoneColors = listOf(
-        PacingTheme.colors.green, // green: healthZone
-        PacingTheme.colors.cyan, // cyan: recoveryZone
-        PacingTheme.colors.yellow, // yellow: exertionZone
-        PacingTheme.colors.red  // red: area above threshold
+        MaterialTheme.extendedColors.green, // green: healthZone
+        MaterialTheme.extendedColors.cyan, // cyan: recoveryZone
+        MaterialTheme.extendedColors.yellow, // yellow: exertionZone
+        MaterialTheme.extendedColors.red  // red: area above threshold
     )
     val strokeStyle = Graph.defaultStrokeStyle()
     val strokeColor =

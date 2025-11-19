@@ -1,11 +1,12 @@
 package org.htwk.pacing.ui.components
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipPath
-import org.htwk.pacing.ui.theme.PacingTheme
+import org.htwk.pacing.ui.theme.extendedColors
 
 /**
  * Visualizes a numeric data series (e.g., heart rate distribution) as a filled histogram,
@@ -50,11 +51,11 @@ fun <C : Collection<Double>> HistogramCard(
         val heartRateSpan = xRange.endInclusive - xRange.start
         val zonesToColors = zones.zip(
             arrayOf(
-                PacingTheme.colors.cyan,
-                PacingTheme.colors.green,
-                PacingTheme.colors.yellow,
-                PacingTheme.colors.orange,
-                PacingTheme.colors.red,
+                MaterialTheme.extendedColors.cyan,
+                MaterialTheme.extendedColors.green,
+                MaterialTheme.extendedColors.yellow,
+                MaterialTheme.extendedColors.orange,
+                MaterialTheme.extendedColors.red,
             )
         )
 
