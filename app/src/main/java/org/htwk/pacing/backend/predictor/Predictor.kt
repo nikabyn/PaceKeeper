@@ -6,7 +6,7 @@ import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
@@ -25,10 +25,12 @@ object Predictor {
         (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 
     /**
-     * A container for raw, unprocessed, synchronized data from database, like heart rate.
+     * A container for raw, unprocessed, synchronized data from the database, such as heart rate and distance.
      *
      * @property timeStart The common start time for all data streams.
-     * @property metrics A map of metric types to their corresponding time series data.
+     * @property duration The duration of the time series data.
+     * @property heartRate A list of heart rate entries.
+     * @property distance A list of distance entries.
      */
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
