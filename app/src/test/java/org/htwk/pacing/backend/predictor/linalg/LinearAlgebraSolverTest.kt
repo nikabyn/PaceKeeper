@@ -1,6 +1,6 @@
 package org.htwk.pacing.backend.predictor.linalg
 
-import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquares
+import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresQR
 import org.junit.Assert.*
 import org.junit.Test
 import org.jetbrains.kotlinx.multik.api.*
@@ -10,7 +10,7 @@ import kotlin.math.abs
 
 class LinearAlgebraSolverTest {
     @Test
-    fun testLeastSquaresSolution(){
+    fun testLeastSquaresQRSolution(){
         val a = mk.ndarray(
             mk[
                 mk[5.0, 1.0, 6.0, 3.0, 0.0, 4.0],
@@ -107,7 +107,7 @@ class LinearAlgebraSolverTest {
 
         val tolerance = 1e-3
 
-        val x = leastSquares(a, b)
+        val x = leastSquaresQR(a, b)
 
         for (i in 0 until x.size) {
             assertTrue("x[$i] = ${x[i]} does not match expected value ${expectedSolutionMatrix[i]}",
