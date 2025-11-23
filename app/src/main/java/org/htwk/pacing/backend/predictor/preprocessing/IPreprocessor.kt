@@ -4,8 +4,6 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 
 /**
@@ -17,67 +15,6 @@ import kotlin.time.Duration
  * and derivatives.
  */
 interface IPreprocessor {
-
-    /**
-     * Enum to differentiate between time series types.
-     * see ui#38 for explanation of "classes" https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963
-     */
-    enum class TimeSeriesSignalClass {
-        /** For values that change continuously over time, like heart rate. */
-        CONTINUOUS,
-
-        /** For values that accumulate over time, like total steps or distance. */
-        AGGREGATED,
-    }
-
-    enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
-        HEART_RATE(TimeSeriesSignalClass.CONTINUOUS),
-        DISTANCE(TimeSeriesSignalClass.AGGREGATED),
-    }
-
-    /**
-     * A sealed interface representing the results of preprocessing on a single time series.
-     * It provides different data structures for continuous and aggregated time series.
-     */
-    sealed interface DiscreteTimeSeriesResult {
-
-        /**
-         * Represents preprocessed data for a continuous time series, such as heart rate.
-         * It includes the proportional (original), integral, and derivative components.
-         * @property proportional The cleaned and resampled time series data ("P" part of PID).
-         * @property integral The discrete trapezoidal integral of the proportional data ("I" part of PID).
-         * @property derivative The discrete derivative of the proportional data ("D" part of PID).
-         */
-        data class DiscretePID(
-            val proportional: DoubleArray, // "P" part of PID
-            val integral: DoubleArray, // "I" part PID
-            val derivative: DoubleArray // "D" part of PID
-        ) : DiscreteTimeSeriesResult {
-            companion object {
-                fun from(proportionalInput: DoubleArray) = DiscretePID(
-                    proportionalInput,
-                    proportionalInput.discreteTrapezoidalIntegral(),
-                    proportionalInput.discreteDerivative()
-                )
-            }
-        }
-
-        /**
-         * Represents preprocessed data for an aggregated or summable time series, such as distance.
-         * It primarily contains the integral component.
-         * @property integral The discrete trapezoidal integral of the time series data.
-         */
-        data class DiscreteIntegral(
-            val integral: DoubleArray
-        ) : DiscreteTimeSeriesResult {
-            companion object {
-                fun from(proportionalInput: DoubleArray) = DiscreteIntegral(
-                    proportionalInput.discreteTrapezoidalIntegral()
-                )
-            }
-        }
-    }
-
     /**
      * A generic container for a single time series before preprocessing.
      * @property timeStart The starting timestamp of the time series.
@@ -89,19 +26,6 @@ interface IPreprocessor {
         val duration: Duration,
         val metric: TimeSeriesMetric,
         val data: List<GenericTimedDataPoint>,
-    )
-
-
-    /**
-     * A container for multiple, preprocessed, and discrete time series, ready for the model.
-     * This is an internal data structure used between the preprocessor and the model.
-     * @property timeStart The common starting timestamp for all contained time series.
-     * @property metrics The preprocessed time series data, keyed by metric type.
-     */
-    data class MultiTimeSeriesDiscrete(
-        val timeStart: Instant,
-        val duration: Duration,
-        val metrics: Map<TimeSeriesMetric, DiscreteTimeSeriesResult>
     )
 
     /**

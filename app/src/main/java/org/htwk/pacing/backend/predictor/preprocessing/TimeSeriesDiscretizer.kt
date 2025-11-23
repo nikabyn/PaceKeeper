@@ -3,7 +3,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
