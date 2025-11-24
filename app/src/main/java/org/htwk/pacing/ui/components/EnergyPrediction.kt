@@ -200,14 +200,12 @@ private fun DrawScope.drawCenterLine(
     )
 }
 
-private val arrowHeadSize = 12.dp
-
 private fun DrawScope.drawArrowLine(
     start: Offset,
     end: Offset,
     color: Color,
     stroke: DrawStyle,
-    arrowSize: Float = arrowHeadSize.toPx(),
+    arrowSize: Float = 12.dp.toPx(),
     startArrow: ArrowHead = ArrowHead.None,
     endArrow: ArrowHead = ArrowHead.Forwards,
 ) {
@@ -216,7 +214,8 @@ private fun DrawScope.drawArrowLine(
     val length = sqrt(dx * dx + dy * dy)
     if (length == 0f) return
 
-    val ux = dx / length   // unit direction vector
+    // normalised direction vector
+    val ux = dx / length
     val uy = dy / length
 
     val halfWidth = arrowSize * 0.5f
@@ -232,7 +231,7 @@ private fun DrawScope.drawArrowLine(
         else -> Offset(end.x - ux * arrowSize, end.y - uy * arrowSize)
     }
 
-    // --- Draw main line (shortened to leave space for arrows) ---
+    // Draw main line (shortened to leave space for arrowheads)
     drawPath(
         Path().apply {
             moveTo(realStart.x, realStart.y)
@@ -242,7 +241,7 @@ private fun DrawScope.drawArrowLine(
         style = stroke
     )
 
-    // --- Helper to draw a rounded triangle arrowhead ---
+    // Helper to draw a rounded triangle arrowhead
     fun drawRoundedArrow(tip: Offset, directionX: Float, directionY: Float) {
         val baseCenter = Offset(
             tip.x - directionX * arrowSize,
@@ -269,14 +268,14 @@ private fun DrawScope.drawArrowLine(
         drawPath(poly.toPath().asComposePath(), color)
     }
 
-    // --- Draw start arrowhead ---
+    // Draw start arrowhead
     when (startArrow) {
         ArrowHead.Forwards -> drawRoundedArrow(start, -ux, -uy)
         ArrowHead.Backwards -> drawRoundedArrow(realStart, ux, uy) // <-- tip at shortened base
         ArrowHead.None -> {}
     }
 
-    // --- Draw end arrowhead ---
+    // Draw end arrowhead
     when (endArrow) {
         ArrowHead.Forwards -> drawRoundedArrow(end, ux, uy)
         ArrowHead.Backwards -> drawRoundedArrow(realEnd, -ux, -uy) // <-- tip at shortened base
