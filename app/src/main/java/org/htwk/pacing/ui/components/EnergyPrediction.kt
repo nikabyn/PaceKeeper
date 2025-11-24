@@ -3,6 +3,7 @@ package org.htwk.pacing.ui.components
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.moveTo
+import org.htwk.pacing.ui.theme.extendedColors
 import org.htwk.pacing.ui.toPx
 import kotlin.time.Duration.Companion.hours
 
@@ -73,7 +75,10 @@ fun <C : Collection<Double>> EnergyPredictionCard(
                     currentEnergy,
                     minPrediction,
                     avgPrediction,
-                    maxPrediction
+                    maxPrediction,
+                    predictionPositiveColor = MaterialTheme.extendedColors.green,
+                    predictionConstantColor = MaterialTheme.extendedColors.yellow,
+                    predictionNegativeColor = MaterialTheme.extendedColors.red,
                 )
             ) {
                 Graph(
@@ -93,13 +98,16 @@ private fun Modifier.drawPrediction(
     currentEnergy: Float,
     minPrediction: Float,
     avgPrediction: Float,
-    maxPrediction: Float
+    maxPrediction: Float,
+    predictionPositiveColor: Color,
+    predictionConstantColor: Color,
+    predictionNegativeColor: Color,
 ): Modifier = this.drawBehind {
     val scope = this
     val color = when {
-        avgPrediction < 0.4f -> Color(0xFFF96B6B)
-        avgPrediction < 0.6f -> Color(0xFFECC00A)
-        else -> Color(0xFF8FE02A)
+        avgPrediction < 0.4f -> predictionNegativeColor
+        avgPrediction < 0.6f -> predictionConstantColor
+        else -> predictionPositiveColor
     }
     val current = Float2D(0.5f, 1f - currentEnergy)
 
