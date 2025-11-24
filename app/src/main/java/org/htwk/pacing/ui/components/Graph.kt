@@ -38,6 +38,7 @@ import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
 import org.htwk.pacing.ui.moveTo
+import org.htwk.pacing.ui.theme.Spacing
 
 /**
  * A series of values to be displayed by a graph component.
@@ -197,9 +198,16 @@ fun <C : Collection<Double>> Annotation(
         }
 
         Column(modifier = Modifier.weight(1f)) {
+            val horizontalPadding = if (xSteps == 0u) 0.dp else Spacing.small
+            val paddingTop = if (ySteps == 0u) 0.dp else Spacing.small
             Box(
                 modifier = Modifier
-                    .padding(10.dp)
+                    .padding(
+                        start = horizontalPadding,
+                        top = paddingTop,
+                        end = horizontalPadding,
+                        bottom = Spacing.small,
+                    )
                     .weight(1f)
                     .drawLines(ySteps)
             ) {
