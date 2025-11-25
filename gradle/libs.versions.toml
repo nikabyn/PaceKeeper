@@ -57,7 +57,8 @@ litert-gpu = { module = "com.google.ai.edge.litert:litert-gpu", version.ref = "l
 litert-gpu-api = { module = "com.google.ai.edge.litert:litert-gpu-api", version.ref = "litert" }
 litert-support = { module = "com.google.ai.edge.litert:litert-support", version.ref = "litert" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-multik-kotlin = { module = "org.jetbrains.kotlinx:multik-kotlin", version.ref = "multik" }
+multik-core = { module = "org.jetbrains.kotlinx:multik-core", version.ref = "multik" }
+multik-default = { module = "org.jetbrains.kotlinx:multik-default", version.ref = "multik" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 [plugins]
