@@ -3,8 +3,7 @@ package org.htwk.pacing.backend.predictor.model
 import org.htwk.pacing.backend.predictor.Predictor
 
 object LinearExtrapolator {
-    private val stepsIntoFuture =
-        (Predictor.PREDICTION_WINDOW_DURATION.inWholeSeconds / Predictor.TIME_SERIES_STEP_DURATION.inWholeSeconds).toInt()
+    private val stepsIntoFuture = Predictor.PREDICTION_WINDOW_SAMPLE_COUNT
 
     /**
      * Represents the outcome of a linear extrapolation.
@@ -21,7 +20,11 @@ object LinearExtrapolator {
         val firstPoint: Pair<Double, Double>,
         val secondPoint: Pair<Double, Double>,
         val resultPoint: Pair<Double, Double>
-    )
+    ) {
+        fun getExtrapolationResult(): Double {
+            return resultPoint.second
+        }
+    }
 
     /**
      * Extrapolates a future value based on a linear trend defined by two points.
@@ -52,6 +55,9 @@ object LinearExtrapolator {
         val validRange: IntRange
             get() = 0..<(Predictor.TIME_SERIES_DURATION / Predictor.TIME_SERIES_STEP_DURATION).toInt()
 
+        companion object {
+            var indexOffset: Int = 0
+        }
         /**
          * Retrieves a sample value (the Y-coordinate) from the given time series.
          *
@@ -93,8 +99,8 @@ object LinearExtrapolator {
             }
 
             override fun getSampleResultY(timeSeries: DoubleArray): Double {
-                val lastIndex = timeSeries.size - 1
-                return timeSeries[lastIndex - index]
+                val lastIndex = validRange.last
+                return timeSeries[lastIndex - index + indexOffset]
             }
         }
 
@@ -120,8 +126,8 @@ object LinearExtrapolator {
             }
 
             override fun getSampleResultY(timeSeries: DoubleArray): Double {
-                val lastIndex = timeSeries.size - 1
-                return timeSeries.slice((lastIndex - earliestIndex)..(lastIndex - latestIndex))
+                val lastIndex = validRange.last
+                return timeSeries.slice((lastIndex - earliestIndex + indexOffset)..(lastIndex - latestIndex + indexOffset))
                     .average()
             }
         }
@@ -183,7 +189,9 @@ object LinearExtrapolator {
         val extrapolations: Map<EXTRAPOLATION_STRATEGY, ExtrapolationLine>
     )
 
-    fun multipleExtrapolate(timeSeries: DoubleArray): MultiExtrapolationResult {
+    fun multipleExtrapolate(timeSeries: DoubleArray, indexOffset: Int = 0): MultiExtrapolationResult {
+        SamplingDescriptor.indexOffset = indexOffset
+
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
             it.strategy.runOnTimeSeries(timeSeries)
         })

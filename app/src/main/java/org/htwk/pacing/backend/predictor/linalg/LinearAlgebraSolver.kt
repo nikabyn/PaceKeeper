@@ -1,12 +1,17 @@
 package org.htwk.pacing.backend.predictor.linalg
 
+import org.jetbrains.kotlinx.multik.api.identity
 import org.jetbrains.kotlinx.multik.api.linalg.dot
+import org.jetbrains.kotlinx.multik.api.linalg.solve
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.operations.plus
+import org.jetbrains.kotlinx.multik.ndarray.operations.times
+
 object LinearAlgebraSolver {
     /**
      * Extracts a column vector from a 2D matrix as a `DoubleArray`.
@@ -39,7 +44,11 @@ object LinearAlgebraSolver {
      * @param coeff The scalar projection coefficient.
      * @return A new vector with the projection subtracted.
      */
-    private fun subtractProjection(vector: DoubleArray, basis: DoubleArray, coeff: Double): DoubleArray =
+    private fun subtractProjection(
+        vector: DoubleArray,
+        basis: DoubleArray,
+        coeff: Double
+    ): DoubleArray =
         vector.zip(basis).map { (v, b) -> v - coeff * b }.toDoubleArray()
 
     /**
@@ -103,9 +112,11 @@ object LinearAlgebraSolver {
             var currentVector = extractColumnVector(inputMatrixA, colIndex)
 
             (0 until colIndex).forEach { prevCol ->
-                val projectionCoeff = dotProduct(q.getColumn(prevCol), inputMatrixA.getColumn(colIndex))
+                val projectionCoeff =
+                    dotProduct(q.getColumn(prevCol), inputMatrixA.getColumn(colIndex))
                 r[prevCol, colIndex] = projectionCoeff
-                currentVector = subtractProjection(currentVector, q.getColumn(prevCol), projectionCoeff)
+                currentVector =
+                    subtractProjection(currentVector, q.getColumn(prevCol), projectionCoeff)
             }
 
             val norm = kotlin.math.sqrt(currentVector.sumOf { it * it })
@@ -131,7 +142,10 @@ object LinearAlgebraSolver {
      * @param b A vector `b` with length m.
      * @return The result of the matrix-vector multiplication `Q^T * b` as a vector of length n.
      */
-    private fun transposeMultiply(orthogonalMatrix: D2Array<Double>, b: D1Array<Double>): D1Array<Double> {
+    private fun transposeMultiply(
+        orthogonalMatrix: D2Array<Double>,
+        b: D1Array<Double>
+    ): D1Array<Double> {
         return orthogonalMatrix.transpose() dot b
     }
 
@@ -197,12 +211,46 @@ object LinearAlgebraSolver {
      * @param b The target vector `b` with length m.
      * @return The solution vector `x` of length n, which represents the least squares solution.
      */
-    fun leastSquares(
+    fun leastSquaresQR(
         a: D2Array<Double>,
         b: D1Array<Double>
     ): D1Array<Double> {
         val (q, r) = gramSchmidt(a)
         val y = transposeMultiply(q, b)
         return backSubstitution(r, y)
+    }
+
+    /**
+     * Calculates the solution to the least squares problem Ax = b, aka. linear system of equations
+     * This method finds the vector x that minimizes the Euclidean 2-norm ||Ax - b||^2. (-> "least squares")
+     * To solve for x, the normal equation (A^T * A)x = A^T * b is used.
+     * To improve numerical stability and prevent overfitting, this implementation uses Tikhonov regularization (also known as ridge regression).
+     * A small regularization term (lambda * I) is added to the A^T * A matrix, making the equation
+     * (A^T * A + lambda * I)x = A^T * b. This ensures the matrix is invertible.
+     *
+     * @param A The design matrix (m x n), where m is the number of observations and n is the number of features.
+     * @param b The vector of observed values (m-dimensional).
+     * @param regularization The regularization parameter (lambda), a small positive value to ensure the matrix is well-conditioned.
+     * @return The vector x (n-dimensional) that represents the least squares solution, typically the coefficients of the linear model.
+     */
+    fun leastSquaresTikhonov(
+        A: D2Array<Double>,
+        b: D1Array<Double>,
+        regularization: Double = 1e-6
+    ): D1Array<Double> {
+        require(A.shape[0] == b.shape[0]) { "Matrix and vector for least squares must have same number of rows (observations)." }
+
+        val matrixAt = A.transpose() //compute A^T
+        val matrixAtA = mk.linalg.dot(matrixAt, A) //compute matrix A^T * A.
+        val vectorAtb = mk.linalg.dot(matrixAt, b) //compute vector A^T * b
+
+        //apply Tikhonov regularization/ridge regression.
+        //add small offset to diagonal (lambda * Identity) of matrix A^T * A.
+        //this ensures that the matrix (A^T * A + lambda * I) is invertible.
+        val n = matrixAtA.shape[0]
+        val regularizedAtA = matrixAtA + mk.identity<Double>(n) * regularization
+
+        //solve regularized system of linear equations (A^T * A + lambda * I)x = A^T * b for x.
+        return mk.linalg.solve(regularizedAtA, vectorAtb)
     }
 }
