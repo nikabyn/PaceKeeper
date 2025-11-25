@@ -1,68 +1,79 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${EMULATOR_PORT:=5554}"
-: "${ANDROID_API:=28}"
-: "${ANDROID_AVD_HOME:=/opt/avd}"
-: "${EMULATOR_DEFAULT_ARGS:=-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -accel on}"
+EMULATOR_PORT="${EMULATOR_PORT:-5554}"
+EMULATOR_TIMEOUT="${EMULATOR_TIMEOUT:-300}"
+BASE_AVD_DIR="/opt/avd-template/base-avd.avd"
+AVD_NAME="ci_running_avd"
 
-NAME="ci-avd-${ANDROID_API}"
-RUNTIME_AVD="$HOME/.android/avd/${NAME}.avd"
-RUNTIME_INI="$HOME/.android/avd/${NAME}.ini"
-LOGFILE="/tmp/emulator_${EMULATOR_PORT}.log"
+echo "--- Preparing Android Emulator ---"
+
+export ANDROID_AVD_HOME="${HOME}/.android/avd"
+mkdir -p "${ANDROID_AVD_HOME}" "${HOME}/.android"
+touch "${HOME}/.android/emu-update-last-check.ini"
+
+rm -rf "${ANDROID_AVD_HOME}/${AVD_NAME}.avd" "${ANDROID_AVD_HOME}/${AVD_NAME}.ini"
+
+cp -a "${BASE_AVD_DIR}" "${ANDROID_AVD_HOME}/${AVD_NAME}.avd"
+
+cat > "${ANDROID_AVD_HOME}/${AVD_NAME}.ini" <<EOF
+avd.ini.encoding=UTF-8
+path=${ANDROID_AVD_HOME}/${AVD_NAME}.avd
+target=android-${ANDROID_API_LEVEL:-36}
+EOF
+
+EMU_ARGS="-avd ${AVD_NAME} -port ${EMULATOR_PORT} -no-window -no-audio -no-boot-anim -no-snapshot-load -no-snapshot-save -wipe-data"
+
+if [ -e /dev/kvm ] && [ -w /dev/kvm ]; then
+    echo "KVM detected. Using hardware acceleration."
+    EMU_ARGS="$EMU_ARGS -accel on -gpu swiftshader_indirect"
+else
+    echo "KVM not available. Using software rendering."
+    EMU_ARGS="$EMU_ARGS -accel off -gpu swiftshader_indirect"
+fi
 
 adb start-server >/dev/null 2>&1 || true
-mkdir -p "$HOME/.android/avd"
 
-rm -rf "$RUNTIME_AVD"
-cp -a "${ANDROID_AVD_HOME}/base-avd.avd" "$RUNTIME_AVD"
-{
-  echo "avd.ini.encoding=UTF-8"
-  echo "path=$RUNTIME_AVD"
-  echo "path.rel=avd/${NAME}.avd"
-  echo "target=android-${ANDROID_API}"
-} > "$RUNTIME_INI"
+echo "Starting emulator process..."
+LOGFILE="/tmp/emulator.log"
+nohup emulator $EMU_ARGS > "$LOGFILE" 2>&1 &
+EMU_PID=$!
 
-BOOT_TIMEOUT=300
-if [ ! -e /dev/kvm ]; then
-  BOOT_TIMEOUT=600
-fi
+echo "Emulator started (PID: $EMU_PID). Waiting for boot..."
 
-echo "Starting emulator on port ${EMULATOR_PORT} (Timeout: ${BOOT_TIMEOUT}s, KVM: $([ -e /dev/kvm ] && echo yes || echo no))"
-echo "Emulator log: ${LOGFILE}"
+START_TIME=$(date +%s)
+BOOT_COMPLETED=false
 
-nohup with-kvm emulator -avd "$NAME" -port "$EMULATOR_PORT" \
-      ${EMULATOR_DEFAULT_ARGS} \
-      -wipe-data -no-snapshot-load -no-snapshot-save \
-      >"${LOGFILE}" 2>&1 &
+while true; do
+    CURRENT_TIME=$(date +%s)
+    ELAPSED=$((CURRENT_TIME - START_TIME))
 
-SERIAL="emulator-${EMULATOR_PORT}"
-echo "Waiting for boot: ${SERIAL}"
+    if [ "$ELAPSED" -gt "$EMULATOR_TIMEOUT" ]; then
+        echo "Error: Timeout reached ($EMULATOR_TIMEOUT seconds)."
+        break
+    fi
 
-set +e
-timeout "${BOOT_TIMEOUT}s" bash -c "
-  until adb -s ${SERIAL} shell getprop sys.boot_completed 2>/dev/null | grep -q '^1$'; do
+    if ! kill -0 "$EMU_PID" >/dev/null 2>&1; then
+        echo "Error: Emulator process died."
+        break
+    fi
+
+    if adb -s "emulator-${EMULATOR_PORT}" shell getprop sys.boot_completed 2>/dev/null | grep -q '1'; then
+        BOOT_COMPLETED=true
+        break
+    fi
+
     sleep 2
-  done
-"
-BOOT_RC=$?
-set -e
+done
 
-if [ ${BOOT_RC} -ne 0 ]; then
-  echo "Emulator did not boot within ${BOOT_TIMEOUT}s (exit code: ${BOOT_RC})."
-  echo "===== BEGIN EMULATOR LOG (head) ====="
-  sed -n '1,120p' "${LOGFILE}" || true
-  echo "===== END EMULATOR LOG (head) ====="
-  echo "===== EMULATOR LOG (tail) ====="
-  tail -n 80 "${LOGFILE}" || true
-  echo "===== END EMULATOR LOG (tail) ====="
-  echo "Running emulator processes:"
-  ps aux | grep -i emulator | grep -v grep || true
-  exit ${BOOT_RC}
+if [ "$BOOT_COMPLETED" = true ]; then
+    echo "Emulator is ready."
+    adb -s "emulator-${EMULATOR_PORT}" shell settings put global window_animation_scale 0
+    adb -s "emulator-${EMULATOR_PORT}" shell settings put global transition_animation_scale 0
+    adb -s "emulator-${EMULATOR_PORT}" shell settings put global animator_duration_scale 0
+    adb -s "emulator-${EMULATOR_PORT}" shell input keyevent 82
+else
+    echo "Emulator failed to boot. Tail of log:"
+    tail -n 50 "$LOGFILE"
+    exit 1
 fi
-
-echo "Emulator boot completed."
-
-adb -s "${SERIAL}" shell settings put global window_animation_scale 0 >/dev/null 2>&1 || true
-adb devices
-echo "ANDROID_SERIAL=${SERIAL}"
