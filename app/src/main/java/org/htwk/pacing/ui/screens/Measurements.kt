@@ -155,7 +155,7 @@ fun MeasurementsScreen(
             HistogramCard(
                 title = stringResource(R.string.heart_rate_histogram_last_24_hours),
                 series = heartRateHistogram,
-                zonesToColorId = viewModel.heartRateHistogramZones,
+                zones = viewModel.heartRateHistogramZones,
                 modifier = Modifier.height(300.dp),
             )
 
@@ -298,12 +298,12 @@ class MeasurementsViewModel(
         )
 
     // TODO: Calculate these based on the user defined body data
-    val heartRateHistogramZones = mapOf(
-        Double.NEGATIVE_INFINITY..<60.0 to R.color.cyan_700,
-        60.0..<70.0 to R.color.green_700,
-        70.0..<90.0 to R.color.yellow_700,
-        90.0..<110.0 to R.color.orange_700,
-        110.0..<Double.POSITIVE_INFINITY to R.color.red_700,
+    val heartRateHistogramZones = arrayOf(
+        Double.NEGATIVE_INFINITY..<60.0,
+        60.0..<70.0,
+        70.0..<90.0,
+        90.0..<110.0,
+        110.0..<Double.POSITIVE_INFINITY,
     )
 
     val predictedHeartRate = predictedHeartRateDao

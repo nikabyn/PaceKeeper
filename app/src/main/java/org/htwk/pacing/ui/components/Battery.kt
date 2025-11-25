@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.screens.HomeViewModel
+import org.htwk.pacing.ui.theme.extendedColors
 
 /**
  * Displays a card representing the user's current energy level with interactive validation.
@@ -203,9 +204,9 @@ private fun EnergyBar(
     modifier: Modifier = Modifier,
 ) {
     val gradientColors = arrayOf(
-        Color(0xFFEC4242), // Red
-        Color(0xFFE1C508), // Yellow
-        Color(0xFF72D207), // Green
+        MaterialTheme.extendedColors.red,
+        MaterialTheme.extendedColors.yellow,
+        MaterialTheme.extendedColors.green,
     )
 
     val cornerShape = MaterialTheme.shapes.large
