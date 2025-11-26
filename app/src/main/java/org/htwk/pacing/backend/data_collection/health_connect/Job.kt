@@ -154,11 +154,12 @@ private suspend fun CoroutineScope.scheduleJobs(
 
         when (event.action) {
             JobAction.Start -> {
-                val job = try {
-                    launch { work(recordType) }
-                } catch (e: Exception) {
-                    Log.e(TAG, e.toString())
-                    return@consumeEach
+                val job = launch {
+                    try {
+                        work(recordType)
+                    } catch (e: Throwable) {
+                        Log.e(TAG, "Error while executing work for $recordType:", e)
+                    }
                 }
 
                 job.invokeOnCompletion {
