@@ -1,8 +1,11 @@
 package org.htwk.pacing.backend.predictor
 
 import android.util.Log
+import kotlinx.coroutines.flow.combine
+import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
@@ -10,15 +13,16 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
-
+import kotlin.time.Duration.Companion.minutes
 
 object Predictor {
     private const val TAG = "Predictor"
 
     //time duration/length of input time series
-    val TIME_SERIES_DURATION: Duration = Duration.parse("2d")
-    val TIME_SERIES_STEP_DURATION: Duration = Duration.parse("10m");
+    val TIME_SERIES_DURATION: Duration = 2.days
+    val TIME_SERIES_STEP_DURATION: Duration = 10.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
     val PREDICTION_WINDOW_DURATION: Duration = 2.hours
     val PREDICTION_WINDOW_SAMPLE_COUNT: Int =
@@ -95,5 +99,36 @@ object Predictor {
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
             Percentage(predictedEnergy / 100.0)
         );
+    }
+
+    suspend fun predictAndStoreEnergy(db: PacingDatabase) {
+        val duration = TIME_SERIES_DURATION
+        val heartRate = db.heartRateDao().getLastLive(duration)
+        val distance = db.distanceDao().getLastLive(duration)
+        val userProfile = db.userProfileDao().getCurrentProfile()
+
+        combine(
+            heartRate,
+            distance,
+            userProfile
+        ) { heartRate, distance, userProfile ->
+            Pair(
+                MultiTimeSeriesEntries(
+                    timeStart = Clock.System.now() - duration,
+                    duration = duration,
+                    heartRate = heartRate,
+                    distance = distance,
+                ),
+                FixedParameters(
+                    anaerobicThresholdBPM = userProfile
+                        ?.anaerobicThreshold?.toDouble()
+                        ?: 0.0
+                )
+            )
+        }.collect { (multiSeries, fixedParams) ->
+            val energyPrediction = predict(multiSeries, fixedParams)
+            Log.d(TAG, "Predicted: $energyPrediction")
+            db.predictedEnergyLevelDao().insert(energyPrediction)
+        }
     }
 }

@@ -136,6 +136,8 @@ suspend fun checkAndNotifyEnergy(
     predictedEnergyLevelDao: PredictedEnergyLevelDao,
 ) {
     while (true) {
+        delay(1.minutes)
+
         val predictedEnergy = getRelevantPredictedEnergyLevel(predictedEnergyLevelDao)
             ?: 1.0 // if no data available, assume energy is ok and thus display no warning
 
@@ -150,7 +152,5 @@ suspend fun checkAndNotifyEnergy(
         } else {
             Log.d("NotificationsJob", "Energy is sufficient, no notification")
         }
-
-        delay(1.minutes)
     }
 }

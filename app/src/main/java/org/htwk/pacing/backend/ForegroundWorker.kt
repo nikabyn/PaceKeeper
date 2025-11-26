@@ -11,14 +11,18 @@ import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.supervisorScope
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_CHANNEL_ID
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_NOTIFICATION_ID
 import org.htwk.pacing.backend.data_collection.health_connect.syncWithHealthConnect
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.predictor.Predictor
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 class ForegroundWorker(
     context: Context,
@@ -32,22 +36,39 @@ class ForegroundWorker(
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
 
-        coroutineScope {
-            try {
-                select<Unit> {
-                    launch { syncWithHealthConnect(applicationContext, db) }.onJoin
-                    launch {
-                        checkAndNotifyEnergy(applicationContext, db.predictedEnergyLevelDao())
-                    }.onJoin
-                }
-                Log.e(WORK_NAME, "At least one child completed.")
-            } catch (e: Exception) {
-                Log.e(WORK_NAME, "Error in foreground worker:", e)
+        supervisorScope {
+            launchRepeating("HealthConnectJob") { syncWithHealthConnect(applicationContext, db) }
+            launchRepeating("EnergyPredictionJob") { Predictor.predictAndStoreEnergy(db) }
+            launchRepeating("EnergyNotificationsJob") {
+                checkAndNotifyEnergy(applicationContext, db.predictedEnergyLevelDao())
             }
         }
 
         Log.i(WORK_NAME, "Sending retry request")
         return Result.retry()
+    }
+
+    private fun CoroutineScope.launchRepeating(name: String, block: suspend () -> Unit) {
+        val backoffMin = 10.seconds
+        val backoffMax = 5.hours
+        val backoffFactor = 2.0
+        var backoff = backoffMin
+
+        launch {
+            while (!isStopped) {
+                try {
+                    block()
+                } catch (e: Exception) {
+                    Log.e(WORK_NAME, "$name failed. Retrying in $backoff...", e)
+                    delay(backoff)
+
+                    backoff *= backoffFactor
+                    if (backoff >= backoffMax) {
+                        backoff = backoffMax
+                    }
+                }
+            }
+        }
     }
 
     private fun createNotification(): Notification {
