@@ -2,14 +2,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDataFallback
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 
 object Preprocessor : IPreprocessor {
     /**
@@ -32,27 +25,6 @@ object Preprocessor : IPreprocessor {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
         val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
 
-        return MultiTimeSeriesDiscrete(
-            timeStart = raw.timeStart,
-            duration = raw.duration,
-            metrics = TimeSeriesMetric.entries.associateWith { metric ->
-                val discreteProportional = discretizeTimeSeries(
-                    SingleGenericTimeSeriesEntries(
-                        timeStart = raw.timeStart,
-                        duration = raw.duration,
-                        metric = metric,
-                        data = when (metric) {
-                            TimeSeriesMetric.HEART_RATE -> ensuredDataUsingFallback.heartRate.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.DISTANCE -> ensuredDataUsingFallback.distance.map(::GenericTimedDataPoint)
-                        }
-                    )
-                )
-
-                when (metric.signalClass) {
-                    TimeSeriesSignalClass.CONTINUOUS -> DiscretePID.from(discreteProportional)
-                    TimeSeriesSignalClass.AGGREGATED -> DiscreteIntegral.from(discreteProportional)
-                }
-            }
-        )
+        return MultiTimeSeriesDiscrete.fromEntries(ensuredDataUsingFallback);
     }
 }
