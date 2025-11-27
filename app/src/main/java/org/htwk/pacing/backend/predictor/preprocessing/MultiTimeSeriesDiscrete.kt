@@ -53,11 +53,6 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
     private var capacity: Int = initialCapacity
     private var featureMatrix: D2Array<Double> = mk.zeros(featureCount, capacity)
 
-    fun getFeatureTimeSeries(featureID: FeatureID): D1Array<Double> {
-        val index = featureIndexMap[featureID]!!;
-        return featureMatrix[index] as D1Array<Double>;
-    }
-
     fun getSampleOfFeature(featureID: FeatureID, index: Int): Double {
         require(index in 0..<length) { "Sample index $index out of bounds 0..<$length" }
 
@@ -153,6 +148,10 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
 fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeriesEntries): MultiTimeSeriesDiscrete {
     val mtsd = MultiTimeSeriesDiscrete()
 
+    if (TimeSeriesMetric.entries.isEmpty()) {
+        return MultiTimeSeriesDiscrete(0)
+    }
+
     featureIndexMap.keys.forEach { featureID ->
         val metric = featureID.metric
 
@@ -184,4 +183,11 @@ fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeries
     }
 
     return mtsd
+}
+
+private fun Predictor.MultiTimeSeriesEntries.getDataForMetric(metric: TimeSeriesMetric): List<GenericTimedDataPoint> {
+    return when (metric) {
+        TimeSeriesMetric.HEART_RATE -> this.heartRate.map(::GenericTimedDataPoint)
+        TimeSeriesMetric.DISTANCE -> this.distance.map(::GenericTimedDataPoint)
+    }
 }
