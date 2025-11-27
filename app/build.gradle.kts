@@ -139,8 +139,7 @@ dependencies {
     implementation(libs.material)
 
     //Multik for Matrix Math
-    implementation(libs.multik.core)
-    implementation(libs.multik.default)
+    implementation(libs.multik.kotlin)
     testImplementation(libs.kotlinx.serialization.json)
 }
 
