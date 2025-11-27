@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.timeStart
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -27,7 +26,7 @@ import kotlin.time.Duration
     val metrics: Map<TimeSeriesMetric, List<DoubleArray>>
 )*/
 
-class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
+class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacity: Int = 512) {
     data class FeatureID(
         val metric: TimeSeriesMetric,
         val component: PIDComponent
@@ -36,9 +35,9 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
     companion object {
         private val featureCount: Int =
             TimeSeriesMetric.entries.sumOf { it.signalClass.components.size }
-        val stepSize = Predictor.TIME_SERIES_STEP_DURATION
-        val timeStart: Instant = Instant.fromEpochMilliseconds(0)
-        val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.values()
+        private val stepSize = Predictor.TIME_SERIES_STEP_DURATION
+
+        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.values()
             .map { metric ->
                 metric.signalClass.components.map { component ->
                     FeatureID(
@@ -51,14 +50,14 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
 
     private var length: Int = 0
     private var capacity: Int = initialCapacity
+
+    //TODO: make private again, was only made public for debugging
     private var featureMatrix: D2Array<Double> = mk.zeros(featureCount, capacity)
 
     fun getSampleOfFeature(featureID: FeatureID, index: Int): Double {
         require(index in 0..<length) { "Sample index $index out of bounds 0..<$length" }
-
-        val row = featureIndexMap[featureID]!!;
-
-        return featureMatrix[row, index]
+        val featureView = getFeatureView(featureID)
+        return featureView[index]
     }
 
     //TODO: can this be made cheaper? (see user story, deep copy)
@@ -85,6 +84,11 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
 
     fun getFeatureCount(): Int {
         return featureCount
+    }
+
+    //TODO: remove, unsafe to expose this
+    fun setLength(length: Int) {
+        this.length = length
     }
 
     fun length(): Int {
@@ -146,48 +150,41 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
 }
 
 fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeriesEntries): MultiTimeSeriesDiscrete {
-    val mtsd = MultiTimeSeriesDiscrete()
-
     if (TimeSeriesMetric.entries.isEmpty()) {
-        return MultiTimeSeriesDiscrete(0)
+        return MultiTimeSeriesDiscrete(raw.timeStart, 0)
     }
 
-    featureIndexMap.keys.forEach { featureID ->
-        val metric = featureID.metric
+    val mtsd = MultiTimeSeriesDiscrete(raw.timeStart)
 
-        //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
-        val discreteProportional = discretizeTimeSeries(
-            IPreprocessor.GenericTimedDataPointTimeSeries(
-                timeStart = raw.timeStart,
-                duration = raw.duration,
-                metric = metric,
-                data = when (metric) {
-                    TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
-                    TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                }
-            )
-        )
-
-        require(discreteProportional.isNotEmpty());
-
-        mtsd.growCapacity(discreteProportional.size);
-
-        // Generate other PID components where necessary.
+    TimeSeriesMetric.entries.forEach { metric ->
         metric.signalClass.components.forEach { component ->
-            val componentData = component.compute(discreteProportional)
-            val featureView = mtsd.getFeatureView(featureID)
+            val featureID = MultiTimeSeriesDiscrete.FeatureID(metric, component)
 
-            // 3. Write the generated component series to the feature matrix.
+            val metric = featureID.metric
+
+            //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
+            val discreteProportional = discretizeTimeSeries(
+                IPreprocessor.GenericTimedDataPointTimeSeries(
+                    timeStart = raw.timeStart,
+                    duration = raw.duration,
+                    metric = metric,
+                    data = when (metric) {
+                        TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
+                        TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
+                    }
+                )
+            )
+
+            require(discreteProportional.isNotEmpty());
+
+            mtsd.growCapacity(discreteProportional.size);
+            mtsd.setLength(discreteProportional.size)
+
+            val componentData = featureID.component.compute(discreteProportional)
+            val featureView = mtsd.getFeatureView(featureID)
             componentData.forEachIndexed { index, value -> featureView[index] = value }
         }
     }
 
     return mtsd
-}
-
-private fun Predictor.MultiTimeSeriesEntries.getDataForMetric(metric: TimeSeriesMetric): List<GenericTimedDataPoint> {
-    return when (metric) {
-        TimeSeriesMetric.HEART_RATE -> this.heartRate.map(::GenericTimedDataPoint)
-        TimeSeriesMetric.DISTANCE -> this.distance.map(::GenericTimedDataPoint)
-    }
 }
