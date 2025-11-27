@@ -244,6 +244,15 @@ object LinearAlgebraSolver {
         val matrixAtA = mk.linalg.dot(matrixAt, A) //compute matrix A^T * A.
         val vectorAtb = mk.linalg.dot(matrixAt, b) //compute vector A^T * b
 
+        println("A")
+        println(A)
+        println()
+        println("At")
+        println(matrixAt)
+        println()
+        println("b")
+        println(b)
+
         //apply Tikhonov regularization/ridge regression.
         //add small offset to diagonal (lambda * Identity) of matrix A^T * A.
         //this ensures that the matrix (A^T * A + lambda * I) is invertible.

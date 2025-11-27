@@ -66,7 +66,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val trainingWindowSize =
             inputMTSD.length() - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
-        for (offset in 0..trainingWindowSize step trainingTimeStepSize) {
+        for (offset in 5000../*trainingWindowSize*/6000 step trainingTimeStepSize) {
             val expectedTarget = inputMTSD.getSampleOfFeature(
                 MultiTimeSeriesDiscrete.FeatureID(
                     TimeSeriesMetric.HEART_RATE,
@@ -105,7 +105,14 @@ object LinearCombinationPredictionModel : IPredictionModel {
         }
 
         val flatExtrapolationResults = inputMTSD.getAllFeatureIDs().flatMap { featureID ->
-            extrapolate(inputMTSD.getFeatureView(featureID).toDoubleArray())
+            if (featureID.metric == TimeSeriesMetric.DISTANCE) return@flatMap emptyList()
+            if (featureID.component == PIDComponent.INTEGRAL) return@flatMap emptyList()
+            //val subtractFirst = featureID.component == PIDComponent.INTEGRAL
+
+            extrapolate(
+                inputMTSD.getFeatureView(featureID).toDoubleArray(),
+                //subtractFirst = subtractFirst
+            )
         }
 
         return flatExtrapolationResults
