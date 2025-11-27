@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,20 +52,16 @@ fun LabelCard(
         Level.Warning -> Pair(
             painterResource(R.drawable.ic_energy_level_moderate),
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.yellow.copy(alpha = 0.2f)
-                    .compositeOver(MaterialTheme.colorScheme.surface),
-                contentColor = MaterialTheme.extendedColors.yellow.copy(alpha = 0.2f)
-                    .compositeOver(MaterialTheme.colorScheme.onSurface),
+                containerColor = MaterialTheme.extendedColors.warningContainer(),
+                contentColor = MaterialTheme.extendedColors.onWarningContainer(),
             ),
         )
 
         Level.Info -> Pair(
             painterResource(R.drawable.ic_energy_level_very_high),
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.blue.copy(alpha = 0.2f)
-                    .compositeOver(MaterialTheme.colorScheme.surface),
-                contentColor = MaterialTheme.extendedColors.blue.copy(alpha = 0.2f)
-                    .compositeOver(MaterialTheme.colorScheme.onSurface),
+                containerColor = MaterialTheme.extendedColors.infoContainer(),
+                contentColor = MaterialTheme.extendedColors.onInfoContainer(),
             ),
         )
     }
@@ -96,7 +91,8 @@ fun LabelCard(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Text(
-                    text = "bottom text",
+                    // TODO: Add recommendations based on energy level (orga#44)
+                    text = "Placeholder for tips to be added soon.",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
