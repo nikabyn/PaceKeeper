@@ -4,7 +4,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectHelper.insertHeartRateRecords
+import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.time.LocalTime
@@ -36,6 +36,7 @@ fun ImportDemoDataHealthConnect() {
 
     Button(
         onClick = { showDialog = true },
+        style = PrimaryButtonStyle,
         modifier = androidx.compose.ui.Modifier.fillMaxWidth()
     ) {
         Text(stringResource(R.string.demo_data_button_text))

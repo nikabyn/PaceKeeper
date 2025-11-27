@@ -1,8 +1,11 @@
 package org.htwk.pacing.ui.theme
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 
 fun currentExtendedColors(darkTheme: Boolean) =
     if (darkTheme) ExtendedColors(
@@ -29,7 +32,23 @@ data class ExtendedColors(
     val green: Color,
     val cyan: Color,
     val blue: Color,
-)
+) {
+    @Composable
+    fun warningContainer() =
+        yellow.copy(alpha = 0.2f).compositeOver(MaterialTheme.colorScheme.surface)
+
+    @Composable
+    fun onWarningContainer() =
+        yellow.copy(alpha = 0.2f).compositeOver(MaterialTheme.colorScheme.onSurface)
+
+    @Composable
+    fun infoContainer() =
+        blue.copy(alpha = 0.2f).compositeOver(MaterialTheme.colorScheme.surface)
+
+    @Composable
+    fun onInfoContainer() =
+        blue.copy(alpha = 0.2f).compositeOver(MaterialTheme.colorScheme.onSurface)
+}
 
 internal val LocalExtendedColors = staticCompositionLocalOf {
     ExtendedColors(

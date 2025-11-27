@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,12 +50,16 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
+import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
-import org.koin.androidx.compose.koinViewModel
 import org.htwk.pacing.ui.components.UserProfileCard
+import org.htwk.pacing.ui.theme.PrimaryButtonStyle
+import org.htwk.pacing.ui.theme.Spacing
+import org.htwk.pacing.ui.theme.TonalButtonStyle
+import org.koin.androidx.compose.koinViewModel
 
 
 /**
@@ -110,7 +113,9 @@ fun SettingsScreen(
     var showDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Column(modifier = Modifier.padding(40.dp)) {
+        Column(
+            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
+        ) {
             SectionTitle(stringResource(R.string.connections_and_services))
 
             HealthConnectItem(
@@ -126,15 +131,30 @@ fun SettingsScreen(
                     context.startActivity(intent)
                 },
             )
+            Spacer(modifier = Modifier.height(Spacing.large))
 
-            Spacer(modifier = Modifier.height(20.dp))
+            HeartRateCard()
+            Spacer(modifier = Modifier.height(Spacing.large))
+
+            ImportDataHealthConnect()
+            Spacer(modifier = Modifier.height(Spacing.large))
+
+            ImportDemoDataHealthConnect()
+            Spacer(modifier = Modifier.height(Spacing.large))
+
             SectionTitle(stringResource(R.string.stored_data))
-
-            Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { showDialog = true },
+                style = PrimaryButtonStyle,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(stringResource(R.string.export_data_to_zip_archive))
             }
+            Spacer(modifier = Modifier.height(Spacing.large))
 
             UserProfileCard(navController = navController)
+            Spacer(modifier = Modifier.height(Spacing.large))
+
             ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
         }
 
@@ -160,7 +180,8 @@ fun SettingsScreen(
                 TextButton(onClick = { showDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            })
+            }
+        )
     }
 }
 
@@ -193,14 +214,10 @@ fun HealthConnectItem(connected: Boolean, db: PacingDatabase, onClick: () -> Uni
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        TextButton(onClick = onClick) {
+        Button(onClick = onClick, style = TonalButtonStyle) {
             Text(stringResource(R.string.edit))
         }
     }
-    HeartRateCard()
-    ImportDataHealthConnect()
-    ImportDemoDataHealthConnect()
-
 }
 
 class SettingsViewModel(
