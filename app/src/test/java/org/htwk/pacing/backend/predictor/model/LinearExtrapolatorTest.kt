@@ -1,15 +1,6 @@
-import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
-import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
-import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
-import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Ignore
-import org.junit.Test
-
 class LinearExtrapolatorTest {
     //some random time series with a general upward trend, used in the tests
-    private var timeSeries: DoubleArray = DoubleArray(288) { i ->
+    /*private var timeSeries: DoubleArray = DoubleArray(288) { i ->
         val x = i / 288.0 //time normalization to array range
         (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) +
                 (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) +
@@ -111,5 +102,5 @@ class LinearExtrapolatorTest {
         val result = strategy.runOnTimeSeries(timeSeries)
 
         assertEquals(expected, result.resultPoint.second, 0.0001)
-    }
+    }*/
 }

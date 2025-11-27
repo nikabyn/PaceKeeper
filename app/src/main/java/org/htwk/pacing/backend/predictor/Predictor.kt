@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor
 
-import android.util.Log
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
@@ -14,7 +13,7 @@ import kotlin.time.Duration.Companion.hours
 
 
 object Predictor {
-    private const val TAG = "Predictor"
+    private const val LOGGING_TAG = "Predictor"
 
     //time duration/length of input time series
     val TIME_SERIES_DURATION: Duration = Duration.parse("2d")
@@ -54,22 +53,25 @@ object Predictor {
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        var timeSeriesDiscrete: MultiTimeSeriesDiscrete
+        val timeSeriesDiscrete: MultiTimeSeriesDiscrete?
         val preprocessorDuration = measureTimeMillis {
             timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
         }
-        Log.d(TAG, "Preprocessor.run duration: $preprocessorDuration ms")
+        //Log.d(LOGGING_TAG, "Preprocessor.run duration: $preprocessorDuration ms")
 
         val addSamplesDuration = measureTimeMillis {
             LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
-                timeSeriesDiscrete
+                timeSeriesDiscrete!!
             )
         }
-        Log.d(TAG, "addTrainingSamplesFromMultiTimeSeriesDiscrete duration: $addSamplesDuration ms")
+        /*Log.d(
+            LOGGING_TAG,
+            "addTrainingSamplesFromMultiTimeSeriesDiscrete duration: $addSamplesDuration ms"
+        )*/
 
         val trainDuration =
             measureTimeMillis { LinearCombinationPredictionModel.trainOnStoredSamples() }
-        Log.d(TAG, "trainOnStoredSamples duration: $trainDuration ms")
+        //Log.d(LOGGING_TAG, "trainOnStoredSamples duration: $trainDuration ms")
     }
 
     /**

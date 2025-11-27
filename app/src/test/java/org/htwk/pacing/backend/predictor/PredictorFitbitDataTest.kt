@@ -9,8 +9,9 @@ import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
+import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -63,25 +64,27 @@ class PredictorFitbitDataTest {
         timeSeriesStart = earliestEntryTime
         timeSeriesEnd = latestEntryTime + 5.minutes
     }
-
+    
     @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExtrapolationsPlotWithRealData() {
         println("Preparing to plot time series data...")
 
+        val metric = TimeSeriesMetric.HEART_RATE
+        val pidComponent = PIDComponent.PROPORTIONAL
+
         val derivedTimeSeries =
-            IPreprocessor.DiscreteTimeSeriesResult.DiscretePID.from(
-                proportionalInput =
-                    TimeSeriesDiscretizer.discretizeTimeSeries(
-                        IPreprocessor.GenericTimedDataPointTimeSeries(
-                            timeStart = timeSeriesEnd - 2.days,
-                            duration = 2.days,
-                            metric = TimeSeriesMetric.HEART_RATE,
-                            data = heartRateEntries.filter { it -> it.time in (timeSeriesEnd - 2.days)..timeSeriesEnd }
-                                .map(::GenericTimedDataPoint)
-                        )
+            pidComponent.compute(
+                TimeSeriesDiscretizer.discretizeTimeSeries(
+                    IPreprocessor.GenericTimedDataPointTimeSeries(
+                        timeStart = timeSeriesEnd - 2.days,
+                        duration = 2.days,
+                        metric = metric,
+                        data = heartRateEntries.filter { it -> it.time in (timeSeriesEnd - 2.days)..timeSeriesEnd }
+                            .map(::GenericTimedDataPoint)
                     )
-            ).proportional
+                )
+            )
 
         val result = LinearExtrapolator.multipleExtrapolate(derivedTimeSeries)
 
@@ -98,7 +101,7 @@ class PredictorFitbitDataTest {
         println("Plotting finished.")
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+    //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries(
