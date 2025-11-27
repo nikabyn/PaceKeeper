@@ -4,6 +4,8 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -11,6 +13,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -58,21 +61,23 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private var trainingTimeStepSize: Int = DEFAULT_TRAINING_STEPSIZE
 
     fun addTrainingSamplesFromMultiTimeSeriesDiscrete(
-        input: MultiTimeSeriesDiscrete,
+        inputMTSD: MultiTimeSeriesDiscrete,
     ) {
-        val heartRateTimeSeries =
-            (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
-        val timeSeriesSize =
-            heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
+        val trainingWindowSize =
+            inputMTSD.length() - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
-        for (offset in 0..timeSeriesSize step trainingTimeStepSize) {
-            val expected =
-                heartRateTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
+        for (offset in 0..trainingWindowSize step trainingTimeStepSize) {
+            val expectedTarget = inputMTSD.getSampleOfFeature(
+                MultiTimeSeriesDiscrete.FeatureID(
+                    TimeSeriesMetric.HEART_RATE,
+                    PIDComponent.PROPORTIONAL
+                ), offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1)
+            )
 
             trainingSamples.add(
                 TrainingSample(
-                    generateFlattenedMultiExtrapolationResults(input, offset),
-                    expected
+                    generateFlattenedMultiExtrapolationResults(inputMTSD, offset),
+                    expectedTarget
                 )
             )
         }
@@ -87,7 +92,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @return A flattened list of extrapolated feature values.
      */
     private fun generateFlattenedMultiExtrapolationResults(
-        input: MultiTimeSeriesDiscrete,
+        inputMTSD: MultiTimeSeriesDiscrete,
         indexOffset: Int = 0
     ): List<Double> {
         fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
@@ -99,24 +104,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
             }
         }
 
-        val flatExtrapolationResults = input.metrics.flatMap { (key, discreteTimeSeriesResult) ->
-            when (key.signalClass) {
-                IPreprocessor.TimeSeriesSignalClass.CONTINUOUS -> {
-                    val discretePID =
-                        discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-                    listOf(
-                        extrapolate(discretePID.proportional),
-                        extrapolate(discretePID.integral, subtractFirst = true),
-                        extrapolate(discretePID.derivative)
-                    )
-                }
-
-                IPreprocessor.TimeSeriesSignalClass.AGGREGATED -> {
-                    val discreteIntegral =
-                        discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-                    listOf(extrapolate(discreteIntegral.integral, subtractFirst = true))
-                }
-            }.flatten()
+        val flatExtrapolationResults = inputMTSD.getAllFeatureIDs().flatMap { featureID ->
+            extrapolate(inputMTSD.getFeatureView(featureID).toDoubleArray())
         }
 
         return flatExtrapolationResults
@@ -153,7 +142,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *              time series data, such as heart rate.
      * @return A [Double] representing the predicted energy level.
      */
-    override fun predict(input: IPreprocessor.MultiTimeSeriesDiscrete): Double {
+    override fun predict(input: MultiTimeSeriesDiscrete): Double {
         val flattenedExtrapolations = generateFlattenedMultiExtrapolationResults(input)
 
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations)

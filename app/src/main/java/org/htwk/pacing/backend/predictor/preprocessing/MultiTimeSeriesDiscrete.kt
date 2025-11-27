@@ -4,8 +4,6 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.timeStart
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
@@ -16,30 +14,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import kotlin.time.Duration
-
-
-enum class PIDComponent(val compute: (DoubleArray) -> DoubleArray) {
-    PROPORTIONAL({ it }), // The "P" component is the input itself.
-    INTEGRAL(DoubleArray::discreteTrapezoidalIntegral),
-    DERIVATIVE(DoubleArray::discreteDerivative),
-}
-
-/**
- * Enum to differentiate between time series types.
- * see ui#38 for explanation of "classes" https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963
- */
-enum class TimeSeriesSignalClass(val components: List<PIDComponent>) {
-    /** For values that change continuously over time, like heart rate. */
-    CONTINUOUS(listOf(PIDComponent.PROPORTIONAL, PIDComponent.INTEGRAL, PIDComponent.DERIVATIVE)),
-
-    /** For values that accumulate over time, like total steps or distance. */
-    AGGREGATED(listOf(PIDComponent.INTEGRAL)),
-}
-
-enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
-    HEART_RATE(TimeSeriesSignalClass.CONTINUOUS),
-    DISTANCE(TimeSeriesSignalClass.AGGREGATED),
-}
 
 /**
  * A container for multiple, preprocessed, and discrete time series, ready for the model.
@@ -84,8 +58,16 @@ class MultiTimeSeriesDiscrete(initialCapacity: Int = 512) {
         return featureMatrix[index] as D1Array<Double>;
     }
 
+    fun getSampleOfFeature(featureID: FeatureID, index: Int): Double {
+        require(index in 0..<length) { "Sample index $index out of bounds 0..<$length" }
+
+        val row = featureIndexMap[featureID]!!;
+
+        return featureMatrix[row, index]
+    }
+
     //TODO: can this be made cheaper? (see user story, deep copy)
-    fun getSample(index: Int): D1Array<Double> {
+    fun getSampleOfAllFeatures(index: Int): D1Array<Double> {
         require(index in 0..<length) { "Sample index $index out of bounds 0..<$length" }
 
         // copy column at `index` into a new array, gives a sample of all features at one timestep
