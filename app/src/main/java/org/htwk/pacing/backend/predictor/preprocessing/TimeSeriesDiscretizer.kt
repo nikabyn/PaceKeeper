@@ -2,7 +2,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.GenericTimedDataPointTimeSeries
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
@@ -23,7 +23,7 @@ object TimeSeriesDiscretizer {
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
      */
     private fun calculateTimeBucketAverages(
-        input: SingleGenericTimeSeriesEntries
+        input: GenericTimedDataPointTimeSeries
     ): SortedMap<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
@@ -136,7 +136,7 @@ object TimeSeriesDiscretizer {
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
-        input: SingleGenericTimeSeriesEntries,
+        input: GenericTimedDataPointTimeSeries,
         targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(input)

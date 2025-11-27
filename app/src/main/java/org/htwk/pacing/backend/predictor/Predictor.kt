@@ -54,7 +54,7 @@ object Predictor {
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        var timeSeriesDiscrete: IPreprocessor.MultiTimeSeriesDiscrete
+        var timeSeriesDiscrete: MultiTimeSeriesDiscrete
         val preprocessorDuration = measureTimeMillis {
             timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
         }

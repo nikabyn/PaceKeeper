@@ -73,7 +73,7 @@ class PredictorFitbitDataTest {
             IPreprocessor.DiscreteTimeSeriesResult.DiscretePID.from(
                 proportionalInput =
                     TimeSeriesDiscretizer.discretizeTimeSeries(
-                        IPreprocessor.SingleGenericTimeSeriesEntries(
+                        IPreprocessor.GenericTimedDataPointTimeSeries(
                             timeStart = timeSeriesEnd - 2.days,
                             duration = 2.days,
                             metric = TimeSeriesMetric.HEART_RATE,

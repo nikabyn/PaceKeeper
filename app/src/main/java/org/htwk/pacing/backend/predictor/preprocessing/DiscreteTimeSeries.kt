@@ -176,7 +176,7 @@ fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeries
 
         //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
         val discreteProportional = discretizeTimeSeries(
-            IPreprocessor.SingleGenericTimeSeriesEntries(
+            IPreprocessor.GenericTimedDataPointTimeSeries(
                 timeStart = raw.timeStart,
                 duration = raw.duration,
                 metric = metric,

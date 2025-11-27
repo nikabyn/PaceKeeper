@@ -21,7 +21,7 @@ interface IPreprocessor {
      * @property data The list of timed data points.
      * @property signalClass The type of the time series (continuous or aggregated).
      */
-    data class SingleGenericTimeSeriesEntries(
+    data class GenericTimedDataPointTimeSeries(
         val timeStart: Instant,
         val duration: Duration,
         val metric: TimeSeriesMetric,

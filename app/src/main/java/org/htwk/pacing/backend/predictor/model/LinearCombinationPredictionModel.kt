@@ -3,6 +3,7 @@ package org.htwk.pacing.backend.predictor.model
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -57,7 +58,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private var trainingTimeStepSize: Int = DEFAULT_TRAINING_STEPSIZE
 
     fun addTrainingSamplesFromMultiTimeSeriesDiscrete(
-        input: IPreprocessor.MultiTimeSeriesDiscrete,
+        input: MultiTimeSeriesDiscrete,
     ) {
         val heartRateTimeSeries =
             (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
@@ -86,7 +87,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @return A flattened list of extrapolated feature values.
      */
     private fun generateFlattenedMultiExtrapolationResults(
-        input: IPreprocessor.MultiTimeSeriesDiscrete,
+        input: MultiTimeSeriesDiscrete,
         indexOffset: Int = 0
     ): List<Double> {
         fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
