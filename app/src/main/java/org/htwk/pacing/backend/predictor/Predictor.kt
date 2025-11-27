@@ -49,6 +49,7 @@ object Predictor {
         val anaerobicThresholdBPM: Double
     )
 
+    //TODO: document side effect of requiring to store/train samples first
     fun train(
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
