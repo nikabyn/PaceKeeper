@@ -6,7 +6,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesSignalClass
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -70,7 +69,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
                 PIDComponent.PROPORTIONAL
             )
         ).toDoubleArray()
-        
+
         val timeSeriesSize =
             heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
@@ -108,52 +107,10 @@ object LinearCombinationPredictionModel : IPredictionModel {
             }
         }
 
-        val flatExtrapolationResults = TimeSeriesMetric.entries.flatMap { key ->
+        val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
+            val subtractFirst = featureID.component == PIDComponent.INTEGRAL
 
-
-            when (key.signalClass) {
-                TimeSeriesSignalClass.CONTINUOUS -> {
-                    listOf(
-                        extrapolate(
-                            input.getFeatureView(
-                                MultiTimeSeriesDiscrete.FeatureID(
-                                    key,
-                                    PIDComponent.PROPORTIONAL
-                                )
-                            ).toDoubleArray()
-                        ),
-                        extrapolate(
-                            input.getFeatureView(
-                                MultiTimeSeriesDiscrete.FeatureID(
-                                    key,
-                                    PIDComponent.INTEGRAL
-                                )
-                            ).toDoubleArray(), subtractFirst = true
-                        ),
-                        extrapolate(
-                            input.getFeatureView(
-                                MultiTimeSeriesDiscrete.FeatureID(
-                                    key,
-                                    PIDComponent.DERIVATIVE
-                                )
-                            ).toDoubleArray()
-                        )
-                    )
-                }
-
-                TimeSeriesSignalClass.AGGREGATED -> {
-                    listOf(
-                        extrapolate(
-                            input.getFeatureView(
-                                MultiTimeSeriesDiscrete.FeatureID(
-                                    key,
-                                    PIDComponent.INTEGRAL
-                                )
-                            ).toDoubleArray(), subtractFirst = true
-                        ),
-                    )
-                }
-            }.flatten()
+            extrapolate(input.getFeatureView(featureID).toDoubleArray(), subtractFirst)
         }
 
         return flatExtrapolationResults
