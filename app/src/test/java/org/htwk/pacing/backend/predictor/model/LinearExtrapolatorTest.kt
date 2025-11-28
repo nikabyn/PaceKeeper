@@ -1,6 +1,17 @@
+import junit.framework.TestCase.assertEquals
+import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
+import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
+import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
+import org.junit.Ignore
+import org.junit.Test
+
 class LinearExtrapolatorTest {
     //some random time series with a general upward trend, used in the tests
-    /*private var timeSeries: DoubleArray = DoubleArray(288) { i ->
+    private var timeSeries: D1Array<Double> = mk.ndarray(DoubleArray(288) { i ->
         val x = i / 288.0 //time normalization to array range
         (i * 0.8) + (kotlin.math.sin(x * 5.5 * kotlin.math.PI) * 20) +
                 (kotlin.math.sin(x * 3.3 * kotlin.math.PI) * 36) +
@@ -8,7 +19,7 @@ class LinearExtrapolatorTest {
                 (kotlin.math.cos(x * 13.4 * kotlin.math.PI) * 7.6) +
                 (kotlin.math.sin(x * kotlin.math.sin(x * 1.3) * 29.4 * kotlin.math.PI) * 3.6) +
                 50
-    }
+    })
 
     @Ignore("This test is for manual visualization inspection and requires a graphical environment.")
     @Test
@@ -25,7 +36,7 @@ class LinearExtrapolatorTest {
             println("Result Point: ${extr.resultPoint}")
         }
 
-        plotTimeSeriesExtrapolationsWithPython(timeSeries, result.extrapolations)
+        plotTimeSeriesExtrapolationsWithPython(timeSeries.toDoubleArray(), result.extrapolations)
 
         //this test's primary purpose is visualization, not assertion.
         //add a trivial assertion to not confuse test runner
@@ -84,7 +95,7 @@ class LinearExtrapolatorTest {
     @Test
     fun `runOnTimeSeries with constant time series produces flat extrapolation`() {
         // test as sanity check for slope calculation.
-        val constantTimeSeries = DoubleArray(288) { 100.0 }
+        val constantTimeSeries = mk.ndarray(DoubleArray(288) { 100.0 })
         val strategy = EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND.strategy
         val expected = 100.0 //flat line, slope is 0, so result should be y1 (which is 100)
 
@@ -102,5 +113,5 @@ class LinearExtrapolatorTest {
         val result = strategy.runOnTimeSeries(timeSeries)
 
         assertEquals(expected, result.resultPoint.second, 0.0001)
-    }*/
+    }
 }

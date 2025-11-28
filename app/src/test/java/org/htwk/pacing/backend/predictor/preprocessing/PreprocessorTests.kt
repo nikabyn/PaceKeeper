@@ -85,10 +85,10 @@ class PreprocessorTests {
         // The size should be TIME_SERIES_DURATION / 10.minutes
         val expectedLength = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
 
-        /*assertEquals(
+        assertEquals(
             expectedLength,
             result.length()
-        )*/
+        )
 
         val expectedDiscreteHeartRate = doubleArrayOf(
             75.0,

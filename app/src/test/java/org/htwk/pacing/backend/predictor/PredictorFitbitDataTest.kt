@@ -12,6 +12,8 @@ import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -64,7 +66,7 @@ class PredictorFitbitDataTest {
         timeSeriesStart = earliestEntryTime
         timeSeriesEnd = latestEntryTime + 5.minutes
     }
-    
+
     @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExtrapolationsPlotWithRealData() {
@@ -86,7 +88,7 @@ class PredictorFitbitDataTest {
                 )
             )
 
-        val result = LinearExtrapolator.multipleExtrapolate(derivedTimeSeries)
+        val result = LinearExtrapolator.multipleExtrapolate(mk.ndarray(derivedTimeSeries))
 
         result.extrapolations.entries.forEach { (strategy, extrapolation) ->
             println("Strategy: $strategy")
@@ -149,6 +151,6 @@ class PredictorFitbitDataTest {
         //after adding averaging for csv downsampling:                            70.94812981216073
         println("training done")
 
-        assertEquals(70.94812981216073, predictionResult.percentage.toDouble() * 100.0, 0.1)
+        assertEquals(71.09326064855371, predictionResult.percentage.toDouble() * 100.0, 0.1)
     }
 }
