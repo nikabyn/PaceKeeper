@@ -98,19 +98,18 @@ object LinearCombinationPredictionModel : IPredictionModel {
         input: MultiTimeSeriesDiscrete,
         indexOffset: Int = 0
     ): List<Double> {
-        fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
-            val extrapolations =
-                LinearExtrapolator.multipleExtrapolate(series, indexOffset).extrapolations
-            return extrapolations.map { (_, line) ->
-                val result = line.getExtrapolationResult()
-                if (subtractFirst) result - series[indexOffset] else result
-            }
-        }
-
         val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
-            val subtractFirst = featureID.component == PIDComponent.INTEGRAL
+            val timeSeries = input.getFeatureView((featureID)).toDoubleArray()
 
-            extrapolate(input.getFeatureView(featureID).toDoubleArray(), subtractFirst)
+            val extrapolations = LinearExtrapolator.multipleExtrapolate(
+                timeSeries,
+                indexOffset
+            ).extrapolations
+            
+            extrapolations.map { (_, line) ->
+                val result = line.getExtrapolationResult()
+                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries[indexOffset] else result
+            }
         }
 
         return flatExtrapolationResults
