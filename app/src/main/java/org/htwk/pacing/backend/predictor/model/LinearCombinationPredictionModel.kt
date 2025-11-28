@@ -13,6 +13,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.time.Duration.Companion.hours
@@ -99,13 +100,13 @@ object LinearCombinationPredictionModel : IPredictionModel {
         indexOffset: Int = 0
     ): List<Double> {
         val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
-            val timeSeries = input.getFeatureView((featureID)).toDoubleArray()
+            val timeSeries = input.getFeatureView((featureID))
 
             val extrapolations = LinearExtrapolator.multipleExtrapolate(
                 timeSeries,
                 indexOffset
             ).extrapolations
-            
+
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
                 if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries[indexOffset] else result

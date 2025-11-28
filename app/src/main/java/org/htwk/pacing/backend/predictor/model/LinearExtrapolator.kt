@@ -1,6 +1,11 @@
 package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.Predictor
+import org.jetbrains.kotlinx.multik.ndarray.data.D1
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.slice
+import org.jetbrains.kotlinx.multik.ndarray.operations.average
 
 object LinearExtrapolator {
     private val stepsIntoFuture = Predictor.PREDICTION_WINDOW_SAMPLE_COUNT
@@ -58,6 +63,7 @@ object LinearExtrapolator {
         companion object {
             var indexOffset: Int = 0
         }
+
         /**
          * Retrieves a sample value (the Y-coordinate) from the given time series.
          *
@@ -69,7 +75,7 @@ object LinearExtrapolator {
          *                   with the most recent data point at the end of the array.
          * @return The calculated sample value (Y-coordinate).
          */
-        fun getSampleResultY(timeSeries: DoubleArray): Double
+        fun getSampleResultY(timeSeries: D1Array<Double>): Double
 
         /**
          * Gets the X-axis coordinate (time position) for this sample.
@@ -94,11 +100,12 @@ object LinearExtrapolator {
             init {
                 require(index in validRange) { "earliestIndex must be in $validRange, but was $index" }
             }
+
             override fun getSamplePositionX(): Double {
                 return index.toDouble()
             }
 
-            override fun getSampleResultY(timeSeries: DoubleArray): Double {
+            override fun getSampleResultY(timeSeries: D1Array<Double>): Double {
                 val lastIndex = validRange.last
                 return timeSeries[lastIndex - index + indexOffset]
             }
@@ -114,7 +121,8 @@ object LinearExtrapolator {
          * @property earliestIndex The starting index of the slice, relative to the end of the time series. Must be greater than or equal to `latestIndex`.
          * @property latestIndex The ending index of the slice, relative to the end of the time series. 0 represents the most recent data point.
          */
-        data class AverageOverRange(val earliestIndex: Int, val latestIndex: Int) : SamplingDescriptor {
+        data class AverageOverRange(val earliestIndex: Int, val latestIndex: Int) :
+            SamplingDescriptor {
             init {
                 require(earliestIndex in validRange) { "earliestIndex must be in $validRange, but was $earliestIndex" }
                 require(latestIndex in validRange) { "latestIndex must be in $validRange, but was $latestIndex" }
@@ -125,10 +133,12 @@ object LinearExtrapolator {
                 return (earliestIndex + latestIndex) / 2.0
             }
 
-            override fun getSampleResultY(timeSeries: DoubleArray): Double {
+            override fun getSampleResultY(timeSeries: D1Array<Double>): Double {
                 val lastIndex = validRange.last
-                return timeSeries.slice((lastIndex - earliestIndex + indexOffset)..(lastIndex - latestIndex + indexOffset))
-                    .average()
+                return timeSeries.slice<Double, D1, D1>(
+                    inSlice = (lastIndex - earliestIndex + indexOffset)..(lastIndex - latestIndex + indexOffset),
+                    axis = 0
+                ).average<Double, D1>()
             }
         }
     }
@@ -163,7 +173,7 @@ object LinearExtrapolator {
          * @return An [ExtrapolationLine] object containing the two sampled points and the resulting
          *         extrapolated point.
          */
-        fun runOnTimeSeries(timeSeries: DoubleArray): ExtrapolationLine {
+        fun runOnTimeSeries(timeSeries: D1Array<Double>): ExtrapolationLine {
             val x0 = samplingDescriptors.first.getSamplePositionX()
             val y0 = samplingDescriptors.first.getSampleResultY(timeSeries)
 
@@ -189,7 +199,10 @@ object LinearExtrapolator {
         val extrapolations: Map<EXTRAPOLATION_STRATEGY, ExtrapolationLine>
     )
 
-    fun multipleExtrapolate(timeSeries: DoubleArray, indexOffset: Int = 0): MultiExtrapolationResult {
+    fun multipleExtrapolate(
+        timeSeries: D1Array<Double>,
+        indexOffset: Int = 0
+    ): MultiExtrapolationResult {
         SamplingDescriptor.indexOffset = indexOffset
 
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
