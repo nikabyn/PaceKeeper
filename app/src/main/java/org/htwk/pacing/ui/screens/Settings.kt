@@ -75,7 +75,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = koinViewModel(),
     userProfileViewModel: UserProfileViewModel = koinViewModel(),
-    notificationsViewModel: NotificationsViewModel = koinViewModel()
+    // notificationsViewModel: NotificationsViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val isConnected by viewModel.isConnected.collectAsState()
