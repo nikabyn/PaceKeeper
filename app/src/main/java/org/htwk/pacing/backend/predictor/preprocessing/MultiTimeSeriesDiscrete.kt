@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -153,7 +154,7 @@ fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeries
     TimeSeriesMetric.entries.forEach { metric ->
         //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
         val discreteProportional = discretizeTimeSeries(
-            IPreprocessor.GenericTimedDataPointTimeSeries(
+            GenericTimedDataPointTimeSeries(
                 timeStart = raw.timeStart,
                 duration = raw.duration,
                 metric = metric,

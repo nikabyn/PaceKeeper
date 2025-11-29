@@ -7,8 +7,8 @@ import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPoint
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
@@ -78,7 +78,7 @@ class PredictorFitbitDataTest {
         val derivedTimeSeries =
             pidComponent.compute(
                 TimeSeriesDiscretizer.discretizeTimeSeries(
-                    IPreprocessor.GenericTimedDataPointTimeSeries(
+                    GenericTimedDataPointTimeSeries(
                         timeStart = timeSeriesEnd - 2.days,
                         duration = 2.days,
                         metric = metric,
