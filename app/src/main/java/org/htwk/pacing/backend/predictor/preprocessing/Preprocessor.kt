@@ -4,7 +4,7 @@ import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDataFallback
 
-object Preprocessor : IPreprocessor {
+object Preprocessor {
     /**
      * Executes the preprocessing pipeline on raw time series data.
      *
@@ -18,7 +18,7 @@ object Preprocessor : IPreprocessor {
      * @param fixedParameters Additional fixed parameters that might influence the preprocessing. (Currently unused).
      * @return A [MultiTimeSeriesDiscrete] object containing the processed and discretized time series data.
      */
-    override fun run(
+    fun run(
         raw: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
