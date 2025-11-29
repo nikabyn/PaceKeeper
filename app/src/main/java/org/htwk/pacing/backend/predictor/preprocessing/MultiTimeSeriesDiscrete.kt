@@ -51,7 +51,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacity: Int = 512
     private var length: Int = 0
     private var capacity: Int = initialCapacity
 
-    //TODO: make private again, was only made public for debugging
     private var featureMatrix: D2Array<Double> = mk.zeros(featureCount, capacity)
 
     fun getSampleOfFeature(featureID: FeatureID, index: Int): Double {
