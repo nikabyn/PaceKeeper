@@ -50,7 +50,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacity: Int = 512
 
     private var length: Int = 0
     private var capacity: Int = initialCapacity
-
     private var featureMatrix: D2Array<Double> = mk.zeros(featureCount, capacity)
 
     fun getSampleOfFeature(featureID: FeatureID, index: Int): Double {
@@ -79,10 +78,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacity: Int = 512
         require(index in 0..<length) { "Sample index $index out of bounds 0..<$length" }
 
         return timeStart + stepSize * index
-    }
-
-    fun getFeatureCount(): Int {
-        return featureCount
     }
 
     //TODO: remove, unsafe to expose this
@@ -178,7 +173,6 @@ fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeries
             val featureID = MultiTimeSeriesDiscrete.FeatureID(metric, component)
 
             val metric = featureID.metric
-
 
             val componentData = featureID.component.compute(discreteProportional)
             val featureView = mtsd.getFeatureView(featureID)
