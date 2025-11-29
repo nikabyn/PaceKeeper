@@ -5,9 +5,7 @@ import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
-import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -53,25 +51,10 @@ object Predictor {
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        val timeSeriesDiscrete: MultiTimeSeriesDiscrete?
-        val preprocessorDuration = measureTimeMillis {
-            timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
-        }
-        //Log.d(LOGGING_TAG, "Preprocessor.run duration: $preprocessorDuration ms")
+        val mtsd = Preprocessor.run(inputTimeSeries, fixedParameters)
 
-        val addSamplesDuration = measureTimeMillis {
-            LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
-                timeSeriesDiscrete!!
-            )
-        }
-        /*Log.d(
-            LOGGING_TAG,
-            "addTrainingSamplesFromMultiTimeSeriesDiscrete duration: $addSamplesDuration ms"
-        )*/
-
-        val trainDuration =
-            measureTimeMillis { LinearCombinationPredictionModel.trainOnStoredSamples() }
-        //Log.d(LOGGING_TAG, "trainOnStoredSamples duration: $trainDuration ms")
+        LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(mtsd)
+        LinearCombinationPredictionModel.trainOnStoredSamples()
     }
 
     /**
