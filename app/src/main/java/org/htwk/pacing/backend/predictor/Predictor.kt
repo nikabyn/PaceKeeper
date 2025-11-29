@@ -46,15 +46,13 @@ object Predictor {
         val anaerobicThresholdBPM: Double
     )
 
-    //TODO: document side effect of requiring to store/train samples first
+    //TODO: document side effect of requiring to train on samples first before we can predict
     fun train(
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
         val mtsd = Preprocessor.run(inputTimeSeries, fixedParameters)
-
-        LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(mtsd)
-        LinearCombinationPredictionModel.trainOnStoredSamples()
+        LinearCombinationPredictionModel.train(mtsd)
     }
 
     /**

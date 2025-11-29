@@ -16,8 +16,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -29,6 +27,10 @@ import kotlin.time.Duration.Companion.minutes
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients
     private var linearCoefficients: List<Double> = listOf()
+    private val predictionTargetFeatureID = MultiTimeSeriesDiscrete.FeatureID(
+        TimeSeriesMetric.HEART_RATE,
+        PIDComponent.PROPORTIONAL
+    )
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
@@ -44,39 +46,19 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val expectedEnergyLevel: Double
     )
 
-    private val trainingSamples: MutableList<TrainingSample> = mutableListOf()
-
-    /**
-     * Sets the number of samples to skip between training samples when generating training data.
-     *
-     * @param stepSize The number of time steps between training samples.
-     * @throws IllegalArgumentException if [stepSize] is outside the valid range.
-     */
-    fun setTrainingStepSize(stepSize: Int) {
-        require(stepSize in 1..<Predictor.TIME_SERIES_SAMPLE_COUNT) { "Invalid training step size: $stepSize" }
-        trainingTimeStepSize = stepSize
-    }
-
-    private var DEFAULT_TRAINING_STEPSIZE: Int =
-        ((17.hours + 10.minutes) / Predictor.TIME_SERIES_STEP_DURATION).toInt()
-    private var trainingTimeStepSize: Int = DEFAULT_TRAINING_STEPSIZE
-
-    fun addTrainingSamplesFromMultiTimeSeriesDiscrete(
+    private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
-    ) {
-        val heartRateTimeSeries = input.getFeatureView(
-            MultiTimeSeriesDiscrete.FeatureID(
-                TimeSeriesMetric.HEART_RATE,
-                PIDComponent.PROPORTIONAL
-            )
-        ).toDoubleArray()
+    ): List<TrainingSample> {
+        val targetTimeSeries = input.getFeatureView(predictionTargetFeatureID).toDoubleArray()
 
         val timeSeriesSize =
-            heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
+            targetTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
-        for (offset in 0..timeSeriesSize step trainingTimeStepSize) {
+        val trainingSamples = mutableListOf<TrainingSample>()
+
+        for (offset in 0..timeSeriesSize) {
             val expected =
-                heartRateTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
+                targetTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
 
             trainingSamples.add(
                 TrainingSample(
@@ -85,6 +67,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
                 )
             )
         }
+
+        return trainingSamples
     }
 
     /**
@@ -122,7 +106,9 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @throws IllegalStateException if no training samples have been added.
      */
-    fun trainOnStoredSamples() {
+    fun train(input: MultiTimeSeriesDiscrete) {
+        val trainingSamples = createTrainingSamples(input)
+
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
 
         val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
