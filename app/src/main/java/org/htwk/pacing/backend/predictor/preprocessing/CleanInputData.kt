@@ -3,7 +3,14 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.QualityRatios
+
+/**
+ * Holds data quality metrics calculated during preprocessing.
+ * @property ratiosPerMetric A per-metric map of remaining data points remaining after cleaning.
+ */
+data class QualityRatios(
+    val ratiosPerMetric: Map<TimeSeriesMetric, Percentage>
+)
 
 //TODO: add pattern-matching-based invalid data sanitization, so that for different kinds of errors we can respond in different ways
 fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, QualityRatios> {
