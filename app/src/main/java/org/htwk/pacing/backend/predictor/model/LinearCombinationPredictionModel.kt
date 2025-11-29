@@ -40,8 +40,6 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @property expectedEnergyLevel The expected (ground truth) energy level for this sample.
      */
     data class TrainingSample(
-        //TODO: (see ui#62) map to actual metric enum -> rework representation of all time series
-        // as abstraction with views into a multik matrix
         val multiExtrapolations: List<Double>,
         val expectedEnergyLevel: Double
     )
