@@ -157,28 +157,29 @@ fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeries
     val mtsd = MultiTimeSeriesDiscrete(raw.timeStart)
 
     TimeSeriesMetric.entries.forEach { metric ->
+        //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
+        val discreteProportional = discretizeTimeSeries(
+            IPreprocessor.GenericTimedDataPointTimeSeries(
+                timeStart = raw.timeStart,
+                duration = raw.duration,
+                metric = metric,
+                data = when (metric) {
+                    TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
+                }
+            )
+        )
+
+        require(discreteProportional.isNotEmpty());
+
+        mtsd.growCapacity(discreteProportional.size);
+        mtsd.setLength(discreteProportional.size)
+
         metric.signalClass.components.forEach { component ->
             val featureID = MultiTimeSeriesDiscrete.FeatureID(metric, component)
 
             val metric = featureID.metric
 
-            //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
-            val discreteProportional = discretizeTimeSeries(
-                IPreprocessor.GenericTimedDataPointTimeSeries(
-                    timeStart = raw.timeStart,
-                    duration = raw.duration,
-                    metric = metric,
-                    data = when (metric) {
-                        TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
-                        TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                    }
-                )
-            )
-
-            require(discreteProportional.isNotEmpty());
-
-            mtsd.growCapacity(discreteProportional.size);
-            mtsd.setLength(discreteProportional.size)
 
             val componentData = featureID.component.compute(discreteProportional)
             val featureView = mtsd.getFeatureView(featureID)
