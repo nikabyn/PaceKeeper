@@ -50,6 +50,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
+import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.HeartRateCard
@@ -75,7 +76,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = koinViewModel(),
     userProfileViewModel: UserProfileViewModel = koinViewModel(),
-    // notificationsViewModel: NotificationsViewModel = koinViewModel()
+    //notificationsViewModel: NotificationsViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val isConnected by viewModel.isConnected.collectAsState()
@@ -157,6 +158,14 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(Spacing.large))
 
             ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
+
+            Button(
+                onClick = { navController.navigate(Route.NOTIFICATIONS) },
+                style = PrimaryButtonStyle,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.button_notifications))
+            }
         }
 
     }

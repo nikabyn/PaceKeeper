@@ -175,7 +175,6 @@ fun AppNavHost(
                 val notificationsViewModel: NotificationsViewModel = koinViewModel()
                 NotificationsScreen(
                     navController = navController,
-                    viewModel = notificationsViewModel
                 )
             }
         }
