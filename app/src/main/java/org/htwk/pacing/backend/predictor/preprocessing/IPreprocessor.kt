@@ -34,8 +34,7 @@ interface IPreprocessor {
      * @property cleanedDistancesRatio The percentage of distance data points remaining after cleaning.
      */
     data class QualityRatios(
-        val cleanedHeartRatesRatio: Percentage,
-        val cleanedDistancesRatio: Percentage
+        val ratiosPerMetric: Map<TimeSeriesMetric, Percentage>
     )
 
     /**

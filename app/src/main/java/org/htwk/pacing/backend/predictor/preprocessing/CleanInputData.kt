@@ -56,8 +56,10 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         ),
 
         QualityRatios(
-            cleanedHeartRatesRatio = Percentage(correctionHeartRatio),
-            cleanedDistancesRatio = Percentage(correctionDistancesRatio)
+            ratiosPerMetric = mapOf(
+                TimeSeriesMetric.HEART_RATE to Percentage(correctionHeartRatio),
+                TimeSeriesMetric.DISTANCE to Percentage(correctionDistancesRatio)
+            )
         )
     )
 
