@@ -38,6 +38,8 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
+import org.htwk.pacing.ui.screens.NotificationsScreen
+import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
@@ -136,6 +138,8 @@ object Route {
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
     const val USERPROFILE = "userprofile"
+
+    const val NOTIFICATIONS = "notifications"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
@@ -165,6 +169,13 @@ fun AppNavHost(
                 UserProfileScreen(
                     navController = navController,
                     viewModel = userProfileViewModel
+                )
+            }
+            composable(Route.NOTIFICATIONS) {
+                val notificationsViewModel: NotificationsViewModel = koinViewModel()
+                NotificationsScreen(
+                    navController = navController,
+                    viewModel = notificationsViewModel
                 )
             }
         }
