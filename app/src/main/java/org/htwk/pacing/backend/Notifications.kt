@@ -16,14 +16,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
-import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 object NotificationIds {
     const val FOREGROUND_CHANNEL_ID = "foreground_ch"
@@ -119,38 +113,4 @@ fun showNotification(context: Context) {
     notificationManager.notify(NotificationIds.ENERGY_WARNING_NOTIFICATION_ID, builder.build())
 
     Log.d("Notification", "Notification sent")
-}
-
-suspend fun getRelevantPredictedEnergyLevel(predictedEnergyLevelDao: PredictedEnergyLevelDao): Double? {
-    val now = Clock.System.now()
-    val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
-        predictedEnergyLevelDao.getInRange(now, now + 6.hours)
-    val minimumEntry =
-        energyLevelDataWindow.minByOrNull { it.percentage.toDouble() }
-
-    return minimumEntry?.percentage?.toDouble()
-}
-
-suspend fun checkAndNotifyEnergy(
-    context: Context,
-    predictedEnergyLevelDao: PredictedEnergyLevelDao,
-) {
-    while (true) {
-        delay(1.minutes)
-
-        val predictedEnergy = getRelevantPredictedEnergyLevel(predictedEnergyLevelDao)
-            ?: 1.0 // if no data available, assume energy is ok and thus display no warning
-
-        Log.d(
-            "NotificationsJob",
-            "Predicted Energy level of %.2f".format(predictedEnergy)
-        )
-
-        if (predictedEnergy < 0.2) {
-            Log.d("NotificationsJob", "Energy is low, showing notification")
-            showNotification(context)
-        } else {
-            Log.d("NotificationsJob", "Energy is sufficient, no notification")
-        }
-    }
 }

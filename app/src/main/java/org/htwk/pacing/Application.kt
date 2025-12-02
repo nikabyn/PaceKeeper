@@ -40,7 +40,7 @@ open class ProductionApplication : Application(), KoinComponent {
         enqueueForegroundWorker(wm)
         runBlocking {
             val dao = getKoin().get<UserProfileDao>()
-            if (dao.getCurrentProfileDirect() == null) {
+            if (dao.getProfile() == null) {
                 dao.insertOrUpdate(UserProfileEntry.createInitial())
             }
         }
