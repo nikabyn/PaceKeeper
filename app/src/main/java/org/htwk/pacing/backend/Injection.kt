@@ -26,6 +26,7 @@ import org.htwk.pacing.backend.mlmodel.MLModel
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
+import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
@@ -83,7 +84,7 @@ val appModule = module {
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(androidContext(), get()) }
     viewModel { UserProfileViewModel(get()) }
-
+    viewModel { NotificationsViewModel() }
     /**
      * koin sets up the dependencies for the worker class instance here,
      * the actual execution/scheduling is handled in Application.kt

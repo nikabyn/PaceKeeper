@@ -39,7 +39,6 @@ import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.NotificationsScreen
-import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
@@ -171,12 +170,8 @@ fun AppNavHost(
                     viewModel = userProfileViewModel
                 )
             }
-            composable(Route.NOTIFICATIONS) {
-                val notificationsViewModel: NotificationsViewModel = koinViewModel()
-                NotificationsScreen(
-                    navController = navController,
-                )
-            }
+            
+            composable(Route.NOTIFICATIONS) { NotificationsScreen(navController) }
         }
 
         composable(
