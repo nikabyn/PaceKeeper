@@ -274,6 +274,10 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
             val mtsd = MultiTimeSeriesDiscrete(raw.timeStart)
 
+            val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
+            mtsd.ensureCapacity(stepCount);
+            mtsd.setStepCount(stepCount)
+
             TimeSeriesMetric.entries.forEach { metric ->
                 //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
                 val discreteProportional = discretizeTimeSeries(
@@ -285,19 +289,14 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
                         }
-                    )
+                    ),
+                    stepCount
                 )
 
-                require(discreteProportional.isNotEmpty());
-
-                mtsd.ensureCapacity(discreteProportional.size);
-                mtsd.setStepCount(discreteProportional.size)
+                require(discreteProportional.size == stepCount);
 
                 metric.signalClass.components.forEach { component ->
-                    val featureID = MultiTimeSeriesDiscrete.FeatureID(metric, component)
-
-                    val metric = featureID.metric
-
+                    val featureID = FeatureID(metric, component)
                     val componentData = featureID.component.compute(discreteProportional)
                     val featureView = mtsd.getMutableRow(featureID)
                     componentData.forEachIndexed { index, value -> featureView[index] = value }
