@@ -1,8 +1,6 @@
 package org.htwk.pacing.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -13,9 +11,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,6 +22,7 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.htwk.pacing.ui.components.Switch
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -64,19 +61,19 @@ fun NotificationsScreen(
                 .padding(16.dp)
         ) {
 
-            CategorySwitch(
+            Switch(
                 title = "Kategorie A",
                 checked = catA,
                 onCheckedChange = { viewModel.setCategoryA(it) }
             )
 
-            CategorySwitch(
+            Switch(
                 title = "Kategorie B",
                 checked = catB,
                 onCheckedChange = { viewModel.setCategoryB(it) }
             )
 
-            CategorySwitch(
+            Switch(
                 title = "Kategorie C",
                 checked = catC,
                 onCheckedChange = { viewModel.setCategoryC(it) }
@@ -110,28 +107,3 @@ class NotificationsViewModel(
         _categoryC.value = v
     }
 }
-
-@Composable
-fun CategorySwitch(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-    }
-}
-
