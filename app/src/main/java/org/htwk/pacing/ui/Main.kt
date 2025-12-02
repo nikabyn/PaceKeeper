@@ -41,6 +41,7 @@ import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
+import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.theme.PacingTheme
 import org.koin.androidx.compose.koinViewModel
@@ -136,6 +137,7 @@ object Route {
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
     const val USERPROFILE = "userprofile"
+    const val SERVICES = "SERVICES"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
@@ -165,6 +167,11 @@ fun AppNavHost(
                 UserProfileScreen(
                     navController = navController,
                     viewModel = userProfileViewModel
+                )
+            }
+            composable(Route.SERVICES) {
+                ServicesScreen(
+                    navController = navController
                 )
             }
         }

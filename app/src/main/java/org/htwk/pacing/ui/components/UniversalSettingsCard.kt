@@ -48,7 +48,7 @@ fun UniversalSettingsCard(
         onClick = { navController.navigate(route) },
         colors = CardStyle.colors,
         shape = CardStyle.shape,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(bottom=4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -60,39 +60,39 @@ fun UniversalSettingsCard(
                     vertical = Spacing.largeIncreased,
                 )
         ) {
-            // Icon anzeigen - entweder Material Icon oder Drawable Resource
+            // show icon - Material Icon or Drawable Resource
             when {
                 icon != null -> {
                     Icon(
                         imageVector = icon,
                         contentDescription = name,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
                 iconRes != null -> {
                     Icon(
                         painter = painterResource(iconRes),
                         contentDescription = name,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-            
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     name,
                     style = MaterialTheme.typography.titleMedium
                 )
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (description.isNotEmpty()) {
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             
-            // Chevron Icon rechts
+            // Chevron Icon right
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
