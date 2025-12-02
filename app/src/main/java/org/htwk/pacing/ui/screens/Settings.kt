@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,11 +52,13 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
+import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
+import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -153,6 +157,27 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(Spacing.large))
 
             UserProfileCard(navController = navController)
+            Spacer(modifier = Modifier.height(Spacing.large))
+
+            // Beispiel 1: UniversalSettingsCard mit Material Icon
+            UniversalSettingsCard(
+                route = Route.USERPROFILE,
+                name = "Einstellungen",
+                description = "App-Einstellungen und Präferenzen verwalten",
+                icon = Icons.Filled.Settings,
+                navController = navController
+            )
+            Spacer(modifier = Modifier.height(Spacing.small))
+
+            // entweder Material Icon oder eigenes Drawable Icon
+            UniversalSettingsCard(
+                route = Route.MEASUREMENTS,
+                name = stringResource(R.string.title_user_profile),
+                description = stringResource(R.string.icon_profile_description),
+                iconRes = R.drawable.rounded_show_chart_24,
+                //oder icon = Icons.Filled.Settings,
+                navController = navController
+            )
             Spacer(modifier = Modifier.height(Spacing.large))
 
             ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
