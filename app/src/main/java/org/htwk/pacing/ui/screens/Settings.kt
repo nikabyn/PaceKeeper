@@ -159,11 +159,53 @@ fun SettingsScreen(
             UserProfileCard(navController = navController)
             Spacer(modifier = Modifier.height(Spacing.large))
 
-            // Beispiel 1: UniversalSettingsCard mit Material Icon
+
             UniversalSettingsCard(
-                route = Route.USERPROFILE,
-                name = "Einstellungen",
-                description = "App-Einstellungen und Präferenzen verwalten",
+                route = Route.SERVICES,
+                name = stringResource(R.string.title_settings_services),
+                description = stringResource(R.string.subtitle_settings_services),
+                iconRes = R.drawable.settings_services,
+                navController = navController
+            )
+
+            UniversalSettingsCard(
+                route = Route.SERVICES,
+                name = stringResource(R.string.title_settings_data),
+                description = stringResource(R.string.subtitle_settings_data),
+                iconRes = R.drawable.settings_data,
+                navController = navController
+            )
+
+            UniversalSettingsCard(
+                route = Route.SERVICES,
+                name = stringResource(R.string.title_settings_notifications),
+                description = stringResource(R.string.subtitle_settings_notifications),
+                iconRes = R.drawable.settings_notifications,
+                navController = navController
+            )
+
+            UniversalSettingsCard(
+                route = Route.SERVICES,
+                name = stringResource(R.string.title_settings_appereance),
+                description = stringResource(R.string.subtitle_settings_appereance),
+                iconRes = R.drawable.settings_appereance,
+                navController = navController
+            )
+
+            UniversalSettingsCard(
+                route = Route.SERVICES,
+                name = stringResource(R.string.title_settings_information),
+                description = stringResource(R.string.subtitle_settings_information),
+                iconRes = R.drawable.settings_information,
+                navController = navController
+            )
+
+
+
+            UniversalSettingsCard(
+                route = Route.SERVICES,
+                name = "Services",
+                description = "Connections",
                 icon = Icons.Filled.Settings,
                 navController = navController
             )
