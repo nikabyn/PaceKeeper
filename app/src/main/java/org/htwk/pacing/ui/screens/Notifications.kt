@@ -16,6 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -48,6 +51,23 @@ fun NotificationsScreen(
             )
         }
     ) { innerPadding ->
+        var showDialog by remember { mutableStateOf(false) }
+        var restingStart by remember { mutableStateOf("22:00") }
+        var restingEnd by remember { mutableStateOf("06:00") }
+
+        if (showDialog) {
+            RestingHoursDialog(
+                currentStart = restingStart,
+                currentEnd = restingEnd,
+                onDismiss = { showDialog = false },
+                onConfirm = { newStart, newEnd ->
+                    restingStart = newStart
+                    restingEnd = newEnd
+                    showDialog = false
+                }
+            )
+        }
+
 
         val catA by viewModel.categoryA.collectAsState()
         val catB by viewModel.categoryB.collectAsState()
@@ -78,8 +98,73 @@ fun NotificationsScreen(
                 checked = catC,
                 onCheckedChange = { viewModel.setCategoryC(it) }
             )
+            Text(
+                text = "Personal Resting Hours",
+                modifier = Modifier.padding(top = 24.dp)
+            )
+
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+            ) {
+                Text(text = "$restingStart - $restingEnd")
+
+                androidx.compose.material3.Button(onClick = { showDialog = true }) {
+                    Text("Edit")
+                }
+            }
         }
+
     }
+}
+
+@Composable
+fun RestingHoursDialog(
+    currentStart: String,
+    currentEnd: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var start by remember { mutableStateOf(currentStart) }
+    var end by remember { mutableStateOf(currentEnd) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Resting Hours bearbeiten") },
+        text = {
+            Column {
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = start,
+                    onValueChange = { start = it },
+                    label = { Text("Start (HH:MM)") },
+                    singleLine = true
+                )
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = end,
+                    onValueChange = { end = it },
+                    label = { Text("End (HH:MM)") },
+                    singleLine = true,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { onConfirm(start, end) }
+            ) {
+                Text("Speichern")
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
 }
 
 class NotificationsViewModel(
