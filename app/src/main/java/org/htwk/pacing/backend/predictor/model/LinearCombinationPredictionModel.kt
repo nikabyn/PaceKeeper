@@ -46,7 +46,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
     ): List<TrainingSample> {
-        val targetTimeSeries = input.getFeatureView(predictionTargetFeatureID).toDoubleArray()
+        val targetTimeSeries = input.getMutableRow(predictionTargetFeatureID).toDoubleArray()
 
         val timeSeriesSize =
             targetTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
@@ -81,7 +81,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         indexOffset: Int = 0
     ): List<Double> {
         val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
-            val timeSeries = input.getFeatureView((featureID))
+            val timeSeries = input.getMutableRow((featureID))
 
             val extrapolations = LinearExtrapolator.multipleExtrapolate(
                 timeSeries,
