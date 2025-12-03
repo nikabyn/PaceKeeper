@@ -20,7 +20,8 @@
     <string name="steps_today">Schritte heute: %1$s</string>
     <string name="heart_rate_bpm">Herzfrequenz [bpm]</string>
     <string name="connections_and_services">Verbindungen &amp; Dienste</string>
-    <string name="health_connect">HealthConnect</string>
+    <string name="health_connect">Health Connect</string>
+    <string name="fitbit">Fitbit</string>
     <string name="connected">Verbunden</string>
     <string name="not_connected">Nicht Verbunden</string>
     <string name="edit">Bearbeiten</string>

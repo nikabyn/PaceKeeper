@@ -58,6 +58,7 @@ import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.CardStyle
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingsScreen(
