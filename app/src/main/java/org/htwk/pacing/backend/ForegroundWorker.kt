@@ -22,6 +22,21 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * A [CoroutineWorker] responsible for running long-lived jobs separate from the user interface.
+ *
+ * This worker ensures continuous execution of these jobs:
+ *  - [HealthConnectJob]
+ *  - [EnergyPredictionJob]
+ *  - [EnergyNotificationJob]
+ *
+ * The worker runs each job in a separate coroutine with automatic retry
+ * and exponential backoff in case of failure.
+ *
+ * @param context Application context used for WorkManager, notifications, and job execution.
+ * @param workerParams Parameters provided by WorkManager for this worker instance.
+ * @param db Used by jobs for storing and reading data.
+ */
 class ForegroundWorker(
     private val context: Context,
     workerParams: WorkerParameters,
@@ -31,6 +46,17 @@ class ForegroundWorker(
         const val WORK_NAME = "ForegroundWorker"
     }
 
+    /**
+     * Main entry point for the worker when scheduled by WorkManager.
+     *
+     * - Sets the worker as a foreground service to avoid background restrictions.
+     * - Launches long-running jobs in a [supervisorScope], each with automatic retry.
+     * - Uses [launchRepeating] to apply exponential backoff on failures.
+     *
+     * Exceptions are caught internally in each repeating job; this method itself should not throw.
+     *
+     * @return [Result.retry] so that WorkManager retries the worker if it is stopped or fails.
+     */
     override suspend fun doWork(): Result {
         setForeground(getForegroundInfo())
 
@@ -50,7 +76,16 @@ class ForegroundWorker(
         return Result.retry()
     }
 
-    private fun CoroutineScope.launchRepeating(name: String, block: suspend () -> Unit) {
+    /**
+     * Launches a coroutine that repeatedly executes the given [func] until the scope is cancelled.
+     *
+     * - Applies exponential backoff for retries when an exception occurs.
+     * - Logs failures with the job name and retry interval.
+     *
+     * @param name A descriptive name used in logging to identify the job.
+     * @param func Suspended closure representing the work to execute repeatedly.
+     */
+    private fun CoroutineScope.launchRepeating(name: String, func: suspend () -> Unit) {
         val backoffMin = 10.seconds
         val backoffMax = 5.hours
         val backoffFactor = 2.0
@@ -59,7 +94,7 @@ class ForegroundWorker(
         launch {
             while (!isStopped) {
                 try {
-                    block()
+                    func()
                 } catch (e: Exception) {
                     Log.e(WORK_NAME, "$name failed. Retrying in $backoff...", e)
                     delay(backoff)

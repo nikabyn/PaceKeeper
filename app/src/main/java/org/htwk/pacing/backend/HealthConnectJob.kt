@@ -35,6 +35,34 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Responsible for collecting, normalising and storing health data from Health Connect.
+ * Monitors permission changes and dynamically starts or stops syncing for individual record types.
+ *
+ * - Syncs full record history if not recently fetched
+ * - Continuously fetches incremental changes
+ * - Automatically retries jobs to ensure continuous operation
+ *
+ * This job should never complete and has to restart if it does.
+ *
+ * ```
+ * ┌────────────────────────────┐
+ * │ producePermissionChanges() │
+ * └────────────────────────────┘
+ *               │
+ *       PermissionChange
+ *               v
+ *    ┌──────────────────────┐
+ *    │ produceJobCommands() │
+ *    └──────────────────────┘
+ *               │
+ *          JobCommand <─────────┐
+ *               v               │
+ *       ┌────────────────┐      │
+ *       │ scheduleJobs() │──────┘
+ *       └────────────────┘
+ * ```
+ */
 object HealthConnectJob {
     const val TAG = "HealthConnectJob"
 
@@ -43,15 +71,18 @@ object HealthConnectJob {
     private val delayBeforeJobRestart = 10.seconds
 
     /**
-     * Responsible for collecting, normalising and storing health data from Health Connect.
-     * Monitors permission changes and dynamically starts or stops syncing for individual record types.
+     * Entry point for the [HealthConnectJob].
      *
-     * - Syncs full record history if not recently fetched
-     * - Continuously fetches incremental changes
-     * - Runs in the foreground with a persistent notification to comply with long-running task requirements
-     * - Automatically retries jobs to ensure continuous operation
+     * Initializes the Health Connect client, listens for permission changes,
+     * maps them to job commands, and schedules continuous syncing for each record type.
      *
-     * This job should never complete and has to restart if it does.
+     * This function is designed to run indefinitely. Jobs are automatically restarted
+     * if they complete or fail.
+     *
+     * @param context Context used to create the [HealthConnectClient].
+     * @param db Used for storing and retrieving health records and events.
+     *
+     * @throws Exception if the initialization of HealthConnectClient fails.
      */
     suspend fun run(context: Context, db: PacingDatabase) = coroutineScope {
         val client = HealthConnectClient.getOrCreate(context)
@@ -68,9 +99,16 @@ object HealthConnectJob {
     private enum class PermissionEvent { Added, Removed }
 
     /**
-     * Polls the permissions granted by health connect,
-     * diffs them against the previous permission
-     * and emits events for added/removed permissions.
+     * Continuously polls granted permissions from Health Connect and emits changes.
+     *
+     * Compares current permissions with the previous set and sends events for:
+     *  - Permissions added
+     *  - Permissions removed
+     *
+     * The channel never closes and handles exceptions internally.
+     *
+     * @param client The [HealthConnectClient] used to query permissions.
+     * @return Channel emitting [PermissionChange]s.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun CoroutineScope.producePermissionChanges(client: HealthConnectClient): ReceiveChannel<PermissionChange> =
@@ -101,7 +139,15 @@ object HealthConnectJob {
 
 
     /**
-     * Maps a permission change to a start/stop command for the job of the corresponding Record.
+     * Maps permission changes to job commands for the corresponding record type.
+     *
+     * - Adds a Start command when a new permission is granted.
+     * - Adds a Stop command when a permission is removed.
+     *
+     * The channel only closes when [permissionChanges] closes.
+     *
+     * @param permissionChanges Channel of permission changes to process.
+     * @return Channel emitting [JobCommand]s.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun CoroutineScope.produceJobCommands(
@@ -117,8 +163,6 @@ object HealthConnectJob {
                         ?: return@consumeEach
                 val recordType = recordsEntry.recordType
 
-                Log.d(TAG, change.toString())
-
                 when (change.event) {
                     PermissionEvent.Added ->
                         jobEvents.send(JobCommand(JobAction.Start, recordType))
@@ -132,15 +176,23 @@ object HealthConnectJob {
         return jobEvents
     }
 
-    private data class JobCommand(
-        val action: JobAction,
-        val recordType: KClass<out Record>
-    )
-
+    private data class JobCommand(val action: JobAction, val recordType: KClass<out Record>)
     private enum class JobAction { Start, Stop }
 
     /**
-     * Starts/stops the job for the corresponding Record.
+     * Schedules jobs based on incoming [JobCommand]s.
+     *
+     * - Starts jobs when a Start command is received.
+     * - Cancels jobs when a Stop command is received.
+     * - Automatically retries jobs if they complete unexpectedly.
+     *
+     * Behavior:
+     * - Each job runs continuously for its record type.
+     * - Jobs are automatically restarted after a short delay if they terminate.
+     * - Exceptions inside `work` are logged but do not stop the job loop.
+     *
+     * @param jobCommands Channel emitting job commands.
+     * @param work Suspended closure executed for each record type when a job starts.
      */
     private suspend fun CoroutineScope.scheduleJobs(
         jobCommands: Channel<JobCommand>,
@@ -188,7 +240,16 @@ object HealthConnectJob {
     }
 
     /**
-     * Continuously inserts new data of the provided Record into the database.
+     * Continuously fetches incremental changes for the specified record type and stores them in the database.
+     *
+     * - Uses a changes token to fetch only new records.
+     * - Stores a ReadEvent for every batch of new records.
+     * - Stores the data of those records.
+     * - Runs indefinitely with a short delay between syncs.
+     *
+     * @param client HealthConnectClient used to fetch record changes.
+     * @param db PacingDatabase used to store fetched records.
+     * @param recordType Type of record to sync.
      */
     private suspend inline fun syncRecordChanges(
         client: HealthConnectClient,
@@ -214,7 +275,15 @@ object HealthConnectJob {
     }
 
     /**
-     * Reads and stores the history of a Record that we do not yet have stored in our database.
+     * Fetches the historical data for a record type that is not yet in the database.
+     *
+     * - Fetches data in pages of up to 1000 records.
+     * - Skips fetching if data has been read within the last hour.
+     * - Stores all fetched records and a ReadEvent.
+     *
+     * @param client HealthConnectClient used to read historical records.
+     * @param db PacingDatabase used to store records and read events.
+     * @param recordType Type of record to fetch history for.
      */
     private suspend inline fun syncRecordHistory(
         client: HealthConnectClient,
@@ -260,4 +329,3 @@ object HealthConnectJob {
         }
     }
 }
-
