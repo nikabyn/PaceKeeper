@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 class ForegroundWorker(
-    context: Context,
+    private val context: Context,
     workerParams: WorkerParameters,
     private val db: PacingDatabase,
 ) : CoroutineWorker(context, workerParams) {
@@ -83,7 +83,7 @@ class ForegroundWorker(
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
         return NotificationCompat.Builder(applicationContext, FOREGROUND_CHANNEL_ID)
-            .setContentTitle("Predicting your energy")
+            .setContentTitle(context.getString(R.string.predicting_energy))
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .build()
     }
