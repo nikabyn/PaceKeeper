@@ -103,7 +103,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacity: Int = 512
     }
 
     fun growCapacity(newMinimumCapacity: Int) {
-        if (newMinimumCapacity <= capacity) return;
+        if (newMinimumCapacity <= capacity) return
 
         val newCapacity = maxOf(capacity * 2, newMinimumCapacity)
         val updated = mk.zeros<Double>(featureCount, newCapacity)
@@ -128,10 +128,10 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacity: Int = 512
         if (newSteps == 0) return
 
         require(newSamples.shape[0] == featureCount) {
-            "Expected ${featureCount} features, got ${newSamples.shape[0]}"
+            "Expected $featureCount features, got ${newSamples.shape[0]}"
         }
 
-        growCapacity(length + newSteps);
+        growCapacity(length + newSteps)
 
         // Copy new samples
         for (row in 0 until featureCount) {
@@ -161,13 +161,19 @@ fun MultiTimeSeriesDiscrete.Companion.fromEntries(raw: Predictor.MultiTimeSeries
                 data = when (metric) {
                     TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
                     TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
+                    TimeSeriesMetric.Speed -> raw.speed.map(::GenericTimedDataPoint)
                 }
             )
         )
 
-        require(discreteProportional.isNotEmpty());
+        require(discreteProportional.isNotEmpty())
 
-        mtsd.growCapacity(discreteProportional.size);
+        mtsd.growCapacity(discreteProportional.size)
         mtsd.setLength(discreteProportional.size)
 
         metric.signalClass.components.forEach { component ->

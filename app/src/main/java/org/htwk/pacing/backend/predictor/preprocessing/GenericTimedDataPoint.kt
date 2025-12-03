@@ -2,7 +2,13 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.OxygenSaturationEntry
+import org.htwk.pacing.backend.database.SpeedEntry
+import org.htwk.pacing.backend.database.StepsEntry
 import kotlin.time.Duration
 
 /**
@@ -47,6 +53,36 @@ data class GenericTimedDataPointTimeSeries(
         constructor(src: DistanceEntry) : this(
             time = src.end,
             value = src.length.inMeters()
+        )
+
+        constructor(src: ElevationGainedEntry) : this(
+            time = src.end,
+            value = src.length.inMeters()
+        )
+
+        constructor(src: SkinTemperatureEntry) : this(
+            time = src.time,
+            value = src.temperature.inCelsius()
+        )
+
+        constructor(src: HeartRateVariabilityEntry) : this(
+            time = src.time,
+            value = src.variability
+        )
+
+        constructor(src:OxygenSaturationEntry) : this(
+            time = src.time,
+            value = src.percentage.toDouble()
+        )
+
+        constructor(src:SpeedEntry) : this(
+            time = src.end,
+            value = src.velocity.inKilometersPerHour()
+        )
+
+        constructor(src:StepsEntry) : this(
+            time = src.end,
+            value = src.count.toDouble()
         )
     }
 }

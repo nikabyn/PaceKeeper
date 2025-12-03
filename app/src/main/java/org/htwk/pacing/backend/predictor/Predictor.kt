@@ -1,9 +1,15 @@
 package org.htwk.pacing.backend.predictor
 
 import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
+import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SpeedEntry
+import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration
@@ -34,8 +40,14 @@ object Predictor {
         val duration: Duration = TIME_SERIES_DURATION,
 
         val heartRate: List<HeartRateEntry>,
-        val distance: List<DistanceEntry>
-    )
+        val distance: List<DistanceEntry>,
+        val elevationGained: List<ElevationGainedEntry>,
+        val skinTemperature: List<SkinTemperatureEntry>,
+        val heartRateVariability: List<HeartRateVariabilityEntry>,
+        val oxygenSaturation: List<OxygenSaturationEntry>,
+        val steps: List<StepsEntry>,
+        val speed: List<SpeedEntry>
+        )
 
     /**
      * Encapsulates fixed parameters that do not change over the duration of a time series.

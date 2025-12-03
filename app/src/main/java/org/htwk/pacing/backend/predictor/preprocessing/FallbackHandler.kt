@@ -3,10 +3,16 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.ElevationGainedEntry
+import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import kotlin.time.Duration
 import kotlin.time.times
 import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.database.OxygenSaturationEntry
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SpeedEntry
+import org.htwk.pacing.backend.database.StepsEntry
 
 object FallbackHandler {
 
@@ -31,12 +37,24 @@ object FallbackHandler {
     fun ensureDataFallback(raw: Predictor.MultiTimeSeriesEntries): Predictor.MultiTimeSeriesEntries {
         val heartRate = ensureData (raw.heartRate, raw.timeStart, raw.duration,::loadHistoricalHeartRateData,::generateDefaultHeartRateSeries)
         val distance = ensureData(raw.distance, raw.timeStart, raw.duration,::loadHistoricalDistanceData,::generateDefaultDistanceSeries)
+        val elevationGained = ensureData(raw.elevationGained, raw.timeStart, raw.duration,::loadHistoricalElevationGainedData,::generateDefaultElevationGainedSeries)
+        val skinTemperature = ensureData(raw.skinTemperature, raw.timeStart, raw.duration,::loadDefaultSkinTemperatureData,::generateDefaultSkinTemperatureSeries)
+        val heartRateVariability = ensureData(raw.heartRateVariability, raw.timeStart, raw.duration,::loadDefaultHeartRateVariabilityData,::generateDefaultHeartRateVariabilitySeries)
+        val oxygenSaturation = ensureData(raw.oxygenSaturation, raw.timeStart, raw.duration,::loadDefaultOxygenSaturationData,::generateDefaultOxygenSaturationSeries)
+        val steps = ensureData(raw.steps, raw.timeStart, raw.duration,::loadDefaultStepsData,::generateDefaultStepsSeries)
+        val speed = ensureData(raw.speed, raw.timeStart, raw.duration,::loadDefaultSpeedData,::generateDefaultSpeedSeries)
 
         return Predictor.MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
             duration = raw.duration,
             heartRate = heartRate,
-            distance = distance
+            distance = distance,
+            elevationGained = elevationGained,
+            skinTemperature = skinTemperature,
+            heartRateVariability = heartRateVariability,
+            oxygenSaturation = oxygenSaturation,
+            steps = steps,
+            speed = speed
         )
     }
 
@@ -97,6 +115,7 @@ object FallbackHandler {
         // TODO: Depends on cache implementation
         return emptyList()
     }
+
 /**
      * See loadHistoricalHeartRateData
      *
@@ -109,6 +128,38 @@ object FallbackHandler {
         // TODO: Depends on cache implementation
         return emptyList()
     }
+
+    private fun loadHistoricalElevationGainedData(start: Instant, duration: Duration): List<ElevationGainedEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun loadDefaultSkinTemperatureData(start: Instant, duration: Duration): List<SkinTemperatureEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun loadDefaultHeartRateVariabilityData(start: Instant, duration: Duration): List<HeartRateVariabilityEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun loadDefaultOxygenSaturationData(start: Instant, duration: Duration): List<OxygenSaturationEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun loadDefaultStepsData(start: Instant, duration: Duration): List<StepsEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun loadDefaultSpeedData(start: Instant, duration: Duration): List<SpeedEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+
 
     /**
      * Generates a default, constant heart rate time series if no other data is available.
@@ -157,4 +208,35 @@ object FallbackHandler {
             )
         }
     }
+
+    private fun generateDefaultElevationGainedSeries(start: Instant, duration: Duration): List<ElevationGainedEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun generateDefaultSkinTemperatureSeries(start: Instant, duration: Duration): List<SkinTemperatureEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun generateDefaultHeartRateVariabilitySeries(start: Instant, duration: Duration): List<HeartRateVariabilityEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun generateDefaultOxygenSaturationSeries(start: Instant, duration: Duration): List<OxygenSaturationEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun generateDefaultStepsSeries(start: Instant, duration: Duration): List<StepsEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun generateDefaultSpeedSeries(start: Instant, duration: Duration): List<SpeedEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
 }

@@ -50,8 +50,50 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedDistances, correctionDistancesRatio) = cleanData(
         list = raw.distance,
         timeSortKey = { it.end },
-        isInvalid = { it.length.inMeters() <= 0 }, //filter out negative distance entries
-        distinctByKey = { it.start to it.end } //if same end and start time, we treat as duplicate
+        isInvalid = { it.length.inMeters() <= 0 },
+        distinctByKey = { it.start to it.end }
+    )
+
+    val (cleanedElevationGains, correctionElevationGainsRatio) = cleanData(
+        list = raw.elevationGained,
+        timeSortKey = { it.end },
+        isInvalid = { it.length.inMeters() <= 0 },
+        distinctByKey = { it.start to it.end }
+    )
+
+    val (cleanedSkinTemperatures, correctionSkinTemperaturesRatio) = cleanData(
+        list = raw.skinTemperature,
+        timeSortKey = { it.time },
+        isInvalid = { it.temperature.inCelsius() !in 35.0..42.0 },
+        distinctByKey = { it.time }
+    )
+
+    val(cleanedHeartRateVariabilities, correctionHeartRateVariabilitiesRatio) = cleanData(
+        list = raw.heartRateVariability,
+        timeSortKey = { it.time },
+        isInvalid = { it.variability < 0 },
+        distinctByKey = { it.time }
+    )
+
+    val(cleanedOxygenSaturations, correctionOxygenSaturationsRatio) = cleanData(
+        list = raw.oxygenSaturation,
+        timeSortKey = { it.time },
+        isInvalid = { it.percentage.toDouble() !in 0.0..100.0 },
+        distinctByKey = { it.time }
+    )
+
+    val(cleanedSteps, correctionStepsRatio) = cleanData(
+        list = raw.steps,
+        timeSortKey = { it.end },
+        isInvalid = { it.count <= 0 },
+        distinctByKey = { it.start to it.end }
+    )
+
+    val(cleanedSpeeds, correctionSpeedsRatio) = cleanData(
+        list = raw.speed,
+        timeSortKey = { it.end },
+        isInvalid = { it.velocity.inKilometersPerHour() < 0 },
+        distinctByKey = { it.start to it.end }
     )
 
     return Pair(
@@ -59,13 +101,27 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
             timeStart = raw.timeStart,
             duration = raw.duration,
             heartRate = cleanedHeartRates,
-            distance = cleanedDistances
+            distance = cleanedDistances,
+            elevationGained = cleanedElevationGains,
+            skinTemperature = cleanedSkinTemperatures,
+            heartRateVariability = cleanedHeartRateVariabilities,
+            oxygenSaturation = cleanedOxygenSaturations,
+            steps = cleanedSteps,
+            speed = cleanedSpeeds
         ),
 
         QualityRatios(
             ratiosPerMetric = mapOf(
                 TimeSeriesMetric.HEART_RATE to Percentage(correctionHeartRatio),
-                TimeSeriesMetric.DISTANCE to Percentage(correctionDistancesRatio)
+                TimeSeriesMetric.DISTANCE to Percentage(correctionDistancesRatio),
+                TimeSeriesMetric.ELEVATION_GAINED to Percentage(correctionElevationGainsRatio),
+                TimeSeriesMetric.SKIN_TEMPERATURE to Percentage(correctionSkinTemperaturesRatio),
+                TimeSeriesMetric.HEART_RATE_VARIABILITY to Percentage(correctionHeartRateVariabilitiesRatio),
+                TimeSeriesMetric.OXYGEN_SATURATION to Percentage(correctionOxygenSaturationsRatio),
+                TimeSeriesMetric.STEPS to Percentage(correctionStepsRatio),
+                TimeSeriesMetric.Speed to Percentage(correctionSpeedsRatio)
+
+
             )
         )
     )
