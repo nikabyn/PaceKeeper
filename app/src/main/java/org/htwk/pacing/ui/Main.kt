@@ -1,6 +1,15 @@
 package org.htwk.pacing.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -73,31 +82,34 @@ fun Main() {
         val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
         val snackbarHostState = remember { SnackbarHostState() }
 
-
-        if (parentRoute == "main_nav") {
-            Scaffold(
-                bottomBar = { NavBar(navController, selectedDestination) },
-                snackbarHost = {
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        snackbar = { data ->
-                            Snackbar(data, shape = RoundedCornerShape(10.dp))
-                        })
+        Scaffold(
+            bottomBar = {
+                AnimatedVisibility(
+                    visible = parentRoute == "main_nav",
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut()
+                ) {
+                    NavBar(
+                        navController = navController,
+                        selectedDestination = selectedDestination
+                    )
                 }
-            ) { contentPadding ->
-                AppNavHost(
-                    navController = navController,
-                    snackbarHostState = snackbarHostState,
-                    modifier = Modifier
-                        .padding(contentPadding)
-                        .fillMaxSize()
-                )
+            },
+            snackbarHost = {
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    snackbar = { data ->
+                        Snackbar(data, shape = RoundedCornerShape(10.dp))
+                    })
             }
-        } else {
+        ) { contentPadding ->
             AppNavHost(
                 navController = navController,
                 snackbarHostState = snackbarHostState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding)
+                    .fillMaxSize()
             )
         }
     }
@@ -239,7 +251,21 @@ fun AppNavHost(
             }
         }
 
-        composable(route = Route.CONNECTIONS_AND_SERVICES) {
+        composable(
+            route = Route.CONNECTIONS_AND_SERVICES,
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(300)
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
             ConnectionsAndServicesScreen(navController)
         }
 
