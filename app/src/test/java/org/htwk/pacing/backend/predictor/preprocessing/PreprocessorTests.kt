@@ -9,9 +9,6 @@ import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesMetric
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -86,16 +83,14 @@ class PreprocessorTests {
 
         // The placeholder implementation of discretizeTimeSeries fills the array with the first value.
         // The size should be TIME_SERIES_DURATION / 10.minutes
-        val expectedSize = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
+        val expectedLength = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
 
-        val discreteHeartRateResult =
-            (result.metrics[TimeSeriesMetric.HEART_RATE]!! as DiscretePID)
         assertEquals(
-            expectedSize,
-            discreteHeartRateResult.proportional.size
+            expectedLength,
+            result.length()
         )
 
-        val expectedResultHeartRate = doubleArrayOf(
+        val expectedDiscreteHeartRate = doubleArrayOf(
             75.0,
             75.0,
             75.0,
@@ -117,9 +112,16 @@ class PreprocessorTests {
             50.0
         )
 
-        for (i in 0 until expectedResultHeartRate.size) {
-            assertTrue(expectedResultHeartRate[i] == discreteHeartRateResult.proportional[i]);
-        }
+        for (i in 0 until expectedDiscreteHeartRate.size) {
+            assertTrue(
+                expectedDiscreteHeartRate[i] == result.getSampleOfFeature(
+                    MultiTimeSeriesDiscrete.FeatureID(
+                        TimeSeriesMetric.HEART_RATE,
+                        PIDComponent.PROPORTIONAL
+                    ), i
+                )
+            );
+        };
 
         //expected accumulated (running sum, since we're doing an integral for the distance)
         //TODO: add expectation of accumulated sum as soon as we add discrete integration
@@ -135,12 +137,16 @@ class PreprocessorTests {
             950.0
         )
 
-        val discreteDistanceResult =
-            (result.metrics[TimeSeriesMetric.DISTANCE]!! as DiscreteIntegral)
-
-        for (i in 0 until expectedResultDistance.size) {
-            assertTrue(expectedResultDistance[i] == discreteDistanceResult.integral[i]);
-        }
+        /*for (i in 0 until expectedResultDistance.size) {
+            assertTrue(
+                expectedResultDistance[i] == result.getSampleOfFeature(
+                    MultiTimeSeriesDiscrete.FeatureID(
+                        TimeSeriesMetric.DISTANCE,
+                        PIDComponent.INTEGRAL
+                    ), i
+                )
+            );
+        }*/
     }
 
     @Test

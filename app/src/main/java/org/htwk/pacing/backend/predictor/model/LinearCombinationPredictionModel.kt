@@ -2,7 +2,9 @@ package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -10,9 +12,9 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -24,6 +26,10 @@ import kotlin.time.Duration.Companion.minutes
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients
     private var linearCoefficients: List<Double> = listOf()
+    private val predictionTargetFeatureID = MultiTimeSeriesDiscrete.FeatureID(
+        TimeSeriesMetric.HEART_RATE,
+        PIDComponent.PROPORTIONAL
+    )
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
@@ -33,40 +39,23 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @property expectedEnergyLevel The expected (ground truth) energy level for this sample.
      */
     data class TrainingSample(
-        //TODO: (see ui#62) map to actual metric enum -> rework representation of all time series
-        // as abstraction with views into a multik matrix
         val multiExtrapolations: List<Double>,
         val expectedEnergyLevel: Double
     )
 
-    private val trainingSamples: MutableList<TrainingSample> = mutableListOf()
+    private fun createTrainingSamples(
+        input: MultiTimeSeriesDiscrete,
+    ): List<TrainingSample> {
+        val targetTimeSeries = input.getFeatureView(predictionTargetFeatureID).toDoubleArray()
 
-    /**
-     * Sets the number of samples to skip between training samples when generating training data.
-     *
-     * @param stepSize The number of time steps between training samples.
-     * @throws IllegalArgumentException if [stepSize] is outside the valid range.
-     */
-    fun setTrainingStepSize(stepSize: Int) {
-        require(stepSize in 1..<Predictor.TIME_SERIES_SAMPLE_COUNT) { "Invalid training step size: $stepSize" }
-        trainingTimeStepSize = stepSize
-    }
-
-    private var DEFAULT_TRAINING_STEPSIZE: Int =
-        ((17.hours + 10.minutes) / Predictor.TIME_SERIES_STEP_DURATION).toInt()
-    private var trainingTimeStepSize: Int = DEFAULT_TRAINING_STEPSIZE
-
-    fun addTrainingSamplesFromMultiTimeSeriesDiscrete(
-        input: IPreprocessor.MultiTimeSeriesDiscrete,
-    ) {
-        val heartRateTimeSeries =
-            (input.metrics[IPreprocessor.TimeSeriesMetric.HEART_RATE]!! as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID).proportional
         val timeSeriesSize =
-            heartRateTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
+            targetTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
 
-        for (offset in 0..timeSeriesSize step trainingTimeStepSize) {
+        val trainingSamples = mutableListOf<TrainingSample>()
+
+        for (offset in 0..timeSeriesSize) {
             val expected =
-                heartRateTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
+                targetTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
 
             trainingSamples.add(
                 TrainingSample(
@@ -75,6 +64,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
                 )
             )
         }
+
+        return trainingSamples
     }
 
     /**
@@ -86,36 +77,21 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @return A flattened list of extrapolated feature values.
      */
     private fun generateFlattenedMultiExtrapolationResults(
-        input: IPreprocessor.MultiTimeSeriesDiscrete,
+        input: MultiTimeSeriesDiscrete,
         indexOffset: Int = 0
     ): List<Double> {
-        fun extrapolate(series: DoubleArray, subtractFirst: Boolean = false): List<Double> {
-            val extrapolations =
-                LinearExtrapolator.multipleExtrapolate(series, indexOffset).extrapolations
-            return extrapolations.map { (_, line) ->
+        val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
+            val timeSeries = input.getFeatureView((featureID))
+
+            val extrapolations = LinearExtrapolator.multipleExtrapolate(
+                timeSeries,
+                indexOffset
+            ).extrapolations
+
+            extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                if (subtractFirst) result - series[indexOffset] else result
+                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries[indexOffset] else result
             }
-        }
-
-        val flatExtrapolationResults = input.metrics.flatMap { (key, discreteTimeSeriesResult) ->
-            when (key.signalClass) {
-                IPreprocessor.TimeSeriesSignalClass.CONTINUOUS -> {
-                    val discretePID =
-                        discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscretePID
-                    listOf(
-                        extrapolate(discretePID.proportional),
-                        extrapolate(discretePID.integral, subtractFirst = true),
-                        extrapolate(discretePID.derivative)
-                    )
-                }
-
-                IPreprocessor.TimeSeriesSignalClass.AGGREGATED -> {
-                    val discreteIntegral =
-                        discreteTimeSeriesResult as IPreprocessor.DiscreteTimeSeriesResult.DiscreteIntegral
-                    listOf(extrapolate(discreteIntegral.integral, subtractFirst = true))
-                }
-            }.flatten()
         }
 
         return flatExtrapolationResults
@@ -127,7 +103,9 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @throws IllegalStateException if no training samples have been added.
      */
-    fun trainOnStoredSamples() {
+    fun train(input: MultiTimeSeriesDiscrete) {
+        val trainingSamples = createTrainingSamples(input)
+
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
 
         val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
@@ -152,7 +130,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *              time series data, such as heart rate.
      * @return A [Double] representing the predicted energy level.
      */
-    override fun predict(input: IPreprocessor.MultiTimeSeriesDiscrete): Double {
+    override fun predict(input: MultiTimeSeriesDiscrete): Double {
         val flattenedExtrapolations = generateFlattenedMultiExtrapolationResults(input)
 
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations)

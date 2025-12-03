@@ -1,20 +1,17 @@
 package org.htwk.pacing.backend.predictor
 
-import android.util.Log
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
-import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
 
 object Predictor {
-    private const val TAG = "Predictor"
+    private const val LOGGING_TAG = "Predictor"
 
     //time duration/length of input time series
     val TIME_SERIES_DURATION: Duration = Duration.parse("2d")
@@ -25,10 +22,12 @@ object Predictor {
         (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 
     /**
-     * A container for raw, unprocessed, synchronized data from database, like heart rate.
+     * A container for raw, unprocessed, synchronized data from the database, such as heart rate and distance.
      *
      * @property timeStart The common start time for all data streams.
-     * @property metrics A map of metric types to their corresponding time series data.
+     * @property duration The duration of the time series data.
+     * @property heartRate A list of heart rate entries.
+     * @property distance A list of distance entries.
      */
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
@@ -47,26 +46,13 @@ object Predictor {
         val anaerobicThresholdBPM: Double
     )
 
+    //TODO: document side effect of requiring to train on samples first before we can predict
     fun train(
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        var timeSeriesDiscrete: IPreprocessor.MultiTimeSeriesDiscrete
-        val preprocessorDuration = measureTimeMillis {
-            timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
-        }
-        Log.d(TAG, "Preprocessor.run duration: $preprocessorDuration ms")
-
-        val addSamplesDuration = measureTimeMillis {
-            LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
-                timeSeriesDiscrete
-            )
-        }
-        Log.d(TAG, "addTrainingSamplesFromMultiTimeSeriesDiscrete duration: $addSamplesDuration ms")
-
-        val trainDuration =
-            measureTimeMillis { LinearCombinationPredictionModel.trainOnStoredSamples() }
-        Log.d(TAG, "trainOnStoredSamples duration: $trainDuration ms")
+        val mtsd = Preprocessor.run(inputTimeSeries, fixedParameters)
+        LinearCombinationPredictionModel.train(mtsd)
     }
 
     /**

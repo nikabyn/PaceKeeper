@@ -2,8 +2,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.SingleGenericTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor.TimeSeriesSignalClass
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
@@ -24,7 +22,7 @@ object TimeSeriesDiscretizer {
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
      */
     private fun calculateTimeBucketAverages(
-        input: SingleGenericTimeSeriesEntries
+        input: GenericTimedDataPointTimeSeries
     ): SortedMap<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
@@ -56,34 +54,22 @@ object TimeSeriesDiscretizer {
         return timeBucketValues.toSortedMap()
     }
 
-    /**
-     * Converts a sorted list of time buckets into a discrete time series, with optional interpolation.
-     * @param timeBucketAverages A map of discrete time buckets to their average/sum values.
-     * @param doInterpolateBetweenBuckets If true, performs linear interpolation between known data points.
-     * @return A [DoubleArray] of size [Predictor.TIME_SERIES_SAMPLE_COUNT] representing the final, discrete time series.
-     */
-    private fun bucketsToDiscreteTimeSeries(
+    private fun discretizeBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
-        doInterpolateBetweenBuckets: Boolean,
-        targetLength: Int
-    ): DoubleArray {
-        //resulting time series, with interpolated, discrete values
-        val discreteTimeSeries = DoubleArray(targetLength) { 0.0 }
-
-        //TODO: think about extracting this part into separate function
-        //fill known points from map
+        discreteTimeSeries: DoubleArray
+    ) {
         for ((timeStep, value) in timeBucketAverages) {
             val index = timeStep
             if (index in discreteTimeSeries.indices) {
                 discreteTimeSeries[index] = value
             }
         }
+    }
 
-        //we don't want interpolation on time series like distance/steps that are aggregated
-        if (!doInterpolateBetweenBuckets) return discreteTimeSeries
-
-        //TODO: think about extracting this part into separate function
-        //add interpolation steps between those points
+    private fun discreteInterpolateBetweenBuckets(
+        timeBucketAverages: SortedMap<Int, Double>,
+        discreteTimeSeries: DoubleArray
+    ) {
         for ((startPoint, endPoint) in timeBucketAverages.entries.zipWithNext()) {
             val (x0, y0) = startPoint
             val (x1, y1) = endPoint
@@ -99,6 +85,30 @@ object TimeSeriesDiscretizer {
                 }
             }
         }
+    }
+
+    /**
+     * Converts a sorted list of time buckets into a discrete time series, with optional interpolation.
+     * @param timeBucketAverages A map of discrete time buckets to their average/sum values.
+     * @param doInterpolateBetweenBuckets If true, performs linear interpolation between known data points.
+     * @return A [DoubleArray] of size [Predictor.TIME_SERIES_SAMPLE_COUNT] representing the final, discrete time series.
+     */
+    private fun bucketsToDiscreteTimeSeries(
+        timeBucketAverages: SortedMap<Int, Double>,
+        doInterpolateBetweenBuckets: Boolean,
+        targetLength: Int
+    ): DoubleArray {
+        //resulting time series, with interpolated, discrete values
+        val discreteTimeSeries = DoubleArray(targetLength) { 0.0 }
+
+        //fill known points from map
+        discretizeBuckets(timeBucketAverages, discreteTimeSeries)
+
+        //we don't want interpolation on time series like distance/steps that are aggregated
+        if (!doInterpolateBetweenBuckets) return discreteTimeSeries
+
+        //add interpolation steps between those points
+        discreteInterpolateBetweenBuckets(timeBucketAverages, discreteTimeSeries)
 
         return discreteTimeSeries
 
@@ -137,7 +147,7 @@ object TimeSeriesDiscretizer {
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
-        input: SingleGenericTimeSeriesEntries,
+        input: GenericTimedDataPointTimeSeries,
         targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
     ): DoubleArray {
         val timeBucketAverages = calculateTimeBucketAverages(input)
