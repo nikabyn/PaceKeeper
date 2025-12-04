@@ -47,10 +47,11 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.time } //uniqueness based on timestamp
     )
 
+    //maximale geschwindigkeit festlegen um bugs bei standort zu vermeiden
     val (cleanedDistances, correctionDistancesRatio) = cleanData(
         list = raw.distance,
         timeSortKey = { it.end },
-        isInvalid = { it.length.inMeters() <= 0 },
+        isInvalid = { it.length.inMeters() <= 0  },
         distinctByKey = { it.start to it.end }
     )
 
@@ -64,7 +65,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedSkinTemperatures, correctionSkinTemperaturesRatio) = cleanData(
         list = raw.skinTemperature,
         timeSortKey = { it.time },
-        isInvalid = { it.temperature.inCelsius() !in 35.0..42.0 },
+        isInvalid = { it.temperature.inCelsius() !in 25.0..42.0 },
         distinctByKey = { it.time }
     )
 
@@ -75,6 +76,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.time }
     )
 
+    //minimalwert realistisch anpassen
     val(cleanedOxygenSaturations, correctionOxygenSaturationsRatio) = cleanData(
         list = raw.oxygenSaturation,
         timeSortKey = { it.time },
@@ -82,6 +84,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.time }
     )
 
+    //unrealistische werte rausfiltern
     val(cleanedSteps, correctionStepsRatio) = cleanData(
         list = raw.steps,
         timeSortKey = { it.end },
@@ -89,6 +92,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.start to it.end }
     )
 
+    //maximalwert festlegen
     val(cleanedSpeeds, correctionSpeedsRatio) = cleanData(
         list = raw.speed,
         timeSortKey = { it.end },

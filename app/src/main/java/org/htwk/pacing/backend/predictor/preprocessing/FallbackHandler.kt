@@ -210,32 +210,39 @@ object FallbackHandler {
     }
 
     private fun generateDefaultElevationGainedSeries(start: Instant, duration: Duration): List<ElevationGainedEntry> {
-        // TODO: Depends on cache implementation
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
+        val defaultElevationGained = 1
         return emptyList()
     }
 
     private fun generateDefaultSkinTemperatureSeries(start: Instant, duration: Duration): List<SkinTemperatureEntry> {
-        // TODO: Depends on cache implementation
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
         return emptyList()
     }
 
     private fun generateDefaultHeartRateVariabilitySeries(start: Instant, duration: Duration): List<HeartRateVariabilityEntry> {
-        // TODO: Depends on cache implementation
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
         return emptyList()
     }
 
     private fun generateDefaultOxygenSaturationSeries(start: Instant, duration: Duration): List<OxygenSaturationEntry> {
-        // TODO: Depends on cache implementation
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
         return emptyList()
     }
 
     private fun generateDefaultStepsSeries(start: Instant, duration: Duration): List<StepsEntry> {
-        // TODO: Depends on cache implementation
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
         return emptyList()
     }
 
     private fun generateDefaultSpeedSeries(start: Instant, duration: Duration): List<SpeedEntry> {
-        // TODO: Depends on cache implementation
+        val step = Predictor.TIME_SERIES_STEP_DURATION
+        val points = (duration / step).toInt()
         return emptyList()
     }
 
