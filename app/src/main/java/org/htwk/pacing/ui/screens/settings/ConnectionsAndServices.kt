@@ -2,6 +2,7 @@ package org.htwk.pacing.ui.screens.settings
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.DrawableRes
@@ -16,7 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,16 +29,19 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
+import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -46,23 +50,21 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ConnectionsAndServicesScreen(
     navController: NavController,
+    fitbitOauthToken: String?,
     viewModel: ConnectionsAndServicesViewModel = koinViewModel(),
 ) {
-    val context = LocalContext.current
-    val isConnected by viewModel.isConnected.collectAsState()
+    if (fitbitOauthToken != null) {
+        viewModel.storeFitbitOauthToken(fitbitOauthToken)
+    }
 
-    viewModel.checkPermissions()
+    val context = LocalContext.current
+    val isHealthConnectConnected by viewModel.isHealthConnectConnected.collectAsState()
+    val isFitbitConnected by viewModel.isFitbitConnected.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.checkPermissions()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+    LaunchedEffect(Unit) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshConnectedStatus()
         }
     }
 
@@ -86,10 +88,10 @@ fun ConnectionsAndServicesScreen(
             ConnectionCard(
                 name = stringResource(R.string.health_connect),
                 tip = "Request permissions to connect",
-                connected = isConnected,
+                connected = isHealthConnectConnected,
                 iconId = R.drawable.health_connect,
                 onClick = {
-                    if (isConnected) {
+                    if (isHealthConnectConnected) {
                         val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
                         context.startActivity(intent)
                     } else {
@@ -100,9 +102,41 @@ fun ConnectionsAndServicesScreen(
             ConnectionCard(
                 name = stringResource(R.string.fitbit),
                 tip = "Login with Fitbit Account",
-                connected = false,
+                connected = isFitbitConnected,
                 iconId = R.drawable.fitbit,
-                onClick = {},
+                onClick = {
+                    val clientId = "23TLPD"
+                    val scopes = arrayOf(
+                        "activity",
+                        "cardio_fitness",
+                        "electrocardiogram",
+                        "heartrate",
+                        "irregular_rhythm_notifications",
+                        "location",
+                        "nutrition",
+                        "oxygen_saturation",
+                        "respiratory_rate",
+                        "settings",
+                        "sleep",
+                        "temperature",
+                        "weight",
+                    )
+
+                    val authUri = Uri.Builder()
+                        .scheme("https")
+                        .authority("www.fitbit.com")
+                        .path("/oauth2/authorize")
+                        .appendQueryParameter("client_id", clientId)
+                        .appendQueryParameter("response_type", "code")
+                        .appendQueryParameter("scope", scopes.joinToString(separator = " "))
+                        .appendQueryParameter(
+                            "redirect_uri",
+                            "org.htwk.pacing://fitbit_oauth2_redirect"
+                        )
+                        .build()
+                    val intent = Intent(Intent.ACTION_VIEW, authUri)
+                    context.startActivity(intent)
+                },
             )
         }
     }
@@ -169,19 +203,45 @@ fun ConnectionCard(
     }
 }
 
-class ConnectionsAndServicesViewModel(context: Context) : ViewModel() {
+class ConnectionsAndServicesViewModel(context: Context, val db: PacingDatabase) : ViewModel() {
     private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-    private val _isConnected = MutableStateFlow(false)
-    internal val isConnected: StateFlow<Boolean> = _isConnected
+    private val refreshTrigger = MutableStateFlow(Unit)
 
-    fun checkPermissions() {
+    fun refreshConnectedStatus() {
+        viewModelScope.launch { refreshTrigger.emit(Unit) }
+    }
+
+    val isHealthConnectConnected = refreshTrigger.map {
+        val granted = try {
+            client.permissionController.getGrantedPermissions()
+        } catch (_: Exception) {
+            Log.e("SettingsViewModel", "Failed to get granted permissions.")
+            return@map false
+        }
+        wantedPermissions.any { it in granted }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(),
+        false
+    )
+
+    val isFitbitConnected = db.userProfileDao()
+        .getCurrentProfile()
+        .map { userProfile ->
+            // TODO: ping fitbit to check whether token is still valid
+            userProfile?.fitbitOauthToken != null
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(),
+            false
+        )
+
+    fun storeFitbitOauthToken(token: String) {
         viewModelScope.launch {
-            try {
-                val granted = client.permissionController.getGrantedPermissions()
-                _isConnected.value = wantedPermissions.any { it in granted }
-            } catch (_: Exception) {
-                Log.e("SettingsViewModel", "Failed to get granted permissions.")
-            }
+            val newProfile = db.userProfileDao()
+                .getCurrentProfileDirect()!!
+                .copy(fitbitOauthToken = token)
+            db.userProfileDao().insertOrUpdate(newProfile)
         }
     }
 }

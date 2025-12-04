@@ -20,6 +20,8 @@ data class UserProfileEntry(
     val userId: String,
     val nickname: String?,
 
+    val fitbitOauthToken: String?,
+
     val sex: Sex,
     val birthYear: Int?,
     val heightCm: Int?,
@@ -69,6 +71,7 @@ data class UserProfileEntry(
                 // id wird von Room generiert (0L)
                 userId = shortUserId,
                 nickname = null,
+                fitbitOauthToken = null,
                 sex = Sex.FEMALE,
                 birthYear = 1990,
                 heightCm = null,

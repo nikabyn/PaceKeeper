@@ -1,5 +1,10 @@
 package org.htwk.pacing.ui
 
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.os.Parcelable
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -38,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -45,6 +51,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
@@ -78,7 +85,7 @@ fun Main() {
     PacingTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
         val navBackStackEntry = navController.currentBackStackEntryAsState()
-        val parentRoute = navBackStackEntry.value?.destination?.parent?.route
+        val parentRoute = navBackStackEntry.value?.destination?.parent?.route ?: "main_nav"
         val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
         val snackbarHostState = remember { SnackbarHostState() }
 
@@ -253,6 +260,11 @@ fun AppNavHost(
 
         composable(
             route = Route.CONNECTIONS_AND_SERVICES,
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "org.htwk.pacing://fitbit_oauth2_redirect"
+                },
+            ),
             enterTransition = {
                 slideInHorizontally(
                     initialOffsetX = { fullWidth -> fullWidth },
@@ -265,8 +277,32 @@ fun AppNavHost(
                     animationSpec = tween(300)
                 )
             }
-        ) {
-            ConnectionsAndServicesScreen(navController)
+        ) { backStackEntry ->
+            val deepLinkIntent = backStackEntry.arguments?.getParcelableCompat<Intent>(
+                NavController.KEY_DEEP_LINK_INTENT
+            )
+            val code = deepLinkIntent?.data?.getQueryParameter("code")
+            if (code != null) {
+                Log.d("NavHost", "Received OAuth deep link = ${deepLinkIntent.data}")
+            }
+
+            ConnectionsAndServicesScreen(navController, fitbitOauthToken = code)
+        }
+
+        composable(
+            route = "fitbit_oauth2_redirect",
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "org.htwk.pacing://fitbit_oauth2_redirect"
+                },
+            ),
+        ) { backStackEntry ->
+            val deepLinkIntent = backStackEntry.arguments?.getParcelableCompat<Intent>(
+                NavController.KEY_DEEP_LINK_INTENT
+            )
+            Log.d("NavHost", "Received OAuth deep link = ${deepLinkIntent?.data}")
+            val code = deepLinkIntent?.data?.getQueryParameter("code")
+            Text("redirect code = $code")
         }
 
             composable(
@@ -280,3 +316,11 @@ fun AppNavHost(
         }
     }
 }
+
+private inline fun <reified T : Parcelable> Bundle.getParcelableCompat(key: String): T? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelable(key, T::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        getParcelable(key) as? T
+    }
