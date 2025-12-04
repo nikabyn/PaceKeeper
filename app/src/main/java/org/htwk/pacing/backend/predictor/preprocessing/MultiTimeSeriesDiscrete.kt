@@ -197,7 +197,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
      * constant time for append operations.
      *
      * @param minimumSteps The minimum number of time steps that must be accommodatable.
-     */// ---- capacity management ----
+     */
     fun ensureCapacity(minimumSteps: Int) {
         if (minimumSteps <= capacityInSteps) return;
 
@@ -234,7 +234,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          * - `FeatureID(HEART_RATE, I)` -> `1`
          * - `FeatureID(HEART_RATE, D)` -> `2`
          * - `FeatureID(DISTANCE, P)`   -> `3`
-         * - ... and so on.
+         * - ... and so on for more featuresIDs ...
          *
          * This allows for efficient, `O(1)` access to a feature's time series data row within the matrix.
          */
