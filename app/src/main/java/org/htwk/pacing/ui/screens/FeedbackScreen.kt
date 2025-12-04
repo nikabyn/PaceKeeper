@@ -8,17 +8,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.SettingsSubScreen
 
 @Composable
-fun ServicesScreen(
+fun FeedbackScreen(
     navController: NavController,
     viewModel: UserProfileViewModel
 ) {
     SettingsSubScreen(
-        title = stringResource(R.string.title_settings_services),
+        title = stringResource(R.string.title_settings_feedback),
         navController = navController,
         viewModel = viewModel
     ) {
@@ -29,7 +30,7 @@ fun ServicesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Go Nika!",
+                "Platzhalter für "+stringResource(R.string.title_settings_feedback),
                 style = MaterialTheme.typography.titleMedium
             )
         }

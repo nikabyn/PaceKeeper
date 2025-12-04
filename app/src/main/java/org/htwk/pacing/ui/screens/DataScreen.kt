@@ -13,15 +13,15 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.SettingsSubScreen
 
 @Composable
-fun ServicesScreen(
+fun DataScreen(
     navController: NavController,
     viewModel: UserProfileViewModel
-) {
-    SettingsSubScreen(
-        title = stringResource(R.string.title_settings_services),
-        navController = navController,
-        viewModel = viewModel
     ) {
+        SettingsSubScreen(
+            title = stringResource(R.string.title_settings_data),
+            navController = navController,
+            viewModel = viewModel
+        ) {
         Column(
             modifier = Modifier
                 .padding(16.dp),
@@ -29,7 +29,7 @@ fun ServicesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Go Nika!",
+                "Platzhalter",
                 style = MaterialTheme.typography.titleMedium
             )
         }

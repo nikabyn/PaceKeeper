@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
@@ -42,12 +44,21 @@ fun UniversalSettingsCard(
     description: String,
     navController: NavController,
     icon: ImageVector? = null,
+    style: CornerBasedShape,
     @DrawableRes iconRes: Int? = null
 ) {
+
     Card(
         onClick = { navController.navigate(route) },
-        colors = CardStyle.colors,
-        shape = CardStyle.shape,
+        colors =
+            if (route != "feedback")
+                CardStyle.colors
+            else
+                androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+        shape = style,
         modifier = Modifier.fillMaxWidth().padding(bottom=4.dp)
     ) {
         Row(
@@ -58,7 +69,7 @@ fun UniversalSettingsCard(
                 .padding(
                     horizontal = Spacing.large,
                     vertical = Spacing.largeIncreased,
-                )
+                ).height(50.dp) //ensures same height for all cards even if subtitle is missing
         ) {
             // show icon - Material Icon or Drawable Resource
             when {

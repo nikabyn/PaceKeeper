@@ -115,13 +115,13 @@
     <string name="title_settings_services">Verbindungen &amp; Dienste</string>
     <string name="title_settings_data">Daten &amp; Speicher</string>
     <string name="title_settings_notifications">Benachrichtigungen</string>
-    <string name="title_settings_appereance">Erscheinungsbild</string>
+    <string name="title_settings_appeareance">Erscheinungsbild</string>
     <string name="title_settings_information">Informationen</string>
     <string name="title_settings_feedback">Feedback</string>
     <string name="subtitle_settings_services">Profil bearbeiten</string>
     <string name="subtitle_settings_data">Health Connect, Fitbit</string>
     <string name="subtitle_settings_notifications">Deine erfassten Daten verwalten</string>
-    <string name="subtitle_settings_appereance"></string>
+    <string name="subtitle_settings_appeareance"></string>
     <string name="subtitle_settings_information">Legal, Privacy, Introduction</string>
     <string name="subtitle_settings_feedback">Hilf uns, diese App zu verbessern!</string>
 </resources>
