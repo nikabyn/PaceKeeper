@@ -40,10 +40,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.data_collection.fitbit.OAuth2Provider
+import org.htwk.pacing.backend.OAuth2Provider
+import org.htwk.pacing.backend.OAuth2Result
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -178,7 +178,7 @@ class ConnectionsAndServicesViewModel(
     private val db: PacingDatabase,
     private val fitbitOAuth: OAuth2Provider,
 ) : ViewModel() {
-    companion object {
+    private companion object {
         const val TAG = "ConnectionsAndServicesViewModel"
     }
 
@@ -219,27 +219,31 @@ class ConnectionsAndServicesViewModel(
             "weight",
         )
 
-        fitbitOAuth.openLogin(context, scopes.toList())
+        fitbitOAuth.startLogin(context, scopes.toList())
     }
 
     fun onFitbitOauthRedirect(uri: Uri) {
-        Log.d("ConnectionsAndServicesViewModel", "Received OAuth redirect = $uri")
-
         viewModelScope.launch {
-            val tokens = try {
-                fitbitOAuth.onLoginResult(uri)
-            } catch (e: Throwable) {
-                Log.e(TAG, "Caught error while trying to request OAuth access token: $e")
-                return@launch
+            val loginResult = fitbitOAuth.completeLogin(uri)
+            val tokenResponse = when (loginResult) {
+                is OAuth2Result.TokenResponse -> loginResult
+
+                is OAuth2Result.RedirectUriError -> {
+                    Log.e(TAG, "Invalid redirect uri, ${loginResult.name}: $uri")
+                    return@launch
+                }
+
+                is OAuth2Result.HttpError -> {
+                    Log.e(TAG, "Error in http request, ${loginResult.status}: ${loginResult.body}")
+                    return@launch
+                }
             }
-            Log.d(TAG, "tokens = $tokens")
 
-            // TODO: Properly save tokens into user profile
-
+            // Store tokens in database
             val newProfile = db.userProfileDao()
                 .getCurrentProfileDirect()
-                ?.copy(fitbitOauthToken = tokens.accessToken)
-                ?: UserProfileEntry.createInitial()
+                ?.copy(fitbitTokenResponse = tokenResponse)
+                ?: error("Unreachable: Database must always have a user profile")
             db.userProfileDao().insertOrUpdate(newProfile)
         }
     }
@@ -248,7 +252,7 @@ class ConnectionsAndServicesViewModel(
         .getCurrentProfile()
         .map { userProfile ->
             // TODO: ping fitbit to check whether token is still valid
-            userProfile?.fitbitOauthToken != null
+            userProfile?.fitbitTokenResponse != null
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(),

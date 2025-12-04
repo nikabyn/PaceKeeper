@@ -6,7 +6,6 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import org.htwk.pacing.backend.data_collection.fitbit.OAuth2Provider
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
@@ -83,6 +82,7 @@ val appModule = module {
             clientId = "23TLPD",
             authUri = "https://www.fitbit.com/oauth2/authorize".toUri(),
             tokenUri = "https://api.fitbit.com/oauth2/token".toUri(),
+            revokeUri = "https://api.fitbit.com/oauth2/revoke".toUri(),
             redirectUri = "org.htwk.pacing://fitbit_oauth2_redirect".toUri(),
         )
     }

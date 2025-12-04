@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -280,12 +281,9 @@ fun AppNavHost(
             val deepLinkIntent = backStackEntry.arguments?.getParcelableCompat<Intent>(
                 NavController.KEY_DEEP_LINK_INTENT
             )
-            val fitbitOauthUri =
-                if (deepLinkIntent?.data?.authority == "fitbit_oauth2_redirect") {
-                    deepLinkIntent.data
-                } else {
-                    null
-                }
+            val fitbitOauthUri = deepLinkIntent?.data
+                ?.takeIf { uri -> uri.authority == "fitbit_oauth2_redirect" }
+                ?.also { uri -> Log.d("AppNavHost", "Received Fitbit OAuth redirect = $uri") }
 
             ConnectionsAndServicesScreen(navController, fitbitOauthUri)
         }

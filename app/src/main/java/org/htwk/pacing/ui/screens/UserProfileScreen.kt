@@ -409,7 +409,7 @@ class UserProfileViewModel(
         return UserProfileEntry(
             userId = "",
             nickname = null,
-            fitbitOauthToken = null,
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.UNSPECIFIED,
             birthYear = null,
             heightCm = null,
