@@ -279,7 +279,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             mtsd.setStepCount(stepCount)
 
             TimeSeriesMetric.entries.forEach { metric ->
-                //TODO: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
+                //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
                 val discreteProportional = discretizeTimeSeries(
                     GenericTimedDataPointTimeSeries(
                         timeStart = raw.timeStart,
