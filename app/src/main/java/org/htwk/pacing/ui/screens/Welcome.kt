@@ -33,6 +33,7 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.ui.logo.BlinkLogo
 import org.htwk.pacing.ui.logo.Floaty
 import org.htwk.pacing.ui.logo.RollingEntry
+import org.htwk.pacing.ui.logo.shuffleSmileys
 import org.htwk.pacing.ui.theme.Spacing
 
 data class OnboardingPage(
@@ -53,6 +54,12 @@ val pages = listOf(
         "Pacing verstehen",
         "Vermeide den Crash. Bleibe in deinem sicheren Bereich.",
         R.drawable.rounded_show_chart_24
+    ),
+    OnboardingPage(
+        "Dich selbst entdecken",
+        "Beobachte deine Symptome. Erkenne deine Muster.",
+        R.drawable.very_happy,
+        R.drawable.very_sad
     ),
     OnboardingPage(
         "Loslegen",
@@ -78,17 +85,28 @@ fun WelcomeScreen(onFinished: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(
+                /*
                 Brush.verticalGradient(
                     listOf(
                         MaterialTheme.colorScheme.primaryContainer,
                         MaterialTheme.colorScheme.background
                     )
                 )
+                */
+                if (isSystemInDarkTheme())
+                    Color(0xff320014)
+                else
+                    Color(0xFFFFF0F6)
             )
             .padding(Spacing.medium)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f).fillMaxWidth()) { pageIndex ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) { pageIndex ->
                 OnboardingPageContent(
                     page = pages[pageIndex],
                     pageIndex = pageIndex,
@@ -120,7 +138,13 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                     repeat(pages.size) { iteration ->
                         val color =
                             if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-                        Box(modifier = Modifier.padding(4.dp).clip(CircleShape).background(color).size(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .size(10.dp)
+                        )
                     }
                 }
 
@@ -138,7 +162,12 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                     modifier = Modifier.align(Alignment.CenterEnd)
                 ) {
                     AnimatedVisibility(visible = isLastPage) { Icon(Icons.Default.Check, "Fertig") }
-                    AnimatedVisibility(visible = !isLastPage) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "Weiter") }
+                    AnimatedVisibility(visible = !isLastPage) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            "Weiter"
+                        )
+                    }
                 }
             }
         }
@@ -180,7 +209,39 @@ fun OnboardingPageContent(
                 }
             }
 
+            1 -> {
+                Box(
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = page.icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(200.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             2 -> {
+                RollingEntry {
+                    Floaty {
+                        if (page.optionalIconClosed != null) {
+                            shuffleSmileys(
+                                open = page.icon,
+                                closed = page.optionalIconClosed
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(page.icon),
+                                contentDescription = null,
+                                modifier = Modifier.size(200.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            3 -> {
                 if (isChecked && page.optionalIconClosed != null) {
                     Image(
                         painter = painterResource(id = page.optionalIconClosed),
@@ -192,20 +253,6 @@ fun OnboardingPageContent(
                         painter = painterResource(page.icon),
                         contentDescription = null,
                         modifier = Modifier.size(200.dp)
-                    )
-                }
-            }
-
-            else -> {
-
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = page.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(200.dp),
-                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

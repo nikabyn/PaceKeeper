@@ -47,3 +47,28 @@ fun BlinkLogo(
         modifier = Modifier.size(160.dp)
     )
 }
+
+@Composable
+fun shuffleSmileys(
+    open: Int,
+    closed: Int
+) {
+    var blinking by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(1000)
+
+        while (true) {
+            delay((2200..4500).random().toLong())
+            blinking = true
+            delay((1000..3000).random().toLong())
+            blinking = false
+        }
+    }
+
+    Image(
+        painter = painterResource(if (blinking) closed else open),
+        contentDescription = null,
+        modifier = Modifier.size(160.dp)
+    )
+}
