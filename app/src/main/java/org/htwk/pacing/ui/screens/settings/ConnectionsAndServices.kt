@@ -40,8 +40,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.data_collection.fitbit.OAuth2Provider
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -50,11 +52,11 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ConnectionsAndServicesScreen(
     navController: NavController,
-    fitbitOauthToken: String?,
+    fitbitOauthUri: Uri? = null,
     viewModel: ConnectionsAndServicesViewModel = koinViewModel(),
 ) {
-    if (fitbitOauthToken != null) {
-        viewModel.storeFitbitOauthToken(fitbitOauthToken)
+    if (fitbitOauthUri != null) {
+        viewModel.onFitbitOauthRedirect(fitbitOauthUri)
     }
 
     val context = LocalContext.current
@@ -104,39 +106,7 @@ fun ConnectionsAndServicesScreen(
                 tip = "Login with Fitbit Account",
                 connected = isFitbitConnected,
                 iconId = R.drawable.fitbit,
-                onClick = {
-                    val clientId = "23TLPD"
-                    val scopes = arrayOf(
-                        "activity",
-                        "cardio_fitness",
-                        "electrocardiogram",
-                        "heartrate",
-                        "irregular_rhythm_notifications",
-                        "location",
-                        "nutrition",
-                        "oxygen_saturation",
-                        "respiratory_rate",
-                        "settings",
-                        "sleep",
-                        "temperature",
-                        "weight",
-                    )
-
-                    val authUri = Uri.Builder()
-                        .scheme("https")
-                        .authority("www.fitbit.com")
-                        .path("/oauth2/authorize")
-                        .appendQueryParameter("client_id", clientId)
-                        .appendQueryParameter("response_type", "code")
-                        .appendQueryParameter("scope", scopes.joinToString(separator = " "))
-                        .appendQueryParameter(
-                            "redirect_uri",
-                            "org.htwk.pacing://fitbit_oauth2_redirect"
-                        )
-                        .build()
-                    val intent = Intent(Intent.ACTION_VIEW, authUri)
-                    context.startActivity(intent)
-                },
+                onClick = { viewModel.openFitbitLogin() },
             )
         }
     }
@@ -203,7 +173,15 @@ fun ConnectionCard(
     }
 }
 
-class ConnectionsAndServicesViewModel(context: Context, val db: PacingDatabase) : ViewModel() {
+class ConnectionsAndServicesViewModel(
+    private val context: Context,
+    private val db: PacingDatabase,
+    private val fitbitOAuth: OAuth2Provider,
+) : ViewModel() {
+    companion object {
+        const val TAG = "ConnectionsAndServicesViewModel"
+    }
+
     private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
     private val refreshTrigger = MutableStateFlow(Unit)
 
@@ -225,6 +203,47 @@ class ConnectionsAndServicesViewModel(context: Context, val db: PacingDatabase) 
         false
     )
 
+    fun openFitbitLogin() {
+        val scopes = arrayOf(
+            "activity",
+            "cardio_fitness",
+            "electrocardiogram",
+            "heartrate",
+            "irregular_rhythm_notifications",
+            "location",
+            "nutrition",
+            "oxygen_saturation",
+            "respiratory_rate",
+            "sleep",
+            "temperature",
+            "weight",
+        )
+
+        fitbitOAuth.openLogin(context, scopes.toList())
+    }
+
+    fun onFitbitOauthRedirect(uri: Uri) {
+        Log.d("ConnectionsAndServicesViewModel", "Received OAuth redirect = $uri")
+
+        viewModelScope.launch {
+            val tokens = try {
+                fitbitOAuth.onLoginResult(uri)
+            } catch (e: Throwable) {
+                Log.e(TAG, "Caught error while trying to request OAuth access token: $e")
+                return@launch
+            }
+            Log.d(TAG, "tokens = $tokens")
+
+            // TODO: Properly save tokens into user profile
+
+            val newProfile = db.userProfileDao()
+                .getCurrentProfileDirect()
+                ?.copy(fitbitOauthToken = tokens.accessToken)
+                ?: UserProfileEntry.createInitial()
+            db.userProfileDao().insertOrUpdate(newProfile)
+        }
+    }
+
     val isFitbitConnected = db.userProfileDao()
         .getCurrentProfile()
         .map { userProfile ->
@@ -235,13 +254,4 @@ class ConnectionsAndServicesViewModel(context: Context, val db: PacingDatabase) 
             SharingStarted.WhileSubscribed(),
             false
         )
-
-    fun storeFitbitOauthToken(token: String) {
-        viewModelScope.launch {
-            val newProfile = db.userProfileDao()
-                .getCurrentProfileDirect()!!
-                .copy(fitbitOauthToken = token)
-            db.userProfileDao().insertOrUpdate(newProfile)
-        }
-    }
 }
