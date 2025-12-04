@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -47,9 +48,9 @@ fun UserProfileCard(navController: NavController) {
             )
         ) {
             Icon(
-                Icons.Filled.Person,
+                painter = painterResource(R.drawable.settings_person),
                 contentDescription = stringResource(R.string.icon_profile_description),
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(22.dp)
             )
             Column {
                 Text(

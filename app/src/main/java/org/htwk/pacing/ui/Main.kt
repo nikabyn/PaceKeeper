@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -39,8 +40,13 @@ import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
+import org.htwk.pacing.ui.screens.FeedbackScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
+import org.htwk.pacing.ui.screens.NotificationsScreen
+import org.htwk.pacing.ui.screens.InformationScreen
+import org.htwk.pacing.ui.screens.DataScreen
+import org.htwk.pacing.ui.screens.AppeareanceScreen
 import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.theme.PacingTheme
@@ -137,7 +143,12 @@ object Route {
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
     const val USERPROFILE = "userprofile"
-    const val SERVICES = "SERVICES"
+    const val SERVICES = "services"
+    const val FEEDBACK = "feedback"
+    const val DATA = "data"
+    const val NOTIFICATIONS = "notifications"
+    const val APPEAREANCE = "appeareance"
+    const val INFORMATION = "information"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 }
 
@@ -170,19 +181,56 @@ fun AppNavHost(
                 )
             }
             composable(Route.SERVICES) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
                 ServicesScreen(
-                    navController = navController
+                    navController = navController,
+                    viewModel = userProfileViewModel
                 )
             }
-        }
+            composable(Route.FEEDBACK) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                FeedbackScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel
+                )
+            }
+            composable(Route.DATA) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                DataScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel
+                )
+            }
+            composable(Route.NOTIFICATIONS) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                NotificationsScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel
+                )
+            }
+            composable(Route.APPEAREANCE) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                AppeareanceScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel
+                )
+            }
+            composable(Route.INFORMATION) {
+                val userProfileViewModel: UserProfileViewModel = koinViewModel()
+                InformationScreen(
+                    navController = navController,
+                    viewModel = userProfileViewModel
+                )
+            }
 
-        composable(
-            route = "symptoms/{feeling}",
-            arguments = listOf(navArgument("feeling") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
-            val feeling = Feeling.fromInt(feelingLevel)
-            SymptomScreen(navController, feeling)
+            composable(
+                route = "symptoms/{feeling}",
+                arguments = listOf(navArgument("feeling") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
+                val feeling = Feeling.fromInt(feelingLevel)
+                SymptomScreen(navController, feeling)
+            }
         }
     }
 }

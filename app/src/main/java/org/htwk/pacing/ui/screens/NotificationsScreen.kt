@@ -13,12 +13,12 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.SettingsSubScreen
 
 @Composable
-fun ServicesScreen(
+fun NotificationsScreen(
     navController: NavController,
     viewModel: UserProfileViewModel
 ) {
     SettingsSubScreen(
-        title = stringResource(R.string.title_settings_services),
+        title = stringResource(R.string.title_settings_notifications),
         navController = navController,
         viewModel = viewModel
     ) {
@@ -29,9 +29,10 @@ fun ServicesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Go Nika!",
+                "Platzhalter",
                 style = MaterialTheme.typography.titleMedium
             )
+
         }
     }
 }

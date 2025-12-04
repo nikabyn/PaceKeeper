@@ -112,13 +112,13 @@
     <string name="title_settings_services">Connections &amp; Services</string>
     <string name="title_settings_data">Data &amp; Storage</string>
     <string name="title_settings_notifications">Notifications</string>
-    <string name="title_settings_appereance">Appereance</string>
+    <string name="title_settings_appeareance">Appeareance</string>
     <string name="title_settings_information">Information</string>
     <string name="title_settings_feedback">Feedback</string>
     <string name="subtitle_settings_services">Edit Profile</string>
     <string name="subtitle_settings_data">Health Connect, Fitbit</string>
     <string name="subtitle_settings_notifications">Manage your tracked data</string>
-    <string name="subtitle_settings_appereance"> </string>
+    <string name="subtitle_settings_appeareance"> </string>
     <string name="subtitle_settings_information">Legal, Privacy, Introduction </string>
     <string name="subtitle_settings_feedback">Help us to improve this app!</string>
 
