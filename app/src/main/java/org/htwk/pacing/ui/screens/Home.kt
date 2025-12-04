@@ -39,6 +39,7 @@ import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.Series
+import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -77,8 +78,8 @@ fun HomeScreen(
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(30.dp),
-            modifier = Modifier.padding(all = 40.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
+            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
         ) {
             EnergyPredictionCard(
                 series = series,
@@ -88,12 +89,12 @@ fun HomeScreen(
                 maxPrediction = maxPrediction,
                 modifier = Modifier.height(300.dp)
             )
+            LabelCard(energy = currentEnergy)
             BatteryCard(
                 energy = currentEnergy,
                 viewModel = viewModel,
                 snackbarHostState = snackbarHostState,
             )
-            LabelCard(energy = currentEnergy)
             FeelingSelectionCard(navController)
         }
     }

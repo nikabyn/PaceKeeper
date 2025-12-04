@@ -1,15 +1,12 @@
 package org.htwk.pacing.ui.components
 
 import android.util.Log
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,6 +23,8 @@ import androidx.health.connect.client.HealthConnectClient
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectHelper
+import org.htwk.pacing.ui.theme.CardStyle
+import org.htwk.pacing.ui.theme.Spacing
 import java.time.ZonedDateTime
 
 /**
@@ -67,14 +65,18 @@ fun HeartRateCard() {
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-            .padding(10.dp)
+    Card(
+        colors = CardStyle.colors,
+        shape = CardStyle.shape,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.largeIncreased
+                )
+                .fillMaxWidth()
+        ) {
 
             Text(stringResource(R.string.heart_rate_24h_bpm, avgHeartRate?.toInt() ?: "-"))
             Spacer(Modifier.height(8.dp))

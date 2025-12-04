@@ -5,14 +5,12 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,6 +29,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectHelper.insertHeartRateRecords
+import org.htwk.pacing.ui.theme.CardStyle
+import org.htwk.pacing.ui.theme.PrimaryButtonStyle
+import org.htwk.pacing.ui.theme.Spacing
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -70,35 +70,42 @@ fun ImportDataHealthConnect() {
     )
 
 
-    Column(
-        modifier = Modifier
-            .padding(top = 16.dp)
-            .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-            .clip(RoundedCornerShape(8.dp))
-            .padding(16.dp)
+
+    Card(
+        colors = CardStyle.colors,
+        shape = CardStyle.shape,
     ) {
-        Text(
-            stringResource(R.string.import_heart_rate_data_csv),
-            style = MaterialTheme.typography.titleMedium
-        )
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = { launcher.launch(arrayOf("text/*")) }) {
-            Text(stringResource(R.string.select_file))
-        }
-        if (name.isNotEmpty()) Text(name, Modifier.padding(top = 8.dp))
-        Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = {
-                scope.launch(Dispatchers.IO) {
-                    status = importHeartRateData(context, uri)
-                }
-            },
-            enabled = uri != null
+        Column(
+            modifier = Modifier
+                .padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.largeIncreased
+                )
+                .fillMaxWidth()
         ) {
-            Text(stringResource(R.string.import_start))
+            Text(
+                stringResource(R.string.import_heart_rate_data_csv),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = { launcher.launch(arrayOf("text/*")) }, style = PrimaryButtonStyle) {
+                Text(stringResource(R.string.select_file))
+            }
+            if (name.isNotEmpty()) Text(name, Modifier.padding(top = 8.dp))
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    scope.launch(Dispatchers.IO) {
+                        status = importHeartRateData(context, uri)
+                    }
+                },
+                style = PrimaryButtonStyle,
+                enabled = uri != null
+            ) {
+                Text(stringResource(R.string.import_start))
+            }
+            if (status.isNotEmpty()) Text(status, Modifier.padding(top = 12.dp))
         }
-        if (status.isNotEmpty()) Text(status, Modifier.padding(top = 12.dp))
     }
 }
 

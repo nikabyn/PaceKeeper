@@ -6,9 +6,9 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,6 +58,10 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.screens.HomeViewModel
+import org.htwk.pacing.ui.theme.ButtonStyle
+import org.htwk.pacing.ui.theme.PrimaryButtonStyle
+import org.htwk.pacing.ui.theme.SecondaryButtonStyle
+import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.extendedColors
 
 /**
@@ -135,15 +139,17 @@ fun BatteryCard(
             adjustedEnergy = adjustedEnergy.doubleValue,
             adjusting = adjustingEnergy.value,
             onAdjust = { adjustedEnergy.doubleValue = it },
+            modifier = Modifier.height(120.dp),
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
         ) {
             if (!adjustingEnergy.value) {
                 ActionButton(
                     onClick = onCorrect,
+                    style = PrimaryButtonStyle,
                     iconPainter = painterResource(R.drawable.rounded_check_24),
                     actionText = stringResource(R.string.correct),
                     modifier = Modifier
@@ -152,6 +158,7 @@ fun BatteryCard(
                 )
                 ActionButton(
                     onClick = onAdjust,
+                    style = PrimaryButtonStyle,
                     iconPainter = painterResource(R.drawable.rounded_edit_24px),
                     actionText = "Adjust",
                     modifier = Modifier
@@ -159,8 +166,9 @@ fun BatteryCard(
                         .testTag("ValidationAdjustButton"),
                 )
             } else {
-                TextButton(
+                Button(
                     onClick = onCancel,
+                    style = SecondaryButtonStyle,
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationAdjustCancelButton")
@@ -169,6 +177,7 @@ fun BatteryCard(
                 }
                 Button(
                     onClick = onSave,
+                    style = PrimaryButtonStyle,
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationAdjustSaveButton")
@@ -215,7 +224,6 @@ private fun EnergyBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(2.5f)
             .onGloballyPositioned { layoutCoordinates ->
                 barWidth.intValue = layoutCoordinates.size.width
             }
@@ -281,18 +289,20 @@ private fun EnergyBar(
 @Composable
 private fun ActionButton(
     onClick: () -> Unit,
+    style: ButtonStyle,
     iconPainter: Painter,
     actionText: String,
     modifier: Modifier = Modifier,
 ) {
-    Button(onClick, modifier) {
+    Button(onClick, style, modifier) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall)
         ) {
             Icon(
                 painter = iconPainter,
                 contentDescription = null,
+                modifier = Modifier.size(18.dp)
             )
             Text(actionText)
         }
