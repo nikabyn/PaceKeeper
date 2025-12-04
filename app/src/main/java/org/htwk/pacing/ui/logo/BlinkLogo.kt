@@ -50,25 +50,30 @@ fun BlinkLogo(
 
 @Composable
 fun shuffleSmileys(
-    open: Int,
-    closed: Int
+    verygood: Int,
+    good: Int,
+    sad: Int,
+    verysad: Int
 ) {
-    var blinking by remember { mutableStateOf(false) }
+    var smile by remember { mutableStateOf(verygood) }
 
     LaunchedEffect(Unit) {
-        delay(1000)
 
         while (true) {
-            delay((2200..4500).random().toLong())
-            blinking = true
-            delay((1000..3000).random().toLong())
-            blinking = false
+            delay(1000)
+            smile = verygood
+            delay(1000)
+            smile = good
+            delay(1000)
+            smile = sad
+            delay(1000)
+            smile = verysad
         }
     }
 
     Image(
-        painter = painterResource(if (blinking) closed else open),
+        painter = painterResource(smile),
         contentDescription = null,
-        modifier = Modifier.size(160.dp)
+        modifier = Modifier.size(140.dp)
     )
 }

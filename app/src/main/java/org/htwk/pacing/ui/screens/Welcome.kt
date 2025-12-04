@@ -16,58 +16,90 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.components.EnergyPredictionCard
+import org.htwk.pacing.ui.components.FeelingSelectionCard
+import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.logo.BlinkLogo
 import org.htwk.pacing.ui.logo.Floaty
 import org.htwk.pacing.ui.logo.RollingEntry
 import org.htwk.pacing.ui.logo.shuffleSmileys
 import org.htwk.pacing.ui.theme.Spacing
+import org.htwk.pacing.ui.theme.extendedColors
+import kotlin.random.Random
 
 data class OnboardingPage(
     val title: String,
     val description: String,
+    val optionalDescription2: String,
+    val optionalDescription3: String,
     val icon: Int,
-    val optionalIconClosed: Int? = null
+    val optionalIcon2: Int? = null,
+    val optionalIcon3: Int? = null,
+    val optionalIcon4: Int? = null
 )
 
 val pages = listOf(
     OnboardingPage(
         "Willkommen",
         "PaceKeeper hilft dir, dein Energie-Budget im Auge zu behalten.",
+        "",
+        "",
         R.drawable.ic_logo_open,
         R.drawable.ic_logo_closed
     ),
     OnboardingPage(
         "Pacing verstehen",
-        "Vermeide den Crash. Bleibe in deinem sicheren Bereich.",
+        "Vermeide den Crash.",
+        "Bleibe in deinem sicheren Bereich.",
+        "Deine Tagesenergie auf einen Blick",
         R.drawable.rounded_show_chart_24
     ),
     OnboardingPage(
         "Dich selbst entdecken",
-        "Beobachte deine Symptome. Erkenne deine Muster.",
+        "Höre auf deinen Körper.",
+        "Erkenne deine Muster.",
+        "Deine Daten und Symptome im Verlauf",
         R.drawable.very_happy,
+        R.drawable.happy,
+        R.drawable.sad,
         R.drawable.very_sad
     ),
     OnboardingPage(
         "Loslegen",
         "Höre auf deinen Körper. Wir starten jetzt.",
+        "",
+        "",
         R.drawable.ic_logo_open,
         R.drawable.ic_logo_closed
     )
 )
+
+fun randomSeries(size: Int): Series<List<Double>> {
+    val xValues = List(size) { Random.nextDouble() }
+    val yValues = List(size) { Random.nextDouble() }
+    return Series(xValues, yValues)
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -193,10 +225,10 @@ fun OnboardingPageContent(
             0 -> {
                 RollingEntry {
                     Floaty {
-                        if (page.optionalIconClosed != null) {
+                        if (page.optionalIcon2 != null) {
                             BlinkLogo(
                                 open = page.icon,
-                                closed = page.optionalIconClosed
+                                closed = page.optionalIcon2
                             )
                         } else {
                             Image(
@@ -213,11 +245,19 @@ fun OnboardingPageContent(
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = page.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(200.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                    val exSeries: Series<List<Double>> =
+                        Series(
+                            x = List(10) { Random.nextDouble() },
+                            y = List(10) { Random.nextDouble() }
+                        )
+                    
+                    EnergyPredictionCard(
+                        series = exSeries,
+                        currentEnergy = 0.8f,
+                        minPrediction = 0.0f,
+                        avgPrediction = 0.5f,
+                        maxPrediction = 1.0f,
+                        modifier = Modifier.height(300.dp)
                     )
                 }
             }
@@ -225,10 +265,12 @@ fun OnboardingPageContent(
             2 -> {
                 RollingEntry {
                     Floaty {
-                        if (page.optionalIconClosed != null) {
+                        if (page.optionalIcon2 != null && page.optionalIcon3 != null && page.optionalIcon4 != null) {
                             shuffleSmileys(
-                                open = page.icon,
-                                closed = page.optionalIconClosed
+                                page.icon,
+                                page.optionalIcon2,
+                                page.optionalIcon3,
+                                page.optionalIcon4
                             )
                         } else {
                             Image(
@@ -239,12 +281,13 @@ fun OnboardingPageContent(
                         }
                     }
                 }
+
             }
 
             3 -> {
-                if (isChecked && page.optionalIconClosed != null) {
+                if (isChecked && page.optionalIcon2 != null) {
                     Image(
-                        painter = painterResource(id = page.optionalIconClosed),
+                        painter = painterResource(id = page.optionalIcon2),
                         contentDescription = null,
                         modifier = Modifier.size(200.dp)
                     )
@@ -276,6 +319,22 @@ fun OnboardingPageContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Spacing.large)
         )
+        if (page.optionalDescription2 != "")
+            Text(
+                text = page.optionalDescription2,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Spacing.large)
+            )
+        if (page.optionalDescription3 != "")
+            Text(
+                text = page.optionalDescription3,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Spacing.large)
+            )
 
         if (showCheckbox) {
             Spacer(modifier = Modifier.height(Spacing.extraLarge))
