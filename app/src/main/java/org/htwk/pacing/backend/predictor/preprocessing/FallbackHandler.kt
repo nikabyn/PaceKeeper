@@ -13,6 +13,9 @@ import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.Temperature
+import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.Velocity
 
 object FallbackHandler {
 
@@ -160,90 +163,108 @@ object FallbackHandler {
     }
 
 
-
-    /**
-     * Generates a default, constant heart rate time series if no other data is available.
-     *
-     * This function serves as a last-resort fallback. It creates a list of [HeartRateEntry]
-     * objects with a fixed BPM value (currently 75L) for the entire specified duration. The time
-     * series is generated at regular intervals defined by [Predictor.TIME_SERIES_STEP_DURATION].
-     *
-     * @param start The [Instant] at which the time series should begin.
-     * @param duration The total [Duration] for which the time series should be generated.
-     * @return A [List] of [HeartRateEntry] objects representing the default heart rate data.
-     */
-
-    //The daily curve should be applied using a neutral average over the time period to generate more realistic values
-    //defaultBpm needs to be dynamic
-    private fun generateDefaultHeartRateSeries(start: Instant, duration: Duration): List<HeartRateEntry> {
+    private inline fun <T> generateDefaultSeries(
+        start: Instant,
+        duration: Duration,
+        crossinline builder: (Instant, Instant) -> T
+    ): List<T> {
         val step = Predictor.TIME_SERIES_STEP_DURATION
         val points = (duration / step).toInt()
-        val defaultBpm = 75L
-        return List(points) { i -> HeartRateEntry(start + (i * step), defaultBpm) }
-    }
 
-    /**
-     * Generates a default time series for distance data as a fallback.
-     *
-     * This function is used when no actual or historical distance data is available. It creates a list
-     * of [DistanceEntry] objects, each representing a time step of a fixed duration
-     * ([Predictor.TIME_SERIES_STEP_DURATION]). For each step, the distance covered is set to a default
-     * value of 0.0, effectively representing a stationary state.
-     *
-     * @param start The [Instant] when the time series begins.
-     * @param duration The total [Duration] of the time series to generate.
-     * @return A [List] of [DistanceEntry] objects with a distance of 0.0 for each time step.
-     */
-
-    //default length could be changed
-    private fun generateDefaultDistanceSeries(start: Instant, duration: Duration): List<DistanceEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        val defaultLength = 8.0
         return List(points) { i ->
-            DistanceEntry(
-                start + (i * step),
-                start + ((i + 1) * step),
-                Length(defaultLength)
-            )
+            val from = start + (i * step)
+            val to = start + ((i + 1) * step)
+            builder(from, to)
         }
     }
 
-    private fun generateDefaultElevationGainedSeries(start: Instant, duration: Duration): List<ElevationGainedEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        val defaultElevationGained = 1
-        return emptyList()
+
+    //The daily curve should be applied using a neutral average over the time period to generate more realistic values
+    //defaultBpm needs to be dynamic
+    private fun generateDefaultHeartRateSeries(
+        start: Instant,
+        duration: Duration
+    ): List<HeartRateEntry> {
+
+        val defaultBpm = 75L
+        return generateDefaultSeries(start, duration) { from, _ ->
+            HeartRateEntry(from, defaultBpm)
+        }
     }
 
-    private fun generateDefaultSkinTemperatureSeries(start: Instant, duration: Duration): List<SkinTemperatureEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        return emptyList()
+    private fun generateDefaultDistanceSeries(
+        start: Instant,
+        duration: Duration
+    ): List<DistanceEntry> {
+
+        val defaultLength = 8.0
+        return generateDefaultSeries(start, duration) { from, to ->
+            DistanceEntry(from, to, Length(defaultLength))
+        }
     }
 
-    private fun generateDefaultHeartRateVariabilitySeries(start: Instant, duration: Duration): List<HeartRateVariabilityEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        return emptyList()
+    private fun generateDefaultElevationGainedSeries(
+        start: Instant,
+        duration: Duration
+    ): List<ElevationGainedEntry> {
+
+        return generateDefaultSeries(start, duration) { from, to ->
+            ElevationGainedEntry(from, to, Length(0.0))
+        }
     }
 
-    private fun generateDefaultOxygenSaturationSeries(start: Instant, duration: Duration): List<OxygenSaturationEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        return emptyList()
+    private fun generateDefaultSkinTemperatureSeries(
+        start: Instant,
+        duration: Duration
+    ): List<SkinTemperatureEntry> {
+
+        val defaultTemp = 33.5
+        return generateDefaultSeries(start, duration) { from, _ ->
+            SkinTemperatureEntry(from, Temperature.celsius(defaultTemp))
+        }
     }
 
-    private fun generateDefaultStepsSeries(start: Instant, duration: Duration): List<StepsEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        return emptyList()
+    private fun generateDefaultHeartRateVariabilitySeries(
+        start: Instant,
+        duration: Duration
+    ): List<HeartRateVariabilityEntry> {
+
+        val defaultRr = 50.0
+        return generateDefaultSeries(start, duration) { from, _ ->
+            HeartRateVariabilityEntry(from, defaultRr)
+        }
     }
 
-    private fun generateDefaultSpeedSeries(start: Instant, duration: Duration): List<SpeedEntry> {
-        val step = Predictor.TIME_SERIES_STEP_DURATION
-        val points = (duration / step).toInt()
-        return emptyList()
+    private fun generateDefaultOxygenSaturationSeries(
+        start: Instant,
+        duration: Duration
+    ): List<OxygenSaturationEntry> {
+
+        val defaultPercentage = Percentage(98.0)
+        return generateDefaultSeries(start, duration) { from, _ ->
+            OxygenSaturationEntry(from, defaultPercentage)
+        }
+    }
+
+    private fun generateDefaultStepsSeries(
+        start: Instant,
+        duration: Duration
+    ): List<StepsEntry> {
+
+        return generateDefaultSeries(start, duration) { from, to ->
+            StepsEntry(from, to, 50)
+        }
+    }
+
+    private fun generateDefaultSpeedSeries(
+        start: Instant,
+        duration: Duration
+    ): List<SpeedEntry> {
+
+        val defaultVelocity = Velocity.kilometersPerHour(1.0)
+        return generateDefaultSeries(start, duration) { from, _ ->
+            SpeedEntry(from, defaultVelocity)
+        }
     }
 
 }
