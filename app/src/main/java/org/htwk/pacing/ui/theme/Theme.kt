@@ -24,10 +24,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-val MaterialTheme.extendedColors: ExtendedColors
-    @Composable @ReadOnlyComposable
-    get() = LocalExtendedColors.current
-
+/**
+ * Sets up the app theme with optional dark mode and dynamic color support.
+ *
+ * @param darkTheme Whether to use the dark theme. Defaults to system setting.
+ * @param dynamicColor Whether to use dynamic colors (Android 12+). Defaults to true.
+ * @param content The composable content to apply the theme to.
+ */
 @Composable
 fun PacingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -56,6 +59,12 @@ fun PacingTheme(
     }
 }
 
+/** Provides access to the current [ExtendedColors] in the composition. */
+val MaterialTheme.extendedColors: ExtendedColors
+    @Composable @ReadOnlyComposable
+    get() = LocalExtendedColors.current
+
+/** Standard spacing, gap, padding, etc. values used throughout the app for consistent layout. */
 object Spacing {
     val extraSmall = 4.dp
     val small = 8.dp
