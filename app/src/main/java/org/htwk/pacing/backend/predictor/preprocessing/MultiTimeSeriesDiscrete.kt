@@ -3,6 +3,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.stepDuration
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -19,13 +20,13 @@ import kotlin.time.Duration
 /**
  * A container for multiple, aligned, discrete time series, optimized for model input.
  *
- * All time series share the same starting timestamp (`timeStart`) and are sampled using a
- * fixed interval (`stepSize`). Each metric can have multiple feature components (e.g. P/I/D)
+ * All time series share the same starting timestamp [timeStart] and are sampled using a
+ * fixed interval [stepDuration]. Each metric can have multiple feature components (e.g. P/I/D)
  * and each of these becomes one row in a shared 2D matrix. Columns correspond to discrete
  * time steps
  *
  *     Rows    = Features  (metric x PID component)
- *     Columns = Timesteps (from time start, discrete, mapping to stepSize per step)
+ *     Columns = Timesteps (from [timeStart], discrete, mapping to [stepDuration] per step)
  *
  * Matrix layout (conceptual):
  *
@@ -54,12 +55,12 @@ import kotlin.time.Duration
  *
  * Capacity management:
  *
- * The matrix grows automatically only when stepCount would exceed capacityInSteps.
+ * The matrix grows automatically only when [stepCount] would exceed [capacityInSteps].
  * When growth happens, a new larger matrix is allocated and existing values are copied.
  * This allows efficient appending without constantly reallocating memory.
  *
- * Each feature is identified by a {@link FeatureID}, which is a combination of
- * a {@link TimeSeriesMetric} and a {@link PIDComponent}.
+ * Each feature is identified by a [FeatureID], which is a combination of
+ * a [TimeSeriesMetric] and a [PIDComponent].
  *
  * @param timeStart The timestamp of timestep 0 for all contained time series.
  * @param initialCapacityInSteps Initial internal storage capacity (column count) before reallocation is needed.
@@ -79,7 +80,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
     }
 
     fun getAllFeatureIDs(): Set<FeatureID> = featureIndexMap.keys
-    fun getDuration(): Duration = stepSize * stepCount
+    fun getDuration(): Duration = stepDuration * stepCount
 
     /**
      * Calculates the absolute timestamp for a given sample index.
@@ -91,7 +92,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
     fun getSampleInstant(index: Int): Instant {
         require(index in 0..<stepCount) { "Sample index $index out of bounds 0..<$stepCount" }
 
-        return timeStart + stepSize * index
+        return timeStart + stepDuration * index
     }
 
     /**
@@ -218,7 +219,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
     companion object {
         private val featureCount: Int =
             TimeSeriesMetric.entries.sumOf { it.signalClass.components.size }
-        private val stepSize = Predictor.TIME_SERIES_STEP_DURATION
+        private val stepDuration = Predictor.TIME_SERIES_STEP_DURATION
 
         /**
          * A map that links a unique feature identifier ([FeatureID]) to its corresponding row index

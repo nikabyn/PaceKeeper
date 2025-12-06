@@ -63,10 +63,12 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         ),
 
         QualityRatios(
-            ratiosPerMetric = mapOf(
-                TimeSeriesMetric.HEART_RATE to Percentage(correctionHeartRatio),
-                TimeSeriesMetric.DISTANCE to Percentage(correctionDistancesRatio)
-            )
+            ratiosPerMetric = TimeSeriesMetric.entries.associateWith { metric ->
+                when (metric) {
+                    TimeSeriesMetric.HEART_RATE -> Percentage(correctionHeartRatio)
+                    TimeSeriesMetric.DISTANCE -> Percentage(correctionDistancesRatio)
+                }
+            }
         )
     )
 
