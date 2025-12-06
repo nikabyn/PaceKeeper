@@ -43,14 +43,14 @@ import kotlin.time.Duration
  *
  * Reading the matrix:
  *
- * - <code>get(featureID, k)</code>      → value of one feature at timestep k
- * - <code>getMutableRow(featureID)</code> → mutable view of one full feature row
- * - <code>allFeaturesAt(k)</code>       → copy of one full column (values of all features at timestep k)
+ * - `get(featureID, k)` -> value of one feature at timestep k
+ * - `getMutableRow(featureID)` -> mutable view of one full feature row
+ * - `allFeaturesAt(k)` -> copy of one full column (values of all features at timestep k)
  *
  * Terminology:
  *
- * - <b>stepCount</b>  = number of populated timesteps (columns currently containing data)
- * - <b>capacityInSteps</b> = internal column capacity; may be larger than stepCount
+ * - [stepCount] = number of populated timesteps (columns currently containing data)
+ * - [capacityInSteps] = internal column capacity; may be larger than stepCount
  *
  * Capacity management:
  *
