@@ -48,24 +48,15 @@ object LinearCombinationPredictionModel : IPredictionModel {
     ): List<TrainingSample> {
         val targetTimeSeries = input.getMutableRow(predictionTargetFeatureID).toDoubleArray()
 
-        val timeSeriesSize =
-            targetTimeSeries.size - Predictor.TIME_SERIES_SAMPLE_COUNT * 2 //ignore last two input windows (e.g. 2.days * 2 in steps) for training
+        val predictionLookAhead =
+            (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT);
 
-        val trainingSamples = mutableListOf<TrainingSample>()
-
-        for (offset in 0..timeSeriesSize) {
-            val expected =
-                targetTimeSeries[offset + (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT)]
-
-            trainingSamples.add(
-                TrainingSample(
-                    generateFlattenedMultiExtrapolationResults(input, offset),
-                    expected
-                )
+        return (0 until targetTimeSeries.size - predictionLookAhead).map { offset ->
+            TrainingSample(
+                multiExtrapolations = generateFlattenedMultiExtrapolationResults(input, offset),
+                expectedEnergyLevel = targetTimeSeries[offset + predictionLookAhead]
             )
         }
-
-        return trainingSamples
     }
 
     /**

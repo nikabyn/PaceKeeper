@@ -77,8 +77,9 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
     // ---- general state / time queries ----
     fun stepCount(): Int = stepCount
-    private fun setStepCount(length: Int) {
-        this.stepCount = length
+    private fun resize(newStepCount: Int) {
+        reserveCapacity(newStepCount);
+        this.stepCount = newStepCount
     }
 
     fun getAllFeatureIDs(): Set<FeatureID> = featureIndexMap.keys
@@ -201,7 +202,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
      *
      * @param minimumSteps The minimum number of time steps that must be accommodatable.
      */
-    fun reserveCapacity(minimumSteps: Int) {
+    private fun reserveCapacity(minimumSteps: Int) {
         if (minimumSteps <= capacityInSteps) return;
 
         //next-highest power of two relative to minimumSteps
@@ -286,8 +287,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             val mtsd = MultiTimeSeriesDiscrete(raw.timeStart)
 
             val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
-            mtsd.reserveCapacity(stepCount);
-            mtsd.setStepCount(stepCount)
+            mtsd.resize(stepCount)
 
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
