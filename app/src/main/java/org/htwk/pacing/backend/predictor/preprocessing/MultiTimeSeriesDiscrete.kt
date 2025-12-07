@@ -16,6 +16,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import kotlin.time.Duration
 
 
@@ -155,7 +156,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             ?: throw IllegalArgumentException("Unknown feature: $featureID")
 
         //no copying - multi gives a mutable view into the matrix row here
-        return featureMatrix[row] as NDArray<Double, D1>
+        return featureMatrix[row].slice(0 until stepCount)
     }
 
     /**
