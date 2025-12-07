@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
+import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.predictionTargetFeatureID
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
@@ -12,8 +13,8 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
-import org.jetbrains.kotlinx.multik.ndarray.data.get
-import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
+import org.jetbrains.kotlinx.multik.ndarray.data.slice
+import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 
 /**
@@ -43,18 +44,28 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val expectedEnergyLevel: Double
     )
 
+    /**
+     * Creates a list of training samples from the input time series data.
+     *
+     * Each sample consists of a set of extrapolated features and the corresponding
+     * "ground truth" future value (the expected future value of the  [predictionTargetFeatureID]).
+     * This function iterates through the input [MultiTimeSeriesDiscrete] with a sliding window to
+     * generate these samples.
+     *
+     * @param input The multi-time-series data used to generate training samples.
+     * @return A list of [TrainingSample] objects, each containing the extrapolated features
+     *         and the expected future energy level.
+     */
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
     ): List<TrainingSample> {
-        val targetTimeSeries = input.getMutableRow(predictionTargetFeatureID).toDoubleArray()
-
         val predictionLookAhead =
             (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT);
 
-        return (0 until targetTimeSeries.size - predictionLookAhead).map { offset ->
+        return (0 until input.stepCount() - predictionLookAhead).map { offset ->
             TrainingSample(
                 multiExtrapolations = generateFlattenedMultiExtrapolationResults(input, offset),
-                expectedEnergyLevel = targetTimeSeries[offset + predictionLookAhead]
+                expectedEnergyLevel = input[predictionTargetFeatureID, offset + predictionLookAhead]
             )
         }
     }
@@ -72,16 +83,15 @@ object LinearCombinationPredictionModel : IPredictionModel {
         indexOffset: Int = 0
     ): List<Double> {
         val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
-            val timeSeries = input.getMutableRow((featureID))
+            val timeSeries: D1Array<Double> =
+                input.getMutableRow(featureID)
+                    .slice(indexOffset until indexOffset + Predictor.TIME_SERIES_SAMPLE_COUNT)
 
-            val extrapolations = LinearExtrapolator.multipleExtrapolate(
-                timeSeries,
-                indexOffset
-            ).extrapolations
+            val extrapolations = LinearExtrapolator.multipleExtrapolate(timeSeries).extrapolations
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries[indexOffset] else result
+                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
             }
         }
 

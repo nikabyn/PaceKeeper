@@ -71,7 +71,7 @@ object LinearExtrapolator {
          *                   with the most recent data point at the end of the array.
          * @return The calculated sample value (Y-coordinate).
          */
-        fun getSampleResultY(timeSeries: D1Array<Double>, indexOffset: Int): Double
+        fun getSampleResultY(timeSeries: D1Array<Double>): Double
 
         /**
          * Gets the X-axis coordinate (time position) for this sample.
@@ -101,9 +101,9 @@ object LinearExtrapolator {
                 return index.toDouble()
             }
 
-            override fun getSampleResultY(timeSeries: D1Array<Double>, indexOffset: Int): Double {
+            override fun getSampleResultY(timeSeries: D1Array<Double>): Double {
                 val lastIndex = validRange.last
-                return timeSeries[lastIndex - index + indexOffset]
+                return timeSeries[lastIndex - index]
             }
         }
 
@@ -129,10 +129,10 @@ object LinearExtrapolator {
                 return (earliestIndex + latestIndex) / 2.0
             }
 
-            override fun getSampleResultY(timeSeries: D1Array<Double>, indexOffset: Int): Double {
+            override fun getSampleResultY(timeSeries: D1Array<Double>): Double {
                 val lastIndex = validRange.last
                 return timeSeries.slice<Double, D1, D1>(
-                    inSlice = (lastIndex - earliestIndex + indexOffset)..(lastIndex - latestIndex + indexOffset),
+                    inSlice = (lastIndex - earliestIndex)..(lastIndex - latestIndex),
                     axis = 0
                 ).average<Double, D1>()
             }
@@ -169,12 +169,12 @@ object LinearExtrapolator {
          * @return An [ExtrapolationLine] object containing the two sampled points and the resulting
          *         extrapolated point.
          */
-        fun runOnTimeSeries(timeSeries: D1Array<Double>, indexOffset: Int = 0): ExtrapolationLine {
+        fun runOnTimeSeries(timeSeries: D1Array<Double>): ExtrapolationLine {
             val x0 = samplingDescriptors.first.getSamplePositionX()
-            val y0 = samplingDescriptors.first.getSampleResultY(timeSeries, indexOffset)
+            val y0 = samplingDescriptors.first.getSampleResultY(timeSeries)
 
             val x1 = samplingDescriptors.second.getSamplePositionX()
-            val y1 = samplingDescriptors.second.getSampleResultY(timeSeries, indexOffset)
+            val y1 = samplingDescriptors.second.getSampleResultY(timeSeries)
 
             val result = linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
 
@@ -197,10 +197,9 @@ object LinearExtrapolator {
 
     fun multipleExtrapolate(
         timeSeries: D1Array<Double>,
-        indexOffset: Int = 0
     ): MultiExtrapolationResult {
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
-            it.strategy.runOnTimeSeries(timeSeries, indexOffset)
+            it.strategy.runOnTimeSeries(timeSeries)
         })
     }
 
