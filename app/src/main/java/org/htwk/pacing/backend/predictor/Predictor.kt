@@ -7,8 +7,6 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor.train
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
-import org.htwk.pacing.ui.math.sigmoidStable
-import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -99,7 +97,7 @@ object Predictor {
         val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
-            Percentage(sigmoidStable(predictedEnergy / 100.0))
+            Percentage((predictedEnergy / 100.0).coerceIn(0.0, 1.0))
         )
     }
 }
