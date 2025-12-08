@@ -110,7 +110,13 @@ class PredictorFitbitDataTest {
             timeStart = timeSeriesStart,
             duration = timeSeriesEnd - timeSeriesStart,
             heartRate = heartRateEntries,
-            distance = distanceEntries
+            distance = distanceEntries,
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         Predictor.train(
@@ -128,6 +134,12 @@ class PredictorFitbitDataTest {
             duration = 2.days,
             heartRate = heartRateEntries.filter { it.time in testWindowStart..testWindowEnd },
             distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd },
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val predictionResult = Predictor.predict(

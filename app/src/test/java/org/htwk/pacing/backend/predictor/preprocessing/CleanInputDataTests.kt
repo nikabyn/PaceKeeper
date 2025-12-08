@@ -26,7 +26,13 @@ class CleanInputDataTests {
                 HeartRateEntry(now, 80),
                 HeartRateEntry(now + 1.minutes, 100)
             ),
-            distance = emptyList()
+            distance = emptyList(),
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -51,7 +57,14 @@ class CleanInputDataTests {
                 HeartRateEntry(now + 3.minutes, 70) // keep
 
             ),
-            distance = emptyList()
+            distance = emptyList(),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
         val (results, ratios) = cleanInputData(raw)
 
@@ -74,7 +87,14 @@ class CleanInputDataTests {
                 HeartRateEntry(now + 1.minutes, 70), // duplicate time -> deleted
                 HeartRateEntry(now + 2.minutes, 70) // keep
             ),
-            distance = emptyList()
+            distance = emptyList(),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
         val (results, ratios) = cleanInputData(raw)
 
@@ -95,7 +115,13 @@ class CleanInputDataTests {
                 HeartRateEntry(now, 80),
                 HeartRateEntry(now, 150) // duplicate, will be removed
             ),
-            distance = emptyList()
+            distance = emptyList(),
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -116,8 +142,15 @@ class CleanInputDataTests {
             heartRate = emptyList(),
             distance = listOf(
                 DistanceEntry(now, now + 5.minutes, Length(50.0)),
-                DistanceEntry(now + 5.minutes, now + 10.minutes, Length(0.0)) // edge case valid
-            )
+                DistanceEntry(now + 5.minutes, now + 10.minutes, Length(0.0)) // edge case
+            ),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -139,7 +172,13 @@ class CleanInputDataTests {
             distance = listOf(
                 DistanceEntry(now, now + 5.minutes, Length(-10.0)), // invalid
                 DistanceEntry(now + 5.minutes, now + 10.minutes, Length(-5.0)) // invalid
-            )
+            ),
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -161,7 +200,14 @@ class CleanInputDataTests {
             distance = listOf(
                 DistanceEntry(now, now + 5.minutes, Length(75.0)),
                 DistanceEntry(now, now + 5.minutes, Length(75.0)) // duplicate
-            )
+            ),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -180,7 +226,14 @@ class CleanInputDataTests {
         val raw = MultiTimeSeriesEntries(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
-            distance = emptyList()
+            distance = emptyList(),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val (results, _) = cleanInputData(raw)

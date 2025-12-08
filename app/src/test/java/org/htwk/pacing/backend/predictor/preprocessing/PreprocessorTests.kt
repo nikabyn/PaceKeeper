@@ -72,7 +72,14 @@ class PreprocessorTests {
         val rawData = MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = distanceData
+            distance = distanceData,
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
@@ -160,7 +167,14 @@ class PreprocessorTests {
                     end = timeStart,
                     length = Length(100.0)
                 )
-            )
+            ),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
@@ -178,7 +192,14 @@ class PreprocessorTests {
         val rawData = MultiTimeSeriesEntries(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = emptyList()
+            distance = emptyList(),
+
+            elevationGained = emptyList(),
+            skinTemperature = emptyList(),
+            heartRateVariability = emptyList(),
+            oxygenSaturation = emptyList(),
+            steps = emptyList(),
+            speed = emptyList(),
         )
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
