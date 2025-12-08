@@ -175,6 +175,12 @@ object EnergyPredictionJob {
 
         val heartRate = db.heartRateDao().getInRange(start, end)
         val distance = db.distanceDao().getInRange(start, end)
+        val elevationGained = db.elevationGainedDao().getInRange(start, end)
+        val skinTemperature = db.skinTemperatureDao().getInRange(start, end)
+        val heartRateVariability = db.heartRateVariabilityDao().getInRange(start, end)
+        val oxygenSaturation = db.oxygenSaturationDao().getInRange(start, end)
+        val steps = db.stepsDao().getInRange(start, end)
+        val speed = db.speedDao().getInRange(start, end)
         val userProfile = db.userProfileDao().getProfile()
 
         val multiSeries = MultiTimeSeriesEntries(
@@ -182,6 +188,12 @@ object EnergyPredictionJob {
             duration = duration,
             heartRate = heartRate,
             distance = distance,
+            elevationGained = elevationGained,
+            skinTemperature = skinTemperature,
+            heartRateVariability = heartRateVariability,
+            oxygenSaturation = oxygenSaturation,
+            steps = steps,
+            speed = speed,
         )
         val fixedParams = FixedParameters(
             anaerobicThresholdBPM = userProfile
