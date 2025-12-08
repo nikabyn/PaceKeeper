@@ -19,17 +19,14 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val MAX_VALID_ELEVATION_CHANGE_MPS = 2.0 //max. accepted elevation change (m/s)
     val MAX_VALID_STEPS_PER_SECOND = 4.0 //max. accepted steps per second
 
-    fun isRateOfChangeValid(
+    fun continuousRateOfChange(
         start: Instant,
         end: Instant,
         quantity: Double,
-        validRange: ClosedFloatingPointRange<Double>
-    ): Boolean {
+    ): Double {
         val deltaSeconds: Double = (end - start).inMs / 1000.0
-        if (deltaSeconds <= 0.0) return true
-
-        val rateOfChange = quantity / deltaSeconds
-        return rateOfChange !in validRange
+        if (deltaSeconds <= 0.0) return Double.NaN
+        return quantity / deltaSeconds
     }
 
     /**
@@ -70,12 +67,12 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         list = raw.distance,
         timeSortKey = { it.end },
         isInvalid = {
-            isRateOfChangeValid(
+            val changeRate = continuousRateOfChange(
                 it.start,
                 it.end,
-                it.length.inMeters(),
-                0.0..MAX_VALID_SPEED_MPS
+                it.length.inMeters()
             )
+            changeRate == 0.0 || changeRate !in 0.0..MAX_VALID_SPEED_MPS
         },
         distinctByKey = { it.start to it.end }
     )
@@ -84,12 +81,12 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         list = raw.elevationGained,
         timeSortKey = { it.end },
         isInvalid = {
-            isRateOfChangeValid(
+            val changeRate = continuousRateOfChange(
                 it.start,
                 it.end,
-                it.length.inMeters(),
-                0.0..MAX_VALID_ELEVATION_CHANGE_MPS
+                it.length.inMeters()
             )
+            changeRate == 0.0 || changeRate !in 0.0..MAX_VALID_SPEED_MPS
         },
         distinctByKey = { it.start to it.end }
     )
@@ -119,12 +116,11 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         list = raw.steps,
         timeSortKey = { it.end },
         isInvalid = {
-            isRateOfChangeValid(
-                it.start,
-                it.end,
-                it.count.toDouble(),
-                0.0..MAX_VALID_STEPS_PER_SECOND
-            )
+            if (it.count == 0L) return@cleanData true
+            val deltaSeconds = (it.end - it.start).inMs / 1000.0
+            if (deltaSeconds <= 0.0) return@cleanData true
+            val stepsPerSecond = it.count.toDouble() / deltaSeconds
+            return@cleanData stepsPerSecond !in 0.0..MAX_VALID_STEPS_PER_SECOND
         },
         distinctByKey = { it.start to it.end }
     )
