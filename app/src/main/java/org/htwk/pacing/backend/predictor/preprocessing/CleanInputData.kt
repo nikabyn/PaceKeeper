@@ -51,7 +51,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedDistances, correctionDistancesRatio) = cleanData(
         list = raw.distance,
         timeSortKey = { it.end },
-        isInvalid = { it.length.inMeters() <= 0  },
+        isInvalid = { it.length.inMeters() <= 0 },
         distinctByKey = { it.start to it.end }
     )
 
@@ -69,7 +69,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.time }
     )
 
-    val(cleanedHeartRateVariabilities, correctionHeartRateVariabilitiesRatio) = cleanData(
+    val (cleanedHeartRateVariabilities, correctionHeartRateVariabilitiesRatio) = cleanData(
         list = raw.heartRateVariability,
         timeSortKey = { it.time },
         isInvalid = { it.variability < 0 },
@@ -77,7 +77,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     )
 
     //minimalwert realistisch anpassen
-    val(cleanedOxygenSaturations, correctionOxygenSaturationsRatio) = cleanData(
+    val (cleanedOxygenSaturations, correctionOxygenSaturationsRatio) = cleanData(
         list = raw.oxygenSaturation,
         timeSortKey = { it.time },
         isInvalid = { it.percentage.toDouble() !in 0.0..100.0 },
@@ -85,7 +85,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     )
 
     //unrealistische werte rausfiltern
-    val(cleanedSteps, correctionStepsRatio) = cleanData(
+    val (cleanedSteps, correctionStepsRatio) = cleanData(
         list = raw.steps,
         timeSortKey = { it.end },
         isInvalid = { it.count <= 0 },
@@ -93,7 +93,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     )
 
     //maximalwert festlegen
-    val(cleanedSpeeds, correctionSpeedsRatio) = cleanData(
+    val (cleanedSpeeds, correctionSpeedsRatio) = cleanData(
         list = raw.speed,
         timeSortKey = { it.end },
         isInvalid = { it.velocity.inKilometersPerHour() < 0 },
@@ -115,19 +115,25 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         ),
 
         QualityRatios(
-            ratiosPerMetric = mapOf(
-                TimeSeriesMetric.HEART_RATE to Percentage(correctionHeartRatio),
-                TimeSeriesMetric.DISTANCE to Percentage(correctionDistancesRatio),
-                TimeSeriesMetric.ELEVATION_GAINED to Percentage(correctionElevationGainsRatio),
-                TimeSeriesMetric.SKIN_TEMPERATURE to Percentage(correctionSkinTemperaturesRatio),
-                TimeSeriesMetric.HEART_RATE_VARIABILITY to Percentage(correctionHeartRateVariabilitiesRatio),
-                TimeSeriesMetric.OXYGEN_SATURATION to Percentage(correctionOxygenSaturationsRatio),
-                TimeSeriesMetric.STEPS to Percentage(correctionStepsRatio),
-                TimeSeriesMetric.Speed to Percentage(correctionSpeedsRatio)
+            ratiosPerMetric = TimeSeriesMetric.entries.associateWith { metric ->
+                when (metric) {
+                    TimeSeriesMetric.HEART_RATE -> Percentage(correctionHeartRatio)
+                    TimeSeriesMetric.DISTANCE -> Percentage(correctionDistancesRatio)
+                    TimeSeriesMetric.ELEVATION_GAINED -> Percentage(correctionElevationGainsRatio)
+                    TimeSeriesMetric.SKIN_TEMPERATURE -> Percentage(correctionSkinTemperaturesRatio)
+                    TimeSeriesMetric.HEART_RATE_VARIABILITY -> Percentage(
+                        correctionHeartRateVariabilitiesRatio
+                    )
 
+                    TimeSeriesMetric.OXYGEN_SATURATION -> Percentage(
+                        correctionOxygenSaturationsRatio
+                    )
 
-            )
+                    TimeSeriesMetric.STEPS -> Percentage(correctionStepsRatio)
+                    TimeSeriesMetric.Speed -> Percentage(correctionSpeedsRatio)
+                }
+            }
+
         )
     )
-
 }

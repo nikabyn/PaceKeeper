@@ -16,7 +16,7 @@ object TimeSeriesDiscretizer {
 
     /**
      * Calculates the average value for each time bucket from a list of timed data points.
-     * Depending on the [IPreprocessor.GenericTimeSeriesEntries.signalClass], it either calculates the average
+     * Depending on the [TimeSeriesSignalClass], it either calculates the average
      * (for continuous data) or the sum (for aggregated data) for each bucket.
      * @param input The generic time series data to be processed.
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
@@ -54,6 +54,13 @@ object TimeSeriesDiscretizer {
         return timeBucketValues.toSortedMap()
     }
 
+    /**
+     * Populates a `DoubleArray` with values from a map of time bucket averages.
+     * Time steps for which no values exist are left empty.
+     *
+     * @param timeBucketAverages A map of time step indices to their values.
+     * @param discreteTimeSeries The array to populate.
+     */
     private fun discretizeBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
         discreteTimeSeries: DoubleArray
@@ -66,6 +73,15 @@ object TimeSeriesDiscretizer {
         }
     }
 
+    /**
+     * Fills gaps in a discrete time series array using linear interpolation.
+     *
+     * This method mutates the `discreteTimeSeries` array by calculating and filling in
+     * the values for empty steps between the known data points provided in `timeBucketAverages`.
+     *
+     * @param timeBucketAverages A sorted map of known time step indices to their values.
+     * @param discreteTimeSeries The array to be populated with interpolated values.
+     */
     private fun discreteInterpolateBetweenBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
         discreteTimeSeries: DoubleArray

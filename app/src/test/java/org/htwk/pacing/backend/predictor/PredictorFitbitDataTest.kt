@@ -103,7 +103,7 @@ class PredictorFitbitDataTest {
         println("Plotting finished.")
     }
 
-    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries(
@@ -151,6 +151,6 @@ class PredictorFitbitDataTest {
         //after adding averaging for csv downsampling:                            70.94812981216073
         println("training done")
 
-        assertEquals(71.09326064855371, predictionResult.percentage.toDouble() * 100.0, 0.1)
+        assertEquals(71.02011198570813, predictionResult.percentage.toDouble() * 100.0, 0.1)
     }
 }

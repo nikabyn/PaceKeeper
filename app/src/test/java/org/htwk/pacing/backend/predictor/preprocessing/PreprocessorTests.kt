@@ -87,7 +87,7 @@ class PreprocessorTests {
 
         assertEquals(
             expectedLength,
-            result.length()
+            result.stepCount()
         )
 
         val expectedDiscreteHeartRate = doubleArrayOf(
@@ -114,7 +114,7 @@ class PreprocessorTests {
 
         for (i in 0 until expectedDiscreteHeartRate.size) {
             assertTrue(
-                expectedDiscreteHeartRate[i] == result.getSampleOfFeature(
+                expectedDiscreteHeartRate[i] == result.get(
                     MultiTimeSeriesDiscrete.FeatureID(
                         TimeSeriesMetric.HEART_RATE,
                         PIDComponent.PROPORTIONAL
