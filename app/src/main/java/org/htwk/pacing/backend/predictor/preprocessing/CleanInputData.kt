@@ -3,6 +3,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
+import org.koin.core.time.inMs
 
 /**
  * Holds data quality metrics calculated during preprocessing.
@@ -14,6 +15,23 @@ data class QualityRatios(
 
 //TODO: add pattern-matching-based invalid data sanitization, so that for different kinds of errors we can respond in different ways
 fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, QualityRatios> {
+    val MAX_VALID_SPEED_MPS = 5.0 //max. accepted movement speed, walking (m/s)
+    val MAX_VALID_ELEVATION_CHANGE_MPS = 2.0 //max. accepted elevation change (m/s)
+    val MAX_VALID_STEPS_PER_SECOND = 4.0 //max. accepted steps per second
+
+    fun isRateOfChangeValid(
+        start: Instant,
+        end: Instant,
+        quantity: Double,
+        validRange: ClosedFloatingPointRange<Double>
+    ): Boolean {
+        val deltaSeconds: Double = (end - start).inMs / 1000.0
+        if (deltaSeconds <= 0.0) return true
+
+        val rateOfChange = quantity / deltaSeconds
+        return rateOfChange !in validRange
+    }
+
     /**
      * Cleans a generic list of time series data by sorting, removing duplicates, and filtering invalid entries.
      * Calculates the ratio of valid (kept) entries to the original number.
@@ -51,14 +69,28 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedDistances, correctionDistancesRatio) = cleanData(
         list = raw.distance,
         timeSortKey = { it.end },
-        isInvalid = { it.length.inMeters() <= 0 },
+        isInvalid = {
+            isRateOfChangeValid(
+                it.start,
+                it.end,
+                it.length.inMeters(),
+                0.0..MAX_VALID_SPEED_MPS
+            )
+        },
         distinctByKey = { it.start to it.end }
     )
 
     val (cleanedElevationGains, correctionElevationGainsRatio) = cleanData(
         list = raw.elevationGained,
         timeSortKey = { it.end },
-        isInvalid = { it.length.inMeters() <= 0 },
+        isInvalid = {
+            isRateOfChangeValid(
+                it.start,
+                it.end,
+                it.length.inMeters(),
+                0.0..MAX_VALID_ELEVATION_CHANGE_MPS
+            )
+        },
         distinctByKey = { it.start to it.end }
     )
 
@@ -76,27 +108,31 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.time }
     )
 
-    //minimalwert realistisch anpassen
     val (cleanedOxygenSaturations, correctionOxygenSaturationsRatio) = cleanData(
         list = raw.oxygenSaturation,
         timeSortKey = { it.time },
-        isInvalid = { it.percentage.toDouble() !in 0.0..100.0 },
+        isInvalid = { it.percentage.toDouble() !in 70.0..100.0 },
         distinctByKey = { it.time }
     )
 
-    //unrealistische werte rausfiltern
     val (cleanedSteps, correctionStepsRatio) = cleanData(
         list = raw.steps,
         timeSortKey = { it.end },
-        isInvalid = { it.count <= 0 },
+        isInvalid = {
+            isRateOfChangeValid(
+                it.start,
+                it.end,
+                it.count.toDouble(),
+                0.0..MAX_VALID_STEPS_PER_SECOND
+            )
+        },
         distinctByKey = { it.start to it.end }
     )
 
-    //maximalwert festlegen
     val (cleanedSpeeds, correctionSpeedsRatio) = cleanData(
         list = raw.speed,
         timeSortKey = { it.end },
-        isInvalid = { it.velocity.inKilometersPerHour() < 0 },
+        isInvalid = { it.velocity.inKilometersPerHour() !in 0.0..500.0 },
         distinctByKey = { it.start to it.end }
     )
 
