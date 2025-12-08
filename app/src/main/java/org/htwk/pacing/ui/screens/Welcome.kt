@@ -9,8 +9,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -88,7 +90,7 @@ val pages = listOf(
     OnboardingPage(
         "Loslegen",
         "Höre auf deinen Körper. Wir starten jetzt.",
-        "",
+        " ",
         "",
         R.drawable.ic_logo_open,
         R.drawable.ic_logo_closed
@@ -250,7 +252,7 @@ fun OnboardingPageContent(
                             x = List(10) { Random.nextDouble() },
                             y = List(10) { Random.nextDouble() }
                         )
-                    
+
                     EnergyPredictionCard(
                         series = exSeries,
                         currentEnergy = 0.8f,
@@ -337,6 +339,7 @@ fun OnboardingPageContent(
             )
 
         if (showCheckbox) {
+            ScrollBox()
             Spacer(modifier = Modifier.height(Spacing.extraLarge))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -351,7 +354,7 @@ fun OnboardingPageContent(
                 )
                 Spacer(modifier = Modifier.width(Spacing.extraLarge))
                 Text(
-                    text = "Ich habe verstanden und möchte starten.",
+                    text = "Ich habe die Datennutzungsbestimmungen gelesen und stimme der Datennutzung zu.",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(Spacing.small),
                     color = if (isSystemInDarkTheme()) Color.White else Color.Unspecified
@@ -369,6 +372,27 @@ class WelcomeViewModel(
         viewModelScope.launch {
             //TODO save in db
             onSuccess()
+        }
+    }
+}
+
+@Composable
+private fun ScrollBox() {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Spacing.medium))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .fillMaxWidth()
+            .size(100.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(Spacing.small)
+    ) {
+        repeat(10) {
+            Text(
+                text = "Helloo",
+                modifier = Modifier.padding(2.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
