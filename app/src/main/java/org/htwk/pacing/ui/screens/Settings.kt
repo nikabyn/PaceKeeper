@@ -56,13 +56,10 @@ import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.UserProfileCard
-import org.htwk.pacing.ui.screens.PrivacyPolicyDialog
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.TonalButtonStyle
 import org.koin.androidx.compose.koinViewModel
-
-
 
 /**
  * Verwaltet die Verbindung zu Health Connect.
@@ -166,7 +163,7 @@ fun SettingsScreen(
                 onClick = { showPrivacyPolicyDialog = true }
             ) {
                 Text(
-                    text = "Datenschutzerklärung",
+                    (stringResource(R.string.privacy_policy)),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -199,7 +196,7 @@ fun SettingsScreen(
             }
         )
     }
-    if (showPrivacyPolicyDialog) { // <-- HIER
+    if (showPrivacyPolicyDialog) {
         PrivacyPolicyDialog(
             onDismiss = { showPrivacyPolicyDialog = false }
         )

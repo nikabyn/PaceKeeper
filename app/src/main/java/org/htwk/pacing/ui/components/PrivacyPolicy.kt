@@ -1,43 +1,61 @@
 package org.htwk.pacing.ui.screens
 
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import org.htwk.pacing.R
+
+/**
+ * Lädt die Datenschutzerklärung aus /res/raw/privacy_policy.txt
+ */
+@Composable
+fun loadPrivacyPolicyText(): String {
+    val context = LocalContext.current
+
+    return remember {
+        context.resources.openRawResource(R.raw.privacy_policy)
+            .bufferedReader()
+            .use { it.readText() }
+    }
+}
 
 @Composable
 fun PrivacyPolicyDialog(
     onDismiss: () -> Unit
 ) {
+    // Text aus der Datei laden
+    val privacyText = loadPrivacyPolicyText()
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Datenschutzerklärung") },
-        text = {
+        title = {
             Text(
-                text = """
-                    Hier kommt deine vollständige Datenschutzerklärung rein. 
-                    Du kannst so viele Zeilen schreiben, wie du willst. 
-                    Der Text ist scrollbar, falls er länger ist.
-                    
-                    Beispiel:
-                    • Wir speichern persönliche Daten nur mit Einwilligung.
-                    • Daten werden verschlüsselt übertragen und gespeichert.
-                    • Du kannst jederzeit den Export oder die Löschung deiner Daten beantragen.
-                    
-                    Weitere Details hier...
-                """.trimIndent(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                (stringResource(R.string.privacy_policy)),
+                style = MaterialTheme.typography.titleLarge
             )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = privacyText,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("OK")
+                Text((stringResource(R.string.back)))
             }
         }
     )
