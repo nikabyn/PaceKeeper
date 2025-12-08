@@ -50,12 +50,12 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
-import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.HeartRateCard
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
+import org.htwk.pacing.ui.components.NotificationCard
 import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -155,16 +155,20 @@ fun SettingsScreen(
 
             UserProfileCard(navController = navController)
             Spacer(modifier = Modifier.height(Spacing.large))
+            NotificationCard(navController = navController)
+            Spacer(modifier = Modifier.height(Spacing.large))
 
             ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
+            /*
+                        Button(
+                            onClick = { navController.navigate(Route.NOTIFICATIONS) },
+                            style = PrimaryButtonStyle,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.button_notifications))
+                        }
 
-            Button(
-                onClick = { navController.navigate(Route.NOTIFICATIONS) },
-                style = PrimaryButtonStyle,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.button_notifications))
-            }
+             */
         }
 
     }

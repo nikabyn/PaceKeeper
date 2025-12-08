@@ -76,6 +76,7 @@
     <string name="current_energy_saved">Current energy level saved as correct.</string>
     <string name="adjusted_energy_saved">Adjusted energy level saved as correct.</string>
     <string name="profile_card_title">User Profile</string>
+    <string name="notification_card_title">Notifications</string>
     <string name="profile_card_description">Enter/edit basic data for Pacing values</string>
     <string name="icon_profile_description">Profile Icon</string>
     <string name="icon_settings_description">Settings Icon</string>
