@@ -1,22 +1,19 @@
 package org.htwk.pacing.backend.predictor
 
-import android.util.Log
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.backend.predictor.Predictor.train
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.IPreprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
-import org.htwk.pacing.ui.math.sigmoidStable
-import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 object Predictor {
-    private const val TAG = "Predictor"
+    private const val LOGGING_TAG = "Predictor"
 
     //time duration/length of input time series
     val TIME_SERIES_DURATION: Duration = 2.days
@@ -27,10 +24,12 @@ object Predictor {
         (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 
     /**
-     * A container for raw, unprocessed, synchronized data from database, like heart rate.
+     * A container for raw, unprocessed, synchronized data from the database, such as heart rate and distance.
      *
      * @property timeStart The common start time for all data streams.
-     * @property metrics A map of metric types to their corresponding time series data.
+     * @property duration The duration of the time series data.
+     * @property heartRate A list of heart rate entries.
+     * @property distance A list of distance entries.
      */
     data class MultiTimeSeriesEntries(
         val timeStart: kotlinx.datetime.Instant,
@@ -42,33 +41,34 @@ object Predictor {
 
     /**
      * Encapsulates fixed parameters that do not change over the duration of a time series.
-     * These are typically user-specific static values like age or physiological thresholds.
+     * These are typically user-specific static values like physiological thresholds.
+     *
+     * @property anaerobicThresholdBPM The user's anaerobic threshold in beats per minute (BPM).
+     *                                 This is the heart rate level above which the body's energy
+     *                                 production becomes predominantly anaerobic.
      */
     data class FixedParameters(
         //we have to add more fixed vital parameters later
         val anaerobicThresholdBPM: Double
     )
 
+    /**
+     * Trains the prediction model on historical data.
+     *
+     * This function preprocesses the provided time series data and uses it to train the underlying
+     * prediction model. It must be called with sufficient and representative sample data before
+     * the `predict` function can be used to generate accurate forecasts.
+     * Calling `train` updates the internal state of the model.
+     *
+     * @param inputTimeSeries The historical multi-source time series data (e.g., heart rate, distance).
+     * @param fixedParameters Static user-specific parameters relevant to the training data.
+     */
     fun train(
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ) {
-        var timeSeriesDiscrete: IPreprocessor.MultiTimeSeriesDiscrete
-        val preprocessorDuration = measureTimeMillis {
-            timeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
-        }
-        Log.d(TAG, "Preprocessor.run duration: $preprocessorDuration ms")
-
-        val addSamplesDuration = measureTimeMillis {
-            LinearCombinationPredictionModel.addTrainingSamplesFromMultiTimeSeriesDiscrete(
-                timeSeriesDiscrete
-            )
-        }
-        Log.d(TAG, "addTrainingSamplesFromMultiTimeSeriesDiscrete duration: $addSamplesDuration ms")
-
-        val trainDuration =
-            measureTimeMillis { LinearCombinationPredictionModel.trainOnStoredSamples() }
-        Log.d(TAG, "trainOnStoredSamples duration: $trainDuration ms")
+        val mtsd = Preprocessor.run(inputTimeSeries, fixedParameters)
+        LinearCombinationPredictionModel.train(mtsd)
     }
 
     /**
@@ -78,12 +78,14 @@ object Predictor {
      * preprocesses the data, and then feeds it into a prediction model to generate
      * a future energy level prediction.
      *
+     * @see train train must be called before predict/inference can run
+     *
      * @param inputTimeSeries The multi-source time series data (e.g., heart rate) for a defined duration.
      * @param fixedParameters Static user-specific parameters, such as the anaerobic threshold, that do not change over the time series.
      * @return A [PredictedEnergyLevelEntry] containing the forecasted energy level percentage and the timestamp for which the prediction is valid.
      */
     fun predict(
-        inputTimeSeries: MultiTimeSeriesEntries, /*fixed parameters like anaerobic threshold*/
+        inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
     ): PredictedEnergyLevelEntry {
         // 1.) time series preprocessing
@@ -95,7 +97,7 @@ object Predictor {
         val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
-            Percentage(sigmoidStable(predictedEnergy / 100.0))
+            Percentage((predictedEnergy / 100.0).coerceIn(0.0, 1.0))
         )
     }
 }
