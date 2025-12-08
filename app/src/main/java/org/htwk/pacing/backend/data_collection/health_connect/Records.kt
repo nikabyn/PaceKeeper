@@ -32,7 +32,7 @@ object Records {
     )
 
     @ConsistentCopyVisibility
-    data class Entry<T : Record> internal constructor(
+    data class Entry internal constructor(
         val recordType: KClass<out Record>,
         val readPermission: String,
         val writePermission: String,
@@ -41,7 +41,7 @@ object Records {
 
     internal inline fun <reified T : Record> createEntry(
         noinline getDao: (db: PacingDatabase) -> TimedSeries<out TimedEntry>
-    ) = Entry<T>(
+    ) = Entry(
         T::class,
         HealthPermission.getReadPermission<T>(),
         HealthPermission.getWritePermission<T>(),

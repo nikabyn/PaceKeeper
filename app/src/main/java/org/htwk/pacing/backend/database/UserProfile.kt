@@ -89,8 +89,6 @@ data class UserProfileEntry(
 
 @Dao
 interface UserProfileDao {
-    @Query("SELECT * FROM user_profile LIMIT 1")
-    fun getCurrentProfile(): Flow<UserProfileEntry?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(profile: UserProfileEntry)
@@ -99,5 +97,8 @@ interface UserProfileDao {
     suspend fun deleteAll()
 
     @Query("SELECT * FROM user_profile LIMIT 1")
-    suspend fun getCurrentProfileDirect(): UserProfileEntry?
+    suspend fun getProfile(): UserProfileEntry?
+
+    @Query("SELECT * FROM user_profile LIMIT 1")
+    fun getProfileLive(): Flow<UserProfileEntry?>
 }
