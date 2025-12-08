@@ -5,27 +5,29 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.work.BackoffPolicy
 import androidx.work.Configuration
 import androidx.work.ExistingWorkPolicy
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.runBlocking
+import org.htwk.pacing.backend.ForegroundWorker
 import org.htwk.pacing.backend.appModule
-import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
-import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.backend.productionModule
-import org.htwk.pacing.backend.scheduleEnergyCheckWorker
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 /**
  * Entry point for non UI related work.
@@ -35,10 +37,10 @@ open class ProductionApplication : Application(), KoinComponent {
         super.onCreate()
         startInjection()
         val wm = getWorkManager(this)
-        enqueueWorkers(wm)
+        enqueueForegroundWorker(wm)
         runBlocking {
             val dao = getKoin().get<UserProfileDao>()
-            if (dao.getCurrentProfileDirect() == null) {
+            if (dao.getProfile() == null) {
                 dao.insertOrUpdate(UserProfileEntry.createInitial())
             }
         }
@@ -76,40 +78,26 @@ class BroadcastReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_UNSUSPENDED -> {
                 val wm = getWorkManager(context)
-                enqueueWorkers(wm)
+                enqueueForegroundWorker(wm)
             }
         }
     }
 }
 
-fun enqueueWorkers(wm: WorkManager) {
-    enqueueHealthConnectWorker(wm)
-    enqueuePredictionWorker(wm)
-    scheduleEnergyCheckWorker(wm)
-}
-
-fun enqueueHealthConnectWorker(wm: WorkManager) {
-    val workRequest = OneTimeWorkRequestBuilder<HealthConnectWorker>()
+fun enqueueForegroundWorker(wm: WorkManager) {
+    val workRequest = OneTimeWorkRequestBuilder<ForegroundWorker>()
         .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .setBackoffCriteria(
+            BackoffPolicy.LINEAR,
+            WorkRequest.MIN_BACKOFF_MILLIS.seconds.toJavaDuration()
+        )
         .build()
     wm.enqueueUniqueWork(
         "HealthDataCollection",
         ExistingWorkPolicy.REPLACE,
         workRequest
     )
-    Log.d("PacingApp", "Enqueued RandomHeartRateWorker")
-}
-
-fun enqueuePredictionWorker(wm: WorkManager) {
-    val workRequest = OneTimeWorkRequestBuilder<PredictionWorker>()
-        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-        .build()
-    wm.enqueueUniqueWork(
-        "PredictionWorker",
-        ExistingWorkPolicy.REPLACE,
-        workRequest
-    )
-    Log.d("PacingApp", "Enqueued MLModelWorker")
+    Log.d("PacingApp", "Enqueued ForegroundWorker")
 }
 
 @Volatile

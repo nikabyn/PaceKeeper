@@ -186,7 +186,7 @@ class MeasurementsViewModel(
     private val userProfileDao: UserProfileDao
 ) : ViewModel() {
 
-    val userProfile = userProfileDao.getCurrentProfile()
+    val userProfile = userProfileDao.getProfileLive()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

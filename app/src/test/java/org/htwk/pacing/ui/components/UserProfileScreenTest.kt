@@ -240,7 +240,7 @@ class UserProfileDaoTest {
 
         assert(fakeDao.deleteAllCalled)
         runBlocking {
-            val currentProfile = fakeDao.getCurrentProfileDirect()
+            val currentProfile = fakeDao.getProfile()
             assert(currentProfile == null)
         }
     }
@@ -267,7 +267,7 @@ class UserProfileDaoTest {
 
         runBlocking {
             fakeDao.insertOrUpdate(profile)
-            val retrieved = fakeDao.getCurrentProfileDirect()
+            val retrieved = fakeDao.getProfile()
 
             assert(retrieved != null)
             assert(retrieved?.userId == "test-user")
@@ -286,9 +286,9 @@ class FakeUserProfileDao : UserProfileDao {
 
     private val profileFlow = MutableStateFlow<UserProfileEntry?>(null)
 
-    override fun getCurrentProfile() = profileFlow
+    override fun getProfileLive() = profileFlow
 
-    override suspend fun getCurrentProfileDirect(): UserProfileEntry? {
+    override suspend fun getProfile(): UserProfileEntry? {
         return profileFlow.value
     }
 

@@ -153,6 +153,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @return A [Double] representing the predicted energy level.
      */
     override fun predict(input: IPreprocessor.MultiTimeSeriesDiscrete): Double {
+        require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
+
         val flattenedExtrapolations = generateFlattenedMultiExtrapolationResults(input)
 
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations)

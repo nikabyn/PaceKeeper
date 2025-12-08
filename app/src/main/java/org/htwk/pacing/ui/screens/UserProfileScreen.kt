@@ -3,7 +3,15 @@ package org.htwk.pacing.ui.screens
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -11,8 +19,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -21,12 +43,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.htwk.pacing.backend.database.UserProfileEntry
-import org.htwk.pacing.backend.database.UserProfileDao
-import org.htwk.pacing.ui.Route
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.backend.database.UserProfileEntry
+import org.htwk.pacing.ui.Route
 
 /**
  * Defines the Android user profile editing screen built with Jetpack Compose.
@@ -45,24 +69,46 @@ fun UserProfileScreen(
     var birthYear by remember { mutableStateOf(profile.birthYear?.toString() ?: "") }
     var heightCm by remember { mutableStateOf(profile.heightCm?.toString() ?: "") }
     var weightKg by remember { mutableStateOf(profile.weightKg?.toString() ?: "") }
-    var restingHeartRateBpm by remember { mutableStateOf(profile.restingHeartRateBpm?.toString() ?: "") }
+    var restingHeartRateBpm by remember {
+        mutableStateOf(
+            profile.restingHeartRateBpm?.toString() ?: ""
+        )
+    }
     var selectedSex by remember { mutableStateOf(profile.sex) }
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
-    var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
+    var fatigueSensitivity by remember {
+        mutableStateOf(
+            profile.fatigueSensitivity?.toString() ?: ""
+        )
+    }
     var activityBaseline by remember { mutableStateOf(profile.activityBaseline?.toString() ?: "") }
-    var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
+    var anaerobicThreshold by remember {
+        mutableStateOf(
+            profile.anaerobicThreshold?.toString() ?: ""
+        )
+    }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
     // States für Dialog und ob Änderungen vorliegen
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
-    
+
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
-        selectedDiagnosis, fatigueSensitivity, activityBaseline, anaerobicThreshold,
-        bellScale, fitnessTracker
+        nickname,
+        birthYear,
+        heightCm,
+        weightKg,
+        restingHeartRateBpm,
+        selectedSex,
+        selectedAmputationLevel,
+        selectedDiagnosis,
+        fatigueSensitivity,
+        activityBaseline,
+        anaerobicThreshold,
+        bellScale,
+        fitnessTracker
     ) {
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },
@@ -112,9 +158,15 @@ fun UserProfileScreen(
                     }
                 }
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.label_back))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.label_back)
+                )
             }
-            Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.title_user_profile),
+                style = MaterialTheme.typography.titleMedium
+            )
         }
 
         OutlinedTextField(
@@ -171,15 +223,18 @@ fun UserProfileScreen(
             label = stringResource(R.string.label_amputation_level),
             options = UserProfileEntry.AmputationLevel.entries.map { it.name },
             selectedOption = selectedAmputationLevel?.name ?: "NONE",
-            onOptionSelected = { selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it) }
+            onOptionSelected = {
+                selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it)
+            }
         )
 
         DropdownMenuField(
             label = stringResource(R.string.label_diagnosis),
             options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
             selectedOption = selectedDiagnosis?.name ?: "Keine",
-            onOptionSelected = { 
-                selectedDiagnosis = if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
+            onOptionSelected = {
+                selectedDiagnosis =
+                    if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
             }
         )
 
@@ -276,7 +331,9 @@ fun UserProfileScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showUnsavedChangesDialog = false } // Dialog schließen, auf Seite bleiben
+                    onClick = {
+                        showUnsavedChangesDialog = false
+                    } // Dialog schließen, auf Seite bleiben
                 ) {
                     Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
                 }
@@ -338,7 +395,7 @@ class UserProfileViewModel(
 
     init {
         viewModelScope.launch {
-            dao.getCurrentProfile().collect { userProfile ->
+            dao.getProfileLive().collect { userProfile ->
                 _profile.value = userProfile ?: createPlaceholder()
             }
         }
