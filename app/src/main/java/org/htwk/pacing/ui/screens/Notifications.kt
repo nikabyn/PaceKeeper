@@ -25,7 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.htwk.pacing.ui.components.Switch
+import org.htwk.pacing.ui.components.NotificationPermitCard
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -81,44 +81,19 @@ fun NotificationsScreen(
                 .padding(16.dp)
         ) {
 
-            Switch(
-                title = "Kategorie A",
-                checked = catA,
-                onCheckedChange = { viewModel.setCategoryA(it) }
+            NotificationPermitCard(
+                catA = catA,
+                catB = catB,
+                catC = catC,
+                onAChange = { viewModel.setCategoryA(it) },
+                onBChange = { viewModel.setCategoryB(it) },
+                onCChange = { viewModel.setCategoryC(it) }
             )
-
-            Switch(
-                title = "Kategorie B",
-                checked = catB,
-                onCheckedChange = { viewModel.setCategoryB(it) }
-            )
-
-            Switch(
-                title = "Kategorie C",
-                checked = catC,
-                onCheckedChange = { viewModel.setCategoryC(it) }
-            )
-            Text(
-                text = "Personal Resting Hours",
-                modifier = Modifier.padding(top = 24.dp)
-            )
-
-            androidx.compose.foundation.layout.Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
-            ) {
-                Text(text = "$restingStart - $restingEnd")
-
-                androidx.compose.material3.Button(onClick = { showDialog = true }) {
-                    Text("Edit")
-                }
-            }
         }
-
     }
+
 }
+
 
 @Composable
 fun RestingHoursDialog(
