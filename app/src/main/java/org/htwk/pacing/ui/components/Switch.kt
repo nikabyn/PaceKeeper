@@ -62,7 +62,6 @@ fun Switch(
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Linke Spalte: Titel und Beschreibung
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -82,7 +81,6 @@ fun Switch(
             }
         }
 
-        // Rechte Spalte: Switch in einem Column für exakte Zentrierung
         Column(
             modifier = Modifier.align(Alignment.CenterVertically)
         ) {

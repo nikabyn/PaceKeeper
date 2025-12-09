@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalTime
 
 @Database(
     entities = [
@@ -33,7 +34,7 @@ import kotlinx.datetime.Instant
         PredictedEnergyLevelEntry::class,
 
         UserProfileEntry::class,
-
+        //  NotificationSettingsEntry::class,
         ReadEvent::class,
     ],
     version = 3,
@@ -56,6 +57,7 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun validatedEnergyLevelDao(): ValidatedEnergyLevelDao
 
     abstract fun userProfileDao(): UserProfileDao
+    //abstract fun notificationSettingsDao(): NotificationSettingsDao
 
     /*These two tables are different than the others in the sense that they represent
     future data (ml model predictions). Also, when accessing them for writing, their whole table
@@ -134,4 +136,28 @@ class Converters {
     @TypeConverter
     fun toDiagnosis(value: String?): UserProfileEntry.Diagnosis? =
         value?.let { enumValueOf<UserProfileEntry.Diagnosis>(it) }
+
+    @TypeConverter
+    fun localTimeToString(time: LocalTime?): String? {
+        return time?.toString() // Gibt "HH:mm:ss" zurück
+    }
+
+    // Von String zu LocalTime
+    @TypeConverter
+    fun stringToLocalTime(value: String?): LocalTime? {
+        return value?.let {
+            try {
+                // Versuche ISO Format (HH:mm:ss)
+                LocalTime.parse(it)
+            } catch (e: Exception) {
+                // Fallback für einfache HH:mm Format
+                val parts = it.split(":")
+                when (parts.size) {
+                    2 -> LocalTime(parts[0].toInt(), parts[1].toInt())
+                    3 -> LocalTime(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
+                    else -> null
+                }
+            }
+        }
+    }
 }

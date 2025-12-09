@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalTime
 import java.util.UUID
 
 val cleanUuid: String = UUID.randomUUID().toString().replace("-", "")
@@ -34,7 +35,14 @@ data class UserProfileEntry(
     val illnessStartDate: Long?,
     val diagnosis: Diagnosis?,
     val fitnessTracker: String?,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+
+    //Settings
+    val reminderPermit: Boolean,
+    val suggestionPermit: Boolean,
+    val restingStart: LocalTime,
+    val restingEnd: LocalTime
+
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -81,7 +89,14 @@ data class UserProfileEntry(
                 bellScale = null,
                 illnessStartDate = null,
                 diagnosis = null,
-                fitnessTracker = null
+                fitnessTracker = null,
+
+                reminderPermit = false,
+                suggestionPermit = false,
+                restingStart = LocalTime(22, 0),
+                restingEnd = LocalTime(3, 0)
+
+
             )
         }
     }
