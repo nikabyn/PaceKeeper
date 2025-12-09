@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -23,24 +22,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.EnergyPredictionCard
-import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.logo.BlinkLogo
 import org.htwk.pacing.ui.logo.Floaty
@@ -74,14 +64,14 @@ val pages = listOf(
         "Pacing verstehen",
         "Vermeide den Crash.",
         "Bleibe in deinem sicheren Bereich.",
-        "Deine Tagesenergie auf einen Blick",
+        "Deine Tagesenergie auf einen Blick.",
         R.drawable.rounded_show_chart_24
     ),
     OnboardingPage(
         "Dich selbst entdecken",
         "Höre auf deinen Körper.",
         "Erkenne deine Muster.",
-        "Deine Daten und Symptome im Verlauf",
+        "Deine Daten und Symptome im Verlauf.",
         R.drawable.very_happy,
         R.drawable.happy,
         R.drawable.sad,
@@ -118,20 +108,7 @@ fun WelcomeScreen(onFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                /*
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-                */
-                if (isSystemInDarkTheme())
-                    Color(0xff320014)
-                else
-                    Color(0xFFFFF0F6)
-            )
+            .background(MaterialTheme.extendedColors.pink)
             .padding(Spacing.medium)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -160,7 +137,8 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                 ) {
                     Button(
                         onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.extendedColors.logo)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
                     }
@@ -171,7 +149,7 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                 ) {
                     repeat(pages.size) { iteration ->
                         val color =
-                            if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            if (pagerState.currentPage == iteration) MaterialTheme.extendedColors.logo else MaterialTheme.colorScheme.outlineVariant
                         Box(
                             modifier = Modifier
                                 .padding(4.dp)
@@ -193,7 +171,8 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                     },
                     enabled = buttonEnabled,
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                    modifier = Modifier.align(Alignment.CenterEnd)
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.extendedColors.logo)
                 ) {
                     AnimatedVisibility(visible = isLastPage) { Icon(Icons.Default.Check, "Fertig") }
                     AnimatedVisibility(visible = !isLastPage) {
@@ -260,6 +239,7 @@ fun OnboardingPageContent(
                         avgPrediction = 0.5f,
                         maxPrediction = 1.0f,
                         modifier = Modifier.height(300.dp)
+
                     )
                 }
             }
@@ -345,7 +325,7 @@ fun OnboardingPageContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clip(RoundedCornerShape(Spacing.medium))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .background(MaterialTheme.extendedColors.logo.copy(alpha = 0.1f))
                     .padding(Spacing.small)
             ) {
                 Checkbox(
@@ -357,7 +337,7 @@ fun OnboardingPageContent(
                     text = "Ich habe die Datennutzungsbestimmungen gelesen und stimme der Datennutzung zu.",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(Spacing.small),
-                    color = if (isSystemInDarkTheme()) Color.White else Color.Unspecified
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -381,7 +361,7 @@ private fun ScrollBox() {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(Spacing.medium))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .background(MaterialTheme.extendedColors.logo.copy(alpha = 0.1f))
             .fillMaxWidth()
             .size(100.dp)
             .verticalScroll(rememberScrollState())

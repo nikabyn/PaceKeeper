@@ -2,6 +2,8 @@ package org.htwk.pacing.ui.logo
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,9 +73,10 @@ fun shuffleSmileys(
         }
     }
 
-    Image(
+    Icon(
         painter = painterResource(smile),
         contentDescription = null,
-        modifier = Modifier.size(140.dp)
+        modifier = Modifier.size(140.dp),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }

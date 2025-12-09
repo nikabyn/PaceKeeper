@@ -15,6 +15,8 @@ fun currentExtendedColors(darkTheme: Boolean) =
         green = ColorPalette.green80,
         cyan = ColorPalette.cyan80,
         blue = ColorPalette.blue80,
+        pink = ColorPalette.pinkdark,
+        logo = ColorPalette.pink,
     ) else ExtendedColors(
         red = ColorPalette.red60,
         orange = ColorPalette.orange60,
@@ -22,6 +24,8 @@ fun currentExtendedColors(darkTheme: Boolean) =
         green = ColorPalette.green60,
         cyan = ColorPalette.cyan60,
         blue = ColorPalette.blue60,
+        pink = ColorPalette.pinklight,
+        logo = ColorPalette.pink,
     )
 
 @Immutable
@@ -32,6 +36,8 @@ data class ExtendedColors(
     val green: Color,
     val cyan: Color,
     val blue: Color,
+    val pink: Color,
+    val logo: Color,
 ) {
     @Composable
     fun warningContainer() =
@@ -58,6 +64,8 @@ internal val LocalExtendedColors = staticCompositionLocalOf {
         green = Color.Unspecified,
         cyan = Color.Unspecified,
         blue = Color.Unspecified,
+        pink = Color.Unspecified,
+        logo = Color.Unspecified,
     )
 }
 
@@ -133,4 +141,8 @@ object ColorPalette {
     val blue30 = Color(0xff00316b)
     val blue20 = Color(0xff052a57)
     val blue10 = Color(0xff051429)
+
+    val pink = Color(0xFFD02563)
+    val pinkdark = Color(0xFF320014)
+    val pinklight = Color(0xFFFFF0F6)
 }
