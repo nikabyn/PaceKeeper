@@ -109,7 +109,7 @@ object FallbackHandler {
         //used to derive local hour of day, for sleep augmentation
         val localTimeZone = TimeZone.currentSystemDefault()
 
-        val sleep = ensureData(
+        val sleep : List<SleepSessionEntry> = ensureData(
             raw.sleep,
             raw.timeStart,
             raw.duration,
@@ -272,7 +272,7 @@ object FallbackHandler {
         return emptyList()
     }
 
-    private fun loadDefaultSleepData(start: Instant, duration: Duration): List<SpeedEntry> {
+    private fun loadDefaultSleepData(start: Instant, duration: Duration): List<SleepSessionEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }

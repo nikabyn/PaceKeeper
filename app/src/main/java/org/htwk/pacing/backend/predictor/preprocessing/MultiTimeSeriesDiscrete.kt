@@ -305,7 +305,8 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.Speed -> raw.speed.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.SLEEP -> raw.sleep.map(::GenericTimedDataPoint)
                         }
                     ),
                     stepCount

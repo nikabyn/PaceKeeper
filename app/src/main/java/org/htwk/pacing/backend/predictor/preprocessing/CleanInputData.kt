@@ -132,6 +132,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.start to it.end }
     )
 
+    //don't clean sleep for now
     val cleanedSleep = raw.sleep
     val correctionSleepRatio = 1.0
 
@@ -167,6 +168,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
 
                     TimeSeriesMetric.STEPS -> Percentage(correctionStepsRatio)
                     TimeSeriesMetric.SPEED -> Percentage(correctionSpeedsRatio)
+                    TimeSeriesMetric.SLEEP -> Percentage(correctionSleepRatio)
                 }
             }
 
