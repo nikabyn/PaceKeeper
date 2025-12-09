@@ -8,6 +8,7 @@ import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.predictor.Predictor.train
@@ -48,7 +49,8 @@ object Predictor {
         val heartRateVariability: List<HeartRateVariabilityEntry>,
         val oxygenSaturation: List<OxygenSaturationEntry>,
         val steps: List<StepsEntry>,
-        val speed: List<SpeedEntry>
+        val speed: List<SpeedEntry>,
+        val sleep: List<SleepSessionEntry>
     )
 
     /**

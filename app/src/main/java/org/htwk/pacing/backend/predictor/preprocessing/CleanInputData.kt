@@ -120,7 +120,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
             val deltaSeconds = (it.end - it.start).inMs / 1000.0
             if (deltaSeconds <= 0.0) return@cleanData true
             val stepsPerSecond = it.count.toDouble() / deltaSeconds
-            return@cleanData stepsPerSecond !in 0.0..MAX_VALID_STEPS_PER_SECOND
+            return@cleanData stepsPerSecond == 0.0 || stepsPerSecond !in 0.0..MAX_VALID_STEPS_PER_SECOND
         },
         distinctByKey = { it.start to it.end }
     )
@@ -131,6 +131,9 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         isInvalid = { it.velocity.inKilometersPerHour() !in 0.0..500.0 },
         distinctByKey = { it.start to it.end }
     )
+
+    val cleanedSleep = raw.sleep
+    val correctionSleepRatio = 1.0
 
     return Pair(
         MultiTimeSeriesEntries(
@@ -143,7 +146,8 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
             heartRateVariability = cleanedHeartRateVariabilities,
             oxygenSaturation = cleanedOxygenSaturations,
             steps = cleanedSteps,
-            speed = cleanedSpeeds
+            speed = cleanedSpeeds,
+            sleep = cleanedSleep,
         ),
 
         QualityRatios(
@@ -162,7 +166,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
                     )
 
                     TimeSeriesMetric.STEPS -> Percentage(correctionStepsRatio)
-                    TimeSeriesMetric.Speed -> Percentage(correctionSpeedsRatio)
+                    TimeSeriesMetric.SPEED -> Percentage(correctionSpeedsRatio)
                 }
             }
 

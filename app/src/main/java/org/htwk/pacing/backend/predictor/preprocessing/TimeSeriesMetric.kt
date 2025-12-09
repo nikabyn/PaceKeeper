@@ -51,6 +51,6 @@ enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
     OXYGEN_SATURATION(TimeSeriesSignalClass.CONTINUOUS),
     SKIN_TEMPERATURE(TimeSeriesSignalClass.CONTINUOUS),
     STEPS(TimeSeriesSignalClass.AGGREGATED),
-    Speed(TimeSeriesSignalClass.CONTINUOUS)
+    SPEED(TimeSeriesSignalClass.CONTINUOUS)
 
 }

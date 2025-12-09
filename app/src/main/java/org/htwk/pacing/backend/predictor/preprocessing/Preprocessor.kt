@@ -23,6 +23,6 @@ object Preprocessor {
         val (rawCleaned, qualityRatios) = cleanInputData(raw)
         val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
 
-        return MultiTimeSeriesDiscrete.fromEntries(ensuredDataUsingFallback);
+        rawCleaned.return MultiTimeSeriesDiscrete.fromEntries(ensuredDataUsingFallback);
     }
 }

@@ -1,21 +1,31 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
-import org.htwk.pacing.backend.database.HeartRateEntry
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
-import org.htwk.pacing.backend.predictor.Predictor
-import kotlin.time.Duration
-import kotlin.time.times
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.database.OxygenSaturationEntry
+import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SleepSessionEntry
+import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.Temperature
-import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.Velocity
+import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureData
+import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.generateDefaultDistanceSeries
+import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.generateDefaultHeartRateSeries
+import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.loadHistoricalDistanceData
+import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.loadHistoricalHeartRateData
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.times
 
 object FallbackHandler {
 
@@ -38,14 +48,95 @@ object FallbackHandler {
      * @see generateDefaultDistanceSeries
      */
     fun ensureDataFallback(raw: Predictor.MultiTimeSeriesEntries): Predictor.MultiTimeSeriesEntries {
-        val heartRate = ensureData (raw.heartRate, raw.timeStart, raw.duration,::loadHistoricalHeartRateData,::generateDefaultHeartRateSeries)
-        val distance = ensureData(raw.distance, raw.timeStart, raw.duration,::loadHistoricalDistanceData,::generateDefaultDistanceSeries)
-        val elevationGained = ensureData(raw.elevationGained, raw.timeStart, raw.duration,::loadHistoricalElevationGainedData,::generateDefaultElevationGainedSeries)
-        val skinTemperature = ensureData(raw.skinTemperature, raw.timeStart, raw.duration,::loadDefaultSkinTemperatureData,::generateDefaultSkinTemperatureSeries)
-        val heartRateVariability = ensureData(raw.heartRateVariability, raw.timeStart, raw.duration,::loadDefaultHeartRateVariabilityData,::generateDefaultHeartRateVariabilitySeries)
-        val oxygenSaturation = ensureData(raw.oxygenSaturation, raw.timeStart, raw.duration,::loadDefaultOxygenSaturationData,::generateDefaultOxygenSaturationSeries)
-        val steps = ensureData(raw.steps, raw.timeStart, raw.duration,::loadDefaultStepsData,::generateDefaultStepsSeries)
-        val speed = ensureData(raw.speed, raw.timeStart, raw.duration,::loadDefaultSpeedData,::generateDefaultSpeedSeries)
+
+        val heartRate = ensureData(
+            raw.heartRate,
+            raw.timeStart,
+            raw.duration,
+            ::loadHistoricalHeartRateData,
+            ::generateDefaultHeartRateSeries
+        )
+        val distance = ensureData(
+            raw.distance,
+            raw.timeStart,
+            raw.duration,
+            ::loadHistoricalDistanceData,
+            ::generateDefaultDistanceSeries
+        )
+        val elevationGained = ensureData(
+            raw.elevationGained,
+            raw.timeStart,
+            raw.duration,
+            ::loadHistoricalElevationGainedData,
+            ::generateDefaultElevationGainedSeries
+        )
+        val skinTemperature = ensureData(
+            raw.skinTemperature,
+            raw.timeStart,
+            raw.duration,
+            ::loadDefaultSkinTemperatureData,
+            ::generateDefaultSkinTemperatureSeries
+        )
+        val heartRateVariability = ensureData(
+            raw.heartRateVariability,
+            raw.timeStart,
+            raw.duration,
+            ::loadDefaultHeartRateVariabilityData,
+            ::generateDefaultHeartRateVariabilitySeries
+        )
+        val oxygenSaturation = ensureData(
+            raw.oxygenSaturation,
+            raw.timeStart,
+            raw.duration,
+            ::loadDefaultOxygenSaturationData,
+            ::generateDefaultOxygenSaturationSeries
+        )
+        val steps = ensureData(
+            raw.steps,
+            raw.timeStart,
+            raw.duration,
+            ::loadDefaultStepsData,
+            ::generateDefaultStepsSeries
+        )
+        val speed = ensureData(
+            raw.speed,
+            raw.timeStart,
+            raw.duration,
+            ::loadDefaultSpeedData,
+            ::generateDefaultSpeedSeries
+        )
+
+        //used to derive local hour of day, for sleep augmentation
+        val localTimeZone = TimeZone.currentSystemDefault()
+
+        val sleep = ensureData(
+            raw.sleep,
+            raw.timeStart,
+            raw.duration,
+            ::loadDefaultSleepData,
+            { start, duration ->
+                val startHourOfDay = start.toLocalDateTime(localTimeZone).hour
+                var numHours = duration.inWholeHours.toInt()
+
+                List<SleepSessionEntry>(numHours) { index ->
+                    val hourOfDay = (startHourOfDay + index) % 24
+                    val sleepStage: SleepStage = when (hourOfDay) {
+                        in 8..23 -> SleepStage.Awake
+                        else -> SleepStage.Sleeping
+                    }
+
+                    SleepSessionEntry(
+                        start = (start + index.hours).coerceIn(start, start + duration),
+                        end = (start + index.hours + 1.hours).coerceIn(start, start + duration),
+                        stage = sleepStage
+                    )
+
+                }
+
+
+            }
+        )
+
 
         return Predictor.MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
@@ -57,7 +148,8 @@ object FallbackHandler {
             heartRateVariability = heartRateVariability,
             oxygenSaturation = oxygenSaturation,
             steps = steps,
-            speed = speed
+            speed = speed,
+            sleep = sleep,
         )
     }
 
@@ -89,7 +181,7 @@ object FallbackHandler {
         duration: Duration,
         historicalDataFunction: (Instant, Duration) -> List<T>,
         defaultDataFunction: (Instant, Duration) -> List<T>,
-        ): List<T> {
+    ): List<T> {
         if (raw.isNotEmpty()) return raw
 
         val history = historicalDataFunction(timeStart, duration)
@@ -114,40 +206,58 @@ object FallbackHandler {
      * @return A [List] of [HeartRateEntry] objects containing the historical data. Returns an empty
      *         list if no data is found or if the implementation is not yet complete.
      */
-    private fun loadHistoricalHeartRateData(start: Instant, duration: Duration): List<HeartRateEntry> {
+    private fun loadHistoricalHeartRateData(
+        start: Instant,
+        duration: Duration
+    ): List<HeartRateEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
 
-/**
+    /**
      * See loadHistoricalHeartRateData
      *
-    * @param start The [Instant] marking the beginning of the time range for which to load data.
-    * @param duration The [Duration] of the time range.
-    * @return A [List] of [DistanceEntry] objects containing the historical data. Returns an empty
-    *         list if no data is found or if the implementation is not yet complete.
-    */
-    private fun loadHistoricalDistanceData(start: Instant, duration: Duration): List<DistanceEntry> {
+     * @param start The [Instant] marking the beginning of the time range for which to load data.
+     * @param duration The [Duration] of the time range.
+     * @return A [List] of [DistanceEntry] objects containing the historical data. Returns an empty
+     *         list if no data is found or if the implementation is not yet complete.
+     */
+    private fun loadHistoricalDistanceData(
+        start: Instant,
+        duration: Duration
+    ): List<DistanceEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
 
-    private fun loadHistoricalElevationGainedData(start: Instant, duration: Duration): List<ElevationGainedEntry> {
+    private fun loadHistoricalElevationGainedData(
+        start: Instant,
+        duration: Duration
+    ): List<ElevationGainedEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
 
-    private fun loadDefaultSkinTemperatureData(start: Instant, duration: Duration): List<SkinTemperatureEntry> {
+    private fun loadDefaultSkinTemperatureData(
+        start: Instant,
+        duration: Duration
+    ): List<SkinTemperatureEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
 
-    private fun loadDefaultHeartRateVariabilityData(start: Instant, duration: Duration): List<HeartRateVariabilityEntry> {
+    private fun loadDefaultHeartRateVariabilityData(
+        start: Instant,
+        duration: Duration
+    ): List<HeartRateVariabilityEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
 
-    private fun loadDefaultOxygenSaturationData(start: Instant, duration: Duration): List<OxygenSaturationEntry> {
+    private fun loadDefaultOxygenSaturationData(
+        start: Instant,
+        duration: Duration
+    ): List<OxygenSaturationEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
@@ -158,6 +268,11 @@ object FallbackHandler {
     }
 
     private fun loadDefaultSpeedData(start: Instant, duration: Duration): List<SpeedEntry> {
+        // TODO: Depends on cache implementation
+        return emptyList()
+    }
+
+    private fun loadDefaultSleepData(start: Instant, duration: Duration): List<SpeedEntry> {
         // TODO: Depends on cache implementation
         return emptyList()
     }
