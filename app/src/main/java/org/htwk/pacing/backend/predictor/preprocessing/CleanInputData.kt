@@ -15,7 +15,7 @@ data class QualityRatios(
 
 //TODO: add pattern-matching-based invalid data sanitization, so that for different kinds of errors we can respond in different ways
 fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, QualityRatios> {
-    val MAX_VALID_SPEED_MPS = 5.0 //max. accepted movement speed, walking (m/s)
+    val MAX_VALID_SPEED_MPS = 20.0 //max. accepted movement speed, walking (m/s)
     val MAX_VALID_ELEVATION_CHANGE_MPS = 2.0 //max. accepted elevation change (m/s)
     val MAX_VALID_STEPS_PER_SECOND = 4.0 //max. accepted steps per second
 
