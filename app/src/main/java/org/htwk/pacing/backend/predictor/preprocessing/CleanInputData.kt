@@ -62,7 +62,6 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.time } //uniqueness based on timestamp
     )
 
-    //maximale geschwindigkeit festlegen um bugs bei standort zu vermeiden
     val (cleanedDistances, correctionDistancesRatio) = cleanData(
         list = raw.distance,
         timeSortKey = { it.end },
@@ -132,10 +131,6 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
         distinctByKey = { it.start to it.end }
     )
 
-    //don't clean sleep for now
-    val cleanedSleep = raw.sleep
-    val correctionSleepRatio = 1.0
-
     return Pair(
         MultiTimeSeriesEntries(
             timeStart = raw.timeStart,
@@ -148,7 +143,8 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
             oxygenSaturation = cleanedOxygenSaturations,
             steps = cleanedSteps,
             speed = cleanedSpeeds,
-            sleep = cleanedSleep,
+            sleepSession = raw.sleepSession, //don't clean sleep for now
+            validatedEnergyLevel = raw.validatedEnergyLevel //don't clean validated energy for now
         ),
 
         QualityRatios(
@@ -168,7 +164,8 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
 
                     TimeSeriesMetric.STEPS -> Percentage(correctionStepsRatio)
                     TimeSeriesMetric.SPEED -> Percentage(correctionSpeedsRatio)
-                    TimeSeriesMetric.SLEEP -> Percentage(correctionSleepRatio)
+                    TimeSeriesMetric.SLEEP_SESSION -> Percentage(1.0)
+                    TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> Percentage(1.0)
                 }
             }
 

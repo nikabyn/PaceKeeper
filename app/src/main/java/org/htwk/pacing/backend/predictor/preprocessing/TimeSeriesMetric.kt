@@ -52,5 +52,6 @@ enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
     SKIN_TEMPERATURE(TimeSeriesSignalClass.CONTINUOUS),
     STEPS(TimeSeriesSignalClass.AGGREGATED),
     SPEED(TimeSeriesSignalClass.CONTINUOUS),
-    SLEEP(TimeSeriesSignalClass.AGGREGATED)
+    SLEEP_SESSION(TimeSeriesSignalClass.AGGREGATED),
+    VALIDATED_ENERGY_LEVEL(TimeSeriesSignalClass.CONTINUOUS),
 }

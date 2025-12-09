@@ -11,6 +11,7 @@ import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.koin.core.time.inMs
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -95,6 +96,11 @@ data class GenericTimedDataPointTimeSeries(
                 in listOf(SleepStage.Awake, SleepStage.AwakeInBed, SleepStage.OutOfBed, SleepStage.Unknown) -> 0.0 //awake
                 else -> (src.end - src.start).inMs / 1.hours.inMs //asleep
             }
+        )
+
+        constructor(src: ValidatedEnergyLevelEntry) : this(
+            time = src.time,
+            value = src.percentage.toDouble()
         )
     }
 }

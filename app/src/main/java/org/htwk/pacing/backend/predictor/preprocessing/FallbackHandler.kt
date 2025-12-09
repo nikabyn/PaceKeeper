@@ -110,7 +110,7 @@ object FallbackHandler {
         val localTimeZone = TimeZone.currentSystemDefault()
 
         val sleep : List<SleepSessionEntry> = ensureData(
-            raw.sleep,
+            raw.sleepSession,
             raw.timeStart,
             raw.duration,
             ::loadDefaultSleepData,
@@ -149,7 +149,7 @@ object FallbackHandler {
             oxygenSaturation = oxygenSaturation,
             steps = steps,
             speed = speed,
-            sleep = sleep,
+            sleepSession = sleep,
         )
     }
 

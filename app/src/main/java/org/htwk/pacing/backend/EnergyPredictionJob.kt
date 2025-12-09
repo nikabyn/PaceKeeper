@@ -19,9 +19,11 @@ import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.UserProfileEntry
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -90,6 +92,8 @@ object EnergyPredictionJob {
         val oxygenSaturation = db.oxygenSaturationDao().getLastLive(duration)
         val steps = db.stepsDao().getLastLive(duration)
         val speed = db.speedDao().getLastLive(duration)
+        val sleepSession = db.sleepSessionsDao().getLastLive(duration)
+        val validatedEnergyLevel = db.validatedEnergyLevelDao().getLastLive(duration)
 
         val userProfile = db.userProfileDao().getProfileLive()
         val ticker = flow {
@@ -108,6 +112,8 @@ object EnergyPredictionJob {
             oxygenSaturation,
             steps,
             speed,
+            sleepSession,
+            validatedEnergyLevel,
             userProfile,
             ticker
         ) { values ->
@@ -134,7 +140,14 @@ object EnergyPredictionJob {
 
             @Suppress("UNCHECKED_CAST")
             val speedValues = values[7] as List<SpeedEntry>
-            val userProfileValue = values[8] // No cast needed if type is correct or handled below
+
+            @Suppress("UNCHECKED_CAST")
+            val sleepSessionValues = values[8] as List<SleepSessionEntry>
+
+            @Suppress("UNCHECKED_CAST")
+            val validatedEnergyValues = values[9] as List<ValidatedEnergyLevelEntry>
+
+            val userProfileValue = values[10] // No cast needed if type is correct or handled below
 
             Pair(
                 MultiTimeSeriesEntries(
@@ -147,7 +160,9 @@ object EnergyPredictionJob {
                     heartRateVariability = heartRateVariabilityValues,
                     oxygenSaturation = oxygenSaturationValues,
                     steps = stepsValues,
-                    speed = speedValues
+                    speed = speedValues,
+                    sleepSession = sleepSessionValues,
+                    validatedEnergyLevel = validatedEnergyValues
                 ),
                 FixedParameters(
                     anaerobicThresholdBPM = (userProfileValue as? UserProfileEntry)
@@ -181,6 +196,9 @@ object EnergyPredictionJob {
         val oxygenSaturation = db.oxygenSaturationDao().getInRange(start, end)
         val steps = db.stepsDao().getInRange(start, end)
         val speed = db.speedDao().getInRange(start, end)
+        val sleepSession = db.sleepSessionsDao().getInRange(start, end)
+        val validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(start, end)
+
         val userProfile = db.userProfileDao().getProfile()
 
         val multiSeries = MultiTimeSeriesEntries(
@@ -194,6 +212,8 @@ object EnergyPredictionJob {
             oxygenSaturation = oxygenSaturation,
             steps = steps,
             speed = speed,
+            sleepSession = sleepSession,
+            validatedEnergyLevel = validatedEnergyLevel
         )
         val fixedParams = FixedParameters(
             anaerobicThresholdBPM = userProfile

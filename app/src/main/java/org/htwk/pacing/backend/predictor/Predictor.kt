@@ -11,6 +11,7 @@ import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor.train
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
@@ -22,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 object Predictor {
     private const val LOGGING_TAG = "Predictor"
 
-    //time duration/length of input time series
+    //time duration/length of input time series;
     val TIME_SERIES_DURATION: Duration = 2.days
     val TIME_SERIES_STEP_DURATION: Duration = 10.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
@@ -42,15 +43,16 @@ object Predictor {
         val timeStart: kotlinx.datetime.Instant,
         val duration: Duration = TIME_SERIES_DURATION,
 
-        val heartRate: List<HeartRateEntry>,
-        val distance: List<DistanceEntry>,
-        val elevationGained: List<ElevationGainedEntry>,
-        val skinTemperature: List<SkinTemperatureEntry>,
-        val heartRateVariability: List<HeartRateVariabilityEntry>,
-        val oxygenSaturation: List<OxygenSaturationEntry>,
-        val steps: List<StepsEntry>,
-        val speed: List<SpeedEntry>,
-        val sleep: List<SleepSessionEntry>
+        val heartRate: List<HeartRateEntry> = emptyList(),
+        val distance: List<DistanceEntry> = emptyList(),
+        val elevationGained: List<ElevationGainedEntry> = emptyList(),
+        val skinTemperature: List<SkinTemperatureEntry> = emptyList(),
+        val heartRateVariability: List<HeartRateVariabilityEntry> = emptyList(),
+        val oxygenSaturation: List<OxygenSaturationEntry> = emptyList(),
+        val steps: List<StepsEntry> = emptyList(),
+        val speed: List<SpeedEntry> = emptyList(),
+        val sleepSession: List<SleepSessionEntry> = emptyList(),
+        val validatedEnergyLevel: List<ValidatedEnergyLevelEntry> = emptyList()
     )
 
     /**
