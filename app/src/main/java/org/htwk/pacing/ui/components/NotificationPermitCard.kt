@@ -34,23 +34,26 @@ fun NotificationPermitCard(
 
             Switch(
                 title = "Kategorie A",
+                description = "Eine Beschreibung",
                 checked = catA,
                 onCheckedChange = onAChange,
-                textStyle = MaterialTheme.typography.titleLarge
+                titleStyle = MaterialTheme.typography.titleLarge
             )
 
             Switch(
                 title = "Kategorie B",
+                description = "Eine Beschreibung",
                 checked = catB,
                 onCheckedChange = onBChange,
-                textStyle = MaterialTheme.typography.titleLarge
+                titleStyle = MaterialTheme.typography.titleLarge
             )
 
             Switch(
                 title = "Kategorie C",
+                description = "Eine Beschreibung",
                 checked = catC,
                 onCheckedChange = onCChange,
-                textStyle = MaterialTheme.typography.titleLarge
+                titleStyle = MaterialTheme.typography.titleLarge
             )
         }
     }
