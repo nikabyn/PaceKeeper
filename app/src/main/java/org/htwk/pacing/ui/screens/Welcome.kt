@@ -37,7 +37,6 @@ import org.htwk.pacing.ui.logo.Floaty
 import org.htwk.pacing.ui.logo.RollingEntry
 import org.htwk.pacing.ui.logo.shuffleSmileys
 import org.htwk.pacing.ui.theme.Spacing
-import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.random.Random
 
 data class OnboardingPage(
@@ -79,7 +78,7 @@ val pages = listOf(
     ),
     OnboardingPage(
         "Loslegen",
-        "Höre auf deinen Körper. Wir starten jetzt.",
+        "Wir starten jetzt.",
         " ",
         "",
         R.drawable.ic_logo_open,
@@ -108,7 +107,6 @@ fun WelcomeScreen(onFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.extendedColors.pink)
             .padding(Spacing.medium)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -138,7 +136,6 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                     Button(
                         onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
                         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.extendedColors.logo)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
                     }
@@ -149,7 +146,7 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                 ) {
                     repeat(pages.size) { iteration ->
                         val color =
-                            if (pagerState.currentPage == iteration) MaterialTheme.extendedColors.logo else MaterialTheme.colorScheme.outlineVariant
+                            if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                         Box(
                             modifier = Modifier
                                 .padding(4.dp)
@@ -172,7 +169,6 @@ fun WelcomeScreen(onFinished: () -> Unit) {
                     enabled = buttonEnabled,
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
                     modifier = Modifier.align(Alignment.CenterEnd),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.extendedColors.logo)
                 ) {
                     AnimatedVisibility(visible = isLastPage) { Icon(Icons.Default.Check, "Fertig") }
                     AnimatedVisibility(visible = !isLastPage) {
@@ -325,7 +321,7 @@ fun OnboardingPageContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clip(RoundedCornerShape(Spacing.medium))
-                    .background(MaterialTheme.extendedColors.logo.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                     .padding(Spacing.small)
             ) {
                 Checkbox(
@@ -361,7 +357,7 @@ private fun ScrollBox() {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(Spacing.medium))
-            .background(MaterialTheme.extendedColors.logo.copy(alpha = 0.1f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             .fillMaxWidth()
             .size(100.dp)
             .verticalScroll(rememberScrollState())
