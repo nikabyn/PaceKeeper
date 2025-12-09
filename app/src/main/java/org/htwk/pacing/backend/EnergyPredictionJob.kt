@@ -192,36 +192,17 @@ object EnergyPredictionJob {
         val sleepSession = db.sleepSessionsDao().getInRange(oldestStart, latestEnd)
         val validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(oldestStart, latestEnd)
 
-        fun oldestEntryTimeIn(list: List<TimedEntry>, defaultMin: Instant) : Instant {
-            return list.minByOrNull { it.end }?.end ?: defaultMin
-        }
+        val allLists: List<List<TimedEntry>> = listOf(
+            heartRate, distance, elevationGained, skinTemperature, heartRateVariability,
+            oxygenSaturation, steps, speed, sleepSession, validatedEnergyLevel)
 
-        fun latestEntryTime(list: List<TimedEntry>, defaultMax: Instant) : Instant {
-            return list.maxByOrNull { it.end }?.end ?: defaultMax
-        }
+        val start = allLists
+            .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
+            .minOrNull() ?: oldestStart
 
-
-        val start = minOf(oldestEntryTimeIn(heartRate, oldestStart),
-            oldestEntryTimeIn(distance, oldestStart),
-            oldestEntryTimeIn(elevationGained, oldestStart),
-            oldestEntryTimeIn(skinTemperature, oldestStart),
-            oldestEntryTimeIn(heartRateVariability, oldestStart),
-            oldestEntryTimeIn(oxygenSaturation, oldestStart),
-            oldestEntryTimeIn(steps, oldestStart),
-            oldestEntryTimeIn(speed, oldestStart),
-            oldestEntryTimeIn(sleepSession, oldestStart),
-            oldestEntryTimeIn(validatedEnergyLevel, oldestStart))
-
-        val end = minOf(latestEntryTime(heartRate, latestEnd),
-            latestEntryTime(distance, latestEnd),
-            latestEntryTime(elevationGained, latestEnd),
-            latestEntryTime(skinTemperature, latestEnd),
-            latestEntryTime(heartRateVariability, latestEnd),
-            latestEntryTime(oxygenSaturation, latestEnd),
-            latestEntryTime(steps, latestEnd),
-            latestEntryTime(speed, latestEnd),
-            latestEntryTime(sleepSession, latestEnd),
-            latestEntryTime(validatedEnergyLevel, latestEnd))
+        val end = allLists
+            .mapNotNull { it.maxByOrNull { entry -> entry.end }?.end }
+            .maxOrNull() ?: latestEnd
 
         val userProfile = db.userProfileDao().getProfile()
 
