@@ -1,10 +1,8 @@
+1.	Wer sind wir?
 
-1. Wer wir sind
-Dieses Projekt wird im Rahmen einer Hochschulischen Lehrveranstaltung an der HTWK
-Leipzig in Zusammenarbeit mit dem Unternehmen FAKT-Software entwickelt.
-Ziel ist die Entwicklung und Erprobung eines App-Prototyps, der Gesundheits- und
-Aktivitätsdaten zu Test- und Forschungszwecken nutzt.
-Eine Veröffentlichung oder kommerzielle Nutzung ist nicht vorgesehen.
+Dieses Projekt wird im Rahmen einer hochschulischen Lehrveranstaltung an der HTWK Leipzig in Zusammenarbeit mit dem Unternehmen FAKT Software GMBH entwickelt.
+Ziel ist die Entwicklung und Erprobung eines App-Prototyps, der Gesundheits- und Aktivitätsdaten zur Prognose des Energiehaushaltes sowie zur Aufstellung von Handlungsempfehlungen nutzt.
+Eine kommerzielle Nutzung ist nicht vorgesehen.
 
 Verantwortlich für die Datenverarbeitung:
 HTWK Leipzig
@@ -16,31 +14,22 @@ Durchgeführt im Rahmen eines studentischen Projekts an der Hochschule.
 Bei Fragen zum Datenschutz kannst du dich an die Hochschule oder den
 Datenschutzbeauftragten wenden.
 
-2. Welche Daten wir verarbeiten
-Wir verarbeiten nur die Daten, die du uns freiwillig zur Verfügung stellst oder die du über
-Google Health Connect aktiv freigibst.
+2. Welche Daten verarbeiten wir?
+
+Wir verarbeiten nur die Daten, die du uns freiwillig zur Verfügung stellst oder die du über Google Health Connect aktiv freigibst.
 Dazu gehören insbesondere:
-• Aktivitäts- und Gesundheitsdaten (z. B. Schritte, Puls, Schlafdauer,
-Vitalparameter)
+• Aktivitäts- und Gesundheitsdaten (z. B. Schritte, Puls, Schlafdauer, Vitalparameter)
 Die Daten werden ausschließlich abgerufen, wenn du uns über Health Connect
 ausdrücklich erlaubst, darauf zuzugreifen.
 
 2a. Datenverarbeitung bei Nutzung von Drittanbieterdiensten (z. B. Fitbit)
-Wenn du dein Konto unserer App mit einem externen Dienst verbindest (z. B. einem
-Fitness- oder Gesundheitsdienst wie Fitbit), erhalten wir nur die Daten, die du dort
-ausdrücklich freigibst. Dazu können – abhängig vom jeweiligen Dienst – insbesondere
-Aktivitäts-, Gesundheits- oder Sensordaten gehören (z. B. Schritte, Puls oder Workout-
-Daten).
-Die Datenübertragung erfolgt ausschließlich auf Grundlage deiner ausdrücklichen
-Einwilligung (Art. 6 Abs. 1 lit. a, Art. 9 Abs. 2 lit. a DSGVO). Du kannst diese Freigabe
-jederzeit in den Einstellungen des jeweiligen Drittanbieters widerrufen. Sobald der
-Zugriff widerrufen wird, erhalten wir keine weiteren Daten über diesen Dienst.
-Wir integrieren solche Drittanbieter ausschließlich, um dir zusätzliche Funktionen zu
-ermöglichen (z. B. die Synchronisierung deiner Fitness-Daten). Eine Weitergabe deiner
-Daten an andere Stellen findet nicht statt. Sollten wir in Zukunft weitere kompatible
-Dienste anbinden, gelten die oben beschriebenen Grundsätze entsprechend.
 
-3. Warum wir deine Daten verarbeiten
+Wenn du externen Dienst verbindest (z. B. einen Fitness- oder Gesundheitsdienst wie Fitbit), erhalten wir nur die Daten, die du dort ausdrücklich freigibst. Dazu können – abhängig vom jeweiligen Dienst – insbesondere Aktivitäts-, Gesundheits- oder Sensordaten gehören (z. B. Schritte, Puls oder Workout-Daten).
+Die Datenübertragung erfolgt ausschließlich auf Grundlage deiner ausdrücklichen Einwilligung (Art. 6 Abs. 1 lit. a, Art. 9 Abs. 2 lit. a DSGVO). Du kannst diese Freigabe jederzeit in den Einstellungen des jeweiligen Drittanbieters widerrufen. Sobald der Zugriff widerrufen wird, erhalten wir keine weiteren Daten über diesen Dienst.
+Wir integrieren solche Drittanbieter ausschließlich, um dir zusätzliche Funktionen zu ermöglichen (z. B. die Synchronisierung deiner Fitness-Daten). Eine Weitergabe deiner Daten an andere Stellen findet nicht statt. Sollten wir in Zukunft weitere kompatible Dienste anbinden, gelten die oben beschriebenen Grundsätze entsprechend.
+
+3. Warum verarbeiten wir deine Daten?
+
 Wir verwenden die erhobenen Daten ausschließlich zu folgenden Zwecken:
 • Test und Analyse der App-Funktionen im Rahmen des hochschulischen Projekts
 • Verbesserung und Evaluation unseres Machine-Learning-Modells
@@ -48,48 +37,43 @@ Wir verwenden die erhobenen Daten ausschließlich zu folgenden Zwecken:
 Es findet keine kommerzielle Nutzung deiner Daten statt.
 
 4. Rechtsgrundlage
+
 Die Verarbeitung deiner Gesundheitsdaten erfolgt nur auf Grundlage deiner
 ausdrücklichen Einwilligung (Art. 6 Abs. 1 lit. a, Art. 9 Abs. 2 lit. a DSGVO).
-Du kannst diese Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen – zum
-Beispiel direkt in der App oder durch Nachricht an das Projektteam.
+Du kannst diese Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen – zum Beispiel direkt in der App oder durch Nachricht an das Projektteam.
 
-5. Wie und wo deine Daten gespeichert werden
-• Deine Daten werden verschlüsselt und ausschließlich auf deinem eigenen
-Gerät gespeichert.
-• Eine Übermittlung an das Projektteam oder an FAKT-Software erfolgt nur, wenn
+5. Wie und wo werden deine Daten gespeichert?
+
+• Deine Daten werden ausschließlich auf deinem eigenen Gerät gespeichert.
+• Eine Übermittlung an das Projektteam oder an FAKT Software GMBH erfolgt nur, wenn
 du dies manuell und ausdrücklich erlaubst (z. B. durch das Senden von
 Feedbackdaten zur Verbesserung des Prototyps).
 
 6. Datensicherheit
-Wir setzen geeignete technische und organisatorische Maßnahmen ein, um deine
-Daten vor unbefugtem Zugriff, Verlust oder Missbrauch zu schützen.
+
+Die App ist architektonisch so konzipiert, dass alle Daten ausschließlich auf dem eigenen Gerät gespeichert werden. Dadurch wird eine missbräuchliche Verwendung oder Nutzung durch Dritte wirksam verhindert.
 
 7. Deine Rechte
+
 Du hast jederzeit das Recht auf:
 • Auskunft über die zu deiner Person gespeicherten Daten
 • Berichtigung oder Löschung deiner Daten
 • Einschränkung der Verarbeitung
 • Datenübertragbarkeit
-• Widerruf deiner Einwilligung
-Wenn du Fragen oder Bedenken zum Umgang mit deinen Daten hast, kannst du dich
-jederzeit an uns wenden.
-Natürlich hast du auch das Recht, dich an die Datenschutzstelle der HTWK Leipzig oder
-an eine Datenschutzaufsichtsbehörde zu wenden.
+• Widerruf deiner Einwilligung,
+Wenn du Fragen oder Bedenken zum Umgang mit deinen Daten hast, kannst du dich jederzeit an uns wenden.
+Natürlich hast du auch das Recht, dich an die Datenschutzstelle der HTWK Leipzig oder an eine Datenschutzaufsichtsbehörde zu wenden.
 
 8. Keine automatisierten Entscheidungen
+
 Es findet keine automatisierte Entscheidungsfindung im Sinne von Art. 22 DSGVO statt.
-Alle Empfehlungen der App dienen ausschließlich zu Informationszwecken und haben
-keine rechtlichen oder medizinisch verbindlichen Folgen.
+Alle Empfehlungen der App dienen ausschließlich zu Informationszwecken und haben keine rechtlichen oder medizinisch verbindlichen Folgen.
 
 9. Automatisierte Auswertung / Profiling
-Im Rahmen dieses Projekts werden deine Gesundheitsdaten mithilfe von Machine-
-Learning-Verfahren analysiert.
-Ziel ist es, Muster in deinem Aktivitätsverhalten zu erkennen und Empfehlungen zur
-Energieeinsparung oder Ruhepausen zu geben.
-Diese Auswertungen dienen ausschließlich zu Forschungs- und Testzwecken innerhalb
-des Projekts.
-Die Ergebnisse sind nicht medizinisch validiert und sollen dir lediglich informative
-Hinweise bieten.
-Die Verarbeitung und Auswertung dieser Daten erfolgt nur mit deiner ausdrücklichen
-Einwilligung.
-Du kannst diese Einwilligung jederzeit Wiederrufen.
+
+Im Rahmen dieses Projekts werden deine Gesundheitsdaten mithilfe von Machine-Learning-Verfahren analysiert.
+Ziel ist es, Muster in deinem Aktivitätsverhalten zu erkennen und Empfehlungen zur Energieeinsparung oder Ruhepausen zu geben.
+Diese Auswertungen dienen ausschließlich zu Forschungs- und Testzwecken innerhalb des Projekts.
+Die Ergebnisse sind nicht medizinisch validiert und sollen dir lediglich informative Hinweise bieten.
+Die Verarbeitung und Auswertung dieser Daten erfolgt nur mit deiner ausdrücklichen Einwilligung.
+Du kannst diese Einwilligung jederzeit widerrufen.

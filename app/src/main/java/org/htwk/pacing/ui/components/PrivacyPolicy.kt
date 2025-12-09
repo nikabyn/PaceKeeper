@@ -14,9 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import org.htwk.pacing.R
 
-/**
- * Lädt die Datenschutzerklärung aus /res/raw/privacy_policy.txt
- */
 @Composable
 fun loadPrivacyPolicyText(): String {
     val context = LocalContext.current
@@ -32,7 +29,6 @@ fun loadPrivacyPolicyText(): String {
 fun PrivacyPolicyDialog(
     onDismiss: () -> Unit
 ) {
-    // Text aus der Datei laden
     val privacyText = loadPrivacyPolicyText()
 
     AlertDialog(
