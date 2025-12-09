@@ -2,7 +2,6 @@ package org.htwk.pacing.ui.screens.settings
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.DrawableRes
@@ -40,10 +39,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.OAuth2Provider
-import org.htwk.pacing.backend.OAuth2Result
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
-import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -52,16 +48,11 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ConnectionsAndServicesScreen(
     navController: NavController,
-    fitbitOauthUri: Uri? = null,
     viewModel: ConnectionsAndServicesViewModel = koinViewModel(),
 ) {
-    if (fitbitOauthUri != null) {
-        viewModel.onFitbitOauthRedirect(fitbitOauthUri)
-    }
 
     val context = LocalContext.current
     val isHealthConnectConnected by viewModel.isHealthConnectConnected.collectAsState()
-    val isFitbitConnected by viewModel.isFitbitConnected.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(Unit) {
@@ -104,9 +95,9 @@ fun ConnectionsAndServicesScreen(
             ConnectionCard(
                 name = stringResource(R.string.fitbit),
                 tip = "Login with Fitbit Account",
-                connected = isFitbitConnected,
+                connected = true,
                 iconId = R.drawable.fitbit,
-                onClick = { viewModel.openFitbitLogin() },
+                onClick = { },
             )
         }
     }
@@ -173,11 +164,7 @@ fun ConnectionCard(
     }
 }
 
-class ConnectionsAndServicesViewModel(
-    private val context: Context,
-    private val db: PacingDatabase,
-    private val fitbitOAuth: OAuth2Provider,
-) : ViewModel() {
+class ConnectionsAndServicesViewModel(context: Context) : ViewModel() {
     private companion object {
         const val TAG = "ConnectionsAndServicesViewModel"
     }
@@ -192,8 +179,8 @@ class ConnectionsAndServicesViewModel(
     val isHealthConnectConnected = refreshTrigger.map {
         val granted = try {
             client.permissionController.getGrantedPermissions()
-        } catch (_: Exception) {
-            Log.e("SettingsViewModel", "Failed to get granted permissions.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get granted permissions: $e")
             return@map false
         }
         wantedPermissions.any { it in granted }
@@ -202,60 +189,4 @@ class ConnectionsAndServicesViewModel(
         SharingStarted.WhileSubscribed(),
         false
     )
-
-    fun openFitbitLogin() {
-        val scopes = arrayOf(
-            "activity",
-            "cardio_fitness",
-            "electrocardiogram",
-            "heartrate",
-            "irregular_rhythm_notifications",
-            "location",
-            "nutrition",
-            "oxygen_saturation",
-            "respiratory_rate",
-            "sleep",
-            "temperature",
-            "weight",
-        )
-
-        fitbitOAuth.startLogin(context, scopes.toList())
-    }
-
-    fun onFitbitOauthRedirect(uri: Uri) {
-        viewModelScope.launch {
-            val loginResult = fitbitOAuth.completeLogin(uri)
-            val tokenResponse = when (loginResult) {
-                is OAuth2Result.TokenResponse -> loginResult
-
-                is OAuth2Result.RedirectUriError -> {
-                    Log.e(TAG, "Invalid redirect uri, ${loginResult.name}: $uri")
-                    return@launch
-                }
-
-                is OAuth2Result.HttpError -> {
-                    Log.e(TAG, "Error in http request, ${loginResult.status}: ${loginResult.body}")
-                    return@launch
-                }
-            }
-
-            // Store tokens in database
-            val newProfile = db.userProfileDao()
-                .getCurrentProfileDirect()
-                ?.copy(fitbitTokenResponse = tokenResponse)
-                ?: error("Unreachable: Database must always have a user profile")
-            db.userProfileDao().insertOrUpdate(newProfile)
-        }
-    }
-
-    val isFitbitConnected = db.userProfileDao()
-        .getCurrentProfile()
-        .map { userProfile ->
-            // TODO: ping fitbit to check whether token is still valid
-            userProfile?.fitbitTokenResponse != null
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(),
-            false
-        )
 }
