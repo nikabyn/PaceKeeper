@@ -1,6 +1,7 @@
 package org.htwk.pacing.ui.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -26,48 +27,47 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.htwk.pacing.ui.components.NotificationPermitCard
+import org.htwk.pacing.ui.components.RestingHoursCard
 import org.koin.androidx.compose.koinViewModel
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+
 fun NotificationsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: NotificationsViewModel = koinViewModel()
 ) {
+
+    var showDialog by remember { mutableStateOf(false) }
+    var restingStart by remember { mutableStateOf("22:00") }
+    var restingEnd by remember { mutableStateOf("06:00") }
+
+    if (showDialog) {
+        RestingHoursDialog(
+            currentStart = restingStart,
+            currentEnd = restingEnd,
+            onDismiss = { showDialog = false },
+            onConfirm = { newStart, newEnd ->
+                restingStart = newStart
+                restingEnd = newEnd
+                showDialog = false
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Benachrichtigungen") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Zurück"
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
                     }
                 }
             )
         }
     ) { innerPadding ->
-        var showDialog by remember { mutableStateOf(false) }
-        var restingStart by remember { mutableStateOf("22:00") }
-        var restingEnd by remember { mutableStateOf("06:00") }
-
-        if (showDialog) {
-            RestingHoursDialog(
-                currentStart = restingStart,
-                currentEnd = restingEnd,
-                onDismiss = { showDialog = false },
-                onConfirm = { newStart, newEnd ->
-                    restingStart = newStart
-                    restingEnd = newEnd
-                    showDialog = false
-                }
-            )
-        }
-
 
         val catA by viewModel.categoryA.collectAsState()
         val catB by viewModel.categoryB.collectAsState()
@@ -89,12 +89,116 @@ fun NotificationsScreen(
                 onBChange = { viewModel.setCategoryB(it) },
                 onCChange = { viewModel.setCategoryC(it) }
             )
+
+            Spacer(modifier = Modifier.padding(top = 20.dp))
+
+            RestingHoursCard(
+                restingStart = restingStart,
+                restingEnd = restingEnd,
+                onEditClick = { showDialog = true }
+            )
+        }
+    }
+}
+
+/*
+fun NotificationsScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    viewModel: NotificationsViewModel = koinViewModel()
+) {
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Benachrichtigungen") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Zurück"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+
+        var showDialog by remember { mutableStateOf(false) }
+        var restingStart by remember { mutableStateOf("22:00") }
+        var restingEnd by remember { mutableStateOf("06:00") }
+        /*
+                if (showDialog) {
+                    RestingHoursDialog(
+                        currentStart = restingStart,
+                        currentEnd = restingEnd,
+                        onDismiss = { showDialog = false },
+                        onConfirm = { newStart, newEnd ->
+                            restingStart = newStart
+                            restingEnd = newEnd
+                            showDialog = false
+                        }
+                    )
+
+                }
+
+         */
+        if (showDialog) {
+            RestingHoursDialog(
+                currentStart = restingStart,
+                currentEnd = restingEnd,
+                onDismiss = { showDialog = false },
+                onConfirm = { newStart, newEnd ->
+                    restingStart = newStart
+                    restingEnd = newEnd
+                    showDialog = false
+                }
+            )
+        }
+
+        val catA by viewModel.categoryA.collectAsState()
+        val catB by viewModel.categoryB.collectAsState()
+        val catC by viewModel.categoryC.collectAsState()
+
+        Column(
+            modifier = modifier
+                .padding(innerPadding)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+
+            NotificationPermitCard(
+                catA = catA,
+                catB = catB,
+                catC = catC,
+                onAChange = { viewModel.setCategoryA(it) },
+                onBChange = { viewModel.setCategoryB(it) },
+                onCChange = { viewModel.setCategoryC(it) }
+            )
+
+            Spacer(modifier = Modifier.padding(top = 20.dp))
+
+            RestingHoursCard(
+                restingStart = restingStart,
+                restingEnd = restingEnd,
+                onEditClick = { showDialog = true }
+            )
         }
     }
 
 }
 
+@Composable
+fun RestingHoursDialog(
+    currentStart: String,
+    currentEnd: String,
+    onDismiss: () -> Unit,
+    onConfirm: (ERROR, ERROR) -> Unit
+) {
+    TODO("Not yet implemented")
+}
 
+*/
 @Composable
 fun RestingHoursDialog(
     currentStart: String,
