@@ -5,14 +5,12 @@ import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
-import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.OxygenSaturationEntry
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
-import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
-import org.koin.core.time.inMs
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -91,9 +89,14 @@ data class GenericTimedDataPointTimeSeries(
 
         constructor(src: SleepSessionEntry) : this(
             time = src.end,
-            value = when(src.stage) {
-                in listOf(SleepStage.Awake, SleepStage.AwakeInBed, SleepStage.OutOfBed, SleepStage.Unknown) -> 0.0 //awake
-                else -> (src.end - src.start).inMs / 1.hours.inMs //asleep
+            value = when (src.stage) {
+                in listOf(
+                    SleepStage.Awake,
+                    SleepStage.AwakeInBed,
+                    SleepStage.OutOfBed,
+                    SleepStage.Unknown
+                ) -> 0.0 //awake
+                else -> (src.end - src.start) / 1.hours //asleep, count hours
             }
         )
     }

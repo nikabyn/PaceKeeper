@@ -56,8 +56,7 @@ object Predictor {
         val steps: List<StepsEntry>,
         val speed: List<SpeedEntry>,
         val sleepSession: List<SleepSessionEntry>,
-    )
-    {
+    ) {
         companion object {
             //use in unit tests when you only care about certain metrics
             fun createDefaultEmpty(
@@ -84,7 +83,8 @@ object Predictor {
                     oxygenSaturation = oxygenSaturation,
                     steps = steps,
                     speed = speed,
-                    sleepSession = sleepSession)
+                    sleepSession = sleepSession
+                )
             }
         }
     }
@@ -161,7 +161,7 @@ object Predictor {
         val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
-            Percentage((predictedEnergy / 100.0).coerceIn(0.0, 1.0))
+            Percentage(predictedEnergy.coerceIn(0.0, 1.0))
         )
     }
 }
