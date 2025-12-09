@@ -20,13 +20,12 @@ import kotlin.time.Duration.Companion.hours
  * A generic container for a single time series before preprocessing.
  * @property timeStart The starting timestamp of the time series.
  * @property duration The duration of time series.
- * @property metric The metric the time series is generated from.
  * @property data The list of timed data points.
  */
 data class GenericTimedDataPointTimeSeries(
     val timeStart: Instant,
     val duration: Duration,
-    val metric: TimeSeriesMetric,
+    val isContinuous: Boolean,
     val data: List<GenericTimedDataPoint>,
 ) {
     /**
@@ -96,11 +95,6 @@ data class GenericTimedDataPointTimeSeries(
                 in listOf(SleepStage.Awake, SleepStage.AwakeInBed, SleepStage.OutOfBed, SleepStage.Unknown) -> 0.0 //awake
                 else -> (src.end - src.start).inMs / 1.hours.inMs //asleep
             }
-        )
-
-        constructor(src: ValidatedEnergyLevelEntry) : this(
-            time = src.time,
-            value = src.percentage.toDouble()
         )
     }
 }

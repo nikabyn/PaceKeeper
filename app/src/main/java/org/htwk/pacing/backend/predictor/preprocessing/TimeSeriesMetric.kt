@@ -53,5 +53,4 @@ enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
     STEPS(TimeSeriesSignalClass.AGGREGATED),
     SPEED(TimeSeriesSignalClass.CONTINUOUS),
     SLEEP_SESSION(TimeSeriesSignalClass.AGGREGATED),
-    VALIDATED_ENERGY_LEVEL(TimeSeriesSignalClass.CONTINUOUS),
 }

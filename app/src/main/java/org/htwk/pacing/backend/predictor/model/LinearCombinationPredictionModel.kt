@@ -2,10 +2,8 @@ package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.predictionTargetFeatureID
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -27,10 +25,6 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients
     private var linearCoefficients: List<Double> = listOf()
-    private val predictionTargetFeatureID = MultiTimeSeriesDiscrete.FeatureID(
-        TimeSeriesMetric.HEART_RATE,
-        PIDComponent.PROPORTIONAL
-    )
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
@@ -58,6 +52,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      */
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
+        targetTimeSeriesDiscrete: DoubleArray
     ): List<TrainingSample> {
         val predictionLookAhead =
             (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT);
@@ -65,7 +60,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         return (0 until input.stepCount() - predictionLookAhead).map { offset ->
             TrainingSample(
                 multiExtrapolations = generateFlattenedMultiExtrapolationResults(input, offset),
-                expectedEnergyLevel = input[predictionTargetFeatureID, offset + predictionLookAhead]
+                expectedEnergyLevel = targetTimeSeriesDiscrete[offset + predictionLookAhead]
             )
         }
     }
@@ -104,10 +99,13 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @throws IllegalStateException if no training samples have been added.
      */
-    fun train(input: MultiTimeSeriesDiscrete) {
-        val trainingSamples = createTrainingSamples(input)
+    fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
+        val trainingSamples = createTrainingSamples(input, targetTimeSeriesDiscrete)
 
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
+        require(input.stepCount() == targetTimeSeriesDiscrete.size) {"Discretized prediction target" +
+                "time series has length ${targetTimeSeriesDiscrete.size} but input" +
+                "MultiTimeSeriesDiscrete has length ${input.stepCount()}"}
 
         val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
         val allExpectedFutureValues = trainingSamples.map { it.expectedEnergyLevel }

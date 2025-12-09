@@ -113,30 +113,25 @@ object FallbackHandler {
             raw.sleepSession,
             raw.timeStart,
             raw.duration,
-            ::loadDefaultSleepData,
-            { start, duration ->
-                val startHourOfDay = start.toLocalDateTime(localTimeZone).hour
-                var numHours = duration.inWholeHours.toInt()
+            ::loadDefaultSleepData
+        ) { start, duration ->
+            val startHourOfDay = start.toLocalDateTime(localTimeZone).hour
+            var numHours = duration.inWholeHours.toInt()
 
-                List<SleepSessionEntry>(numHours) { index ->
-                    val hourOfDay = (startHourOfDay + index) % 24
-                    val sleepStage: SleepStage = when (hourOfDay) {
-                        in 8..23 -> SleepStage.Awake
-                        else -> SleepStage.Sleeping
-                    }
-
-                    SleepSessionEntry(
-                        start = (start + index.hours).coerceIn(start, start + duration),
-                        end = (start + index.hours + 1.hours).coerceIn(start, start + duration),
-                        stage = sleepStage
-                    )
-
+            List<SleepSessionEntry>(numHours) { index ->
+                val hourOfDay = (startHourOfDay + index) % 24
+                val sleepStage: SleepStage = when (hourOfDay) {
+                    in 8..23 -> SleepStage.Awake
+                    else -> SleepStage.Sleeping
                 }
 
-
+                SleepSessionEntry(
+                    start = (start + index.hours).coerceIn(start, start + duration),
+                    end = (start + index.hours + 1.hours).coerceIn(start, start + duration),
+                    stage = sleepStage
+                )
             }
-        )
-
+        }
 
         return Predictor.MultiTimeSeriesEntries(
             timeStart = raw.timeStart,

@@ -93,8 +93,6 @@ object EnergyPredictionJob {
         val steps = db.stepsDao().getLastLive(duration)
         val speed = db.speedDao().getLastLive(duration)
         val sleepSession = db.sleepSessionsDao().getLastLive(duration)
-        val validatedEnergyLevel = db.validatedEnergyLevelDao().getLastLive(duration)
-
         val userProfile = db.userProfileDao().getProfileLive()
         val ticker = flow {
             while (true) {
@@ -113,7 +111,6 @@ object EnergyPredictionJob {
             steps,
             speed,
             sleepSession,
-            validatedEnergyLevel,
             userProfile,
             ticker
         ) { values ->
@@ -144,10 +141,7 @@ object EnergyPredictionJob {
             @Suppress("UNCHECKED_CAST")
             val sleepSessionValues = values[8] as List<SleepSessionEntry>
 
-            @Suppress("UNCHECKED_CAST")
-            val validatedEnergyValues = values[9] as List<ValidatedEnergyLevelEntry>
-
-            val userProfileValue = values[10] // No cast needed if type is correct or handled below
+            val userProfileValue = values[9] // No cast needed if type is correct or handled below
 
             Pair(
                 MultiTimeSeriesEntries(
@@ -162,7 +156,6 @@ object EnergyPredictionJob {
                     steps = stepsValues,
                     speed = speedValues,
                     sleepSession = sleepSessionValues,
-                    validatedEnergyLevel = validatedEnergyValues
                 ),
                 FixedParameters(
                     anaerobicThresholdBPM = (userProfileValue as? UserProfileEntry)
@@ -213,7 +206,6 @@ object EnergyPredictionJob {
             steps = steps,
             speed = speed,
             sleepSession = sleepSession,
-            validatedEnergyLevel = validatedEnergyLevel
         )
         val fixedParams = FixedParameters(
             anaerobicThresholdBPM = userProfile
@@ -221,6 +213,6 @@ object EnergyPredictionJob {
                 ?: 0.0
         )
 
-        Predictor.train(multiSeries, fixedParams)
+        Predictor.train(multiSeries, targetTimeSeries = validatedEnergyLevel, fixedParams)
     }
 }

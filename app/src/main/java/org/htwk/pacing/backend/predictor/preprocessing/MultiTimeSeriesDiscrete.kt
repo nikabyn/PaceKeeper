@@ -296,7 +296,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     GenericTimedDataPointTimeSeries(
                         timeStart = raw.timeStart,
                         duration = raw.duration,
-                        metric = metric,
+                        isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
                         data = when (metric) {
                             TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
@@ -307,10 +307,9 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> raw.validatedEnergyLevel.map(::GenericTimedDataPoint)
                         }
                     ),
-                    stepCount
+                    targetLength = stepCount
                 )
 
                 require(discreteProportional.size == stepCount);
