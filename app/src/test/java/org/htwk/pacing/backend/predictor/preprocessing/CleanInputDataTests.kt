@@ -20,7 +20,7 @@ class CleanInputDataTests {
 
     @Test
     fun validHeartRatesAreKept() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 80),
@@ -48,7 +48,7 @@ class CleanInputDataTests {
 
     @Test
     fun invalidHeartRatesAreDeleted() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 20),   // <30 invalid
@@ -57,14 +57,7 @@ class CleanInputDataTests {
                 HeartRateEntry(now + 3.minutes, 70) // keep
 
             ),
-            distance = emptyList(),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            distance = emptyList()
         )
         val (results, ratios) = cleanInputData(raw)
 
@@ -79,7 +72,7 @@ class CleanInputDataTests {
 
     @Test
     fun invalidAndDuplicateHeartRatesAreDeleted() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 20),              // <30 invalid
@@ -87,14 +80,7 @@ class CleanInputDataTests {
                 HeartRateEntry(now + 1.minutes, 70), // duplicate time -> deleted
                 HeartRateEntry(now + 2.minutes, 70) // keep
             ),
-            distance = emptyList(),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            distance = emptyList()
         )
         val (results, ratios) = cleanInputData(raw)
 
@@ -109,19 +95,13 @@ class CleanInputDataTests {
 
     @Test
     fun duplicateHeartRateEntriesAreRemoved() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = listOf(
                 HeartRateEntry(now, 80),
                 HeartRateEntry(now, 150) // duplicate, will be removed
             ),
-            distance = emptyList(),
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            distance = emptyList()
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -137,20 +117,13 @@ class CleanInputDataTests {
 
     @Test
     fun validDistancesAreKept() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = listOf(
                 DistanceEntry(now, now + 5.minutes, Length(50.0)),
                 DistanceEntry(now + 5.minutes, now + 10.minutes, Length(0.0)) // edge case
-            ),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            )
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -166,19 +139,13 @@ class CleanInputDataTests {
 
     @Test
     fun invalidDistancesAreDeleted() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = listOf(
                 DistanceEntry(now, now + 5.minutes, Length(-10.0)), // invalid
                 DistanceEntry(now + 5.minutes, now + 10.minutes, Length(-5.0)) // invalid
-            ),
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            )
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -194,20 +161,13 @@ class CleanInputDataTests {
 
     @Test
     fun duplicateDistanceEntriesAreRemoved() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = listOf(
                 DistanceEntry(now, now + 5.minutes, Length(75.0)),
                 DistanceEntry(now, now + 5.minutes, Length(75.0)) // duplicate
-            ),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            )
         )
 
         val (results, ratios) = cleanInputData(raw)
@@ -223,17 +183,10 @@ class CleanInputDataTests {
 
     @Test
     fun timeStartIsRoughly6HoursBeforeNow() {
-        val raw = MultiTimeSeriesEntries(
+        val raw = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = now - 6.hours,
             heartRate = emptyList(),
             distance = emptyList(),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
         )
 
         val (results, _) = cleanInputData(raw)

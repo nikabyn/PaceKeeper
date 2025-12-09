@@ -69,17 +69,10 @@ class PreprocessorTests {
 
     @Test
     fun `run processes heart rate data correctly`() {
-        val rawData = MultiTimeSeriesEntries(
+        val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = distanceData,
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            distance = distanceData
         )
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
@@ -158,7 +151,7 @@ class PreprocessorTests {
 
     @Test
     fun `Preprocessor run needs accept case where timeStart = first entry time`() {
-        val rawData = MultiTimeSeriesEntries(
+        val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = timeStart,
             heartRate = listOf(HeartRateEntry(time = timeStart, bpm = 60)),
             distance = listOf(
@@ -167,14 +160,7 @@ class PreprocessorTests {
                     end = timeStart,
                     length = Length(100.0)
                 )
-            ),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            )
         )
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
@@ -189,17 +175,10 @@ class PreprocessorTests {
         // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
         val heartRateData: List<HeartRateEntry> = listOf()
 
-        val rawData = MultiTimeSeriesEntries(
+        val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = timeStart,
             heartRate = heartRateData,
-            distance = emptyList(),
-
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            distance = emptyList()
         )
 
         val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)

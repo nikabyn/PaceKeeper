@@ -12,6 +12,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTime
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesSignalClass
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.junit.Before
@@ -81,7 +82,7 @@ class PredictorFitbitDataTest {
                     GenericTimedDataPointTimeSeries(
                         timeStart = timeSeriesEnd - 2.days,
                         duration = 2.days,
-                        metric = metric,
+                        isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
                         data = heartRateEntries.filter { it -> it.time in (timeSeriesEnd - 2.days)..timeSeriesEnd }
                             .map(::GenericTimedDataPoint)
                     )
@@ -106,21 +107,16 @@ class PredictorFitbitDataTest {
     @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
-        val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries(
+        val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = timeSeriesStart,
             duration = timeSeriesEnd - timeSeriesStart,
             heartRate = heartRateEntries,
             distance = distanceEntries,
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
         )
 
         Predictor.train(
             multiTimeSeriesEntries,
+            targetTimeSeries = listOf(),//TODO: fill
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
 
@@ -129,17 +125,11 @@ class PredictorFitbitDataTest {
         val testWindowStart = timeSeriesEnd - 2.days - testWindowOffset
         val testWindowEnd = timeSeriesEnd - 0.days - testWindowOffset
 
-        val multiTimeSeriesEntriesTest = Predictor.MultiTimeSeriesEntries(
+        val multiTimeSeriesEntriesTest = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
             timeStart = testWindowStart,
             duration = 2.days,
             heartRate = heartRateEntries.filter { it.time in testWindowStart..testWindowEnd },
-            distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd },
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+            distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd }
         )
 
         val predictionResult = Predictor.predict(

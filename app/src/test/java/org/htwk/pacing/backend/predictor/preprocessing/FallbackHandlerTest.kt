@@ -17,15 +17,11 @@ class FallbackHandlerTest {
 
     @Test
     fun ensureDataGeneratesDefaultHeartRateAndDistanceIfEmpty() {
-        val raw = Predictor.MultiTimeSeriesEntries(
-            timeStart, duration, emptyList(),
-            emptyList(),
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+        val raw = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
+            timeStart = timeStart,
+            duration = duration,
+            heartRate =  emptyList(),
+            distance = emptyList(),
         )
 
         val result = FallbackHandler.ensureDataFallback(raw)
@@ -52,14 +48,8 @@ class FallbackHandlerTest {
             DistanceEntry(timeStart, timeStart + 10.minutes, Length(0.0)),
             DistanceEntry(timeStart + 10.minutes, timeStart + 20.minutes, Length(50.0))
         )
-        val raw = Predictor.MultiTimeSeriesEntries(
-            timeStart, duration, hr, dist,
-            elevationGained = emptyList(),
-            skinTemperature = emptyList(),
-            heartRateVariability = emptyList(),
-            oxygenSaturation = emptyList(),
-            steps = emptyList(),
-            speed = emptyList(),
+        val raw = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
+            timeStart, duration, heartRate = hr, distance = dist,
         )
 
         val result = FallbackHandler.ensureDataFallback(raw)
