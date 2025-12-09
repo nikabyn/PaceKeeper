@@ -28,12 +28,12 @@ data class UserProfileEntry(
 
     val amputationLevel: AmputationLevel?,
     val fatigueSensitivity: Int?,
-    val activityBaseline: Int?,
     val anaerobicThreshold: Int?,
     val bellScale: Int?,
     val illnessStartDate: Long?,
     val diagnosis: Diagnosis?,
     val fitnessTracker: String?,
+    val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
     val createdAt: Long = System.currentTimeMillis()
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
@@ -76,12 +76,12 @@ data class UserProfileEntry(
                 restingHeartRateBpm = 60,
                 amputationLevel = null,
                 fatigueSensitivity = null,
-                activityBaseline = null,
                 anaerobicThreshold = null,
                 bellScale = null,
                 illnessStartDate = null,
                 diagnosis = null,
-                fitnessTracker = null
+                fitnessTracker = null,
+                themeMode = "AUTO"
             )
         }
     }

@@ -27,6 +27,11 @@ import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.R
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ColorFilter
+
 
 /**
  * Defines the Android user profile editing screen built with Jetpack Compose.
@@ -50,7 +55,6 @@ fun UserProfileScreen(
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
     var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
-    var activityBaseline by remember { mutableStateOf(profile.activityBaseline?.toString() ?: "") }
     var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
@@ -61,7 +65,7 @@ fun UserProfileScreen(
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
         nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
-        selectedDiagnosis, fatigueSensitivity, activityBaseline, anaerobicThreshold,
+        selectedDiagnosis, fatigueSensitivity, anaerobicThreshold,
         bellScale, fitnessTracker
     ) {
         val currentProfile = profile.copy(
@@ -74,7 +78,6 @@ fun UserProfileScreen(
             amputationLevel = selectedAmputationLevel,
             diagnosis = selectedDiagnosis,
             fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
-            activityBaseline = activityBaseline.toIntOrNull(),
             anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
             bellScale = bellScale.toIntOrNull(),
             fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
@@ -115,6 +118,48 @@ fun UserProfileScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.label_back))
             }
             Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.weight(1f))
+            org.htwk.pacing.ui.components.Button(
+                onClick = {
+                    val updatedProfile = profile.copy(
+                        nickname = nickname.takeIf { it.isNotBlank() },
+                        birthYear = birthYear.toIntOrNull(),
+                        heightCm = heightCm.toIntOrNull(),
+                        weightKg = weightKg.toIntOrNull(),
+                        restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
+                        sex = selectedSex,
+                        amputationLevel = selectedAmputationLevel,
+                        diagnosis = selectedDiagnosis,
+                        fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
+                        anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
+                        bellScale = bellScale.toIntOrNull(),
+                        fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
+                    )
+                    Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
+                    viewModel.saveProfile(updatedProfile)
+                    Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
+                    navController.navigate(Route.SETTINGS) {
+                        popUpTo(Route.USERPROFILE) { inclusive = true }
+                    }
+                },
+                style = if (hasUnsavedChanges) org.htwk.pacing.ui.theme.PrimaryButtonStyle else org.htwk.pacing.ui.theme.SecondaryButtonStyle,
+            ) {
+                if (hasUnsavedChanges) {
+                    Image(
+                        painter = painterResource(R.drawable.settings_save_icon),
+                        contentDescription = stringResource(R.string.save),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
+                    )
+                    Text(stringResource(R.string.save) )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = stringResource(R.string.save)
+                    )
+                    Text(stringResource(R.string.saved))
+                }
+                Spacer(Modifier.width(8.dp))
+            }
         }
 
         OutlinedTextField(
@@ -193,15 +238,6 @@ fun UserProfileScreen(
         )
 
         OutlinedTextField(
-            value = activityBaseline,
-            onValueChange = { activityBaseline = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_activity_baseline)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
             value = anaerobicThreshold,
             onValueChange = { anaerobicThreshold = it.filter { c -> c.isDigit() } },
             label = { Text(stringResource(R.string.label_anaerobic_threshold)) },
@@ -227,37 +263,6 @@ fun UserProfileScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(32.dp))
-
-        Button(
-            onClick = {
-                val updatedProfile = profile.copy(
-                    nickname = nickname.takeIf { it.isNotBlank() },
-                    birthYear = birthYear.toIntOrNull(),
-                    heightCm = heightCm.toIntOrNull(),
-                    weightKg = weightKg.toIntOrNull(),
-                    restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
-                    sex = selectedSex,
-                    amputationLevel = selectedAmputationLevel,
-                    diagnosis = selectedDiagnosis,
-                    fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
-                    activityBaseline = activityBaseline.toIntOrNull(),
-                    anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
-                    bellScale = bellScale.toIntOrNull(),
-                    fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
-                )
-                Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
-                viewModel.saveProfile(updatedProfile)
-                //onSaveProfile(updatedProfile)
-                Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
-                navController.navigate(Route.SETTINGS) {
-                    popUpTo(Route.USERPROFILE) { inclusive = true }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.button_save_profile))
-        }
     }
     if (showUnsavedChangesDialog) {
         AlertDialog(
@@ -336,6 +341,9 @@ class UserProfileViewModel(
     private val _profile = MutableStateFlow<UserProfileEntry?>(null)
     val profile: StateFlow<UserProfileEntry?> = _profile.asStateFlow()
 
+    val themeMode: StateFlow<String> = profile.map { it?.themeMode ?: "AUTO" }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "AUTO")
+
     init {
         viewModelScope.launch {
             dao.getCurrentProfile().collect { userProfile ->
@@ -350,6 +358,15 @@ class UserProfileViewModel(
         }
     }
 
+    fun updateThemeMode(mode: String) {
+        viewModelScope.launch {
+            _profile.value?.let { currentProfile ->
+                val updatedProfile = currentProfile.copy(themeMode = mode)
+                dao.insertOrUpdate(updatedProfile)
+            }
+        }
+    }
+
     private fun createPlaceholder(): UserProfileEntry {
         return UserProfileEntry(
             userId = "",
@@ -361,7 +378,6 @@ class UserProfileViewModel(
             restingHeartRateBpm = null,
             amputationLevel = UserProfileEntry.AmputationLevel.NONE,
             fatigueSensitivity = null,
-            activityBaseline = null,
             anaerobicThreshold = null,
             bellScale = null,
             illnessStartDate = null,
