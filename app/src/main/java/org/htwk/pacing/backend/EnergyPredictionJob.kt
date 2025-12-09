@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.EnergyPredictionJob.predictContinuous
 import org.htwk.pacing.backend.EnergyPredictionJob.predictEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.retrainEvery
@@ -22,8 +23,8 @@ import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.database.UserProfileEntry
-import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -46,7 +47,7 @@ object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
 
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION
-    private val trainingSeriesDuration = 30.days
+    private val maximumTrainingSeriesDuration = 30.days
     private val retrainEvery = 8.hours
     private val predictEvery = 10.minutes
 
@@ -177,26 +178,56 @@ object EnergyPredictionJob {
      * @throws Exception All exceptions are propagated to the caller.
      */
     private suspend fun trainOnce(db: PacingDatabase) {
-        val duration = trainingSeriesDuration
-        val end = Clock.System.now()
-        val start = end - duration
+        val latestEnd = Clock.System.now()
+        val oldestStart = latestEnd - maximumTrainingSeriesDuration
 
-        val heartRate = db.heartRateDao().getInRange(start, end)
-        val distance = db.distanceDao().getInRange(start, end)
-        val elevationGained = db.elevationGainedDao().getInRange(start, end)
-        val skinTemperature = db.skinTemperatureDao().getInRange(start, end)
-        val heartRateVariability = db.heartRateVariabilityDao().getInRange(start, end)
-        val oxygenSaturation = db.oxygenSaturationDao().getInRange(start, end)
-        val steps = db.stepsDao().getInRange(start, end)
-        val speed = db.speedDao().getInRange(start, end)
-        val sleepSession = db.sleepSessionsDao().getInRange(start, end)
-        val validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(start, end)
+        val heartRate = db.heartRateDao().getInRange(oldestStart, latestEnd)
+        val distance = db.distanceDao().getInRange(oldestStart, latestEnd)
+        val elevationGained = db.elevationGainedDao().getInRange(oldestStart, latestEnd)
+        val skinTemperature = db.skinTemperatureDao().getInRange(oldestStart, latestEnd)
+        val heartRateVariability = db.heartRateVariabilityDao().getInRange(oldestStart, latestEnd)
+        val oxygenSaturation = db.oxygenSaturationDao().getInRange(oldestStart, latestEnd)
+        val steps = db.stepsDao().getInRange(oldestStart, latestEnd)
+        val speed = db.speedDao().getInRange(oldestStart, latestEnd)
+        val sleepSession = db.sleepSessionsDao().getInRange(oldestStart, latestEnd)
+        val validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(oldestStart, latestEnd)
+
+        fun oldestEntryTimeIn(list: List<TimedEntry>, defaultMin: Instant) : Instant {
+            return list.minByOrNull { it.end }?.end ?: defaultMin
+        }
+
+        fun latestEntryTime(list: List<TimedEntry>, defaultMax: Instant) : Instant {
+            return list.maxByOrNull { it.end }?.end ?: defaultMax
+        }
+
+
+        val start = minOf(oldestEntryTimeIn(heartRate, oldestStart),
+            oldestEntryTimeIn(distance, oldestStart),
+            oldestEntryTimeIn(elevationGained, oldestStart),
+            oldestEntryTimeIn(skinTemperature, oldestStart),
+            oldestEntryTimeIn(heartRateVariability, oldestStart),
+            oldestEntryTimeIn(oxygenSaturation, oldestStart),
+            oldestEntryTimeIn(steps, oldestStart),
+            oldestEntryTimeIn(speed, oldestStart),
+            oldestEntryTimeIn(sleepSession, oldestStart),
+            oldestEntryTimeIn(validatedEnergyLevel, oldestStart))
+
+        val end = minOf(latestEntryTime(heartRate, latestEnd),
+            latestEntryTime(distance, latestEnd),
+            latestEntryTime(elevationGained, latestEnd),
+            latestEntryTime(skinTemperature, latestEnd),
+            latestEntryTime(heartRateVariability, latestEnd),
+            latestEntryTime(oxygenSaturation, latestEnd),
+            latestEntryTime(steps, latestEnd),
+            latestEntryTime(speed, latestEnd),
+            latestEntryTime(sleepSession, latestEnd),
+            latestEntryTime(validatedEnergyLevel, latestEnd))
 
         val userProfile = db.userProfileDao().getProfile()
 
         val multiSeries = MultiTimeSeriesEntries(
             timeStart = start,
-            duration = duration,
+            duration = end - start,
             heartRate = heartRate,
             distance = distance,
             elevationGained = elevationGained,
