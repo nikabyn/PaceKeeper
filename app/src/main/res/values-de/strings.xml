@@ -47,6 +47,7 @@
     <string name="agree">Zustimmen</string>
     <string name="cancel">Abbrechen</string>
     <string name="save">Speichern</string>
+    <string name="saved">Gespeichert</string>
     <string name="correct">Korrekt</string>
     <string name="adjust">Anpassen</string>
     <string name="feeling_really_bad">Fühlst du dich richtig schlecht?</string>
@@ -79,8 +80,11 @@
     <string name="profile_card_description">Grunddaten für Pacing-Werte eingeben/bearbeiten</string>
     <string name="icon_profile_description">Profil Icon</string>
     <string name="icon_settings_description">Einstellungen Icon</string>
-    <string name="title_export_send_database">Datenbank exportieren und versenden</string>
-    <string name="description_export_send_database">Sendet die komplette Datenbank an den Server.</string>
+     <string name="title_export_send_database">Daten teilen</string>
+    <string name="description_export_send_database">
+        Sie können Ihre anonymisierten Daten mit den Entwicklern teilen, um das Vorhersagemodell zu verbessern.
+        Die Teilnahme ist freiwillig und unterstützt die laufende Forschung und Optimierung.
+    </string>
     <string name="button_send_now">Jetzt versenden</string>
     <string name="button_sending">Wird versendet...</string>
     <string name="status_success_database_sent">Datenbank erfolgreich versendet!</string>
@@ -111,18 +115,24 @@
     <string name="dialog_unsaved_confirm_leave">Verlassen</string>
     <string name="dialog_unsaved_dismiss_cancel">Abbrechen</string>
 
+    <string name="title_settings_unknown_user">Unbekannte(r) Benutzer*in</string>
     <string name="title_settings_services">Verbindungen &amp; Dienste</string>
     <string name="title_settings_data">Daten &amp; Speicher</string>
     <string name="title_settings_notifications">Benachrichtigungen</string>
-    <string name="title_settings_appeareance">Erscheinungsbild</string>
+    <string name="title_settings_appearance">Erscheinungsbild</string>
     <string name="title_settings_information">Informationen</string>
     <string name="title_settings_feedback">Feedback</string>
-    <string name="subtitle_settings_services">Profil bearbeiten</string>
+    <string name="subtitle_settings_user_profile">Profil bearbeiten</string>
+    <string name="subtitle_settings_services">Health Connect, Fitbit</string>
     <string name="subtitle_settings_data">Health Connect, Fitbit</string>
     <string name="subtitle_settings_notifications">Deine erfassten Daten verwalten</string>
-    <string name="subtitle_settings_appeareance"></string>
+    <string name="subtitle_settings_appearance"></string>
     <string name="subtitle_settings_information">Legal, Privacy, Introduction</string>
     <string name="subtitle_settings_feedback">Hilf uns, diese App zu verbessern!</string>
+    <string name="join_survey">An Umfrage teilnehmen</string>
+    <string name="title_survey">An der Umfrage teilnehmen</string>
+    <string name="description_survey">Hilf uns, die App zu verbessern, indem du an unserer kurzen Umfrage teilnimmst.</string>
+
     <string name="tips_error_1">Dunkle den Raum vollständig ab und lege dich hin, um alle sensorischen Reize zu minimieren.</string>
     <string name="tips_error_2">Unterbreche jegliche sensorischen und mentalen Reize, um PEM zu verhindern.</string>
     <string name="tips_error_3">Trinke kleine Mengen Wasser oder Elektrolyte und ruhe dich vollständig aus; keine Aktivitäten durchführen.</string>
