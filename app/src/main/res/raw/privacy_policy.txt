@@ -1,4 +1,4 @@
-1.	Wer sind wir?
+1. Wer sind wir?
 
 Dieses Projekt wird im Rahmen einer hochschulischen Lehrveranstaltung an der HTWK Leipzig in Zusammenarbeit mit dem Unternehmen FAKT Software GMBH entwickelt.
 Ziel ist die Entwicklung und Erprobung eines App-Prototyps, der Gesundheits- und Aktivitätsdaten zur Prognose des Energiehaushaltes sowie zur Aufstellung von Handlungsempfehlungen nutzt.
