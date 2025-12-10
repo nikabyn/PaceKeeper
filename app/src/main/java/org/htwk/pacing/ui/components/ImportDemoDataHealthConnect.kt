@@ -62,7 +62,7 @@ fun ImportDemoDataHealthConnect() {
             Button(
                 onClick = { showDialog = true },
                 style = PrimaryButtonStyle,
-                modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.demo_data_button_text))
             }
