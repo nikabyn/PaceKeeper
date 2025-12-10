@@ -38,6 +38,7 @@ data class UserProfileEntry(
     val createdAt: Long = System.currentTimeMillis(),
 
     //Settings
+    val warningPermit: Boolean,
     val reminderPermit: Boolean,
     val suggestionPermit: Boolean,
     val restingStart: LocalTime,
@@ -91,6 +92,7 @@ data class UserProfileEntry(
                 diagnosis = null,
                 fitnessTracker = null,
 
+                warningPermit = false,
                 reminderPermit = false,
                 suggestionPermit = false,
                 restingStart = LocalTime(22, 0),
@@ -121,4 +123,3 @@ class UserProfileRepository(private val userProfileDao: UserProfileDao) {
     // Die Methode, die du im Worker aufrufst
     suspend fun getUserProfile(): UserProfileEntry? = userProfileDao.getCurrentProfileDirect()
 }
-

@@ -34,7 +34,8 @@ import kotlinx.datetime.LocalTime
         PredictedEnergyLevelEntry::class,
 
         UserProfileEntry::class,
-        //  NotificationSettingsEntry::class,
+
+
         ReadEvent::class,
     ],
     version = 4,

@@ -25,6 +25,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.MainActivity
@@ -136,8 +137,8 @@ fun showNotification(context: Context) {
 class NotificationsBackgroundWorker(
     context: Context,
     workerParams: WorkerParameters,
-    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
-    private val userProfileRepository: UserProfileRepository // <-- NEUE ABHÄNGIGKEIT
+    val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    val userProfileRepository: UserProfileRepository // <-- NEUE ABHÄNGIGKEIT
 ) : CoroutineWorker(context, workerParams) {
 
     private suspend fun getRelevantPredictedEnergyLevelFromDB(): Double? {
@@ -161,15 +162,15 @@ class NotificationsBackgroundWorker(
             return Result.success()
         }
 
-        val remindersPermitted = userProfile.reminderPermit
+        val warningsPermitted = userProfile.warningPermit
         val restingStart = userProfile.restingStart // z.B. "22:00"
         val restingEnd = userProfile.restingEnd     // z.B. "07:00"
 
         // 2. Prüfe, ob Benachrichtigungen generell erlaubt sind
-        if (!remindersPermitted) {
+        if (!warningsPermitted) {
             Log.d(
                 "NotificationsBackgroundWorker",
-                "User has disabled reminders in profile. No notification."
+                "User has disabled warnings in profile. No notification."
             )
             return Result.success()
         }
@@ -177,8 +178,8 @@ class NotificationsBackgroundWorker(
         // 3. Prüfe, ob die aktuelle Zeit innerhalb der Ruhezeit liegt
         val now = Clock.System.now()
         val nowTime = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
-        val restingStartTime = restingStart
-        val restingEndTime = restingEnd
+        val restingStartTime: LocalTime = restingStart
+        val restingEndTime: LocalTime = restingEnd
 
         // Umgang mit Ruhezeiten, die über Mitternacht gehen (z.B. 22:00 - 07:00)
         val isInRestingTime = if (restingStartTime > restingEndTime) {

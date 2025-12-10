@@ -77,15 +77,12 @@ import org.htwk.pacing.ui.theme.CardStyle
 
 @Composable
 fun NotificationPermitCard(
-    // Direkt die Werte aus dem UserProfile übergeben
+    warningPermit: Boolean,
     reminderPermit: Boolean,
     suggestionPermit: Boolean,
-    // restingTimeVisible: Boolean = true, // Falls du die Ruhezeit auch als "Kategorie" anzeigen willst
+    onWarningChange: (Boolean) -> Unit,
     onReminderChange: (Boolean) -> Unit,
     onSuggestionChange: (Boolean) -> Unit,
-    onRestingTimeClick: () -> Unit,
-    // Optional: Wenn du auf die Ruhezeit klicken können willst
-    //  onRestingTimeClick: (() -> Unit)? = null
 ) {
     Card(
         colors = CardStyle.colors,
@@ -98,6 +95,14 @@ fun NotificationPermitCard(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            Switch(
+                title = stringResource(R.string.warnings),
+                description = stringResource(R.string.warning_description),
+                checked = warningPermit,
+                onCheckedChange = onWarningChange,
+                titleStyle = MaterialTheme.typography.titleLarge
+            )
+
             Switch(
                 title = stringResource(R.string.reminders),
                 description = stringResource(R.string.reminder_description),

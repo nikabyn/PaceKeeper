@@ -85,8 +85,18 @@ fun NotificationsScreen(
 
             // Verwende die neue NotificationPermitCard mit den UserProfile-Daten
             NotificationPermitCard(
+                warningPermit = profile?.warningPermit ?: false,
                 reminderPermit = profile?.reminderPermit ?: false,
                 suggestionPermit = profile?.suggestionPermit ?: false,
+
+                onWarningChange = { enabled ->
+                    profile?.let {
+                        userProfileViewModel.saveProfile(
+                            it.copy(warningPermit = enabled)
+                        )
+                    }
+                },
+
                 onReminderChange = { enabled ->
                     profile?.let {
                         userProfileViewModel.saveProfile(
@@ -101,7 +111,7 @@ fun NotificationsScreen(
                         )
                     }
                 },
-                onRestingTimeClick = { showDialog = true }
+                //  onRestingTimeClick = { showDialog = true }
             )
 
             Spacer(modifier = Modifier.padding(top = 20.dp))

@@ -110,11 +110,13 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
+    <string name="warnings">Warnings</string>
+    <string name="warning_description">Receive notifications if your energy level is low.</string>
     <string name="reminders">Reminders</string>
-    <string name="reminder_description">Blablabla</string>
+    <string name="reminder_description">Receive regular reminders for tracking symptoms and validating your prognosis</string>
     <string name="suggestion_description">Blubblubblub</string>
     <string name="suggestions">Suggestions</string>
-    <string name="notifications">Notifications</string>
+    <string name="notifications">Receive personalized suggestions based on your current state</string>
     <string name="personal_resting_hours">Personal Resting Hours</string>
 </resources>
 

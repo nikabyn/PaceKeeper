@@ -426,6 +426,7 @@ class UserProfileViewModel(
             diagnosis = null,
             fitnessTracker = null,
             reminderPermit = false,
+            warningPermit = false,
             suggestionPermit = false,
             restingStart = LocalTime(0, 0),
             restingEnd = LocalTime(0, 0)
