@@ -51,7 +51,7 @@ fun NotificationCard(navController: NavController) {
             )
             Column {
                 Text(
-                    stringResource(R.string.notification_card_title),
+                    stringResource(R.string.notifications),
                     style = MaterialTheme.typography.titleMedium
                 )
             }

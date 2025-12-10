@@ -76,7 +76,6 @@
     <string name="current_energy_saved">Current energy level saved as correct.</string>
     <string name="adjusted_energy_saved">Adjusted energy level saved as correct.</string>
     <string name="profile_card_title">User Profile</string>
-    <string name="notification_card_title">Notifications</string>
     <string name="profile_card_description">Enter/edit basic data for Pacing values</string>
     <string name="icon_profile_description">Profile Icon</string>
     <string name="icon_settings_description">Settings Icon</string>
@@ -111,6 +110,12 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
-    <string name="button_notifications">Notifications</string>
+    <string name="reminders">Reminders</string>
+    <string name="reminder_description">Blablabla</string>
+    <string name="suggestion_description">Blubblubblub</string>
+    <string name="suggestions">Suggestions</string>
+    <string name="notifications">Notifications</string>
+    <string name="personal_resting_hours">Personal Resting Hours</string>
 </resources>
+
 
