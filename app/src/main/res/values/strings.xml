@@ -109,19 +109,19 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
-    <string name="tips_error_1">Close your Blinds and lay down! </string>
-    <string name="tips_error_2">Take a short break from the stimuli</string>
-    <string name="tips_error_3">Drink Water and take a Break!</string>
-    <string name="tips_error_4">Ask Friends/Family for help, if you feel like you need it!</string>
+    <string name="tips_error_1">Close your blinds and lie down.</string>
+    <string name="tips_error_2">Take a short break from stimuli.</string>
+    <string name="tips_error_3">Drink some water and take a break.</string>
+    <string name="tips_error_4">Ask friends or family for help if you need it.</string>
 
-    <string name="tips_warning_1">Take a short meditation break!</string>
-    <string name="tips_warning_2">Make a small easy prepareable Snack!</string>
-    <string name="tips_warning_3">Why not do something while sitting down?</string>
-    <string name="tips_warning_4">only take on small mental tasks!</string>
+    <string name="tips_warning_1">Take a short meditation break.</string>
+    <string name="tips_warning_2">Prepare a small, easy snack.</string>
+    <string name="tips_warning_3">Do a simple activity while sitting down.</string>
+    <string name="tips_warning_4">Take on only small mental tasks.</string>
 
-    <string name="tips_info_1">Drink some Water!</string>
-    <string name="tips_info_2">Take a walk for some Fresh Air!</string>
-    <string name="tips_info_3">Complete a small Task!</string>
-    <string name="tips_info_4">Take some Time to meet up with Friends!</string>
+    <string name="tips_info_1">Drink some water.</string>
+    <string name="tips_info_2">Take a short walk to get some fresh air.</string>
+    <string name="tips_info_3">Complete a small task.</string>
+    <string name="tips_info_4">Spend some time with friends.</string>
 
 </resources>

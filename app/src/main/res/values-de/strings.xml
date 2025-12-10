@@ -111,20 +111,21 @@
     <string name="dialog_unsaved_confirm_leave">Verlassen</string>
     <string name="dialog_unsaved_dismiss_cancel">Abbrechen</string>
 
-    <string name="tips_error_1">Dunkel den Raum ab und lege dich etwas hin!</string>
-    <string name="tips_error_2">Nimm eine Kurze Reizpause!</string>
-    <string name="tips_error_3">Trinke etwas und ruhe dich aus!</string>
-    <string name="tips_error_4">Bitte Freunde/Familie um Unterstützung, wenn du es brauchst!</string>
+    <string name="tips_error_1">Dunkle den Raum ab und lege dich etwas hin.</string>
+    <string name="tips_error_2">Nimm dir eine kurze Reizpause.</string>
+    <string name="tips_error_3">Trinke etwas und ruhe dich aus.</string>
+    <string name="tips_error_4">Bitte Freunde oder Familie um Unterstützung, wenn du sie brauchst.</string>
 
-    <string name="tips_warning_1">Meditiere ein bisschen!</string>
-    <string name="tips_warning_2">Bereite dir doch einen kleinen einfachen Snack vor!</string>
-    <string name="tips_warning_3">Beschäftige dich doch ein bisschen im Sitzen!</string>
-    <string name="tips_warning_4">Nimm dir nur kleine Mentale Aufgaben vor!</string>
+    <string name="tips_warning_1">Meditiere ein wenig.</string>
+    <string name="tips_warning_2">Bereite dir einen kleinen, einfachen Snack zu.</string>
+    <string name="tips_warning_3">Beschäftige dich für einen Moment im Sitzen.</string>
+    <string name="tips_warning_4">Nimm dir nur kleine mentale Aufgaben vor.</string>
 
-    <string name="tips_info_1">Trinke doch mal wieder etwas Wasser!</string>
-    <string name="tips_info_2">geh doch mal kurz Frische Luft schnappen!</string>
-    <string name="tips_info_3">Erledige doch eine kleinere Aufgabe!</string>
-    <string name="tips_info_4">Verbringe Zeit mit Freunden</string>
+    <string name="tips_info_1">Trinke etwas Wasser.</string>
+    <string name="tips_info_2">Geh kurz an die frische Luft.</string>
+    <string name="tips_info_3">Erledige eine kleine Aufgabe.</string>
+    <string name="tips_info_4">Verbringe etwas Zeit mit Freunden.</string>
+
 
 
 </resources>
