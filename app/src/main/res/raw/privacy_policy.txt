@@ -1,79 +1,74 @@
-1. Wer sind wir?
+1. Who are we?
 
-Dieses Projekt wird im Rahmen einer hochschulischen Lehrveranstaltung an der HTWK Leipzig in Zusammenarbeit mit dem Unternehmen FAKT Software GMBH entwickelt.
-Ziel ist die Entwicklung und Erprobung eines App-Prototyps, der Gesundheits- und Aktivitätsdaten zur Prognose des Energiehaushaltes sowie zur Aufstellung von Handlungsempfehlungen nutzt.
-Eine kommerzielle Nutzung ist nicht vorgesehen.
+This project is being developed as part of a university course at HTWK Leipzig in cooperation with the company FAKT Software GmbH.
+The goal is to develop and test an app prototype that uses health and activity data to predict energy levels and provide actionable recommendations.
+Commercial use is not intended.
 
-Verantwortlich für die Datenverarbeitung:
+Responsible for data processing:
 HTWK Leipzig
 Karl-Liebknecht-Str. 132
 04277 Leipzig
-Deutschland
+Germany
 
-Durchgeführt im Rahmen eines studentischen Projekts an der Hochschule.
-Bei Fragen zum Datenschutz kannst du dich an die Hochschule oder den
-Datenschutzbeauftragten wenden.
+The project is carried out as part of a student assignment at the university.
+If you have any questions regarding data protection, you can contact the university or the data protection officer.
 
-2. Welche Daten verarbeiten wir?
+2. What data do we process?
 
-Wir verarbeiten nur die Daten, die du uns freiwillig zur Verfügung stellst oder die du über Google Health Connect aktiv freigibst.
-Dazu gehören insbesondere:
-• Aktivitäts- und Gesundheitsdaten (z. B. Schritte, Puls, Schlafdauer, Vitalparameter)
-Die Daten werden ausschließlich abgerufen, wenn du uns über Health Connect
-ausdrücklich erlaubst, darauf zuzugreifen.
+We only process the data that you voluntarily provide to us or that you explicitly grant access to via Google Health Connect.
+This includes in particular:
+• Activity and health data (e.g., steps, heart rate, sleep duration, vital parameters)
+The data is only retrieved if you explicitly allow access via Health Connect.
 
-2a. Datenverarbeitung bei Nutzung von Drittanbieterdiensten (z. B. Fitbit)
+2a. Data processing when using third-party services (e.g., Fitbit)
 
-Wenn du externen Dienst verbindest (z. B. einen Fitness- oder Gesundheitsdienst wie Fitbit), erhalten wir nur die Daten, die du dort ausdrücklich freigibst. Dazu können – abhängig vom jeweiligen Dienst – insbesondere Aktivitäts-, Gesundheits- oder Sensordaten gehören (z. B. Schritte, Puls oder Workout-Daten).
-Die Datenübertragung erfolgt ausschließlich auf Grundlage deiner ausdrücklichen Einwilligung (Art. 6 Abs. 1 lit. a, Art. 9 Abs. 2 lit. a DSGVO). Du kannst diese Freigabe jederzeit in den Einstellungen des jeweiligen Drittanbieters widerrufen. Sobald der Zugriff widerrufen wird, erhalten wir keine weiteren Daten über diesen Dienst.
-Wir integrieren solche Drittanbieter ausschließlich, um dir zusätzliche Funktionen zu ermöglichen (z. B. die Synchronisierung deiner Fitness-Daten). Eine Weitergabe deiner Daten an andere Stellen findet nicht statt. Sollten wir in Zukunft weitere kompatible Dienste anbinden, gelten die oben beschriebenen Grundsätze entsprechend.
+If you connect an external service (such as a fitness or health service like Fitbit), we only receive the data you explicitly grant access to there. Depending on the service, this may include activity, health, or sensor data (e.g., steps, heart rate, workout data).
+Data transfer occurs solely on the basis of your explicit consent (Art. 6(1)(a), Art. 9(2)(a) GDPR). You may withdraw this consent at any time in the settings of the respective third-party provider. Once access is revoked, we will no longer receive any data from this service.
+We integrate such third-party providers exclusively to offer you additional features (e.g., synchronization of fitness data). Your data will not be shared with any other parties. Should we connect additional compatible services in the future, the principles described above will apply accordingly.
 
-3. Warum verarbeiten wir deine Daten?
+3. Why do we process your data?
 
-Wir verwenden die erhobenen Daten ausschließlich zu folgenden Zwecken:
-• Test und Analyse der App-Funktionen im Rahmen des hochschulischen Projekts
-• Verbesserung und Evaluation unseres Machine-Learning-Modells
-• Synchronisierung und Anzeige deiner Daten über Health Connect
-Es findet keine kommerzielle Nutzung deiner Daten statt.
+We use the collected data exclusively for the following purposes:
+• Testing and analyzing app functions within the university project
+• Improving and evaluating our machine learning model
+• Synchronizing and displaying your data via Health Connect
+There is no commercial use of your data.
 
-4. Rechtsgrundlage
+4. Legal basis
 
-Die Verarbeitung deiner Gesundheitsdaten erfolgt nur auf Grundlage deiner
-ausdrücklichen Einwilligung (Art. 6 Abs. 1 lit. a, Art. 9 Abs. 2 lit. a DSGVO).
-Du kannst diese Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen – zum Beispiel direkt in der App oder durch Nachricht an das Projektteam.
+• The processing of your health data takes place solely based on your explicit consent (Art. 6(1)(a), Art. 9(2)(a) GDPR).
+• You may withdraw this consent at any time with future effect — for example, directly in the app or by contacting the project team.
 
-5. Wie und wo werden deine Daten gespeichert?
+5. How and where is your data stored?
 
-• Deine Daten werden ausschließlich auf deinem eigenen Gerät gespeichert.
-• Eine Übermittlung an das Projektteam oder an FAKT Software GMBH erfolgt nur, wenn
-du dies manuell und ausdrücklich erlaubst (z. B. durch das Senden von
-Feedbackdaten zur Verbesserung des Prototyps).
+Your data is stored exclusively on your own device.
+Data is only transmitted to the project team or FAKT Software GmbH if you manually and explicitly allow this (e.g., by submitting feedback data to improve the prototype).
 
-6. Datensicherheit
+6. Data security
 
-Die App ist architektonisch so konzipiert, dass alle Daten ausschließlich auf dem eigenen Gerät gespeichert werden. Dadurch wird eine missbräuchliche Verwendung oder Nutzung durch Dritte wirksam verhindert.
+The app is designed so that all data is stored solely on your device. This effectively prevents unauthorized access or misuse by third parties.
 
-7. Deine Rechte
+7. Your rights
 
-Du hast jederzeit das Recht auf:
-• Auskunft über die zu deiner Person gespeicherten Daten
-• Berichtigung oder Löschung deiner Daten
-• Einschränkung der Verarbeitung
-• Datenübertragbarkeit
-• Widerruf deiner Einwilligung,
-Wenn du Fragen oder Bedenken zum Umgang mit deinen Daten hast, kannst du dich jederzeit an uns wenden.
-Natürlich hast du auch das Recht, dich an die Datenschutzstelle der HTWK Leipzig oder an eine Datenschutzaufsichtsbehörde zu wenden.
+You have the right at any time to:
+• Access your stored personal data
+• Request correction or deletion of your data
+• Request restriction of processing
+• Data portability
+• Withdraw your consent
+If you have any questions or concerns about how your data is handled, you can contact us at any time.
+You also have the right to contact the data protection office of HTWK Leipzig or a supervisory authority.
 
-8. Keine automatisierten Entscheidungen
+8. No automated decision-making
 
-Es findet keine automatisierte Entscheidungsfindung im Sinne von Art. 22 DSGVO statt.
-Alle Empfehlungen der App dienen ausschließlich zu Informationszwecken und haben keine rechtlichen oder medizinisch verbindlichen Folgen.
+There is no automated decision-making within the meaning of Art. 22 GDPR.
+All recommendations provided by the app are for informational purposes only and have no legal or medically binding consequences.
 
-9. Automatisierte Auswertung / Profiling
+9. Automated analysis / profiling
 
-Im Rahmen dieses Projekts werden deine Gesundheitsdaten mithilfe von Machine-Learning-Verfahren analysiert.
-Ziel ist es, Muster in deinem Aktivitätsverhalten zu erkennen und Empfehlungen zur Energieeinsparung oder Ruhepausen zu geben.
-Diese Auswertungen dienen ausschließlich zu Forschungs- und Testzwecken innerhalb des Projekts.
-Die Ergebnisse sind nicht medizinisch validiert und sollen dir lediglich informative Hinweise bieten.
-Die Verarbeitung und Auswertung dieser Daten erfolgt nur mit deiner ausdrücklichen Einwilligung.
-Du kannst diese Einwilligung jederzeit widerrufen.
+As part of this project, your health data is analyzed using machine learning methods.
+The goal is to identify patterns in your activity behavior and provide recommendations for energy savings or rest breaks.
+These analyses are carried out solely for research and testing within the project.
+The results are not medically validated and are intended only as informative suggestions.
+The processing and analysis of this data takes place only with your explicit consent.
+You may withdraw this consent at any time.
