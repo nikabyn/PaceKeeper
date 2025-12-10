@@ -151,6 +151,7 @@ object Predictor {
     fun predict(
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
+        predictionHorizon: LinearCombinationPredictionModel.PredictionHorizon = LinearCombinationPredictionModel.PredictionHorizon.FUTURE //TODO: remove default
     ): PredictedEnergyLevelEntry {
         // 1.) time series preprocessing
         val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
@@ -158,7 +159,7 @@ object Predictor {
 
         //TODO: return actual energy prediction and a heartRate disguised as PredictedEnergyLevelEntry
         // 2.) run model and return energy prediction
-        val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete, LinearCombinationPredictionModel.PredictionHorizon.NOW);
+        val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete, predictionHorizon);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
             Percentage(predictedEnergy.coerceIn(0.0, 1.0))

@@ -300,13 +300,13 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                         data = when (metric) {
                             TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
+                            /*TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
                             TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
+                            TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)*/
                         }
                     ),
                     targetLength = stepCount

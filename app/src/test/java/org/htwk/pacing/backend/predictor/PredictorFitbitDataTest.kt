@@ -5,7 +5,11 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
+import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
+import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
@@ -89,7 +93,7 @@ class PredictorFitbitDataTest {
                 )
             )
 
-        val result = LinearExtrapolator.multipleExtrapolate(mk.ndarray(derivedTimeSeries))
+        val result = LinearExtrapolator.multipleExtrapolate(mk.ndarray(derivedTimeSeries), LinearCombinationPredictionModel.PredictionHorizon.FUTURE.howFarInSamples)
 
         result.extrapolations.entries.forEach { (strategy, extrapolation) ->
             println("Strategy: $strategy")
@@ -104,7 +108,7 @@ class PredictorFitbitDataTest {
         println("Plotting finished.")
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+    //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
@@ -116,7 +120,9 @@ class PredictorFitbitDataTest {
 
         Predictor.train(
             multiTimeSeriesEntries,
-            targetTimeSeries = listOf(),//TODO: fill
+            targetTimeSeries = multiTimeSeriesEntries.heartRate.map { it -> ValidatedEnergyLevelEntry(it.time, Validation.Correct,
+                Percentage(it.bpm.toDouble() / 100.0)
+            ) },//TODO: fill
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
 

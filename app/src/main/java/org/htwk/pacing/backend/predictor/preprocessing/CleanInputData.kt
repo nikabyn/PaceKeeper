@@ -151,7 +151,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
                 when (metric) {
                     TimeSeriesMetric.HEART_RATE -> Percentage(correctionHeartRatio)
                     TimeSeriesMetric.DISTANCE -> Percentage(correctionDistancesRatio)
-                    TimeSeriesMetric.ELEVATION_GAINED -> Percentage(correctionElevationGainsRatio)
+                    /*TimeSeriesMetric.ELEVATION_GAINED -> Percentage(correctionElevationGainsRatio)
                     TimeSeriesMetric.SKIN_TEMPERATURE -> Percentage(correctionSkinTemperaturesRatio)
                     TimeSeriesMetric.HEART_RATE_VARIABILITY -> Percentage(
                         correctionHeartRateVariabilitiesRatio
@@ -163,7 +163,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
 
                     TimeSeriesMetric.STEPS -> Percentage(correctionStepsRatio)
                     TimeSeriesMetric.SPEED -> Percentage(correctionSpeedsRatio)
-                    TimeSeriesMetric.SLEEP_SESSION -> Percentage(1.0)
+                    TimeSeriesMetric.SLEEP_SESSION -> Percentage(1.0)*/
                 }
             }
 
