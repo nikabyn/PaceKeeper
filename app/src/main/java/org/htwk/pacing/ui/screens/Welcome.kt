@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -36,7 +37,9 @@ import org.htwk.pacing.ui.logo.BlinkLogo
 import org.htwk.pacing.ui.logo.Floaty
 import org.htwk.pacing.ui.logo.RollingEntry
 import org.htwk.pacing.ui.logo.shuffleSmileys
+import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.random.Random
 
 data class OnboardingPage(
@@ -94,91 +97,99 @@ fun randomSeries(size: Int): Series<List<Double>> {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun WelcomeScreen(onFinished: () -> Unit) {
+fun WelcomeScreen(onFinished: () -> Unit, viewModel: WelcomeViewModel = koinViewModel()) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
-    var termsAccepted by remember { mutableStateOf(false) }
     val isLastPage = pagerState.currentPage == pages.size - 1
 
     BackHandler(enabled = pagerState.currentPage > 0) {
         scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Spacing.medium)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            HorizontalPager(
-                state = pagerState,
+    Scaffold { contentPadding ->
+        Box(
+            modifier = Modifier
+                .padding(contentPadding)
+                .fillMaxSize()
+        ) {
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) { pageIndex ->
-                OnboardingPageContent(
-                    page = pages[pageIndex],
-                    pageIndex = pageIndex,
-                    showCheckbox = pageIndex == pages.size - 1,
-                    isChecked = termsAccepted,
-                    onCheckedChange = { termsAccepted = it }
-                )
-            }
-
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
             ) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = pagerState.currentPage > 0,
-                    modifier = Modifier.align(Alignment.CenterStart)
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) { pageIndex ->
+                    OnboardingPageContent(
+                        page = pages[pageIndex],
+                        pageIndex = pageIndex,
+                        viewModel,
+                    )
+                }
+
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = pagerState.currentPage > 0,
+                        modifier = Modifier.align(Alignment.CenterStart)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
+                        Button(
+                            onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
+                        }
                     }
-                }
 
-                Row(
-                    modifier = Modifier.align(Alignment.Center)
-                ) {
-                    repeat(pages.size) { iteration ->
-                        val color =
-                            if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-                        Box(
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .size(10.dp)
-                        )
-                    }
-                }
-
-                val buttonEnabled = if (isLastPage) termsAccepted else true
-                Button(
-                    onClick = {
-                        if (isLastPage) onFinished() else scope.launch {
-                            pagerState.animateScrollToPage(
-                                pagerState.currentPage + 1
+                    Row(
+                        modifier = Modifier.align(Alignment.Center)
+                    ) {
+                        repeat(pages.size) { iteration ->
+                            val color =
+                                if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            Box(
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .size(10.dp)
                             )
                         }
-                    },
-                    enabled = buttonEnabled,
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                ) {
-                    AnimatedVisibility(visible = isLastPage) { Icon(Icons.Default.Check, "Fertig") }
-                    AnimatedVisibility(visible = !isLastPage) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowForward,
-                            "Weiter"
-                        )
+                    }
+
+                    val buttonEnabled = if (isLastPage) viewModel.termsAccepted else true
+                    Button(
+                        onClick = {
+                            if (isLastPage) onFinished() else scope.launch {
+                                pagerState.animateScrollToPage(
+                                    pagerState.currentPage + 1
+                                )
+                            }
+                        },
+                        enabled = buttonEnabled,
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                    ) {
+                        AnimatedVisibility(visible = isLastPage) {
+                            Icon(
+                                Icons.Default.Check,
+                                "Fertig"
+                            )
+                        }
+                        AnimatedVisibility(visible = !isLastPage) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                "Weiter"
+                            )
+                        }
                     }
                 }
             }
+
         }
     }
 }
@@ -187,9 +198,7 @@ fun WelcomeScreen(onFinished: () -> Unit) {
 fun OnboardingPageContent(
     page: OnboardingPage,
     pageIndex: Int,
-    showCheckbox: Boolean,
-    isChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    viewModel: WelcomeViewModel,
 ) {
     Column(
         modifier = Modifier
@@ -200,82 +209,19 @@ fun OnboardingPageContent(
     ) {
         when (pageIndex) {
             0 -> {
-                RollingEntry {
-                    Floaty {
-                        if (page.optionalIcon2 != null) {
-                            BlinkLogo(
-                                open = page.icon,
-                                closed = page.optionalIcon2
-                            )
-                        } else {
-                            Image(
-                                painter = painterResource(page.icon),
-                                contentDescription = null,
-                                modifier = Modifier.size(200.dp)
-                            )
-                        }
-                    }
-                }
+                WelcomePage(page)
             }
 
             1 -> {
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    val exSeries: Series<List<Double>> =
-                        Series(
-                            x = List(10) { Random.nextDouble() },
-                            y = List(10) { Random.nextDouble() }
-                        )
-
-                    EnergyPredictionCard(
-                        series = exSeries,
-                        currentEnergy = 0.8f,
-                        minPrediction = 0.0f,
-                        avgPrediction = 0.5f,
-                        maxPrediction = 1.0f,
-                        modifier = Modifier.height(300.dp)
-
-                    )
-                }
+                PredictionPage()
             }
 
             2 -> {
-                RollingEntry {
-                    Floaty {
-                        if (page.optionalIcon2 != null && page.optionalIcon3 != null && page.optionalIcon4 != null) {
-                            shuffleSmileys(
-                                page.icon,
-                                page.optionalIcon2,
-                                page.optionalIcon3,
-                                page.optionalIcon4
-                            )
-                        } else {
-                            Image(
-                                painter = painterResource(page.icon),
-                                contentDescription = null,
-                                modifier = Modifier.size(200.dp)
-                            )
-                        }
-                    }
-                }
-
+                SymptomPage(page)
             }
 
             3 -> {
-                if (isChecked && page.optionalIcon2 != null) {
-                    Image(
-                        painter = painterResource(id = page.optionalIcon2),
-                        contentDescription = null,
-                        modifier = Modifier.size(200.dp)
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(page.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(200.dp)
-                    )
-                }
+                DataUsagePage(viewModel, page, 1)
             }
         }
 
@@ -313,26 +259,113 @@ fun OnboardingPageContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Spacing.large)
             )
+        if (pageIndex == 3) DataUsagePage(viewModel, page, 2)
+    }
+}
 
-        if (showCheckbox) {
-            ScrollBox()
-            Spacer(modifier = Modifier.height(Spacing.extraLarge))
+@Composable
+fun WelcomePage(page: OnboardingPage) {
+    RollingEntry {
+        Floaty {
+            if (page.optionalIcon2 != null) {
+                BlinkLogo(
+                    open = page.icon,
+                    closed = page.optionalIcon2
+                )
+            } else {
+                Image(
+                    painter = painterResource(page.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(200.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PredictionPage() {
+    Box(
+        contentAlignment = Alignment.Center
+    ) {
+        val exSeries: Series<List<Double>> =
+            Series(
+                x = List(10) { Random.nextDouble(0.0, 1.0) },
+                y = List(10) { Random.nextDouble(0.0, 1.0) }
+            )
+
+        EnergyPredictionCard(
+            series = exSeries,
+            currentEnergy = 0.5f,
+            minPrediction = 0.0f,
+            avgPrediction = 0.6f,
+            maxPrediction = 1.0f,
+            modifier = Modifier.height(300.dp)
+
+        )
+    }
+}
+
+@Composable
+fun SymptomPage(page: OnboardingPage) {
+    RollingEntry {
+        Floaty {
+            if (page.optionalIcon2 != null && page.optionalIcon3 != null && page.optionalIcon4 != null) {
+                shuffleSmileys(
+                    page.icon,
+                    page.optionalIcon2,
+                    page.optionalIcon3,
+                    page.optionalIcon4
+                )
+            } else {
+                Image(
+                    painter = painterResource(page.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(200.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DataUsagePage(viewModel: WelcomeViewModel, page: OnboardingPage, part: Int) {
+    val onAcceptedChange = { newVal: Boolean -> viewModel.termsAccepted = newVal }
+    if (part == 1) {
+        if (viewModel.termsAccepted && page.optionalIcon2 != null) {
+            Image(
+                painter = painterResource(id = page.optionalIcon2),
+                contentDescription = null,
+                modifier = Modifier.size(200.dp)
+            )
+        } else {
+            Image(
+                painter = painterResource(page.icon),
+                contentDescription = null,
+                modifier = Modifier.size(200.dp)
+            )
+        }
+    } else if (part == 2) {
+        ScrollBox("Helloo")
+        Spacer(modifier = Modifier.height(Spacing.extraLarge))
+        Card(
+            shape = CardStyle.shape,
+            colors = CardStyle.colors,
+            onClick = { onAcceptedChange(!viewModel.termsAccepted) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.large),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Spacing.medium))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                    .padding(Spacing.small)
+                modifier = Modifier.padding(Spacing.medium),
             ) {
                 Checkbox(
-                    checked = isChecked,
-                    onCheckedChange = onCheckedChange
+                    checked = viewModel.termsAccepted,
+                    onCheckedChange = onAcceptedChange
                 )
-                Spacer(modifier = Modifier.width(Spacing.extraLarge))
                 Text(
                     text = "Ich habe die Datennutzungsbestimmungen gelesen und stimme der Datennutzung zu.",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(Spacing.small),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -343,6 +376,7 @@ fun OnboardingPageContent(
 class WelcomeViewModel(
     private val db: PacingDatabase
 ) : ViewModel() {
+    var termsAccepted by mutableStateOf(false)
 
     fun completeOnboarding(onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -353,7 +387,7 @@ class WelcomeViewModel(
 }
 
 @Composable
-private fun ScrollBox() {
+private fun ScrollBox(text: String) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(Spacing.medium))
@@ -365,7 +399,7 @@ private fun ScrollBox() {
     ) {
         repeat(10) {
             Text(
-                text = "Helloo",
+                text = text,
                 modifier = Modifier.padding(2.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
