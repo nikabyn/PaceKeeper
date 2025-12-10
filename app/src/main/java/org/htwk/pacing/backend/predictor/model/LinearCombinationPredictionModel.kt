@@ -42,14 +42,15 @@ object LinearCombinationPredictionModel : IPredictionModel {
      */
     private fun generateFlattenedMultiExtrapolationResults(
         input: MultiTimeSeriesDiscrete,
-        indexOffset: Int = 0
+        indexOffset: Int = 0,
+        predictionHorizon: PredictionHorizon
     ): List<Double> {
         val flatExtrapolationResults = input.getAllFeatureIDs().flatMap { featureID ->
             val timeSeries: D1Array<Double> =
                 input.getMutableRow(featureID)
                     .slice(indexOffset until indexOffset + Predictor.TIME_SERIES_SAMPLE_COUNT)
 
-            val extrapolations = LinearExtrapolator.multipleExtrapolate(timeSeries).extrapolations
+            val extrapolations = LinearExtrapolator.multipleExtrapolate(timeSeries, predictionHorizon.howFarInSamples).extrapolations
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()

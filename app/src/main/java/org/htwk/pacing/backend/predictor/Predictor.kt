@@ -158,7 +158,7 @@ object Predictor {
 
         //TODO: return actual energy prediction and a heartRate disguised as PredictedEnergyLevelEntry
         // 2.) run model and return energy prediction
-        val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete);
+        val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete, LinearCombinationPredictionModel.PredictionHorizon.NOW);
         return PredictedEnergyLevelEntry(
             inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
             Percentage(predictedEnergy.coerceIn(0.0, 1.0))
