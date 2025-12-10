@@ -16,7 +16,6 @@ import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.SettingsSubScreen
-import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 
 @Composable
 fun FeedbackScreen(

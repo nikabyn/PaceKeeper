@@ -102,8 +102,7 @@ fun UniversalSettingsCard(
                     )
                 }
             }
-            
-            // Chevron Icon right
+
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,

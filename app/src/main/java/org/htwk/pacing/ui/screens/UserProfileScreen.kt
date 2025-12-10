@@ -150,12 +150,14 @@ fun UserProfileScreen(
                         contentDescription = stringResource(R.string.save),
                         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.save) )
                 } else {
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = stringResource(R.string.save)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.saved))
                 }
                 Spacer(Modifier.width(8.dp))
