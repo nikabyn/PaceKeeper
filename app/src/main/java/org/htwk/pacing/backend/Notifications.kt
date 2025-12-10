@@ -36,7 +36,9 @@ import org.htwk.pacing.backend.database.UserProfileRepository
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.hours
 
-
+/**
+ * A collection of constant values for notification IDs and channel IDs.
+ */
 object NotificationIds {
     const val HEALTH_CONNECT_SYNC_CHANNEL_ID = "health_connect_sync_ch"
     const val HEALTH_CONNECT_SYNC_NOTIFICATION_ID = 1
@@ -45,6 +47,11 @@ object NotificationIds {
     const val ENERGY_WARNING_NOTIFICATION_ID = 2
 }
 
+/**
+ * Initializes the notification system by checking for and requesting notification permissions.
+ *
+ * @param activity The [ComponentActivity] from which to request permissions.
+ */
 fun initNotificationSystem(activity: ComponentActivity) {
     val sharedPrefs = activity.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
 
@@ -75,6 +82,13 @@ fun initNotificationSystem(activity: ComponentActivity) {
     }
 }
 
+/**
+ * Creates a notification channel for energy warnings.
+ *
+ * This function should be called before any notifications are sent on this channel.
+ *
+ * @param context The context.
+ */
 fun createNotificationChannel(context: Context) {
     // Create channel ONLY on API 26+
     val channelId = NotificationIds.ENERGY_WARNING_CHANNEL_ID
@@ -90,6 +104,11 @@ fun createNotificationChannel(context: Context) {
     notificationManager.createNotificationChannel(channel)
 }
 
+/**
+ * Displays a notification to the user about low energy levels.
+ *
+ * @param context The context.
+ */
 fun showNotification(context: Context) {
     createNotificationChannel(context)
 
@@ -134,6 +153,14 @@ fun showNotification(context: Context) {
     Log.d("Notification", "Notification wurde ausgelöst")
 }
 
+/**
+ * A background worker that checks the user's predicted energy level and shows a notification if it's low.
+ *
+ * @param context The application context.
+ * @param workerParams Parameters for the worker.
+ * @param predictedEnergyLevelDao The DAO for accessing predicted energy levels.
+ * @param userProfileRepository The repository for accessing the user profile.
+ */
 class NotificationsBackgroundWorker(
     context: Context,
     workerParams: WorkerParameters,
@@ -141,6 +168,11 @@ class NotificationsBackgroundWorker(
     val userProfileRepository: UserProfileRepository // <-- NEUE ABHÄNGIGKEIT
 ) : CoroutineWorker(context, workerParams) {
 
+    /**
+     * Retrieves the minimum predicted energy level from the database within the next 6 hours.
+     *
+     * @return The minimum energy level as a Double, or null if no data is available.
+     */
     private suspend fun getRelevantPredictedEnergyLevelFromDB(): Double? {
         val now = Clock.System.now()
         val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
@@ -151,11 +183,16 @@ class NotificationsBackgroundWorker(
         return minimumEntry?.percentage?.toDouble()
     }
 
+    /**
+     * The main work to be performed by the worker.
+     *
+     * It checks the user's profile settings and resting hours before deciding whether to show a notification.
+     */
     override suspend fun doWork(): Result {
         delay(2000)
 
-        // 1. Lade das Nutzerprofil und die Ruhezeiten
-        val userProfile = userProfileRepository.getUserProfile() // Annahme: Diese Methode existiert
+
+        val userProfile = userProfileRepository.getUserProfile()
 
         if (userProfile == null) {
             Log.d("NotificationsBackgroundWorker", "User profile not found. No notification.")
@@ -166,7 +203,6 @@ class NotificationsBackgroundWorker(
         val restingStart = userProfile.restingStart // z.B. "22:00"
         val restingEnd = userProfile.restingEnd     // z.B. "07:00"
 
-        // 2. Prüfe, ob Benachrichtigungen generell erlaubt sind
         if (!warningsPermitted) {
             Log.d(
                 "NotificationsBackgroundWorker",
@@ -176,24 +212,26 @@ class NotificationsBackgroundWorker(
         }
 
         // 3. Prüfe, ob die aktuelle Zeit innerhalb der Ruhezeit liegt
-        val now = Clock.System.now()
-        val nowTime = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
-        val restingStartTime: LocalTime = restingStart
-        val restingEndTime: LocalTime = restingEnd
+        if (restingStart != null && restingEnd != null) {
+            val now = Clock.System.now()
+            val nowTime = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
+            val restingStartTime: LocalTime = restingStart
+            val restingEndTime: LocalTime = restingEnd
 
-        // Umgang mit Ruhezeiten, die über Mitternacht gehen (z.B. 22:00 - 07:00)
-        val isInRestingTime = if (restingStartTime > restingEndTime) {
-            nowTime >= restingStartTime || nowTime < restingEndTime
-        } else {
-            nowTime in restingStartTime..restingEndTime
-        }
+            // Umgang mit Ruhezeiten, die über Mitternacht gehen (z.B. 22:00 - 07:00)
+            val isInRestingTime = if (restingStartTime > restingEndTime) {
+                nowTime >= restingStartTime || nowTime < restingEndTime
+            } else {
+                nowTime in restingStartTime..restingEndTime
+            }
 
-        if (isInRestingTime) {
-            Log.d(
-                "NotificationsBackgroundWorker",
-                "Current time is within resting period. No notification."
-            )
-            return Result.success()
+            if (isInRestingTime) {
+                Log.d(
+                    "NotificationsBackgroundWorker",
+                    "Current time is within resting period. No notification."
+                )
+                return Result.success()
+            }
         }
 
         // 4. Prüfe das Energielevel (deine bisherige Logik)
@@ -215,6 +253,11 @@ class NotificationsBackgroundWorker(
     }
 }
 
+/**
+ * Schedules the [NotificationsBackgroundWorker] to run periodically or as a one-time request for debugging.
+ *
+ * @param wm The [WorkManager] instance.
+ */
 fun scheduleEnergyCheckWorker(wm: WorkManager) {
     val DEBUG_RUN_IMMEDIATELY = true
     if (DEBUG_RUN_IMMEDIATELY) {

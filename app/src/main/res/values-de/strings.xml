@@ -112,13 +112,15 @@
     <string name="dialog_unsaved_message">Möchten Sie die Seite verlassen? Nicht gespeicherte Änderungen gehen verloren.</string>
     <string name="dialog_unsaved_confirm_leave">Verlassen</string>
     <string name="dialog_unsaved_dismiss_cancel">Abbrechen</string>
-
     <string name="warnings">Warnungen</string>
     <string name="warning_description">Benachrichtigungen bei niedrigem Energielevel und erwartetem Crash</string>
-    <string name="reminders"> </string>
+    <string name="reminders">Erinnerungen</string>
     <string name="reminder_description">Regelmäßige Erinnerungen an das Tracken von Symptomen und die Validierung der Energieprognose</string>
     <string name="suggestions">Empfehlungen</string>
     <string name="suggestion_description">Empfehlungen basierend auf aktuellem Gesundheitszustand</string>
     <string name="personal_resting_hours">Persönliche Ruhezeiten</string>
-
+    <string name="edit_resting_hours">Ruhezeiten bearbeiten</string>
+    <string name="start_time_label">Startzeit (HH:mm)</string>
+    <string name="end_time_label">Endzeit (HH:mm)</string>
+    <string name="time_format_helper">Format: 00:00 bis 23:59</string>
 </resources>

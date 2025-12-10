@@ -17,6 +17,13 @@ import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.theme.CardStyle
 
+/**
+ * A Composable that displays the user's resting hours in a card.
+ *
+ * @param restingStart The start time of the resting period.
+ * @param restingEnd The end time of the resting period.
+ * @param onEditClick A lambda to be invoked when the edit button is clicked.
+ */
 @Composable
 fun RestingHoursCard(
     restingStart: String,
@@ -53,7 +60,7 @@ fun RestingHoursCard(
                 )
 
                 Button(onClick = onEditClick) {
-                    Text("Edit")
+                    Text(stringResource(id = R.string.edit))
                 }
             }
         }

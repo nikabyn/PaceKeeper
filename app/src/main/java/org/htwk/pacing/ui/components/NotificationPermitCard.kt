@@ -1,65 +1,3 @@
-/*
-package org.htwk.pacing.ui.components
-
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import org.htwk.pacing.ui.theme.CardStyle
-
-@Composable
-fun NotificationPermitCard(
-    catA: Boolean,
-    catB: Boolean,
-    catC: Boolean,
-    onAChange: (Boolean) -> Unit,
-    onBChange: (Boolean) -> Unit,
-    onCChange: (Boolean) -> Unit
-) {
-    Card(
-        colors = CardStyle.colors,
-        shape = CardStyle.shape,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            Switch(
-                title = "Kategorie A",
-                description = "Eine Beschreibung",
-                checked = catA,
-                onCheckedChange = onAChange,
-                titleStyle = MaterialTheme.typography.titleLarge
-            )
-
-            Switch(
-                title = "Kategorie B",
-                description = "Eine Beschreibung",
-                checked = catB,
-                onCheckedChange = onBChange,
-                titleStyle = MaterialTheme.typography.titleLarge
-            )
-
-            Switch(
-                title = "Kategorie C",
-                description = "Eine Beschreibung",
-                checked = catC,
-                onCheckedChange = onCChange,
-                titleStyle = MaterialTheme.typography.titleLarge
-            )
-        }
-    }
-}
-*/
 package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -74,6 +12,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.theme.CardStyle
+
+/**
+ * A Composable that displays notification permission switches in a card.
+ *
+ * @param warningPermit Whether the user has permitted warnings.
+ * @param reminderPermit Whether the user has permitted reminders.
+ * @param suggestionPermit Whether the user has permitted suggestions.
+ * @param onWarningChange A lambda to be invoked when the warning switch is changed.
+ * @param onReminderChange A lambda to be invoked when the reminder switch is changed.
+ * @param onSuggestionChange A lambda to be invoked when the suggestion switch is changed.
+ */
 
 @Composable
 fun NotificationPermitCard(

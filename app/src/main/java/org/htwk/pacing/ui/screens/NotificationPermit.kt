@@ -21,19 +21,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.datetime.LocalTime
+import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.NotificationPermitCard
 import org.htwk.pacing.ui.components.RestingHoursCard
 import org.koin.androidx.compose.koinViewModel
 
-
+/**
+ * Formats a [LocalTime] object into a string in "HH:mm" format.
+ */
 fun LocalTime.formatTime(): String {
     return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
 }
 
-
+/**
+ * Parses a string in "HH:mm" format into a [LocalTime] object.
+ */
 fun String.parseTime(): LocalTime? {
     return try {
         val parts = this.split(":")
@@ -47,6 +53,13 @@ fun String.parseTime(): LocalTime? {
     }
 }
 
+/**
+ * A Composable that displays the notification settings screen.
+ *
+ * @param navController The NavController for navigating back.
+ * @param modifier A Modifier for this composable.
+ * @param userProfileViewModel The ViewModel for the user profile.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
@@ -65,10 +78,13 @@ fun NotificationsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Benachrichtigungen") },
+                title = { Text(stringResource(R.string.notifications)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )
@@ -83,7 +99,6 @@ fun NotificationsScreen(
                 .padding(16.dp)
         ) {
 
-            // Verwende die neue NotificationPermitCard mit den UserProfile-Daten
             NotificationPermitCard(
                 warningPermit = profile?.warningPermit ?: false,
                 reminderPermit = profile?.reminderPermit ?: false,
@@ -116,7 +131,6 @@ fun NotificationsScreen(
 
             Spacer(modifier = Modifier.padding(top = 20.dp))
 
-            // RestingHoursCard mit LocalTime anzeigen
             profile?.let {
                 RestingHoursCard(
                     restingStart = profile?.restingStart?.formatTime() ?: "22:00",
@@ -124,7 +138,7 @@ fun NotificationsScreen(
                     onEditClick = { showDialog = true }
                 )
             } ?: run {
-                // Fallback, wenn noch kein Profil existiert
+                // Fallback
                 RestingHoursCard(
                     restingStart = "22:00",
                     restingEnd = "06:00",
@@ -134,7 +148,7 @@ fun NotificationsScreen(
         }
     }
 
-    // Dialog zum Bearbeiten der Ruhezeit
+    // dialog for editing personal resting hours
     if (showDialog) {
         val currentStart = profile?.restingStart ?: LocalTime(22, 0)
         val currentEnd = profile?.restingEnd ?: LocalTime(6, 0)
@@ -162,6 +176,14 @@ fun NotificationsScreen(
     }
 }
 
+/**
+ * A Composable that displays a dialog for editing resting hours.
+ *
+ * @param currentStart The current start time of the resting period.
+ * @param currentEnd The current end time of the resting period.
+ * @param onDismiss A lambda to be invoked when the dialog is dismissed.
+ * @param onConfirm A lambda to be invoked when the confirm button is clicked.
+ */
 @Composable
 fun RestingHoursDialog(
     currentStart: String,
@@ -172,7 +194,7 @@ fun RestingHoursDialog(
     var start by remember { mutableStateOf(currentStart) }
     var end by remember { mutableStateOf(currentEnd) }
 
-    // Validierung der Eingabe
+    // input validation
     fun isValidTimeFormat(time: String): Boolean {
         return try {
             val parts = time.split(":")
@@ -191,18 +213,18 @@ fun RestingHoursDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ruhezeiten bearbeiten") },
+        title = { Text(stringResource(id = R.string.edit)) },
         text = {
             Column {
                 androidx.compose.material3.OutlinedTextField(
                     value = start,
                     onValueChange = { start = it },
-                    label = { Text("Startzeit (HH:MM)") },
+                    label = { Text(stringResource(R.string.start_time_label)) },
                     singleLine = true,
                     isError = !isStartValid && start.isNotEmpty(),
                     supportingText = {
                         if (!isStartValid && start.isNotEmpty()) {
-                            Text("Format: 00:00 bis 23:59")
+                            Text(stringResource(R.string.time_format_helper))
                         }
                     }
                 )
@@ -212,12 +234,12 @@ fun RestingHoursDialog(
                 androidx.compose.material3.OutlinedTextField(
                     value = end,
                     onValueChange = { end = it },
-                    label = { Text("Endzeit (HH:MM)") },
+                    label = { Text(stringResource(R.string.end_time_label)) },
                     singleLine = true,
                     isError = !isEndValid && end.isNotEmpty(),
                     supportingText = {
                         if (!isEndValid && end.isNotEmpty()) {
-                            Text("Format: 00:00 bis 23:59")
+                            Text(stringResource(R.string.time_format_helper))
                         }
                     }
                 )
@@ -228,14 +250,13 @@ fun RestingHoursDialog(
                 onClick = { onConfirm(start, end) },
                 enabled = canSave
             ) {
-                Text("Speichern")
+                Text(stringResource(id = R.string.save))
             }
         },
         dismissButton = {
             androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text(stringResource(id = R.string.cancel))
             }
         }
     )
 }
-

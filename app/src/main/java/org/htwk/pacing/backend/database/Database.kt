@@ -58,7 +58,7 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun validatedEnergyLevelDao(): ValidatedEnergyLevelDao
 
     abstract fun userProfileDao(): UserProfileDao
-    //abstract fun notificationSettingsDao(): NotificationSettingsDao
+
 
     /*These two tables are different than the others in the sense that they represent
     future data (ml model predictions). Also, when accessing them for writing, their whole table

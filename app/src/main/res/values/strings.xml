@@ -116,8 +116,10 @@
     <string name="reminder_description">Receive regular reminders for tracking symptoms and validating your prognosis</string>
     <string name="suggestion_description">Blubblubblub</string>
     <string name="suggestions">Suggestions</string>
-    <string name="notifications">Receive personalized suggestions based on your current state</string>
+    <string name="notifications">Notifications</string>
     <string name="personal_resting_hours">Personal Resting Hours</string>
+    <string name="edit_resting_hours">Edit resting hours</string>
+    <string name="start_time_label">Start time (HH:mm)</string>
+    <string name="end_time_label">End time (HH:mm)</string>
+    <string name="time_format_helper">Format: 00:00 to 23:59</string>
 </resources>
-
-
