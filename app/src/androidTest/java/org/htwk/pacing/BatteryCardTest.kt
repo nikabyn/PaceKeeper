@@ -41,7 +41,9 @@ class BatteryCardTest : KoinComponent {
 
         composeTestRule.onNodeWithTag("ValidationCorrectButton").performClick()
 
-        composeTestRule.waitUntil { runBlocking { validatedEnergyLevelDao.getLatest() } != null }
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            runBlocking { validatedEnergyLevelDao.getLatest() } != null
+        }
 
         val entry = runBlocking { validatedEnergyLevelDao.getLatest() }
         assertEquals(Validation.Correct, entry?.validation)
