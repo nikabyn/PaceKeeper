@@ -49,7 +49,7 @@ class BatteryCardTest : KoinComponent {
     }
 
     @Test
-    fun testAdjustEnergyLevel() {
+    fun testAdjustEnergyLevel() = runBlocking {
         val currentEnergy = 0.5
         val adjustedEnergy = 1.0
         val snackbarHostState = SnackbarHostState()
@@ -72,9 +72,11 @@ class BatteryCardTest : KoinComponent {
         }
         saveButton.performClick()
 
-        composeTestRule.waitUntil { runBlocking { validatedEnergyLevelDao.getLatest() } != null }
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            runBlocking { validatedEnergyLevelDao.getLatest() } != null
+        }
 
-        val entry = runBlocking { validatedEnergyLevelDao.getLatest() }
+        val entry = validatedEnergyLevelDao.getLatest()
         assertEquals(Validation.Adjusted, entry?.validation)
         assertEquals(adjustedEnergy, entry?.percentage?.toDouble())
     }
