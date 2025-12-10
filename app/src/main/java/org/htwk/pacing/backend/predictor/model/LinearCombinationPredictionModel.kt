@@ -7,7 +7,9 @@ import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
@@ -22,25 +24,13 @@ import kotlin.time.Duration.Companion.hours
  * using preprocessed time-series data provided by an [IPreprocessor].
  */
 object LinearCombinationPredictionModel : IPredictionModel {
-    //stores "learned" / regressed linear coefficients
-    private var linearCoefficients: Map<PredictionHorizon, List<Double>> = listOf()
+    //stores "learned" / regressed linear coefficients per prediction horizon
+    private var linearCoefficients: Map<PredictionHorizon, D1Array<Double>> = mapOf()
 
     enum class PredictionHorizon(val howFarInSamples: Int) {
         NOW((0.hours / Predictor.TIME_SERIES_STEP_DURATION).toInt()),
         FUTURE((2.hours / Predictor.TIME_SERIES_STEP_DURATION).toInt()),
     }
-
-    /**
-     * Represents a single training sample containing extrapolated multi-signal data
-     * and its corresponding expected energy level (target output).
-     *
-     * @property multiExtrapolations Flattened list of extrapolated feature values from multiple signals.
-     * @property expectedEnergyLevel The expected (ground truth) energy level for this sample.
-     */
-    data class TrainingSample(
-        val multiExtrapolations: List<Double>,
-        val expectedEnergyLevel: Double
-    )
 
     /**
      * Creates a list of training samples from the input time series data.
@@ -54,19 +44,23 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @return A list of [TrainingSample] objects, each containing the extrapolated features
      *         and the expected future energy level.
      */
-    private fun createTrainingSamples(
+    private fun createExtrapolationMatrix(
         input: MultiTimeSeriesDiscrete,
         targetTimeSeriesDiscrete: DoubleArray
-    ): List<TrainingSample> {
-        val predictionLookAhead =
-            (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT);
+    ): D2Array<Double> {
+        /*val predictionLookAhead =
+            (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT);*/
 
-        return (0 until input.stepCount() - predictionLookAhead).map { offset ->
-            TrainingSample(
-                multiExtrapolations = generateFlattenedMultiExtrapolationResults(input, offset),
+
+        val allExtrapolations =  (0 until input.stepCount()).map { offset ->
+            generateFlattenedMultiExtrapolationResults(input, offset)
+            /*TrainingSample(
                 expectedEnergyLevel = targetTimeSeriesDiscrete[offset + predictionLookAhead]
-            )
+            )*/
         }
+
+        val extrapolationsMatrix: D2Array<Double> = mk.ndarray(allExtrapolations)
+        return extrapolationsMatrix
     }
 
     /**
@@ -108,35 +102,49 @@ object LinearCombinationPredictionModel : IPredictionModel {
     fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
         require(input.stepCount() == target.size)
 
+        val extrapolationsMatrix = createExtrapolationMatrix(input, target)
+
+        linearCoefficients = PredictionHorizon.entries.associateWith { horizon ->
+
+            val targets = target.slice(
+                (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) until target.size - horizon.howFarInSamples
+            )
+            val extrapolations = extrapolationsMatrix.slice<Double, D2, D2>(inSlice=(
+                    0 until targets.size
+            ), axis = 0)
+
+            leastSquaresTikhonov(extrapolations, mk.ndarray(targets))
+        }
+    }
+
+    /*fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
+        require(input.stepCount() == target.size)
+
         val baseOffset = Predictor.TIME_SERIES_SAMPLE_COUNT - 1
 
-        // ---- 1) Precompute feature vectors for ALL offsets once ----
+        // precompute feature vectors (model input) for all offsets once
         val allFeatureVectors: List<List<Double>> =
             (0 until input.stepCount() - baseOffset)
                 .map { offset -> generateFlattenedMultiExtrapolationResults(input, offset) }
 
-        // ---- 2) For each horizon, build the target vector and regress ----
+        val A_full: D2Array<Double> = mk.ndarray(allFeatureVectors)
+
+        //for each horizon, build target value and regress
+        //sample for "now" is the last sample inside the window (offset + TS_SAMPLE_COUNT - 1)
         linearCoefficients = PredictionHorizon.entries.associateWith { horizon ->
-            val windowPlusHorizon =
-                Predictor.TIME_SERIES_SAMPLE_COUNT + horizon.howFarInSamples
+            val targetOffsetFromWindowStart =
+                Predictor.TIME_SERIES_SAMPLE_COUNT + horizon.howFarInSamples - 1
 
-            val upperIndexLimit = (allFeatureVectors.size - 1) - windowPlusHorizon
+            val upperIndexLimit = allFeatureVectors.size - targetOffsetFromWindowStart
 
-            val samples1 = allFeatureVectors.take(upperIndexLimit)
+            val targets = (0..upperIndexLimit).map { idx -> target[idx + targetOffsetFromWindowStart]}
 
-            val samples = allFeatureVectors.indices
-                .filter { idx -> idx + baseOffset + horizon < target.size }
-                .map { idx ->
-                    target[idx + baseOffset + horizon]
-                }
+            val A = A_full.slice<Double, D2, D2>(inSlice=(0..upperIndexLimit), axis = 0) //how to properly specify axis?
+            val y: D1Array<Double> = mk.ndarray(targets)
 
-            val A: D2Array<Double> = mk.ndarray(allFeatureVectors.take(samples.size))
-            val y: D1Array<Double> = mk.ndarray(samples)
-
-            leastSquaresTikhonov(A, y).toList()
+            leastSquaresTikhonov(A, y)
         }
-
-    }
+    }*/
 
     /*fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
         val trainingSamples = createTrainingSamples(input, targetTimeSeriesDiscrete)
@@ -158,6 +166,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
             leastSquaresTikhonov(allExtrapolationsMatrix, allExpectedFutureValuesVector).toList()
     }*/
 
+    //TODO: add needs train check, the job should use this to check if we lost weights from restart
+
     /**
      * Predicts the next energy level data point based on the preprocessed time series data.
      * This model uses a linear combination of various time series features (e.g., integrals, derivatives)
@@ -170,16 +180,15 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *              time series data, such as heart rate.
      * @return A [Double] representing the predicted energy level.
      */
-    override fun predict(input: MultiTimeSeriesDiscrete): Double {
+    override fun predict(input: MultiTimeSeriesDiscrete, predictionHorizon: PredictionHorizon): Double {
         require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
 
         val flattenedExtrapolations = generateFlattenedMultiExtrapolationResults(input)
 
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations)
-        val coefficientsVector: D1Array<Double> = mk.ndarray(linearCoefficients)
+        val coefficientsVector: D1Array<Double> = linearCoefficients[predictionHorizon]!!
 
         val prediction = mk.linalg.dot(extrapolationsVector, coefficientsVector)
         return prediction
-
     }
 }
