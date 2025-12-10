@@ -109,19 +109,19 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
-    <string name="tips_error_1">Close your blinds and lie down.</string>
-    <string name="tips_error_2">Take a short break from stimuli.</string>
-    <string name="tips_error_3">Drink some water and take a break.</string>
-    <string name="tips_error_4">Ask friends or family for help if you need it.</string>
+    <string name="tips_error_1">Dim the room completely and lie down, minimizing all sensory input.</string>
+    <string name="tips_error_2">Interrupt all sensory and mental stimuli to prevent PEM.</string>
+    <string name="tips_error_3">Sip water or electrolytes while fully resting; do not attempt any activity.</string>
+    <string name="tips_error_4">Request help from friends or family for anything that requires energy.</string>
 
-    <string name="tips_warning_1">Take a short meditation break.</string>
-    <string name="tips_warning_2">Prepare a small, easy snack.</string>
-    <string name="tips_warning_3">Do a simple activity while sitting down.</string>
-    <string name="tips_warning_4">Take on only small mental tasks.</string>
+    <string name="tips_warning_1">Perform gentle breathing or relaxation exercises without exertion.</string>
+    <string name="tips_warning_2">Prepare a very simple snack or consume pre-prepared food.</string>
+    <string name="tips_warning_3">Passive activities with minimal cognitive load are possible.</string>
+    <string name="tips_warning_4">Only attempt one small mental task at a time, followed immediately by rest.</string>
 
-    <string name="tips_info_1">Drink some water.</string>
-    <string name="tips_info_2">Take a short walk to get some fresh air.</string>
-    <string name="tips_info_3">Complete a small task.</string>
-    <string name="tips_info_4">Spend some time with friends.</string>
+    <string name="tips_info_1">Drink water and check your body’s signals before any activity.</string>
+    <string name="tips_info_2">Step outside briefly for fresh air, keeping effort to a minimum.</string>
+    <string name="tips_info_3">Perform very small tasks while remaining well within your energy limits.</string>
+    <string name="tips_info_4">Engage in short, low-effort social interactions if tolerated.</string>
 
 </resources>
