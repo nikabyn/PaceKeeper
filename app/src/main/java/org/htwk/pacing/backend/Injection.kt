@@ -21,6 +21,7 @@ import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.mlmodel.MLModel
 import org.htwk.pacing.backend.mlmodel.PredictionWorker
@@ -78,6 +79,8 @@ val appModule = module {
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
     }
+    single { UserProfileRepository(get()) }
+
 
     viewModel { HomeViewModel(get(), get()) }
     viewModel { MeasurementsViewModel(get(), get(), get(), get(), userProfileDao = get()) }
@@ -101,7 +104,7 @@ val appModule = module {
             get()
         )
     }
-    worker { context, params -> NotificationsBackgroundWorker(context, params, get()) }
+    worker { context, params -> NotificationsBackgroundWorker(context, params, get(), get()) }
 }
 
 /**

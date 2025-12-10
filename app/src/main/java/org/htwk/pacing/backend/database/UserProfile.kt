@@ -116,3 +116,9 @@ interface UserProfileDao {
     @Query("SELECT * FROM user_profile LIMIT 1")
     suspend fun getCurrentProfileDirect(): UserProfileEntry?
 }
+
+class UserProfileRepository(private val userProfileDao: UserProfileDao) {
+    // Die Methode, die du im Worker aufrufst
+    suspend fun getUserProfile(): UserProfileEntry? = userProfileDao.getCurrentProfileDirect()
+}
+

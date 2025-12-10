@@ -25,12 +25,16 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.backend.database.UserProfileRepository
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.hours
+
 
 object NotificationIds {
     const val HEALTH_CONNECT_SYNC_CHANNEL_ID = "health_connect_sync_ch"
@@ -129,11 +133,11 @@ fun showNotification(context: Context) {
     Log.d("Notification", "Notification wurde ausgelöst")
 }
 
-
 class NotificationsBackgroundWorker(
     context: Context,
     workerParams: WorkerParameters,
-    val predictedEnergyLevelDao: PredictedEnergyLevelDao
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val userProfileRepository: UserProfileRepository // <-- NEUE ABHÄNGIGKEIT
 ) : CoroutineWorker(context, workerParams) {
 
     private suspend fun getRelevantPredictedEnergyLevelFromDB(): Double? {
@@ -147,14 +151,56 @@ class NotificationsBackgroundWorker(
     }
 
     override suspend fun doWork(): Result {
-        //delay for 2 seconds
         delay(2000)
 
+        // 1. Lade das Nutzerprofil und die Ruhezeiten
+        val userProfile = userProfileRepository.getUserProfile() // Annahme: Diese Methode existiert
+
+        if (userProfile == null) {
+            Log.d("NotificationsBackgroundWorker", "User profile not found. No notification.")
+            return Result.success()
+        }
+
+        val remindersPermitted = userProfile.reminderPermit
+        val restingStart = userProfile.restingStart // z.B. "22:00"
+        val restingEnd = userProfile.restingEnd     // z.B. "07:00"
+
+        // 2. Prüfe, ob Benachrichtigungen generell erlaubt sind
+        if (!remindersPermitted) {
+            Log.d(
+                "NotificationsBackgroundWorker",
+                "User has disabled reminders in profile. No notification."
+            )
+            return Result.success()
+        }
+
+        // 3. Prüfe, ob die aktuelle Zeit innerhalb der Ruhezeit liegt
+        val now = Clock.System.now()
+        val nowTime = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
+        val restingStartTime = restingStart
+        val restingEndTime = restingEnd
+
+        // Umgang mit Ruhezeiten, die über Mitternacht gehen (z.B. 22:00 - 07:00)
+        val isInRestingTime = if (restingStartTime > restingEndTime) {
+            nowTime >= restingStartTime || nowTime < restingEndTime
+        } else {
+            nowTime in restingStartTime..restingEndTime
+        }
+
+        if (isInRestingTime) {
+            Log.d(
+                "NotificationsBackgroundWorker",
+                "Current time is within resting period. No notification."
+            )
+            return Result.success()
+        }
+
+        // 4. Prüfe das Energielevel (deine bisherige Logik)
         val predictedEnergy = getRelevantPredictedEnergyLevelFromDB()
-            ?: 1.0 //if no data available, assume energy is ok and thus display no warning
+            ?: 1.0
 
         Log.d(
-            "NoficationsBackgroundWorker",
+            "NotificationsBackgroundWorker",
             "Predicted Energy level of %.2f".format(predictedEnergy)
         )
 
@@ -170,7 +216,7 @@ class NotificationsBackgroundWorker(
 
 fun scheduleEnergyCheckWorker(wm: WorkManager) {
     val DEBUG_RUN_IMMEDIATELY = true
-    val workRequestBuilder = if (DEBUG_RUN_IMMEDIATELY) {
+    if (DEBUG_RUN_IMMEDIATELY) {
         val workRequest = OneTimeWorkRequestBuilder<NotificationsBackgroundWorker>()
             .setConstraints(
                 Constraints.Builder()
@@ -178,7 +224,6 @@ fun scheduleEnergyCheckWorker(wm: WorkManager) {
                     .build()
             )
             .build()
-
         wm.enqueue(workRequest)
     } else {
         val workRequest =
@@ -189,12 +234,10 @@ fun scheduleEnergyCheckWorker(wm: WorkManager) {
                         .build()
                 )
                 .build()
-
         wm.enqueueUniquePeriodicWork(
             "EnergyCheckWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             workRequest
         )
     }
-
 }
