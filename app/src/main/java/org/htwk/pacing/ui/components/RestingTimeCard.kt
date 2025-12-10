@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.components
 
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,32 +37,29 @@ fun RestingHoursCard(
         modifier = Modifier.fillMaxWidth()
     ) {
 
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Text(
-                text = stringResource(R.string.personal_resting_hours),
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-
+                Text(
+                    text = stringResource(R.string.personal_resting_hours),
+                    style = MaterialTheme.typography.titleLarge
+                )
                 Text(
                     text = "$restingStart - $restingEnd",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
 
-                Button(onClick = onEditClick) {
-                    Text(stringResource(id = R.string.edit))
-                }
+            Button(onClick = onEditClick) {
+                Text(stringResource(id = R.string.edit))
             }
         }
     }

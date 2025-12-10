@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.theme.CardStyle
 
+
 /**
  * A Composable that displays notification permission switches in a card.
  *

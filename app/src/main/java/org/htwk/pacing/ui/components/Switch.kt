@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,38 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
-/*
+
 @Composable
-fun Switch(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
-    descriptionStyle: TextStyle = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = textStyle
-        )
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-    }
-}
-
- */ @Composable
 fun Switch(
     title: String,
     description: String = "",
@@ -60,12 +29,13 @@ fun Switch(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
     ) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .align(Alignment.CenterVertically)
+            // .align(Alignment.CenterVertically)
         ) {
             Text(
                 text = title,
@@ -84,7 +54,8 @@ fun Switch(
         Column(
             modifier = Modifier.align(Alignment.CenterVertically)
         ) {
-            Switch(
+            // Explicitly call the Material Design Switch to prevent recursion
+            androidx.compose.material3.Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange
             )

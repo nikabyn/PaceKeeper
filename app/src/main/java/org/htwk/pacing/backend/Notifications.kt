@@ -165,7 +165,7 @@ class NotificationsBackgroundWorker(
     context: Context,
     workerParams: WorkerParameters,
     val predictedEnergyLevelDao: PredictedEnergyLevelDao,
-    val userProfileRepository: UserProfileRepository // <-- NEUE ABHÄNGIGKEIT
+    val userProfileRepository: UserProfileRepository
 ) : CoroutineWorker(context, workerParams) {
 
     /**
@@ -211,14 +211,13 @@ class NotificationsBackgroundWorker(
             return Result.success()
         }
 
-        // 3. Prüfe, ob die aktuelle Zeit innerhalb der Ruhezeit liegt
         if (restingStart != null && restingEnd != null) {
             val now = Clock.System.now()
             val nowTime = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
             val restingStartTime: LocalTime = restingStart
             val restingEndTime: LocalTime = restingEnd
 
-            // Umgang mit Ruhezeiten, die über Mitternacht gehen (z.B. 22:00 - 07:00)
+
             val isInRestingTime = if (restingStartTime > restingEndTime) {
                 nowTime >= restingStartTime || nowTime < restingEndTime
             } else {

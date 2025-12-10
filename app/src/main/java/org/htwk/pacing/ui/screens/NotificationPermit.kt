@@ -15,6 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +75,20 @@ fun NotificationsScreen(
 
     var showDialog by remember { mutableStateOf(false) }
 
+    // Lokale Zustände für die Schalter
+    var warningPermit by remember { mutableStateOf(profile?.warningPermit ?: false) }
+    var reminderPermit by remember { mutableStateOf(profile?.reminderPermit ?: false) }
+    var suggestionPermit by remember { mutableStateOf(profile?.suggestionPermit ?: false) }
+
+    // Wenn sich das Profil ändert, aktualisiere die lokalen Zustände
+    LaunchedEffect(profile) {
+        profile?.let {
+            warningPermit = it.warningPermit
+            reminderPermit = it.reminderPermit
+            suggestionPermit = it.suggestionPermit
+        }
+    }
+
 
     Scaffold(
         topBar = {
@@ -100,30 +115,27 @@ fun NotificationsScreen(
         ) {
 
             NotificationPermitCard(
-                warningPermit = profile?.warningPermit ?: false,
-                reminderPermit = profile?.reminderPermit ?: false,
-                suggestionPermit = profile?.suggestionPermit ?: false,
+                warningPermit = warningPermit,
+                reminderPermit = reminderPermit,
+                suggestionPermit = suggestionPermit,
 
                 onWarningChange = { enabled ->
+                    warningPermit = enabled
                     profile?.let {
-                        userProfileViewModel.saveProfile(
-                            it.copy(warningPermit = enabled)
-                        )
+                        userProfileViewModel.saveProfile(it.copy(warningPermit = enabled))
                     }
                 },
 
                 onReminderChange = { enabled ->
+                    reminderPermit = enabled
                     profile?.let {
-                        userProfileViewModel.saveProfile(
-                            it.copy(reminderPermit = enabled)
-                        )
+                        userProfileViewModel.saveProfile(it.copy(reminderPermit = enabled))
                     }
                 },
                 onSuggestionChange = { enabled ->
+                    suggestionPermit = enabled
                     profile?.let {
-                        userProfileViewModel.saveProfile(
-                            it.copy(suggestionPermit = enabled)
-                        )
+                        userProfileViewModel.saveProfile(it.copy(suggestionPermit = enabled))
                     }
                 },
                 //  onRestingTimeClick = { showDialog = true }
@@ -213,7 +225,7 @@ fun RestingHoursDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.edit)) },
+        title = { Text(stringResource(id = R.string.edit_resting_hours)) },
         text = {
             Column {
                 androidx.compose.material3.OutlinedTextField(

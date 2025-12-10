@@ -41,8 +41,8 @@ data class UserProfileEntry(
     val warningPermit: Boolean,
     val reminderPermit: Boolean,
     val suggestionPermit: Boolean,
-    val restingStart: LocalTime,
-    val restingEnd: LocalTime
+    val restingStart: LocalTime?,
+    val restingEnd: LocalTime?
 
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }

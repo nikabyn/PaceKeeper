@@ -19,9 +19,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -50,9 +50,9 @@ import org.koin.androidx.compose.koinViewModel
 fun Main() {
     PacingTheme {
         val navController = rememberNavController()
-        val navBackStackEntry = navController.currentBackStackEntryAsState()
-        val parentRoute = navBackStackEntry.value?.destination?.parent?.route
-        val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val parentRoute = navBackStackEntry?.destination?.parent?.route
+        val selectedDestination = remember { mutableIntStateOf(0) }
         val snackbarHostState = remember { SnackbarHostState() }
 
 
@@ -170,7 +170,7 @@ fun AppNavHost(
                     viewModel = userProfileViewModel
                 )
             }
-            
+
             composable(Route.NOTIFICATIONS) { NotificationsScreen(navController) }
         }
 
