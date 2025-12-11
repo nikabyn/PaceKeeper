@@ -112,10 +112,15 @@ class HomeViewModel(
         .map { entries ->
             val updated = Series(mutableListOf(), mutableListOf())
 
-            entries.forEach { (time, value) ->
-                updated.x.add(time.toEpochMilliseconds().toDouble())
-                updated.y.add(value.toDouble())
+
+            entries.forEach { entry ->
+                updated.x.add(entry.time.toEpochMilliseconds().toDouble())
+                updated.y.add(entry.percentageNow.toDouble())
             }
+
+            updated.x.add(entries.last().timeFuture.toEpochMilliseconds().toDouble())
+            updated.y.add(entries.last().percentageFuture.toDouble());
+
             updated
         }.stateIn(
             scope = viewModelScope,

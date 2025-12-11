@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.EnergyPredictionJob.predictContinuous
 import org.htwk.pacing.backend.EnergyPredictionJob.predictEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.retrainEvery
@@ -194,7 +193,8 @@ object EnergyPredictionJob {
 
         val allLists: List<List<TimedEntry>> = listOf(
             heartRate, distance, elevationGained, skinTemperature, heartRateVariability,
-            oxygenSaturation, steps, speed, sleepSession, validatedEnergyLevel)
+            oxygenSaturation, steps, speed, sleepSession, validatedEnergyLevel
+        )
 
         val start = allLists
             .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }

@@ -14,6 +14,7 @@ import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor.train
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
@@ -21,7 +22,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 object Predictor {
@@ -31,9 +31,9 @@ object Predictor {
     val TIME_SERIES_DURATION: Duration = 2.days
     val TIME_SERIES_STEP_DURATION: Duration = 10.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
-    val PREDICTION_WINDOW_DURATION: Duration = 2.hours
+    /*val PREDICTION_WINDOW_DURATION: Duration = 2.hours
     val PREDICTION_WINDOW_SAMPLE_COUNT: Int =
-        (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()
+        (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()*/
 
     /**
      * A container for raw, unprocessed, synchronized data from the database, such as heart rate and distance.
@@ -151,18 +151,25 @@ object Predictor {
     fun predict(
         inputTimeSeries: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters,
-        predictionHorizon: LinearCombinationPredictionModel.PredictionHorizon = LinearCombinationPredictionModel.PredictionHorizon.FUTURE //TODO: remove default
     ): PredictedEnergyLevelEntry {
         // 1.) time series preprocessing
         val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
         // (1.5) TODO: cache (don't need that for now)
 
-        //TODO: return actual energy prediction and a heartRate disguised as PredictedEnergyLevelEntry
         // 2.) run model and return energy prediction
-        val predictedEnergy = LinearCombinationPredictionModel.predict(multiTimeSeriesDiscrete, predictionHorizon);
+        val predictedEnergyNow = LinearCombinationPredictionModel.predict(
+            multiTimeSeriesDiscrete,
+            IPredictionModel.PredictionHorizon.NOW
+        );
+        val predictedEnergyFuture = LinearCombinationPredictionModel.predict(
+            multiTimeSeriesDiscrete,
+            IPredictionModel.PredictionHorizon.FUTURE
+        );
         return PredictedEnergyLevelEntry(
-            inputTimeSeries.timeStart + TIME_SERIES_DURATION + PREDICTION_WINDOW_DURATION,
-            Percentage(predictedEnergy.coerceIn(0.0, 1.0))
+            inputTimeSeries.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.NOW.howFar,
+            percentageNow = Percentage(predictedEnergyNow.coerceIn(0.0, 1.0)),
+            timeFuture = inputTimeSeries.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
+            percentageFuture = Percentage(predictedEnergyFuture.coerceIn(0.0, 1.0))
         )
     }
 }

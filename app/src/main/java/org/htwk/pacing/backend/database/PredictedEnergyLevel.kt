@@ -12,14 +12,18 @@ import kotlinx.datetime.Instant
 data class PredictedEnergyLevelEntry(
     @PrimaryKey
     val time: Instant,
-    val percentage: Percentage,
+    val percentageNow: Percentage,
+
+    val timeFuture: Instant,
+    val percentageFuture: Percentage,
 ) : TimedEntry {
     override val start get() = time
     override val end get() = time
 }
 
 @Dao
-interface PredictedEnergyLevelDao : TimedSeries<PredictedEnergyLevelEntry> {
+interface PredictedEnergyLevelDao :
+    TimedSeries<PredictedEnergyLevelEntry> {
     @Query("delete from predicted_energy_level")
     override suspend fun deleteAll()
 

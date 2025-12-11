@@ -2,6 +2,7 @@ package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
+import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.jetbrains.kotlinx.multik.api.linalg.dot
@@ -25,13 +26,8 @@ import kotlin.time.Duration.Companion.hours
  * using preprocessed time-series data provided by an [IPreprocessor].
  */
 object LinearCombinationPredictionModel : IPredictionModel {
-    //stores "learned" / regressed linear coefficients per prediction horizon
+    //stores "learned" / regressed linear coefficients
     private var linearCoefficients: Map<PredictionHorizon, List<Double>> = mapOf()
-
-    enum class PredictionHorizon(val howFarInSamples: Int) {
-        //NOW((0.hours / Predictor.TIME_SERIES_STEP_DURATION).toInt()),
-        FUTURE((2.hours / Predictor.TIME_SERIES_STEP_DURATION).toInt()),
-    }
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
