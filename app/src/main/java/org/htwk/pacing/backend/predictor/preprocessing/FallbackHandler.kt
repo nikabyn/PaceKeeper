@@ -23,6 +23,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.generateD
 import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.generateDefaultHeartRateSeries
 import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.loadHistoricalDistanceData
 import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.loadHistoricalHeartRateData
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.times
@@ -109,7 +110,7 @@ object FallbackHandler {
         //used to derive local hour of day, for sleep augmentation
         val localTimeZone = TimeZone.currentSystemDefault()
 
-        val sleep : List<SleepSessionEntry> = ensureData(
+        val sleep: List<SleepSessionEntry> = ensureData(
             raw.sleepSession,
             raw.timeStart,
             raw.duration,
@@ -272,6 +273,7 @@ object FallbackHandler {
         return emptyList()
     }
 
+    private val random = Random(0);
 
     private inline fun <T> generateDefaultSeries(
         start: Instant,
@@ -296,9 +298,8 @@ object FallbackHandler {
         duration: Duration
     ): List<HeartRateEntry> {
 
-        val defaultBpm = 75L
         return generateDefaultSeries(start, duration) { from, _ ->
-            HeartRateEntry(from, defaultBpm)
+            HeartRateEntry(from, random.nextLong(0, 100))
         }
     }
 
@@ -307,9 +308,8 @@ object FallbackHandler {
         duration: Duration
     ): List<DistanceEntry> {
 
-        val defaultLength = 8.0
         return generateDefaultSeries(start, duration) { from, to ->
-            DistanceEntry(from, to, Length(defaultLength))
+            DistanceEntry(from, to, Length(random.nextDouble(0.0, 100.0)))
         }
     }
 
@@ -319,7 +319,7 @@ object FallbackHandler {
     ): List<ElevationGainedEntry> {
 
         return generateDefaultSeries(start, duration) { from, to ->
-            ElevationGainedEntry(from, to, Length(0.0))
+            ElevationGainedEntry(from, to, Length(random.nextDouble(0.0, 100.0)))
         }
     }
 
@@ -328,9 +328,8 @@ object FallbackHandler {
         duration: Duration
     ): List<SkinTemperatureEntry> {
 
-        val defaultTemp = 33.5
         return generateDefaultSeries(start, duration) { from, _ ->
-            SkinTemperatureEntry(from, Temperature.celsius(defaultTemp))
+            SkinTemperatureEntry(from, Temperature.celsius(random.nextDouble(0.0, 100.0)))
         }
     }
 
@@ -339,9 +338,8 @@ object FallbackHandler {
         duration: Duration
     ): List<HeartRateVariabilityEntry> {
 
-        val defaultRr = 50.0
         return generateDefaultSeries(start, duration) { from, _ ->
-            HeartRateVariabilityEntry(from, defaultRr)
+            HeartRateVariabilityEntry(from, random.nextDouble(0.0, 100.0))
         }
     }
 
@@ -350,9 +348,8 @@ object FallbackHandler {
         duration: Duration
     ): List<OxygenSaturationEntry> {
 
-        val defaultPercentage = Percentage(98.0)
         return generateDefaultSeries(start, duration) { from, _ ->
-            OxygenSaturationEntry(from, defaultPercentage)
+            OxygenSaturationEntry(from, Percentage(random.nextDouble(0.0, 100.0)))
         }
     }
 
@@ -362,7 +359,7 @@ object FallbackHandler {
     ): List<StepsEntry> {
 
         return generateDefaultSeries(start, duration) { from, to ->
-            StepsEntry(from, to, 50)
+            StepsEntry(from, to, random.nextLong(0, 100))
         }
     }
 
@@ -373,7 +370,7 @@ object FallbackHandler {
 
         val defaultVelocity = Velocity.kilometersPerHour(1.0)
         return generateDefaultSeries(start, duration) { from, _ ->
-            SpeedEntry(from, defaultVelocity)
+            SpeedEntry(from, Velocity.kilometersPerHour(random.nextDouble(0.0, 100.0)))
         }
     }
 
