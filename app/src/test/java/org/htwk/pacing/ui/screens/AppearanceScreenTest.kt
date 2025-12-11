@@ -1,17 +1,15 @@
 package org.htwk.pacing.ui.screens
 
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.Assert.*
 
-/**
- * Test class for AppearanceScreen component.
- * Tests the ThemeMode enum and theme selection logic without requiring UI testing framework.
- */
 class AppearanceScreenTest {
 
     @Test
     fun testThemeModeEnumValues() {
-        // Test that all ThemeMode enum values exist
         val modes = ThemeMode.values()
         
         assertEquals("Should have 3 theme modes", 3, modes.size)
@@ -22,7 +20,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeToStringMapping() {
-        // Test that ThemeMode enum values map to expected strings
         assertEquals("LIGHT", ThemeMode.LIGHT.name)
         assertEquals("DARK", ThemeMode.DARK.name)
         assertEquals("AUTO", ThemeMode.AUTO.name)
@@ -30,7 +27,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testStringToThemeModeConversion() {
-        // Test converting database strings to ThemeMode enum
         val lightMode = when ("LIGHT") {
             "LIGHT" -> ThemeMode.LIGHT
             "DARK" -> ThemeMode.DARK
@@ -56,7 +52,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testInvalidThemeModeDefaultsToAuto() {
-        // Test that invalid strings default to AUTO mode
         val invalidStrings = listOf("INVALID", "", "null", "light", "dark")
         
         invalidStrings.forEach { invalidString ->
@@ -72,7 +67,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testNullThemeModeDefaultsToAuto() {
-        // Test that null theme mode defaults to AUTO
         val currentThemeMode: String? = null
         val selectedTheme = when (currentThemeMode) {
             "LIGHT" -> ThemeMode.LIGHT
@@ -85,7 +79,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeComparison() {
-        // Test that theme mode comparisons work correctly
         val selectedMode = ThemeMode.LIGHT
         
         assertTrue("Selected mode should equal LIGHT", selectedMode == ThemeMode.LIGHT)
@@ -95,7 +88,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testAllThemeModesAreDistinct() {
-        // Test that all theme modes are unique
         val modes = setOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.AUTO)
         
         assertEquals("All theme modes should be distinct", 3, modes.size)
@@ -103,7 +95,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeOrdinal() {
-        // Test that enum ordinals are as expected
         assertEquals("LIGHT should be first (ordinal 0)", 0, ThemeMode.LIGHT.ordinal)
         assertEquals("DARK should be second (ordinal 1)", 1, ThemeMode.DARK.ordinal)
         assertEquals("AUTO should be third (ordinal 2)", 2, ThemeMode.AUTO.ordinal)
@@ -111,7 +102,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeValueOf() {
-        // Test that valueOf works correctly
         assertEquals(ThemeMode.LIGHT, ThemeMode.valueOf("LIGHT"))
         assertEquals(ThemeMode.DARK, ThemeMode.valueOf("DARK"))
         assertEquals(ThemeMode.AUTO, ThemeMode.valueOf("AUTO"))
@@ -119,13 +109,11 @@ class AppearanceScreenTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun testThemeModeValueOfThrowsOnInvalid() {
-        // Test that valueOf throws exception for invalid values
         ThemeMode.valueOf("INVALID")
     }
 
     @Test
     fun testThemeSelectionLabels() {
-        // Test that theme selection labels are properly defined
         val lightLabel = "Hell"
         val darkLabel = "Dunkel"
         val autoLabel = "Automatisch (System)"
@@ -141,7 +129,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeSwitching() {
-        // Test that theme mode can be switched between different values
         var currentMode = ThemeMode.LIGHT
         
         assertEquals(ThemeMode.LIGHT, currentMode)
@@ -155,7 +142,6 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeToStringForDatabase() {
-        // Test conversion of ThemeMode to string for database storage
         val lightString = ThemeMode.LIGHT.name
         val darkString = ThemeMode.DARK.name
         val autoString = ThemeMode.AUTO.name
@@ -163,8 +149,7 @@ class AppearanceScreenTest {
         assertEquals("LIGHT", lightString)
         assertEquals("DARK", darkString)
         assertEquals("AUTO", autoString)
-        
-        // Verify they can be stored and retrieved
+
         val storedMode = lightString
         val retrievedMode = when (storedMode) {
             "LIGHT" -> ThemeMode.LIGHT

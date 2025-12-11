@@ -1,7 +1,10 @@
 package org.htwk.pacing.ui.screens
 
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.Assert.*
 
 /**
  * Test class for DataScreen component.
@@ -11,7 +14,6 @@ class DataScreenTest {
 
     @Test
     fun testExportFileNameFormat() {
-        // Test that export file name follows expected format
         val fileName = "pacing_export.zip"
         
         assertTrue("File name should end with .zip", fileName.endsWith(".zip"))
@@ -21,7 +23,6 @@ class DataScreenTest {
 
     @Test
     fun testExportMimeType() {
-        // Test that export uses correct MIME type
         val mimeType = "application/zip"
         
         assertEquals("application/zip", mimeType)
@@ -30,7 +31,6 @@ class DataScreenTest {
 
     @Test
     fun testDataProtectionNoticeStrings() {
-        // Test that data protection notice strings are properly defined
         val noticeTitle = "data_protection_notice"
         val noticeMessage = "personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing"
         val agreeButton = "agree"
@@ -48,7 +48,6 @@ class DataScreenTest {
 
     @Test
     fun testDialogStateManagement() {
-        // Test that dialog state can be toggled correctly
         var showDialog = false
         
         assertFalse("Dialog should initially be hidden", showDialog)
@@ -62,10 +61,8 @@ class DataScreenTest {
 
     @Test
     fun testDialogDismissAction() {
-        // Test that dialog can be dismissed
         var showDialog = true
-        
-        // Simulate dismiss action
+
         showDialog = false
         
         assertFalse("Dialog should be dismissed", showDialog)
@@ -73,7 +70,6 @@ class DataScreenTest {
 
     @Test
     fun testDialogConfirmAction() {
-        // Test that dialog confirm action properly updates state
         var showDialog = true
         var exportTriggered = false
         
@@ -87,7 +83,6 @@ class DataScreenTest {
 
     @Test
     fun testSectionTitleValidation() {
-        // Test that section titles are properly formatted
         val title = "Stored Data"
         
         assertNotNull("Title should not be null", title)
@@ -97,7 +92,6 @@ class DataScreenTest {
 
     @Test
     fun testDataScreenStringResources() {
-        // Test that all required string resources are defined
         val stringResources = mapOf(
             "stored_data" to "stored_data",
             "export_data_to_zip_archive" to "export_data_to_zip_archive",
@@ -115,14 +109,12 @@ class DataScreenTest {
 
     @Test
     fun testExportButtonState() {
-        // Test that export button can be in different states
         var isEnabled = true
         var isLoading = false
         
         assertTrue("Button should be enabled", isEnabled)
         assertFalse("Button should not be loading", isLoading)
-        
-        // Simulate loading state
+
         isEnabled = false
         isLoading = true
         
@@ -132,7 +124,6 @@ class DataScreenTest {
 
     @Test
     fun testMultipleDataActions() {
-        // Test that multiple data-related actions can be defined
         data class DataAction(val name: String, val description: String)
         
         val actions = listOf(
@@ -153,7 +144,6 @@ class DataScreenTest {
 
     @Test
     fun testExportFilePathValidation() {
-        // Test that file paths can be validated
         val validPaths = listOf(
             "file:///storage/emulated/0/Download/pacing_export.zip",
             "content://com.android.providers.downloads.documents/document/123"
@@ -169,7 +159,6 @@ class DataScreenTest {
 
     @Test
     fun testDataScreenLayout() {
-        // Test that layout parameters are correctly defined
         val padding = 16
         val spacing = 16
         
@@ -181,19 +170,15 @@ class DataScreenTest {
 
     @Test
     fun testConsentFlowValidation() {
-        // Test that consent flow follows correct sequence
         var consentGiven = false
         var exportStarted = false
-        
-        // User must give consent before export
+
         assertFalse("Consent should not be given initially", consentGiven)
         assertFalse("Export should not start without consent", exportStarted)
-        
-        // User gives consent
+
         consentGiven = true
         assertTrue("Consent should be given", consentGiven)
-        
-        // Export can now start
+
         if (consentGiven) {
             exportStarted = true
         }
