@@ -112,7 +112,7 @@ class PredictorFitbitDataTest {
         println("Plotting finished.")
     }
 
-    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
