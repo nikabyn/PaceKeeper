@@ -33,56 +33,11 @@ import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.CardStyle
 
 
-/**
- * Verwaltet die Verbindung zu Health Connect.
- * Prüft beim Start und bei `ON_RESUME`, ob alle Berechtigungen vorhanden sind.
- * Bietet eine Möglichkeit, die Health Connect App zu öffnen oder Berechtigungen anzufordern.
- * Nutzt `HealthConnectItem` als UI-Eintrag.
- * Startet `HeartRateScreen` zur Anzeige der Daten.
- */
 @Composable
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val isConnected by viewModel.isConnected.collectAsState()
-
-    viewModel.checkPermissions()
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.checkPermissions()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    val requestPermissionsActivity = rememberLauncherForActivityResult(
-        contract = PermissionController.createRequestPermissionResultContract()
-    ) { granted ->
-        Log.d("RequestPermissions", "Granted: $granted")
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv")
-    ) { uri: Uri? ->
-        uri?.let {
-            CoroutineScope(Dispatchers.IO).launch {
-                viewModel.exportDataToZip(context, it)
-            }
-        }
-    }
-
-    var showDialog by remember { mutableStateOf(false) }
-
-    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
-
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
@@ -145,51 +100,9 @@ fun SettingsScreen(
                 navController = navController,
                 style = CardStyle.shape
             )
-
-            /*
-
-            UniversalSettingsCard(
-                route = Route.SERVICES,
-                name = "Services",
-                description = "Connections",
-                icon = Icons.Filled.Settings,
-                navController = navController
-            )
-            Spacer(modifier = Modifier.height(Spacing.small))
-
-            // entweder Material Icon oder eigenes Drawable Icon
-            UniversalSettingsCard(
-                route = Route.MEASUREMENTS,
-                name = stringResource(R.string.title_user_profile),
-                description = stringResource(R.string.icon_profile_description),
-                iconRes = R.drawable.rounded_show_chart_24,
-                //oder icon = Icons.Filled.Settings,
-                navController = navController
-            )
-            Spacer(modifier = Modifier.height(Spacing.large))
-
-            ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
-            */
-            Spacer(modifier = Modifier.height(Spacing.large))
-
-            TextButton(
-                onClick = { showPrivacyPolicyDialog = true }
-            ) {
-                Text(
-                    (stringResource(R.string.privacy_policy)),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-
         }
 
 
-    }
-    if (showPrivacyPolicyDialog) {
-        PrivacyPolicyDialog(
-            onDismiss = { showPrivacyPolicyDialog = false }
-        )
     }
 }
 
