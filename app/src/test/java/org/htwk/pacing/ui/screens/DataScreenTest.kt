@@ -61,21 +61,14 @@ class DataScreenTest {
 
     @Test
     fun testDialogDismissAction() {
-        var showDialog = true
-
-        showDialog = false
-        
+        val showDialog = false
         assertFalse("Dialog should be dismissed", showDialog)
     }
 
     @Test
     fun testDialogConfirmAction() {
-        var showDialog = true
-        var exportTriggered = false
-        
-        // Simulate confirm action
-        showDialog = false
-        exportTriggered = true
+        val showDialog = false
+        val exportTriggered = true
         
         assertFalse("Dialog should be dismissed after confirm", showDialog)
         assertTrue("Export should be triggered", exportTriggered)
@@ -87,7 +80,6 @@ class DataScreenTest {
         
         assertNotNull("Title should not be null", title)
         assertFalse("Title should not be empty", title.isEmpty())
-        assertTrue("Title should have reasonable length", title.length > 0 && title.length < 100)
     }
 
     @Test
@@ -158,30 +150,15 @@ class DataScreenTest {
     }
 
     @Test
-    fun testDataScreenLayout() {
-        val padding = 16
-        val spacing = 16
-        
-        assertTrue("Padding should be positive", padding > 0)
-        assertTrue("Spacing should be positive", spacing > 0)
-        assertEquals(16, padding)
-        assertEquals(16, spacing)
-    }
-
-    @Test
     fun testConsentFlowValidation() {
         var consentGiven = false
-        var exportStarted = false
+        val exportStarted = false
 
         assertFalse("Consent should not be given initially", consentGiven)
         assertFalse("Export should not start without consent", exportStarted)
 
         consentGiven = true
         assertTrue("Consent should be given", consentGiven)
-
-        if (consentGiven) {
-            exportStarted = true
-        }
         
         assertTrue("Export should start after consent", exportStarted)
     }

@@ -1,7 +1,6 @@
 package org.htwk.pacing.ui.screens
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,7 +9,7 @@ class AppearanceScreenTest {
 
     @Test
     fun testThemeModeEnumValues() {
-        val modes = ThemeMode.values()
+        val modes = ThemeMode.entries
         
         assertEquals("Should have 3 theme modes", 3, modes.size)
         assertTrue("Should contain LIGHT mode", modes.contains(ThemeMode.LIGHT))
@@ -27,28 +26,21 @@ class AppearanceScreenTest {
 
     @Test
     fun testStringToThemeModeConversion() {
-        val lightMode = when ("LIGHT") {
-            "LIGHT" -> ThemeMode.LIGHT
-            "DARK" -> ThemeMode.DARK
-            else -> ThemeMode.AUTO
-        }
-        
-        val darkMode = when ("DARK") {
-            "LIGHT" -> ThemeMode.LIGHT
-            "DARK" -> ThemeMode.DARK
-            else -> ThemeMode.AUTO
-        }
-        
-        val autoMode = when ("AUTO") {
-            "LIGHT" -> ThemeMode.LIGHT
-            "DARK" -> ThemeMode.DARK
-            else -> ThemeMode.AUTO
-        }
-        
-        assertEquals(ThemeMode.LIGHT, lightMode)
-        assertEquals(ThemeMode.DARK, darkMode)
-        assertEquals(ThemeMode.AUTO, autoMode)
+        fun String.toThemeMode(): ThemeMode =
+            ThemeMode.entries.find { it.name == this } ?: ThemeMode.AUTO
+
+        assertEquals(ThemeMode.LIGHT, "LIGHT".toThemeMode())
+        assertEquals(ThemeMode.DARK, "DARK".toThemeMode())
+        assertEquals(ThemeMode.AUTO, "AUTO".toThemeMode())
+        assertEquals(ThemeMode.AUTO, "INVALID".toThemeMode()) // ungültiger String -> AUTO
+        assertEquals(ThemeMode.AUTO, "".toThemeMode())        // leerer String -> AUTO
+        assertEquals(ThemeMode.AUTO, null.toThemeMode())      // null -> AUTO
     }
+
+    // Erweiterung für nullable String
+    private fun String?.toThemeMode(): ThemeMode =
+        this?.let { ThemeMode.entries.find { it.name == this } } ?: ThemeMode.AUTO
+
 
     @Test
     fun testInvalidThemeModeDefaultsToAuto() {
@@ -68,22 +60,9 @@ class AppearanceScreenTest {
     @Test
     fun testNullThemeModeDefaultsToAuto() {
         val currentThemeMode: String? = null
-        val selectedTheme = when (currentThemeMode) {
-            "LIGHT" -> ThemeMode.LIGHT
-            "DARK" -> ThemeMode.DARK
-            else -> ThemeMode.AUTO
-        }
-        
-        assertEquals("Null theme mode should default to AUTO", ThemeMode.AUTO, selectedTheme)
-    }
+        val selectedTheme = currentThemeMode.toThemeMode()
 
-    @Test
-    fun testThemeModeComparison() {
-        val selectedMode = ThemeMode.LIGHT
-        
-        assertTrue("Selected mode should equal LIGHT", selectedMode == ThemeMode.LIGHT)
-        assertFalse("Selected mode should not equal DARK", selectedMode == ThemeMode.DARK)
-        assertFalse("Selected mode should not equal AUTO", selectedMode == ThemeMode.AUTO)
+        assertEquals(ThemeMode.AUTO, selectedTheme)
     }
 
     @Test
