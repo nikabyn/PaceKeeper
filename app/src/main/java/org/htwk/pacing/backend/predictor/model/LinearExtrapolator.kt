@@ -1,13 +1,11 @@
 package org.htwk.pacing.backend.predictor.model
 
-import android.gesture.Prediction
 import org.htwk.pacing.backend.predictor.Predictor
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.average
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.PredictionHorizon
 
 object LinearExtrapolator {
     /**
@@ -42,7 +40,13 @@ object LinearExtrapolator {
      * @param y1 The value at time `x1`.
      * @return The extrapolated `y` value at x = now + stepsIntoFuture
      */
-    private fun linearExtrapolate(x0: Double, y0: Double, x1: Double, y1: Double, stepsIntoFuture: Int): Double {
+    private fun linearExtrapolate(
+        x0: Double,
+        y0: Double,
+        x1: Double,
+        y1: Double,
+        stepsIntoFuture: Int
+    ): Double {
         //flip the sign, because the indices are counted in reverse time
         //e.g.: x0 > x1 when in reality, x0 refers to a timepoint that comes before x1
         val slope = (y1 - y0) / -(x1 - x0)

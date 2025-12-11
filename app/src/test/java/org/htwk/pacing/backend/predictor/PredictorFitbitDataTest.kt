@@ -9,7 +9,8 @@ import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
+import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.howFarInSamples
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
@@ -93,7 +94,10 @@ class PredictorFitbitDataTest {
                 )
             )
 
-        val result = LinearExtrapolator.multipleExtrapolate(mk.ndarray(derivedTimeSeries), LinearCombinationPredictionModel.PredictionHorizon.FUTURE.howFarInSamples)
+        val result = LinearExtrapolator.multipleExtrapolate(
+            mk.ndarray(derivedTimeSeries),
+            IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples
+        )
 
         result.extrapolations.entries.forEach { (strategy, extrapolation) ->
             println("Strategy: $strategy")
@@ -120,9 +124,12 @@ class PredictorFitbitDataTest {
 
         Predictor.train(
             multiTimeSeriesEntries,
-            targetTimeSeries = multiTimeSeriesEntries.heartRate.map { it -> ValidatedEnergyLevelEntry(it.time, Validation.Correct,
-                Percentage(it.bpm.toDouble() / 100.0)
-            ) },//TODO: fill
+            targetTimeSeries = multiTimeSeriesEntries.heartRate.map { it ->
+                ValidatedEnergyLevelEntry(
+                    it.time, Validation.Correct,
+                    Percentage(it.bpm.toDouble() / 100.0)
+                )
+            },//TODO: fill
             fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
         )
 
@@ -145,7 +152,7 @@ class PredictorFitbitDataTest {
 
         println("-----")
         println("prediction time:  ${predictionResult.time}")
-        println("prediction value: ${predictionResult.percentage}")
+        println("prediction value: ${predictionResult.percentageFuture}")
         //expected 62.12140545973156
 
         //after adding initial value relative offset to integral, derivative: 61.80762600761695
@@ -159,6 +166,6 @@ class PredictorFitbitDataTest {
         //after adding averaging for csv downsampling:                            70.94812981216073
         println("training done")
 
-        assertEquals(71.02011198570813, predictionResult.percentage.toDouble() * 100.0, 0.1)
+        assertEquals(71.02011198570813, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
     }
 }

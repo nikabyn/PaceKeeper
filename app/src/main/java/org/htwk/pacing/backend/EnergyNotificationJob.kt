@@ -3,13 +3,10 @@ package org.htwk.pacing.backend
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.EnergyNotificationJob.THRESHOLD
 import org.htwk.pacing.backend.EnergyNotificationJob.checkEvery
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
-import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -67,12 +64,7 @@ object EnergyNotificationJob {
     private suspend fun getRelevantPredictedEnergyLevel(
         predictedEnergyLevelDao: PredictedEnergyLevelDao
     ): Double? {
-        val now = Clock.System.now()
-        val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
-            predictedEnergyLevelDao.getInRange(now, now + 6.hours)
-        val minimumEntry =
-            energyLevelDataWindow.minByOrNull { it.percentage.toDouble() }
-
-        return minimumEntry?.percentage?.toDouble()
+        val latestEntry = predictedEnergyLevelDao.getLatest()
+        return latestEntry?.percentageFuture?.toDouble()
     }
 }

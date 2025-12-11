@@ -11,12 +11,10 @@ import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
-import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import kotlin.time.Duration.Companion.hours
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -59,11 +57,15 @@ object LinearCombinationPredictionModel : IPredictionModel {
         predictionHorizon: PredictionHorizon
     ): List<TrainingSample> {
         val predictionLookAhead =
-            (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (Predictor.PREDICTION_WINDOW_SAMPLE_COUNT);
+            (Predictor.TIME_SERIES_SAMPLE_COUNT - 1) + (predictionHorizon.howFarInSamples);
 
         return (0 until input.stepCount() - predictionLookAhead).map { offset ->
             TrainingSample(
-                multiExtrapolations = generateFlattenedMultiExtrapolationResults(input, offset, predictionHorizon),
+                multiExtrapolations = generateFlattenedMultiExtrapolationResults(
+                    input,
+                    offset,
+                    predictionHorizon
+                ),
                 expectedEnergyLevel = targetTimeSeriesDiscrete[offset + predictionLookAhead]
             )
         }
@@ -87,7 +89,10 @@ object LinearCombinationPredictionModel : IPredictionModel {
                 input.getMutableRow(featureID)
                     .slice(indexOffset until indexOffset + Predictor.TIME_SERIES_SAMPLE_COUNT)
 
-            val extrapolations = LinearExtrapolator.multipleExtrapolate(timeSeries, predictionHorizon.howFarInSamples).extrapolations
+            val extrapolations = LinearExtrapolator.multipleExtrapolate(
+                timeSeries,
+                predictionHorizon.howFarInSamples
+            ).extrapolations
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
@@ -126,8 +131,10 @@ object LinearCombinationPredictionModel : IPredictionModel {
      */
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
-            val trainingSamples = createTrainingSamples(input, targetTimeSeriesDiscrete,
-                PredictionHorizon.FUTURE)
+            val trainingSamples = createTrainingSamples(
+                input, targetTimeSeriesDiscrete,
+                PredictionHorizon.FUTURE
+            )
             trainForHorizon(trainingSamples)
         }
     }
@@ -146,13 +153,18 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *              time series data, such as heart rate.
      * @return A [Double] representing the predicted energy level.
      */
-    override fun predict(input: MultiTimeSeriesDiscrete, predictionHorizon: PredictionHorizon): Double {
+    override fun predict(
+        input: MultiTimeSeriesDiscrete,
+        predictionHorizon: PredictionHorizon
+    ): Double {
         require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
 
-        val flattenedExtrapolations = generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon)
+        val flattenedExtrapolations =
+            generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon)
 
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations)
-        val coefficientsVector: D1Array<Double> = mk.ndarray(linearCoefficients[predictionHorizon]!!)
+        val coefficientsVector: D1Array<Double> =
+            mk.ndarray(linearCoefficients[predictionHorizon]!!)
 
         val prediction = mk.linalg.dot(extrapolationsVector, coefficientsVector)
         return prediction
