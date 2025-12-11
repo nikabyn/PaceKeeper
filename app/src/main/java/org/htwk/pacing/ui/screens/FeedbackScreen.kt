@@ -50,7 +50,7 @@ fun FeedbackScreen(
 
             Button (
             onClick = {
-                val linkUri = Uri.parse("https://forms.gle/YXaNUpreeBzBJcxJ8")
+                val linkUri = Uri.parse("https://survey.pacekeeper.de")
                 val intent = Intent(Intent.ACTION_VIEW, linkUri)
                 context.startActivity(intent)
             },

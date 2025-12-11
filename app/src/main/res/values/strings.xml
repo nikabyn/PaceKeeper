@@ -90,6 +90,8 @@
     <string name="button_sending">Sending...</string>
     <string name="status_success_database_sent">Database successfully sent!</string>
     <string name="status_error_sending_database">Error sending the database</string>
+    <string name="status_error_generic_sending">Error:</string>
+
     <string name="label_back">Back</string>
     <string name="title_user_profile">User Profile</string>
     <string name="button_save_profile">Save Profile</string>

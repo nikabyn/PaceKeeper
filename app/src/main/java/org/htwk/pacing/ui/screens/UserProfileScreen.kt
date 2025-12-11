@@ -348,7 +348,7 @@ class UserProfileViewModel(
 
     init {
         viewModelScope.launch {
-            dao.getCurrentProfile().collect { userProfile ->
+            dao.getProfileLive().collect { userProfile ->
                 _profile.value = userProfile ?: createPlaceholder()
             }
         }
