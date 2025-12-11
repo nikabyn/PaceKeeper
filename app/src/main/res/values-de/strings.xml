@@ -128,7 +128,7 @@
     <string name="subtitle_settings_services">Health Connect, Fitbit</string>
     <string name="subtitle_settings_data">Health Connect, Fitbit</string>
     <string name="subtitle_settings_notifications">Deine erfassten Daten verwalten</string>
-    <string name="subtitle_settings_appearance"></string>
+    <string name="subtitle_settings_appearance"> </string>
     <string name="subtitle_settings_information">Legal, Privacy, Introduction</string>
     <string name="subtitle_settings_feedback">Hilf uns, diese App zu verbessern!</string>
     <string name="join_survey">An Umfrage teilnehmen</string>
@@ -149,6 +149,7 @@
     <string name="tips_info_2">Gehe kurz nach draußen an die frische Luft, ohne dich zu überanstrengen.</string>
     <string name="tips_info_3">Erledige sehr kleine Aufgaben, während du deutlich innerhalb deiner Energiegrenze bleibst.</string>
     <string name="tips_info_4">Nimm an kurzen, energiearmen sozialen Interaktionen teil, falls tolerierbar.</string>
-    <string name="privacy_policy">Datenschutzerklärung PaceKeeper</string>
+    <string name="privacy_policy">Datenschutzerklärung</string>
+    <string name="view_licence">Zeige die Lizenz</string>
 
 </resources>

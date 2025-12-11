@@ -2,7 +2,9 @@ package org.htwk.pacing.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +22,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
+import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
 fun InformationScreen(
@@ -27,6 +30,7 @@ fun InformationScreen(
     viewModel: UserProfileViewModel
 ) {
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showLicenceDialog by remember { mutableStateOf(false) }
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_information),
         navController = navController,
@@ -51,6 +55,23 @@ fun InformationScreen(
             if (showPrivacyPolicyDialog) {
                 PrivacyPolicyDialog(
                     onDismiss = { showPrivacyPolicyDialog = false }
+                )
+            }
+            Spacer(modifier = Modifier.height(Spacing.large))
+
+            Button(
+                onClick = { showLicenceDialog = true },
+                style = PrimaryButtonStyle,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    (stringResource(R.string.view_licence)),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (showLicenceDialog) {
+                LicenceDialog(
+                    onDismiss = { showLicenceDialog = false }
                 )
             }
         }
