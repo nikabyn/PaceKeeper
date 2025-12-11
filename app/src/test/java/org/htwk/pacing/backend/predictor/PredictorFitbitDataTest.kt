@@ -153,6 +153,7 @@ class PredictorFitbitDataTest {
         println("-----")
         println("prediction time:  ${predictionResult.time}")
         println("prediction value: ${predictionResult.percentageFuture}")
+        println("prediction value now: ${predictionResult.percentageNow}")
         //expected 62.12140545973156
 
         //after adding initial value relative offset to integral, derivative: 61.80762600761695

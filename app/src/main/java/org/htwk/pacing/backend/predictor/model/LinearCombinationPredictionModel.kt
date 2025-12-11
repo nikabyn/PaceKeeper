@@ -133,7 +133,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
                 input, targetTimeSeriesDiscrete,
-                PredictionHorizon.FUTURE
+                predictionHorizon
             )
             trainForHorizon(trainingSamples)
         }

@@ -4,10 +4,11 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 interface IPredictionModel {
     enum class PredictionHorizon(val howFar: Duration) {
-        NOW(0.hours),
+        NOW(10.minutes),
         FUTURE(2.hours),
     }
 
