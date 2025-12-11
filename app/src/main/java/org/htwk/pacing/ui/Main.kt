@@ -37,6 +37,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -103,10 +105,10 @@ fun Main() {
     }
 
     PacingTheme(darkTheme = darkTheme) {
-        // TODO: Load value from data store
-        val onboardingCompleted = false
+        val viewModel: WelcomeViewModel = koinViewModel()
+        val checkedIn by viewModel.checkedIn.collectAsState()
 
-        val startDestination = if (onboardingCompleted) Route.HOME else Route.WELCOME
+        val startDestination = if (checkedIn) Route.HOME else Route.WELCOME
 
         Scaffold(
             bottomBar = {
@@ -235,8 +237,8 @@ fun AppNavHost(
             val viewModel: WelcomeViewModel = koinViewModel()
             WelcomeScreen(
                 onFinished = {
-                    viewModel.completeOnboarding({})
-                    navController.navigate("main_nav") {  }
+                    viewModel.completeOnboarding {}
+                    navController.navigate(Route.HOME)
                 }
             )
         }

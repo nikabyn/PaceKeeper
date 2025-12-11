@@ -445,7 +445,8 @@ class UserProfileViewModel(
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            checkedIn = false
         )
     }
 }

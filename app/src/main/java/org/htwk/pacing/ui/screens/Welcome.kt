@@ -28,9 +28,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.logo.BlinkLogo
@@ -374,13 +377,20 @@ fun DataUsagePage(viewModel: WelcomeViewModel, page: OnboardingPage, part: Int) 
 }
 
 class WelcomeViewModel(
-    private val db: PacingDatabase
+    private val dao: UserProfileDao
 ) : ViewModel() {
     var termsAccepted by mutableStateOf(false)
 
+    val checkedIn: StateFlow<Boolean> = dao.getCheckedIn()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false
+        )
+
     fun completeOnboarding(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            //TODO save in db
+            dao.updateCheckedIn(true)
             onSuccess()
         }
     }
