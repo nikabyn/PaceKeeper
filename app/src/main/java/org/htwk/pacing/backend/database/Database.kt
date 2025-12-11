@@ -36,7 +36,7 @@ import kotlinx.datetime.Instant
 
         ReadEvent::class,
     ],
-    version = 5,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

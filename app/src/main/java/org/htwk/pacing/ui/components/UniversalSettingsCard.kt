@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 
@@ -51,7 +52,7 @@ fun UniversalSettingsCard(
     Card(
         onClick = { navController.navigate(route) },
         colors =
-            if (route != "feedback")
+            if (route != Route.FEEDBACK)
                 CardStyle.colors
             else
                 androidx.compose.material3.CardDefaults.cardColors(
@@ -59,7 +60,9 @@ fun UniversalSettingsCard(
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
         shape = style,
-        modifier = Modifier.fillMaxWidth().padding(bottom=4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -69,7 +72,8 @@ fun UniversalSettingsCard(
                 .padding(
                     horizontal = Spacing.large,
                     vertical = Spacing.largeIncreased,
-                ).height(50.dp) //ensures same height for all cards even if subtitle is missing
+                )
+                .height(50.dp) //ensures same height for all cards even if subtitle is missing
         ) {
             // show icon - Material Icon or Drawable Resource
             when {

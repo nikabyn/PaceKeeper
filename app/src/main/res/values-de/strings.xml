@@ -134,6 +134,9 @@
     <string name="join_survey">An Umfrage teilnehmen</string>
     <string name="title_survey">An der Umfrage teilnehmen</string>
     <string name="description_survey">Hilf uns, die App zu verbessern, indem du an unserer kurzen Umfrage teilnimmst.</string>
+    <string name="settings_appearance_light">Hell</string>
+    <string name="settings_appearance_dark">Dunkel</string>
+    <string name="settings_appearance_auto">Automatisch (System)</string>
 
     <string name="tips_error_1">Dunkle den Raum vollständig ab und lege dich hin, um alle sensorischen Reize zu minimieren.</string>
     <string name="tips_error_2">Unterbreche jegliche sensorischen und mentalen Reize, um PEM zu verhindern.</string>

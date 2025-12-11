@@ -1,11 +1,17 @@
 package org.htwk.pacing.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -46,14 +52,14 @@ fun AppearanceScreen(
             modifier = Modifier
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .selectable(
                         selected = (selectedTheme == ThemeMode.LIGHT),
-                        onClick = { 
+                        onClick = {
                             viewModel.updateThemeMode("LIGHT")
                         },
                         role = Role.RadioButton
@@ -66,7 +72,7 @@ fun AppearanceScreen(
                     onClick = null
                 )
                 Text(
-                    text = "Hell",
+                    text = stringResource(R.string.settings_appearance_light),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(start = Spacing.medium)
                 )
@@ -76,7 +82,7 @@ fun AppearanceScreen(
                     .fillMaxWidth()
                     .selectable(
                         selected = (selectedTheme == ThemeMode.DARK),
-                        onClick = { 
+                        onClick = {
                             viewModel.updateThemeMode("DARK")
                         },
                         role = Role.RadioButton
@@ -89,7 +95,7 @@ fun AppearanceScreen(
                     onClick = null
                 )
                 Text(
-                    text = "Dunkel",
+                    text = stringResource(R.string.settings_appearance_dark),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(start = Spacing.medium)
                 )
@@ -99,7 +105,7 @@ fun AppearanceScreen(
                     .fillMaxWidth()
                     .selectable(
                         selected = (selectedTheme == ThemeMode.AUTO),
-                        onClick = { 
+                        onClick = {
                             viewModel.updateThemeMode("AUTO")
                         },
                         role = Role.RadioButton
@@ -112,7 +118,7 @@ fun AppearanceScreen(
                     onClick = null
                 )
                 Text(
-                    text = "Automatisch (System)",
+                    text = stringResource(R.string.settings_appearance_auto),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(start = Spacing.medium)
                 )

@@ -2,7 +2,10 @@ package org.htwk.pacing.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,6 +19,7 @@ import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.SettingsSubScreen
+import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
 fun FeedbackScreen(
@@ -32,7 +36,7 @@ fun FeedbackScreen(
             modifier = Modifier
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
             ExportAndSendDataCard(userProfileViewModel = viewModel)
 

@@ -1,6 +1,8 @@
 package org.htwk.pacing.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.SettingsSubScreen
+import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
 fun ServicesScreen(
@@ -26,12 +29,12 @@ fun ServicesScreen(
             modifier = Modifier
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
             Text(
-                "Go Nika!",
+                "Platzhalter",
                 style = MaterialTheme.typography.titleMedium
-            )
+            ) //TODO: #67
         }
     }
 }

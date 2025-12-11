@@ -133,6 +133,9 @@
     <string name="join_survey">Join the survey</string>
     <string name="title_survey">Take part in the survey</string>
     <string name="description_survey">Help us improve the app by participating in our short survey.</string>
+    <string name="settings_appearance_light">Light</string>
+    <string name="settings_appearance_dark">Dark</string>
+    <string name="settings_appearance_auto">Automatic (System)</string>
 
     <string name="tips_error_1">Dim the room completely and lie down, minimizing all sensory input.</string>
     <string name="tips_error_2">Interrupt all sensory and mental stimuli to prevent PEM.</string>

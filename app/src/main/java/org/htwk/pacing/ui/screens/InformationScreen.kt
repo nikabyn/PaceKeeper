@@ -40,7 +40,7 @@ fun InformationScreen(
             modifier = Modifier
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
             Button(
                 onClick = { showPrivacyPolicyDialog = true },

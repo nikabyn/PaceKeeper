@@ -24,6 +24,11 @@ import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 
+/**
+ * A UI component for displaying
+ * the User Profile. This card serves as a navigation element,
+ * directing the user to the UserProfileScreen when clicked.
+ */
 @Composable
 fun UserProfileCard(navController: NavController) {
     Card(

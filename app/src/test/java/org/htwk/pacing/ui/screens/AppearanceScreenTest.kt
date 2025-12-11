@@ -32,9 +32,9 @@ class AppearanceScreenTest {
         assertEquals(ThemeMode.LIGHT, "LIGHT".toThemeMode())
         assertEquals(ThemeMode.DARK, "DARK".toThemeMode())
         assertEquals(ThemeMode.AUTO, "AUTO".toThemeMode())
-        assertEquals(ThemeMode.AUTO, "INVALID".toThemeMode()) // ungültiger String -> AUTO
-        assertEquals(ThemeMode.AUTO, "".toThemeMode())        // leerer String -> AUTO
-        assertEquals(ThemeMode.AUTO, null.toThemeMode())      // null -> AUTO
+        assertEquals(ThemeMode.AUTO, "INVALID".toThemeMode())
+        assertEquals(ThemeMode.AUTO, "".toThemeMode())
+        assertEquals(ThemeMode.AUTO, null.toThemeMode())
     }
 
     // Erweiterung für nullable String
