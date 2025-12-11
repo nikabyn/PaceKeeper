@@ -61,7 +61,6 @@ import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.TonalButtonStyle
 import org.koin.androidx.compose.koinViewModel
 
-
 /**
  * Verwaltet die Verbindung zu Health Connect.
  * Prüft beim Start und bei `ON_RESUME`, ob alle Berechtigungen vorhanden sind.
@@ -112,6 +111,8 @@ fun SettingsScreen(
 
     var showDialog by remember { mutableStateOf(false) }
 
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
@@ -156,6 +157,18 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(Spacing.large))
 
             ExportAndSendDataCard(userProfileViewModel = userProfileViewModel)
+            Spacer(modifier = Modifier.height(Spacing.large))
+
+            TextButton(
+                onClick = { showPrivacyPolicyDialog = true }
+            ) {
+                Text(
+                    (stringResource(R.string.privacy_policy)),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+
         }
 
     }
@@ -181,6 +194,11 @@ fun SettingsScreen(
                     Text(stringResource(R.string.cancel))
                 }
             }
+        )
+    }
+    if (showPrivacyPolicyDialog) {
+        PrivacyPolicyDialog(
+            onDismiss = { showPrivacyPolicyDialog = false }
         )
     }
 }
