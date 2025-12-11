@@ -91,6 +91,7 @@
     <string name="status_error_sending_database">Error sending the database</string>
     <string name="label_back">Back</string>
     <string name="title_user_profile">User Profile</string>
+    <string name="button_save_profile">Save Profile</string>
 
     <string name="label_nickname">Nickname</string>
     <string name="label_birth_year">Birth Year</string>
