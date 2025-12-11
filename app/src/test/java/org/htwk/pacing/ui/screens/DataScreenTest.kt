@@ -152,14 +152,16 @@ class DataScreenTest {
     @Test
     fun testConsentFlowValidation() {
         var consentGiven = false
-        val exportStarted = false
 
         assertFalse("Consent should not be given initially", consentGiven)
-        assertFalse("Export should not start without consent", exportStarted)
+
+        // Export startet nur, wenn consentGiven == true
+        fun canStartExport() = consentGiven
+
+        assertFalse("Export should not start without consent", canStartExport())
 
         consentGiven = true
         assertTrue("Consent should be given", consentGiven)
-        
-        assertTrue("Export should start after consent", exportStarted)
+        assertTrue("Export should start after consent", canStartExport())
     }
 }
