@@ -109,6 +109,20 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
+    <string name="tips_error_1">Dim the room completely and lie down, minimizing all sensory input.</string>
+    <string name="tips_error_2">Interrupt all sensory and mental stimuli to prevent PEM.</string>
+    <string name="tips_error_3">Sip water or electrolytes while fully resting; do not attempt any activity.</string>
+    <string name="tips_error_4">Request help from friends or family for anything that requires energy.</string>
+
+    <string name="tips_warning_1">Perform gentle breathing or relaxation exercises without exertion.</string>
+    <string name="tips_warning_2">Prepare a very simple snack or consume pre-prepared food.</string>
+    <string name="tips_warning_3">Passive activities with minimal cognitive load are possible.</string>
+    <string name="tips_warning_4">Only attempt one small mental task at a time, followed immediately by rest.</string>
+
+    <string name="tips_info_1">Drink water and check your body’s signals before any activity.</string>
+    <string name="tips_info_2">Step outside briefly for fresh air, keeping effort to a minimum.</string>
+    <string name="tips_info_3">Perform very small tasks while remaining well within your energy limits.</string>
+    <string name="tips_info_4">Engage in short, low-effort social interactions if tolerated.</string>
     <string name="privacy_policy">Privacy Policy PaceKeeper</string>
 
 </resources>
