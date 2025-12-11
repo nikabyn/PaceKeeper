@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDataFallback
 
 object Preprocessor {
     /**
@@ -20,9 +19,9 @@ object Preprocessor {
         raw: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
-        val (rawCleaned, qualityRatios) = cleanInputData(raw)
-        val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
+        //val (rawCleaned, qualityRatios) = cleanInputData(raw)
+        //val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
 
-        return MultiTimeSeriesDiscrete.fromEntries(ensuredDataUsingFallback);
+        return MultiTimeSeriesDiscrete.fromEntries(/*ensuredDataUsingFallback*/ raw);
     }
 }

@@ -17,6 +17,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
+import kotlin.random.Random
 import kotlin.time.Duration
 
 
@@ -261,6 +262,31 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
         private val featureCount: Int = featureIndexMap.size
 
+        private val random: Random = Random(0)
+
+        //fill with random to prevent colinearity/singularity in regression on empty data
+        private fun ensureData(genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
+            if (genericTS.data.size >= 2) {
+                return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
+            }
+
+            val steps = 100
+            val stepDuration = genericTS.duration / steps
+            val data = List<GenericTimedDataPoint>(steps) { index ->
+                GenericTimedDataPoint(
+                    time = genericTS.timeStart + stepDuration * index,
+                    value = random.nextDouble(0.0, 100.0)
+                )
+            }
+
+            return GenericTimedDataPointTimeSeries(
+                genericTS.timeStart,
+                genericTS.duration,
+                genericTS.isContinuous,
+                data
+            )
+        }
+
         /**
          * Creates a [MultiTimeSeriesDiscrete] instance from raw, continuous time series data.
          *
@@ -293,24 +319,26 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
                 val discreteProportional = discretizeTimeSeries(
-                    GenericTimedDataPointTimeSeries(
-                        timeStart = raw.timeStart,
-                        duration = raw.duration,
-                        isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
-                        data = when (metric) {
-                            TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
-                                ::GenericTimedDataPoint
-                            )
+                    ensureData(
+                        GenericTimedDataPointTimeSeries(
+                            timeStart = raw.timeStart,
+                            duration = raw.duration,
+                            isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
+                            data = when (metric) {
+                                TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
+                                    ::GenericTimedDataPoint
+                                )
 
-                            TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
-                        }
+                                TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
+                            }
+                        )
                     ),
                     targetLength = stepCount
                 )
