@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.DomainRoutes
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
@@ -54,7 +55,7 @@ fun FeedbackScreen(
 
             Button (
             onClick = {
-                val linkUri = Uri.parse("https://survey.pacekeeper.de")
+                val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
                 val intent = Intent(Intent.ACTION_VIEW, linkUri)
                 context.startActivity(intent)
             },
