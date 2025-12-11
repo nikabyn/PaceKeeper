@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -235,6 +237,26 @@ fun AppNavHost(
     ) {
         composable(Route.WELCOME) {
             val viewModel: WelcomeViewModel = koinViewModel()
+            val checkedIn = viewModel.checkedIn.collectAsState()
+
+            LaunchedEffect(checkedIn.value) {
+                if (checkedIn.value) {
+                    navController.navigate("main_nav") {
+                        popUpTo(Route.WELCOME) { inclusive = true }
+                    }
+                }
+            }
+
+            if (!checkedIn.value) {
+                WelcomeScreen(
+                    onFinished = {
+                        viewModel.completeOnboarding()
+                        navController.navigate("main_nav") {
+                            popUpTo(Route.WELCOME) { inclusive = true }
+                        }
+                    }
+                )
+            }
             WelcomeScreen(
                 onFinished = {
                     viewModel.completeOnboarding {}
