@@ -2,6 +2,15 @@ package org.htwk.pacing.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
@@ -15,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -34,7 +44,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -42,12 +54,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -56,10 +71,6 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.Series
-import org.htwk.pacing.ui.logo.BlinkLogo
-import org.htwk.pacing.ui.logo.Floaty
-import org.htwk.pacing.ui.logo.RollingEntry
-import org.htwk.pacing.ui.logo.shuffleSmileys
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
@@ -211,7 +222,7 @@ private fun NavigationPoints(page: Int, numPages: Int) {
 @Composable
 private fun WelcomePage() {
     RollingEntry {
-        Floaty {
+        AnimateFloating {
             BlinkLogo(
                 open = R.drawable.ic_logo_open,
                 closed = R.drawable.ic_logo_closed
@@ -262,7 +273,7 @@ private fun PredictionPage() {
 @Composable
 private fun SymptomPage() {
     RollingEntry {
-        Floaty {
+        AnimateFloating {
             shuffleSmileys(
                 R.drawable.very_happy,
                 R.drawable.happy,
@@ -344,6 +355,130 @@ private fun DataUsagePage(viewModel: WelcomeViewModel) {
             )
         }
     }
+}
+
+@Composable
+fun RollingEntry(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val animationProgress = remember { Animatable(0f) }
+
+    val density = LocalDensity.current
+    val startOffsetPx = with(density) { -200.dp.toPx() }
+
+    LaunchedEffect(Unit) {
+        animationProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy, // Ein bisschen Bouncen am Ende
+                stiffness = Spring.StiffnessLow
+            )
+        )
+    }
+
+    val translationX = startOffsetPx * (1 - animationProgress.value)
+    val rotation = -360f * (1 - animationProgress.value) // Eine volle Drehung
+
+    Box(
+        modifier = modifier.graphicsLayer {
+            this.translationX = translationX
+            this.rotationZ = rotation
+            this.alpha = animationProgress.value.coerceIn(0f, 1f)
+        }
+    ) {
+        content()
+    }
+}
+
+
+@Composable
+fun AnimateFloating(
+    amplitudeDp: Float = 6f,
+    content: @Composable () -> Unit
+) {
+    val infinite = rememberInfiniteTransition(label = "float")
+    val offsetY by infinite.animateFloat(
+        initialValue = -amplitudeDp,
+        targetValue = amplitudeDp,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1700, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "offsetY"
+    )
+
+    Box(
+        modifier = Modifier.offset(y = offsetY.dp)
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun BlinkLogo(
+    open: Int,
+    closed: Int
+) {
+    var blinking by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(600)
+        delay(600)
+
+        repeat(3) {
+            blinking = true
+            delay(100) // Kurz zu
+            blinking = false
+            delay(150) // Kurz offen
+        }
+
+        delay(1000)
+
+        while (true) {
+            delay((2200..4500).random().toLong())
+            blinking = true
+            delay(120)
+            blinking = false
+        }
+    }
+
+    Image(
+        painter = painterResource(if (blinking) closed else open),
+        contentDescription = null,
+        modifier = Modifier.size(160.dp)
+    )
+}
+
+@Composable
+fun shuffleSmileys(
+    verygood: Int,
+    good: Int,
+    sad: Int,
+    verysad: Int
+) {
+    var smile by remember { mutableIntStateOf(verygood) }
+
+    LaunchedEffect(Unit) {
+
+        while (true) {
+            delay(1000)
+            smile = verygood
+            delay(1000)
+            smile = good
+            delay(1000)
+            smile = sad
+            delay(1000)
+            smile = verysad
+        }
+    }
+
+    Icon(
+        painter = painterResource(smile),
+        contentDescription = null,
+        modifier = Modifier.size(140.dp),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
