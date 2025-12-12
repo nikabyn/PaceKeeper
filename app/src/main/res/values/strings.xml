@@ -46,8 +46,6 @@
     <string name="unknown_error">Unknown Error occurred: %1$s</string>
     <string name="feeling_manual_symptoms">Feeling, Manual Symptoms</string>
     <string name="stored_data">Stored Data</string>
-    <string name="welcome_screen">Welcome Screen</string>
-    <string name="review_welcome_screen">Review Welcome Screen</string>
     <string name="export_data_to_zip_archive">Export data to ZIP-archive</string>
     <string name="data_protection_notice">Data protection notice</string>
     <string name="personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing">Personalised data will be stored by exporting. Please consent to the processing.</string>

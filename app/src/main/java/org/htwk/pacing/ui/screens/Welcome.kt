@@ -54,8 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -108,7 +106,6 @@ fun WelcomeScreen(onFinished: () -> Unit, viewModel: WelcomeViewModel = koinView
                             .fillMaxWidth()
                             .padding(top = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
                     ) {
                         when (pageIndex) {
                             0 -> WelcomePage()
@@ -232,11 +229,11 @@ private fun WelcomePage() {
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    Title("Willkommen")
+    Title(stringResource(R.string.title_welcome_page))
 
     Spacer(modifier = Modifier.height(Spacing.large))
 
-    Description("PaceKeeper hilft dir, dein Energie-Budget im Auge zu behalten.")
+    Description(stringResource(R.string.description_welcome_page))
 }
 
 @Composable
@@ -261,13 +258,13 @@ private fun PredictionPage() {
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    Title("Pacing verstehen")
+    Title(stringResource(R.string.title_prediction_page))
 
     Spacer(modifier = Modifier.height(Spacing.large))
 
-    Description("Vermeide den Crash.")
-    Description("Bleibe in deinem sicheren Bereich.")
-    Description("Deine Tagesenergie auf einen Blick.")
+    Description(stringResource(R.string.description1_prediction_page))
+    Description(stringResource(R.string.description2_prediction_page))
+    Description(stringResource(R.string.description3_prediction_page))
 }
 
 @Composable
@@ -285,13 +282,13 @@ private fun SymptomPage() {
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    Title("Dich selbst entdecken")
+    Title(stringResource(R.string.title_symptom_page))
 
     Spacer(modifier = Modifier.height(Spacing.large))
 
-    Description("Höre auf deinen Körper.")
-    Description("Erkenne deine Muster.")
-    Description("Deine Daten und Symptome im Verlauf.")
+    Description(stringResource(R.string.description1_symptom_page))
+    Description(stringResource(R.string.description2_symptom_page))
+    Description(stringResource(R.string.description3_symptom_page))
 }
 
 @Composable
@@ -311,11 +308,11 @@ private fun DataUsagePage(viewModel: WelcomeViewModel) {
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    Title("Loslegen")
+    Title(stringResource(R.string.title_data_usage_page))
 
     Spacer(modifier = Modifier.height(Spacing.large))
 
-    Description("Wir starten jetzt.")
+    Description(stringResource(R.string.description_data_usage_page))
 
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
 
@@ -502,7 +499,7 @@ private fun Description(text: String) = Text(
 class WelcomeViewModel(
     private val dao: UserProfileDao
 ) : ViewModel() {
-    var termsAccepted by mutableStateOf(true)
+    var termsAccepted by mutableStateOf(false)
 
     val checkedIn: StateFlow<Boolean> = dao.getCheckedInLive()
         .stateIn(
