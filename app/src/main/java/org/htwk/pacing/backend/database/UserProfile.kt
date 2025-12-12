@@ -86,8 +86,8 @@ data class UserProfileEntry(
                 illnessStartDate = null,
                 diagnosis = null,
                 fitnessTracker = null,
-                checkedIn = false,
                 themeMode = "AUTO",
+                checkedIn = false,
             )
         }
     }
@@ -108,10 +108,10 @@ interface UserProfileDao {
     fun getProfileLive(): Flow<UserProfileEntry?>
 
     suspend fun updateCheckedIn(value: Boolean) {
-        val profile = getProfile() ?: return
+        val profile = getProfile() ?: error("Profile should always exist")
         insertOrUpdate(profile.copy(checkedIn = value))
     }
 
     @Query("SELECT checkedIn FROM user_profile LIMIT 1")
-    fun getCheckedIn(): Flow<Boolean>
+    fun getCheckedInLive(): Flow<Boolean>
 }

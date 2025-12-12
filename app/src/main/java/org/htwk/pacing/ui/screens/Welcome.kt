@@ -2,19 +2,43 @@ package org.htwk.pacing.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,59 +65,12 @@ import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.random.Random
 
-data class OnboardingPage(
-    val title: String,
-    val description: String,
-    val optionalDescription2: String,
-    val optionalDescription3: String,
-    val icon: Int,
-    val optionalIcon2: Int? = null,
-    val optionalIcon3: Int? = null,
-    val optionalIcon4: Int? = null
-)
-
-val pages = listOf(
-    OnboardingPage(
-        "Willkommen",
-        "PaceKeeper hilft dir, dein Energie-Budget im Auge zu behalten.",
-        "",
-        "",
-        R.drawable.ic_logo_open,
-        R.drawable.ic_logo_closed
-    ),
-    OnboardingPage(
-        "Pacing verstehen",
-        "Vermeide den Crash.",
-        "Bleibe in deinem sicheren Bereich.",
-        "Deine Tagesenergie auf einen Blick.",
-        R.drawable.rounded_show_chart_24
-    ),
-    OnboardingPage(
-        "Dich selbst entdecken",
-        "Höre auf deinen Körper.",
-        "Erkenne deine Muster.",
-        "Deine Daten und Symptome im Verlauf.",
-        R.drawable.very_happy,
-        R.drawable.happy,
-        R.drawable.sad,
-        R.drawable.very_sad
-    ),
-    OnboardingPage(
-        "Loslegen",
-        "Wir starten jetzt.",
-        " ",
-        "",
-        R.drawable.ic_logo_open,
-        R.drawable.ic_logo_closed
-    )
-)
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WelcomeScreen(onFinished: () -> Unit, viewModel: WelcomeViewModel = koinViewModel()) {
-    val pagerState = rememberPagerState(pageCount = { pages.size })
+    val numPages = 4
+    val pagerState = rememberPagerState(pageCount = { numPages })
+    val isLastPage = pagerState.currentPage == numPages - 1
     val scope = rememberCoroutineScope()
-    val isLastPage = pagerState.currentPage == pages.size - 1
 
     BackHandler(enabled = pagerState.currentPage > 0) {
         scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
@@ -115,66 +92,109 @@ fun WelcomeScreen(onFinished: () -> Unit, viewModel: WelcomeViewModel = koinView
                         .weight(1f)
                         .fillMaxWidth()
                 ) { pageIndex ->
-                    OnboardingPageContent(
-                        page = pages[pageIndex],
-                        pageIndex = pageIndex,
-                        viewModel,
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = pagerState.currentPage > 0,
-                        modifier = Modifier.align(Alignment.CenterStart)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Button(
-                            onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
-                        }
-                    }
-
-                    Row(modifier = Modifier.align(Alignment.Center)) { navigatePoints(pagerState.currentPage) }
-
-                    val buttonEnabled = if (isLastPage) viewModel.termsAccepted else true
-                    Button(
-                        onClick = {
-                            if (isLastPage) onFinished() else scope.launch {
-                                pagerState.animateScrollToPage(
-                                    pagerState.currentPage + 1
-                                )
-                            }
-                        },
-                        enabled = buttonEnabled,
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                        modifier = Modifier.align(Alignment.CenterEnd),
-                    ) {
-                        AnimatedVisibility(visible = isLastPage) {
-                            Icon(
-                                Icons.Default.Check,
-                                "Fertig"
-                            )
-                        }
-                        AnimatedVisibility(visible = !isLastPage) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowForward,
-                                "Weiter"
-                            )
+                        when (pageIndex) {
+                            0 -> WelcomePage()
+                            1 -> PredictionPage()
+                            2 -> SymptomPage()
+                            3 -> DataUsagePage(viewModel)
                         }
                     }
                 }
+
+                NavigationBar(
+                    pagerState,
+                    numPages,
+                    canContinue = when (isLastPage) {
+                        true -> viewModel.termsAccepted
+                        false -> true
+                    },
+                    onForwards = {
+                        if (isLastPage && viewModel.termsAccepted) {
+                            onFinished()
+                            return@NavigationBar
+                        }
+                        scope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    },
+                    onBackwards = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-fun navigatePoints(page: Int) {
-    repeat(pages.size) { iteration ->
+private fun NavigationBar(
+    pagerState: PagerState,
+    numPages: Int,
+    canContinue: Boolean,
+    onForwards: () -> Unit,
+    onBackwards: () -> Unit,
+) = Box(
+    modifier = Modifier.fillMaxWidth(),
+    contentAlignment = Alignment.Center
+) {
+    AnimatedVisibility(
+        visible = pagerState.currentPage > 0,
+        modifier = Modifier.align(Alignment.CenterStart),
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        Button(
+            onClick = onBackwards,
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                stringResource(R.string.back)
+            )
+        }
+    }
+
+    Row(modifier = Modifier.align(Alignment.Center)) {
+        NavigationPoints(
+            pagerState.currentPage,
+            numPages
+        )
+    }
+
+    val isLastPage = pagerState.currentPage == numPages - 1
+    Button(
+        onClick = onForwards,
+        enabled = canContinue,
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+        modifier = Modifier.align(Alignment.CenterEnd),
+    ) {
+        AnimatedVisibility(visible = isLastPage) {
+            Icon(
+                Icons.Default.Check,
+                "Fertig"
+            )
+        }
+        AnimatedVisibility(visible = !isLastPage) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                "Weiter"
+            )
+        }
+    }
+}
+
+@Composable
+private fun NavigationPoints(page: Int, numPages: Int) {
+    repeat(numPages) { iteration ->
         val color =
             if (page == iteration) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.outlineVariant
@@ -189,99 +209,28 @@ fun navigatePoints(page: Int) {
 }
 
 @Composable
-fun OnboardingPageContent(
-    page: OnboardingPage,
-    pageIndex: Int,
-    viewModel: WelcomeViewModel,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        when (pageIndex) {
-            0 -> {
-                WelcomePage(page)
-            }
-
-            1 -> {
-                PredictionPage()
-            }
-
-            2 -> {
-                SymptomPage(page)
-            }
-
-            3 -> {
-                DataUsagePage(viewModel, page, 1)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = page.title,
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(Spacing.large))
-
-        Text(
-            text = page.description,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = Spacing.large)
-        )
-        if (page.optionalDescription2 != "")
-            Text(
-                text = page.optionalDescription2,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Spacing.large)
-            )
-        if (page.optionalDescription3 != "")
-            Text(
-                text = page.optionalDescription3,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Spacing.large)
-            )
-        if (pageIndex == 3) DataUsagePage(viewModel, page, 2)
-    }
-}
-
-@Composable
-fun WelcomePage(page: OnboardingPage) {
+private fun WelcomePage() {
     RollingEntry {
         Floaty {
-            if (page.optionalIcon2 != null) {
-                BlinkLogo(
-                    open = page.icon,
-                    closed = page.optionalIcon2
-                )
-            } else {
-                Image(
-                    painter = painterResource(page.icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(200.dp)
-                )
-            }
+            BlinkLogo(
+                open = R.drawable.ic_logo_open,
+                closed = R.drawable.ic_logo_closed
+            )
         }
     }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    Title("Willkommen")
+
+    Spacer(modifier = Modifier.height(Spacing.large))
+
+    Description("PaceKeeper hilft dir, dein Energie-Budget im Auge zu behalten.")
 }
 
 @Composable
-fun PredictionPage() {
-    Box(
-        contentAlignment = Alignment.Center
-    ) {
+private fun PredictionPage() {
+    Box(contentAlignment = Alignment.Center) {
         val exSeries: Series<List<Double>> =
             Series(
                 x = List(10) { Random.nextDouble(0.0, 1.0) },
@@ -298,98 +247,132 @@ fun PredictionPage() {
 
         )
     }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    Title("Pacing verstehen")
+
+    Spacer(modifier = Modifier.height(Spacing.large))
+
+    Description("Vermeide den Crash.")
+    Description("Bleibe in deinem sicheren Bereich.")
+    Description("Deine Tagesenergie auf einen Blick.")
 }
 
 @Composable
-fun SymptomPage(page: OnboardingPage) {
+private fun SymptomPage() {
     RollingEntry {
         Floaty {
-            if (page.optionalIcon2 != null && page.optionalIcon3 != null && page.optionalIcon4 != null) {
-                shuffleSmileys(
-                    page.icon,
-                    page.optionalIcon2,
-                    page.optionalIcon3,
-                    page.optionalIcon4
-                )
+            shuffleSmileys(
+                R.drawable.very_happy,
+                R.drawable.happy,
+                R.drawable.sad,
+                R.drawable.very_sad
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    Title("Dich selbst entdecken")
+
+    Spacer(modifier = Modifier.height(Spacing.large))
+
+    Description("Höre auf deinen Körper.")
+    Description("Erkenne deine Muster.")
+    Description("Deine Daten und Symptome im Verlauf.")
+}
+
+@Composable
+private fun DataUsagePage(viewModel: WelcomeViewModel) {
+    val onAcceptedChange = { newVal: Boolean -> viewModel.termsAccepted = newVal }
+    Image(
+        painter = painterResource(
+            if (viewModel.termsAccepted) {
+                R.drawable.ic_logo_closed
             } else {
-                Image(
-                    painter = painterResource(page.icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(200.dp)
-                )
+                R.drawable.ic_logo_open
             }
+        ),
+        contentDescription = null,
+        modifier = Modifier.size(200.dp)
+    )
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    Title("Loslegen")
+
+    Spacer(modifier = Modifier.height(Spacing.large))
+
+    Description("Wir starten jetzt.")
+
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+
+    TextButton(onClick = { showPrivacyPolicyDialog = true }) {
+        Text(
+            text = stringResource(R.string.privacy_policy),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+    if (showPrivacyPolicyDialog) {
+        PrivacyPolicyDialog(
+            onDismiss = { showPrivacyPolicyDialog = false }
+        )
+    }
+
+    Spacer(modifier = Modifier.height(Spacing.extraLarge))
+
+    Card(
+        shape = CardStyle.shape,
+        colors = CardStyle.colors,
+        onClick = { onAcceptedChange(!viewModel.termsAccepted) },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.large),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(Spacing.medium),
+        ) {
+            Checkbox(
+                checked = viewModel.termsAccepted,
+                onCheckedChange = onAcceptedChange
+            )
+            Text(
+                text = stringResource(R.string.agreement_policy),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
-fun DataUsagePage(viewModel: WelcomeViewModel, page: OnboardingPage, part: Int) {
-    val onAcceptedChange = { newVal: Boolean -> viewModel.termsAccepted = newVal }
-    if (part == 1) {
-        if (viewModel.termsAccepted && page.optionalIcon2 != null) {
-            Image(
-                painter = painterResource(id = page.optionalIcon2),
-                contentDescription = null,
-                modifier = Modifier.size(200.dp)
-            )
-        } else {
-            Image(
-                painter = painterResource(page.icon),
-                contentDescription = null,
-                modifier = Modifier.size(200.dp)
-            )
-        }
-    } else if (part == 2) {
-        var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+private fun Title(text: String) = Text(
+    text = text,
+    style = MaterialTheme.typography.headlineMedium,
+    textAlign = TextAlign.Center,
+    color = MaterialTheme.colorScheme.onBackground,
+)
 
-        TextButton(
-            onClick = { showPrivacyPolicyDialog = true }
-        ) {
-            Text(
-                (stringResource(R.string.privacy_policy)),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-        if (showPrivacyPolicyDialog) {
-            PrivacyPolicyDialog(
-                onDismiss = { showPrivacyPolicyDialog = false }
-            )
-        }
-        Spacer(modifier = Modifier.height(Spacing.extraLarge))
-        Card(
-            shape = CardStyle.shape,
-            colors = CardStyle.colors,
-            onClick = { onAcceptedChange(!viewModel.termsAccepted) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.large),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(Spacing.medium),
-            ) {
-                Checkbox(
-                    checked = viewModel.termsAccepted,
-                    onCheckedChange = onAcceptedChange
-                )
-                Text(
-                    text = stringResource(R.string.agreement_policy),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
+
+@Composable
+private fun Description(text: String) = Text(
+    text = text,
+    style = MaterialTheme.typography.bodyLarge,
+    textAlign = TextAlign.Center,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+    modifier = Modifier.padding(horizontal = Spacing.large)
+)
 
 class WelcomeViewModel(
     private val dao: UserProfileDao
 ) : ViewModel() {
     var termsAccepted by mutableStateOf(true)
 
-    val checkedIn: StateFlow<Boolean> = dao.getCheckedIn()
+    val checkedIn: StateFlow<Boolean> = dao.getCheckedInLive()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
 
