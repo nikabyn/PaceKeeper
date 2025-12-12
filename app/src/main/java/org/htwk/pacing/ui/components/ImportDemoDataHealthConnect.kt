@@ -2,8 +2,14 @@ package org.htwk.pacing.ui.components
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -12,8 +18,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +29,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectHelper.insertHeartRateRecords
+import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
+import org.htwk.pacing.ui.theme.Spacing
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.time.LocalTime
@@ -33,13 +43,30 @@ fun ImportDemoDataHealthConnect() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
-
-    Button(
-        onClick = { showDialog = true },
-        style = PrimaryButtonStyle,
-        modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+    Card(
+        colors = CardStyle.colors,
+        shape = CardStyle.shape,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(stringResource(R.string.demo_data_button_text))
+        Column(
+            modifier = Modifier.padding(
+                horizontal = Spacing.large,
+                vertical = Spacing.largeIncreased
+            )
+        ) {
+            Text(
+                stringResource(R.string.demo_data_button_text),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = { showDialog = true },
+                style = PrimaryButtonStyle,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.demo_data_button_text))
+            }
+        }
     }
 
     if (showDialog) {

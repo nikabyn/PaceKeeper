@@ -46,6 +46,7 @@
     <string name="agree">Agree</string>
     <string name="cancel">Cancel</string>
     <string name="save">Save</string>
+    <string name="saved">Saved</string>
     <string name="correct">Correct</string>
     <string name="adjust">Adjust</string>
     <string name="feeling_really_bad">Feeling really bad?</string>
@@ -65,6 +66,8 @@
     <string name="demo_data_dialog_title">Important notice</string>
     <string name="demo_data_dialog_text">If you proceed, demo data will be loaded into Health Connect. You can only delete this data manually via Health Connect.</string>
     <string name="predicting_energy">Predicting energy</string>
+    <string name="energy_prediction_running_channel">Background energy predictions</string>
+    <string name="energy_prediction_running">Background energy prediction running…</string>
     <string name="energy_level_debug_prediction">Energy Prediction</string>
     <string name="label_energy_level_very_low">Very low energy level</string>
     <string name="label_energy_level_low">Low energy level</string>
@@ -78,13 +81,17 @@
     <string name="profile_card_description">Enter/edit basic data for Pacing values</string>
     <string name="icon_profile_description">Profile Icon</string>
     <string name="icon_settings_description">Settings Icon</string>
-    <string name="title_export_send_database">Export and Send Database</string>
-    <string name="description_export_send_database">Sends the complete database to the server.</string>
+    <string name="title_export_send_database">Share Your Data</string>
+    <string name="description_export_send_database">
+        You can share your anonymized data with the developers to help improve the prediction model.
+        Your contribution is optional and supports ongoing research and optimization.
+    </string>
     <string name="button_send_now">Send Now</string>
     <string name="button_sending">Sending...</string>
     <string name="status_success_database_sent">Database successfully sent!</string>
     <string name="status_error_sending_database">Error sending the database</string>
     <string name="status_error_generic_sending">Error:</string>
+
     <string name="label_back">Back</string>
     <string name="title_user_profile">User Profile</string>
     <string name="button_save_profile">Save Profile</string>
@@ -109,6 +116,27 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
+    <string name="title_settings_unknown_user">Unknown User</string>
+    <string name="title_settings_services">Connections &amp; Services</string>
+    <string name="title_settings_data">Data &amp; Storage</string>
+    <string name="title_settings_notifications">Notifications</string>
+    <string name="title_settings_appearance">Appearance</string>
+    <string name="title_settings_information">Information</string>
+    <string name="title_settings_feedback">Feedback</string>
+    <string name="subtitle_settings_user_profile">Edit Profile</string>
+    <string name="subtitle_settings_services">Health Connect, Fitbit</string>
+    <string name="subtitle_settings_data">Manage your tracked data</string>
+    <string name="subtitle_settings_notifications"> </string>
+    <string name="subtitle_settings_appearance"> </string>
+    <string name="subtitle_settings_information">Legal, Privacy, Introduction </string>
+    <string name="subtitle_settings_feedback">Help us to improve this app!</string>
+    <string name="join_survey">Join the survey</string>
+    <string name="title_survey">Take part in the survey</string>
+    <string name="description_survey">Help us improve the app by participating in our short survey.</string>
+    <string name="settings_appearance_light">Light</string>
+    <string name="settings_appearance_dark">Dark</string>
+    <string name="settings_appearance_auto">Automatic (System)</string>
+
     <string name="tips_error_1">Dim the room completely and lie down, minimizing all sensory input.</string>
     <string name="tips_error_2">Interrupt all sensory and mental stimuli to prevent PEM.</string>
     <string name="tips_error_3">Sip water or electrolytes while fully resting; do not attempt any activity.</string>
@@ -123,6 +151,7 @@
     <string name="tips_info_2">Step outside briefly for fresh air, keeping effort to a minimum.</string>
     <string name="tips_info_3">Perform very small tasks while remaining well within your energy limits.</string>
     <string name="tips_info_4">Engage in short, low-effort social interactions if tolerated.</string>
-    <string name="privacy_policy">Privacy Policy PaceKeeper</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="view_licence">View Licence</string>
 
 </resources>

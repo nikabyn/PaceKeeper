@@ -2,15 +2,16 @@ package org.htwk.pacing.backend.export
 
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
+import org.htwk.pacing.backend.DomainRoutes
+import org.htwk.pacing.ui.screens.UserProfileViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.flow.firstOrNull
-import org.htwk.pacing.ui.screens.UserProfileViewModel
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -22,7 +23,7 @@ import java.util.zip.ZipOutputStream
  */
 //TODO: edit server configuration
 //TODO: server secret
-private const val SERVER_URL = "https://pacekeeper.pixelpioniere.de/receive/index.php"
+private const val SERVER_URL = DomainRoutes.ANALYTICS_PACEKEEPER_URL
 private const val SERVER_SECRET = "DN9d82ohd20iooinlknceOI"
 
 

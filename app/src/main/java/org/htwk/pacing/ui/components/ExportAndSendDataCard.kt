@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,7 +25,6 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.export.exportAndSendData
 import org.htwk.pacing.ui.screens.UserProfileViewModel
-import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 
@@ -43,7 +41,6 @@ fun ExportAndSendDataCard(
 
     val statusErrorSendingDatabase = stringResource(R.string.status_error_sending_database)
     val statusSuccessDatabaseSent = stringResource(R.string.status_success_database_sent)
-    val statusErrorGenericSending = stringResource(R.string.status_error_generic_sending)
 
     suspend fun performSend() {
         try {
@@ -69,57 +66,51 @@ fun ExportAndSendDataCard(
         scope.launch { performSend() }
     }
 
-    Card(
-        colors = CardStyle.colors,
-        shape = CardStyle.shape,
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spacing.large),
+        modifier = Modifier
+            .fillMaxWidth()
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.large),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
+        Column {
+            Text(
+                stringResource(R.string.title_export_send_database),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                stringResource(R.string.description_export_send_database),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Button(
+            onClick = { send() },
+            style = PrimaryButtonStyle,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column {
-                Text(
-                    stringResource(R.string.title_export_send_database),
-                    style = MaterialTheme.typography.titleMedium
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp
                 )
-                Text(
-                    stringResource(R.string.description_export_send_database),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.width(Spacing.small))
+                Text(stringResource(R.string.button_sending))
+            } else {
+                Text(stringResource(R.string.button_send_now))
             }
+        }
 
-            Button(
-                onClick = { send() },
-                style = PrimaryButtonStyle,
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(Spacing.small))
-                    Text(stringResource(R.string.button_sending))
-                } else {
-                    Text(stringResource(R.string.button_send_now))
-                }
-            }
-
-            if (statusMessage.isNotEmpty()) {
-                Text(
-                    statusMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isSuccess)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
+        if (statusMessage.isNotEmpty()) {
+            Text(
+                statusMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isSuccess)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
