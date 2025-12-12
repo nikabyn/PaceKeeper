@@ -103,9 +103,17 @@
     <string name="review_welcome_screen">Einführung erneut ansehen</string>
     <string name="agreement_policy">"Ich habe die Datennutzungsbestimmungen gelesen und stimme der Datennutzung zu."</string>
     <string name="title_welcome_page">"Willkommen"</string>
+    <string name="description_welcome_page">"PaceKeeper hilft dir, dein Energie-Budget im Auge zu behalten."</string>
     <string name="title_prediction_page">"Pacing verstehen"</string>
+    <string name="description1_prediction_page">"Vermeide den Crash."</string>
+    <string name="description2_prediction_page">"Bleibe in deinem sicheren Bereich."</string>
+    <string name="description3_prediction_page">"Deine Tagesenergie auf einen Blick."</string>
     <string name="title_symptom_page">"Dich selbst entdecken"</string>
+    <string name="description1_symptom_page">"Höre auf deinen Körper."</string>
+    <string name="description2_symptom_page">"Erkenne deine Muster."</string>
+    <string name="description3_symptom_page">"Deine Daten und Symptome im Verlauf."</string>
     <string name="title_data_usage_page">"Loslegen"</string>
+    <string name="description_data_usage_page">"Wir starten jetzt."</string>
 
     <string name="label_back">Zurück</string>
     <string name="title_user_profile">Benutzerprofil</string>

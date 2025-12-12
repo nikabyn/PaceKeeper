@@ -108,9 +108,17 @@
     <string name="review_welcome_screen">Review Welcome Screen</string>
     <string name="agreement_policy">"I agree to the terms and conditions."</string>
     <string name="title_welcome_page">"Welcome"</string>
+    <string name="description_welcome_page">"PaceKeeper helps keeping track of your energy level."</string>
     <string name="title_prediction_page">"Understanding Pacing"</string>
+    <string name="description1_prediction_page">"Avoid the crash."</string>
+    <string name="description2_prediction_page">"Stay in your safe zone."</string>
+    <string name="description3_prediction_page">"Your daily energy at a glance."</string>
     <string name="title_symptom_page">"Exploring you"</string>
-    <string name="title_data_usage_page">"Starting now"</string>
+    <string name="description1_symptom_page">"Listen to your body."</string>
+    <string name="description2_symptom_page">"Recognize your patterns."</string>
+    <string name="description3_symptom_page">"Your data and symptoms over time."</string>
+    <string name="title_data_usage_page">"Let's go"</string>
+    <string name="description_data_usage_page">"We are starting now."</string>
 
     <string name="label_nickname">Nickname</string>
     <string name="label_birth_year">Birth Year</string>
