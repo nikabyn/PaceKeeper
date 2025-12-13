@@ -397,7 +397,7 @@ fun DropdownMenuField(
 }
 
 class UserProfileViewModel(
-    private val dao: UserProfileDao
+    internal val dao: UserProfileDao
 ) : ViewModel() {
 
     private val _profile = MutableStateFlow<UserProfileEntry?>(null)

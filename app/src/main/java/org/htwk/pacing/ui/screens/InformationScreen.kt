@@ -14,7 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Button
@@ -39,7 +41,7 @@ fun InformationScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
             Button(
-                onClick = { navController.navigate(Route.WELCOME) },
+                onClick = { viewModel.openWelcomeScreen(navController) },
                 style = PrimaryButtonStyle,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -71,5 +73,14 @@ fun InformationScreen(
                 )
             }
         }
+    }
+}
+
+private fun UserProfileViewModel.openWelcomeScreen(navController: NavController) {
+    viewModelScope.launch {
+        val profile = dao.getProfile()?.copy(checkedIn = false)
+            ?: error("User profile should always exist")
+        dao.insertOrUpdate(profile)
+        navController.navigate(Route.WELCOME)
     }
 }
