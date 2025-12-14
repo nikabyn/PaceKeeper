@@ -24,10 +24,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,17 +44,11 @@ import org.htwk.pacing.ui.screens.FeedbackScreen
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.InformationScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
-import org.htwk.pacing.ui.screens.NotificationsScreen
+import org.htwk.pacing.ui.screens.NotificationScreen
 import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
-import org.htwk.pacing.ui.screens.FeedbackScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
-import org.htwk.pacing.ui.screens.NotificationsScreen
-import org.htwk.pacing.ui.screens.InformationScreen
-import org.htwk.pacing.ui.screens.DataScreen
-import org.htwk.pacing.ui.screens.AppearanceScreen
-import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.theme.PacingTheme
 import org.koin.androidx.compose.koinViewModel
@@ -203,7 +193,7 @@ fun AppNavHost(
                 )
             }
 
-            composable(Route.NOTIFICATIONS) { NotificationsScreen(navController) }
+            composable(Route.NOTIFICATIONS) { NotificationScreen(navController) }
         }
         composable(Route.SERVICES) {
             val userProfileViewModel: UserProfileViewModel = koinViewModel()
@@ -230,9 +220,9 @@ fun AppNavHost(
         }
         composable(Route.NOTIFICATIONS) {
             val userProfileViewModel: UserProfileViewModel = koinViewModel()
-            NotificationsScreen(
+            NotificationScreen(
                 navController = navController,
-                viewModel = userProfileViewModel
+                userProfileViewModel = userProfileViewModel
             )
         }
         composable(Route.APPEAREANCE) {
@@ -250,15 +240,15 @@ fun AppNavHost(
             )
         }
 
-            composable(
-                route = "symptoms/{feeling}",
-                arguments = listOf(navArgument("feeling") { type = NavType.IntType })
-            ) { backStackEntry ->
-                val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
-                val feeling = Feeling.fromInt(feelingLevel)
-                SymptomScreen(navController, feeling)
-            }
+        composable(
+            route = "symptoms/{feeling}",
+            arguments = listOf(navArgument("feeling") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
+            val feeling = Feeling.fromInt(feelingLevel)
+            SymptomScreen(navController, feeling)
         }
     }
+}
 
 

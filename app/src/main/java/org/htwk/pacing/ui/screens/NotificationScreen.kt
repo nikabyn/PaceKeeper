@@ -63,7 +63,7 @@ fun String.parseTime(): LocalTime? {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen(
+fun NotificationScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     // ViewModel für den UserProfile
@@ -138,7 +138,8 @@ fun NotificationsScreen(
                         userProfileViewModel.saveProfile(it.copy(suggestionPermit = enabled))
                     }
                 },
-            )
+
+                )
 
             Spacer(modifier = Modifier.padding(top = 20.dp))
 
