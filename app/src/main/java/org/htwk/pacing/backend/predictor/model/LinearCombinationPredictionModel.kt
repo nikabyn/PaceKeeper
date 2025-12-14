@@ -31,28 +31,35 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients per Horizon
     private data class PerHorizonModel(
+        //bias (linear offset so that our fit "line" doesn't have to go through 0)
         val bias: Double,
+
+        //weight per extrapolation (how much each extrapolated trend affects prediction output)
         val coefficients: List<Double>,
-        val featureDists: List<StochasticDistribution>
-    )
+
+        //stochastic distribution per extrapolation we need this for normalization
+        val featureDists: List<StochasticDistribution>      )
 
     private class Model(
+        //model parameters per prediction horizon (e.g. now vs. future)
         val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
-        val targetStochasticDistribution: StochasticDistribution
+
+        //stochastic distribution parameters for prediction target (energy), because we need to normalize it too
+        val targetStochasticDistribution: StochasticDistribution //
     )
 
-    private var model: Model? = null
+    private var model: Model? = null //hold everything in a single state, (model weights etc.)
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
      * and its corresponding expected energy level (target output).
      *
      * @property multiExtrapolations Flattened list of extrapolated feature values from multiple signals.
-     * @property expectedEnergyLevel The expected (ground truth) energy level for this sample.
+     * @property targetValue The expected (ground truth) value for this sample. We are training to predict this.
      */
     data class TrainingSample(
         val multiExtrapolations: List<Double>,
-        val expectedEnergyLevel: Double
+        val targetValue: Double
     )
 
     /**
@@ -82,7 +89,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
                     offset,
                     predictionHorizon
                 ),
-                expectedEnergyLevel = targetTimeSeriesDiscrete[offset + predictionLookAhead]
+                targetValue = targetTimeSeriesDiscrete[offset + predictionLookAhead]
             )
         }
     }
@@ -131,7 +138,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
 
         val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
-        val allExpectedFutureValues = trainingSamples.map { it.expectedEnergyLevel }
+        val allExpectedFutureValues = trainingSamples.map { it.targetValue }
 
         val allExtrapolationsMatrix: NDArray<Double, D2> = mk.ndarray(allExtrapolations).transpose()
         val allExpectedFutureValuesVector: NDArray<Double, D1> = mk.ndarray(allExpectedFutureValues)
