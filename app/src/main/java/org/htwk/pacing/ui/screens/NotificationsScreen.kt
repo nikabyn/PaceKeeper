@@ -16,10 +16,7 @@ import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
-fun NotificationsScreen(
-    navController: NavController,
-    viewModel: UserProfileViewModel
-) {
+fun NotificationsScreen(navController: NavController) {
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_notifications),
         navController = navController,

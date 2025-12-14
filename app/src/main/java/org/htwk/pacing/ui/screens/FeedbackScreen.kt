@@ -21,11 +21,12 @@ import org.htwk.pacing.backend.DomainRoutes
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun FeedbackScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel
+    viewModel: UserProfileViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     SettingsSubScreen(

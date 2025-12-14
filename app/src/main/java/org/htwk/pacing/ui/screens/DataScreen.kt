@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
@@ -36,12 +35,12 @@ import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun DataScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel,
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel = koinViewModel(),
 ) {
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_data),
@@ -124,11 +123,3 @@ fun DataScreen(
         }
     }
 }
-
-@Composable
-fun SectionTitle(title: String) = Text(
-    text = title,
-    style = MaterialTheme.typography.titleMedium,
-    fontWeight = FontWeight.Bold,
-    modifier = Modifier.padding(vertical = 10.dp)
-)

@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +53,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import androidx.navigation.navigation
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.screens.AppearanceScreen
@@ -75,6 +75,22 @@ import org.koin.androidx.compose.koinViewModel
 fun Main() {
     val userProfileViewModel: UserProfileViewModel = koinViewModel()
     val themeMode by userProfileViewModel.themeMode.collectAsState()
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val navBarVisible by remember {
+        derivedStateOf {
+            when (navBackStackEntry?.destination?.route) {
+                Route.HOME,
+                Route.MEASUREMENTS,
+                Route.SETTINGS, null -> true
+
+                else -> false
+            }
+        }
+    }
 
     // Determine dark theme based on user preference
     val darkTheme = when (themeMode) {
@@ -84,16 +100,11 @@ fun Main() {
     }
 
     PacingTheme(darkTheme = darkTheme) {
-        val navController = rememberNavController()
-        val navBackStackEntry = navController.currentBackStackEntryAsState()
-        val parentRoute = navBackStackEntry.value?.destination?.parent?.route ?: "main_nav"
-        val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
-        val snackbarHostState = remember { SnackbarHostState() }
 
         Scaffold(
             bottomBar = {
                 AnimatedVisibility(
-                    visible = parentRoute == "main_nav",
+                    visible = navBarVisible,
                     enter = slideInVertically { it } + fadeIn(),
                     exit = slideOutVertically { it } + fadeOut()
                 ) {
@@ -195,73 +206,68 @@ fun AppNavHost(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier,
 ) {
+    val subScreenEntry = slideInHorizontally(
+        initialOffsetX = { fullWidth -> fullWidth },
+        animationSpec = tween(300)
+    )
+    val subScreenExit = slideOutHorizontally(
+        targetOffsetX = { fullWidth -> fullWidth },
+        animationSpec = tween(300)
+    )
+
     NavHost(
         navController,
-        startDestination = "main_nav",
+        startDestination = Route.HOME,
         modifier = modifier
     ) {
-        navigation(route = "main_nav", startDestination = Route.HOME) {
-            composable(route = Route.HOME) {
-                HomeScreen(
-                    navController = navController,
-                    snackbarHostState = snackbarHostState
-                )
-            }
-            composable(route = Route.MEASUREMENTS) { MeasurementsScreen() }
-            composable(route = Route.SETTINGS) { SettingsScreen(navController) }
-            composable(Route.USERPROFILE) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                UserProfileScreen(
-                    navController = navController,
-                    viewModel = userProfileViewModel
-                )
-            }
-            composable(Route.CONNECTIONS_AND_SERVICES) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                ConnectionsAndServicesScreen(
-                    navController = navController,
-                )
-            }
-            composable(Route.FEEDBACK) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                FeedbackScreen(
-                    navController = navController,
-                    viewModel = userProfileViewModel
-                )
-            }
-            composable(Route.DATA) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                val settingsViewModel: org.htwk.pacing.ui.screens.SettingsViewModel =
-                    koinViewModel()
-                DataScreen(
-                    navController = navController,
-                    viewModel = userProfileViewModel,
-                    settingsViewModel = settingsViewModel
-                )
-            }
-            composable(Route.NOTIFICATIONS) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                NotificationsScreen(
-                    navController = navController,
-                    viewModel = userProfileViewModel
-                )
-            }
-            composable(Route.APPEARANCE) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                AppearanceScreen(
-                    navController = navController,
-                    viewModel = userProfileViewModel
-                )
-            }
-            composable(Route.INFORMATION) {
-                val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                InformationScreen(
-                    navController = navController,
-                    viewModel = userProfileViewModel
-                )
-            }
+        composable(Route.HOME) { HomeScreen(navController, snackbarHostState) }
+        composable(
+            route = "symptoms/{feeling}",
+            arguments = listOf(navArgument("feeling") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
+            val feeling = Feeling.fromInt(feelingLevel)
+            SymptomScreen(navController, feeling)
         }
 
+        composable(Route.MEASUREMENTS) { MeasurementsScreen() }
+
+        composable(Route.SETTINGS) { SettingsScreen(navController) }
+        composable(
+            Route.USERPROFILE,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { UserProfileScreen(navController) }
+        composable(
+            Route.CONNECTIONS_AND_SERVICES,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { ConnectionsAndServicesScreen(navController) }
+        composable(
+            Route.FEEDBACK,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { FeedbackScreen(navController) }
+        composable(
+            Route.DATA,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { DataScreen(navController) }
+        composable(
+            Route.NOTIFICATIONS,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { NotificationsScreen(navController) }
+        composable(
+            Route.APPEARANCE,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { AppearanceScreen(navController) }
+        composable(
+            Route.INFORMATION,
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
+        ) { InformationScreen(navController) }
         composable(
             route = Route.FITBIT,
             deepLinks = listOf(
@@ -269,18 +275,8 @@ fun AppNavHost(
                     uriPattern = "org.htwk.pacing://fitbit_oauth2_redirect"
                 },
             ),
-            enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(300)
-                )
-            },
-            exitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(300)
-                )
-            }
+            enterTransition = { subScreenEntry },
+            exitTransition = { subScreenExit }
         ) { backStackEntry ->
             val deepLinkIntent = backStackEntry.arguments?.getParcelableCompat<Intent>(
                 NavController.KEY_DEEP_LINK_INTENT
@@ -290,15 +286,6 @@ fun AppNavHost(
                 ?.also { uri -> Log.d("AppNavHost", "Received Fitbit OAuth redirect = $uri") }
 
             FitbitScreen(navController, fitbitOauthUri)
-        }
-
-        composable(
-            route = "symptoms/{feeling}",
-            arguments = listOf(navArgument("feeling") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
-            val feeling = Feeling.fromInt(feelingLevel)
-            SymptomScreen(navController, feeling)
         }
     }
 }
