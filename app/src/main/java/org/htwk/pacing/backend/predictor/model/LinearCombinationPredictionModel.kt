@@ -17,6 +17,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
@@ -32,7 +33,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients
     private var linearCoefficients: Map<PredictionHorizon, List<Double>> = mapOf()
-    private var stochasticDistributions: Map<FeatureID, StochasticDistribution> = mapOf()
+    private var stochasticDistributions: Map<PredictionHorizon, List<StochasticDistribution>> = mapOf()
     private var targetStochasticDistribution: StochasticDistribution? = null
 
     /**
@@ -104,11 +105,12 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
+                result
+                //if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
             }
         }
 
-        return flatExtrapolationResults
+        return flatExtrapolationResults + listOf(1.0)
     }
 
 
@@ -138,24 +140,35 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @param targetTimeSeriesDiscrete The target energy level data used for training.
      */
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
-        //normalize each feature row and store the normalization parameters per feature
-        stochasticDistributions =
-            input.getAllFeatureIDs()
-                .associateWith { featureID ->
-                    input.getMutableRow(featureID).normalize()
-                }
-
         //Also normalize the target variable and store its distribution
         val targetArray = mk.ndarray(targetTimeSeriesDiscrete)
         targetStochasticDistribution = targetArray.normalize()
+
+        val newStochasticDistributions = stochasticDistributions.toMutableMap()
 
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
                 input, targetArray.toDoubleArray(), // Use the now-normalized target data
                 predictionHorizon
             )
-            trainForHorizon(trainingSamples)
+
+            require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
+
+            val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
+            val allExpectedFutureValues = trainingSamples.map { it.expectedEnergyLevel }
+
+            val allExtrapolationsMatrix: NDArray<Double, D2> = mk.ndarray(allExtrapolations).transpose()
+            val allExpectedFutureValuesVector: NDArray<Double, D1> = mk.ndarray(allExpectedFutureValues)
+
+            newStochasticDistributions[predictionHorizon] = (0 until allExtrapolationsMatrix.shape[0]).map { i ->
+                (allExtrapolationsMatrix[i] as D1Array<Double>).normalize()
+            }
+
+            leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector).toList()
+            /*trainForHorizon(trainingSamples)*/
         }
+
+        stochasticDistributions = newStochasticDistributions.toMap()
     }
 
     //TODO: add needs train check, the job should use this to check if we lost weights from restart
@@ -179,14 +192,15 @@ object LinearCombinationPredictionModel : IPredictionModel {
         require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
         require(targetStochasticDistribution != null) { "Target distribution not available. Run training." }
 
-        input.getAllFeatureIDs().forEach { featureID ->
-            input.getMutableRow(featureID).normalize(stochasticDistributions[featureID]!!)
-        }
-
         val flattenedExtrapolations =
             generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon)
 
-        val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations)
+        val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations.mapIndexed {index, d ->
+        val arr = mk.ndarray(doubleArrayOf(d.toDouble()))
+            arr.normalize(stochasticDistributions[predictionHorizon]!![index])
+            arr.first()
+        })
+
         val coefficientsVector: D1Array<Double> =
             mk.ndarray(linearCoefficients[predictionHorizon]!!)
 
