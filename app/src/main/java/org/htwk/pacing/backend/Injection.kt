@@ -82,13 +82,12 @@ val appModule = module {
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(androidContext(), get()) }
     viewModel { UserProfileViewModel(get()) }
-    // viewModel { NotificationsViewModel() }
     /**
      * koin sets up the dependencies for the worker class instance here,
      * the actual execution/scheduling is handled in Application.kt
      */
-    worker { context, params -> HealthConnectWorker(context, params, get()) }
-    /* worker { context, params ->
+    //worker { context, params -> HealthConnectWorker(context, params, get(), get()) }
+    /*worker { context, params ->
          PredictionWorker(
              context,
              params,
