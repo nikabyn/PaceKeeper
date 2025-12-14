@@ -35,10 +35,9 @@ import kotlinx.datetime.LocalTime
 
         UserProfileEntry::class,
 
-
         ReadEvent::class,
     ],
-    version = 5,
+    version = 3,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -58,7 +57,6 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun validatedEnergyLevelDao(): ValidatedEnergyLevelDao
 
     abstract fun userProfileDao(): UserProfileDao
-
 
     /*These two tables are different than the others in the sense that they represent
     future data (ml model predictions). Also, when accessing them for writing, their whole table

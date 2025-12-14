@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -24,10 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-val MaterialTheme.extendedColors: ExtendedColors
-    @Composable @ReadOnlyComposable
-    get() = LocalExtendedColors.current
-
+/**
+ * Sets up the app theme with optional dark mode and dynamic color support.
+ *
+ * @param darkTheme Whether to use the dark theme. Defaults to system setting.
+ * @param dynamicColor Whether to use dynamic colors (Android 12+). Defaults to true.
+ * @param content The composable content to apply the theme to.
+ */
 @Composable
 fun PacingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -56,6 +60,12 @@ fun PacingTheme(
     }
 }
 
+/** Provides access to the current [ExtendedColors] in the composition. */
+val MaterialTheme.extendedColors: ExtendedColors
+    @Composable @ReadOnlyComposable
+    get() = LocalExtendedColors.current
+
+/** Standard spacing, gap, padding, etc. values used throughout the app for consistent layout. */
 object Spacing {
     val extraSmall = 4.dp
     val small = 8.dp
@@ -66,10 +76,33 @@ object Spacing {
 }
 
 object CardStyle {
-    val shape: Shape
+    val shape: CornerBasedShape
         @Composable @ReadOnlyComposable
         get() = MaterialTheme.shapes.large
 
+    val shapeFirstInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() {
+            val smallShape = MaterialTheme.shapes.medium
+            return shape.copy(
+                bottomStart = smallShape.bottomStart,
+                bottomEnd = smallShape.bottomEnd,
+            )
+        }
+
+    val shapeInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() = MaterialTheme.shapes.medium
+
+    val shapeLastInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() {
+            val smallShape = MaterialTheme.shapes.medium
+            return shape.copy(
+                topStart = smallShape.topStart,
+                topEnd = smallShape.topEnd,
+            )
+        }
     val colors: CardColors
         @Composable
         get() = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)

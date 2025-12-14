@@ -39,8 +39,8 @@ import kotlin.time.Duration.Companion.hours
  * A collection of constant values for notification IDs and channel IDs.
  */
 object NotificationIds {
-    const val HEALTH_CONNECT_SYNC_CHANNEL_ID = "health_connect_sync_ch"
-    const val HEALTH_CONNECT_SYNC_NOTIFICATION_ID = 1
+    const val FOREGROUND_CHANNEL_ID = "foreground_ch"
+    const val FOREGROUND_NOTIFICATION_ID = 1
 
     const val ENERGY_WARNING_CHANNEL_ID = "energy_low_ch"
     const val ENERGY_WARNING_NOTIFICATION_ID = 2
@@ -114,18 +114,17 @@ fun showNotification(context: Context) {
     val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
 
     val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        ContextCompat.checkSelfPermission(
-            context, Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
     } else {
         true
     }
 
     prefs.edit { putBoolean("notification_shown", true) }
-    Log.d("Notification", "notification_shown Flag gesetzt: true")
+    Log.d("Notification", "set notification_shown: true")
 
     if (!permissionGranted) {
-        Log.d("Notification", "Permission fehlt – Notification wird nicht gezeigt")
+        Log.d("Notification", "Permission missing – Notification not sent")
         return
     }
 
@@ -249,6 +248,7 @@ class NotificationsBackgroundWorker(
         }
         return Result.success()
     }
+    Log.d("Notification", "Notification sent")
 }
 
 /**

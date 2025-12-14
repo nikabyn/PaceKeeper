@@ -29,7 +29,6 @@ data class UserProfileEntry(
 
     val amputationLevel: AmputationLevel?,
     val fatigueSensitivity: Int?,
-    val activityBaseline: Int?,
     val anaerobicThreshold: Int?,
     val bellScale: Int?,
     val illnessStartDate: Long?,
@@ -44,6 +43,8 @@ data class UserProfileEntry(
     val restingStart: LocalTime?,
     val restingEnd: LocalTime?
 
+    val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
+    val createdAt: Long = System.currentTimeMillis()
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -85,7 +86,6 @@ data class UserProfileEntry(
                 restingHeartRateBpm = 60,
                 amputationLevel = null,
                 fatigueSensitivity = null,
-                activityBaseline = null,
                 anaerobicThreshold = null,
                 bellScale = null,
                 illnessStartDate = null,
@@ -96,9 +96,9 @@ data class UserProfileEntry(
                 reminderPermit = false,
                 suggestionPermit = false,
                 restingStart = LocalTime(22, 0),
-                restingEnd = LocalTime(3, 0)
+                restingEnd = LocalTime(3, 0),
 
-
+                themeMode = "AUTO"
             )
         }
     }
@@ -106,8 +106,6 @@ data class UserProfileEntry(
 
 @Dao
 interface UserProfileDao {
-    @Query("SELECT * FROM user_profile LIMIT 1")
-    fun getCurrentProfile(): Flow<UserProfileEntry?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(profile: UserProfileEntry)
@@ -116,7 +114,10 @@ interface UserProfileDao {
     suspend fun deleteAll()
 
     @Query("SELECT * FROM user_profile LIMIT 1")
-    suspend fun getCurrentProfileDirect(): UserProfileEntry?
+    suspend fun getProfile(): UserProfileEntry?
+
+    @Query("SELECT * FROM user_profile LIMIT 1")
+    fun getProfileLive(): Flow<UserProfileEntry?>
 }
 
 class UserProfileRepository(private val userProfileDao: UserProfileDao) {
