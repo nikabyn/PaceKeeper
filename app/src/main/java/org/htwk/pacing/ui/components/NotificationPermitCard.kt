@@ -2,13 +2,20 @@ package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.theme.CardStyle
@@ -28,11 +35,11 @@ import org.htwk.pacing.ui.theme.CardStyle
 @Composable
 fun NotificationPermitCard(
     warningPermit: Boolean,
-    reminderPermit: Boolean,
-    suggestionPermit: Boolean,
+    // reminderPermit: Boolean,
+    // suggestionPermit: Boolean,
     onWarningChange: (Boolean) -> Unit,
-    onReminderChange: (Boolean) -> Unit,
-    onSuggestionChange: (Boolean) -> Unit,
+    //  onReminderChange: (Boolean) -> Unit,
+    //  onSuggestionChange: (Boolean) -> Unit,
 ) {
     Card(
         colors = CardStyle.colors,
@@ -53,7 +60,7 @@ fun NotificationPermitCard(
                 titleStyle = MaterialTheme.typography.titleMedium
             )
 
-            // Perspektivisch für weitere Notification-Arten
+            // Perspektivisch für weitere Notifications
             /*
                         Switch(
                             title = stringResource(R.string.reminders),
@@ -74,3 +81,59 @@ fun NotificationPermitCard(
         }
     }
 }
+
+@Composable
+fun Switch(
+    title: String,
+    description: String = "",
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    titleStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    descriptionStyle: TextStyle = MaterialTheme.typography.bodyMedium.copy(
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+            .toggleable(
+                value = checked,
+                onValueChange = onCheckedChange,
+                role = Role.Switch
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+        ) {
+            Text(
+                text = title,
+                style = titleStyle
+            )
+
+            if (description.isNotEmpty()) {
+                Text(
+                    text = description,
+                    style = descriptionStyle,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.align(Alignment.CenterVertically)
+        ) {
+            // Explicitly call the Material Design Switch to prevent recursion
+            Switch(
+                checked = checked,
+                onCheckedChange = null // The toggleable modifier handles the change
+            )
+        }
+    }
+}
+
+
+

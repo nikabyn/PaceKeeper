@@ -38,7 +38,8 @@ class UserProfileDaoTest {
             bellScale = 7,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = "Fitbit"
+            fitnessTracker = "Fitbit",
+            warningPermit = false
         )
 
         runBlocking {

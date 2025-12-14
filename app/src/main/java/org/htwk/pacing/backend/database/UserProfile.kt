@@ -39,8 +39,8 @@ data class UserProfileEntry(
 
     //Settings
     val warningPermit: Boolean,
-    val reminderPermit: Boolean,
-    val suggestionPermit: Boolean,
+    // val reminderPermit: Boolean,
+    //  val suggestionPermit: Boolean,
     val restingStart: LocalTime?,
     val restingEnd: LocalTime?,
 
@@ -94,8 +94,8 @@ data class UserProfileEntry(
                 fitnessTracker = null,
 
                 warningPermit = false,
-                reminderPermit = false,
-                suggestionPermit = false,
+                // reminderPermit = false,
+                // suggestionPermit = false,
                 restingStart = LocalTime(22, 0),
                 restingEnd = LocalTime(3, 0),
 

@@ -443,9 +443,9 @@ class UserProfileViewModel(
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
-            reminderPermit = false,
+            // reminderPermit = false,
             warningPermit = false,
-            suggestionPermit = false,
+            // suggestionPermit = false,
             restingStart = LocalTime(0, 0),
             restingEnd = LocalTime(0, 0)
         )

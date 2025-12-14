@@ -77,15 +77,15 @@ fun NotificationScreen(
 
     // Lokale Zustände für die Schalter
     var warningPermit by remember { mutableStateOf(profile?.warningPermit ?: false) }
-    var reminderPermit by remember { mutableStateOf(profile?.reminderPermit ?: false) }
-    var suggestionPermit by remember { mutableStateOf(profile?.suggestionPermit ?: false) }
+    //var reminderPermit by remember { mutableStateOf(profile?.reminderPermit ?: false) }
+    // var suggestionPermit by remember { mutableStateOf(profile?.suggestionPermit ?: false) }
 
     // Wenn sich das Profil ändert, aktualisiere die lokalen Zustände
     LaunchedEffect(profile) {
         profile?.let {
             warningPermit = it.warningPermit
-            reminderPermit = it.reminderPermit
-            suggestionPermit = it.suggestionPermit
+            //  reminderPermit = it.reminderPermit
+            //  suggestionPermit = it.suggestionPermit
         }
     }
 
@@ -116,8 +116,8 @@ fun NotificationScreen(
 
             NotificationPermitCard(
                 warningPermit = warningPermit,
-                reminderPermit = reminderPermit,
-                suggestionPermit = suggestionPermit,
+                // reminderPermit = reminderPermit,
+                // suggestionPermit = suggestionPermit,
 
                 onWarningChange = { enabled ->
                     warningPermit = enabled
@@ -125,21 +125,21 @@ fun NotificationScreen(
                         userProfileViewModel.saveProfile(it.copy(warningPermit = enabled))
                     }
                 },
-
-                onReminderChange = { enabled ->
-                    reminderPermit = enabled
-                    profile?.let {
-                        userProfileViewModel.saveProfile(it.copy(reminderPermit = enabled))
-                    }
-                },
-                onSuggestionChange = { enabled ->
-                    suggestionPermit = enabled
-                    profile?.let {
-                        userProfileViewModel.saveProfile(it.copy(suggestionPermit = enabled))
-                    }
-                },
-
-                )
+                /*
+                                onReminderChange = { enabled ->
+                                    reminderPermit = enabled
+                                    profile?.let {
+                                        userProfileViewModel.saveProfile(it.copy(reminderPermit = enabled))
+                                    }
+                                },
+                                onSuggestionChange = { enabled ->
+                                    suggestionPermit = enabled
+                                    profile?.let {
+                                        userProfileViewModel.saveProfile(it.copy(suggestionPermit = enabled))
+                                    }
+                                },
+                */
+            )
 
             Spacer(modifier = Modifier.padding(top = 20.dp))
 
