@@ -49,7 +49,7 @@ fun RestingHoursCard(
             ) {
                 Text(
                     text = stringResource(R.string.personal_resting_hours),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium
                 )
                 Text(
                     text = "$restingStart - $restingEnd",

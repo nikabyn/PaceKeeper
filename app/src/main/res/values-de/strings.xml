@@ -157,7 +157,7 @@
     <string name="view_licence">Zeige die Lizenz</string>
 
     <string name="warnings">Warnungen</string>
-    <string name="warning_description">Benachrichtigungen bei niedrigem Energielevel und erwartetem Crash</string>
+    <string name="warning_description">Benachrichtigungen bei niedrigem Energielevel oder einem erwartetem Crash</string>
     <string name="reminders">Erinnerungen</string>
     <string name="reminder_description">Regelmäßige Erinnerungen an das Tracken von Symptomen und die Validierung der Energieprognose</string>
     <string name="suggestions">Empfehlungen</string>

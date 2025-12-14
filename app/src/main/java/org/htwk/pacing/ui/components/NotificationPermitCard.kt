@@ -50,25 +50,27 @@ fun NotificationPermitCard(
                 description = stringResource(R.string.warning_description),
                 checked = warningPermit,
                 onCheckedChange = onWarningChange,
-                titleStyle = MaterialTheme.typography.titleLarge
+                titleStyle = MaterialTheme.typography.titleMedium
             )
 
-            Switch(
-                title = stringResource(R.string.reminders),
-                description = stringResource(R.string.reminder_description),
-                checked = reminderPermit,
-                onCheckedChange = onReminderChange,
-                titleStyle = MaterialTheme.typography.titleLarge
-            )
+            // Perspektivisch für weitere Notification-Arten
+            /*
+                        Switch(
+                            title = stringResource(R.string.reminders),
+                            description = stringResource(R.string.reminder_description),
+                            checked = reminderPermit,
+                            onCheckedChange = onReminderChange,
+                            titleStyle = MaterialTheme.typography.titleLarge
+                        )
 
-            Switch(
-                title = stringResource(R.string.suggestions),
-                description = stringResource(R.string.suggestion_description),
-                checked = suggestionPermit,
-                onCheckedChange = onSuggestionChange,
-                titleStyle = MaterialTheme.typography.titleLarge
-            )
-
+                        Switch(
+                            title = stringResource(R.string.suggestions),
+                            description = stringResource(R.string.suggestion_description),
+                            checked = suggestionPermit,
+                            onCheckedChange = onSuggestionChange,
+                            titleStyle = MaterialTheme.typography.titleLarge
+                        )
+            */
         }
     }
 }

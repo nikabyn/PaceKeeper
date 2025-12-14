@@ -118,7 +118,7 @@ class ForegroundWorker(
         applicationContext.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
         return NotificationCompat.Builder(applicationContext, FOREGROUND_CHANNEL_ID)
-            .setContentTitle(context.getString(R.string.predicting_energy))
+            .setContentTitle(context.getString(R.string.energy_prediction))
             .setSmallIcon(R.drawable.rounded_monitor_heart_24)
             .build()
     }

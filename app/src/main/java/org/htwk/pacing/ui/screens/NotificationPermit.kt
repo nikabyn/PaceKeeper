@@ -138,7 +138,6 @@ fun NotificationsScreen(
                         userProfileViewModel.saveProfile(it.copy(suggestionPermit = enabled))
                     }
                 },
-                //  onRestingTimeClick = { showDialog = true }
             )
 
             Spacer(modifier = Modifier.padding(top = 20.dp))

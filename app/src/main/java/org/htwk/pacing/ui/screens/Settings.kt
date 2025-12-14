@@ -27,7 +27,6 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
-import org.htwk.pacing.ui.components.NotificationCard
 import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.CardStyle
@@ -46,7 +45,7 @@ fun SettingsScreen(
             UserProfileCard(navController = navController)
 
             Spacer(modifier = Modifier.height(Spacing.large))
-            NotificationCard(navController = navController)
+            // NotificationCard(navController = navController)
             Spacer(modifier = Modifier.height(Spacing.large))
 
             UniversalSettingsCard(
