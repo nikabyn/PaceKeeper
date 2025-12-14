@@ -88,12 +88,21 @@ fun UserProfileScreen(
 
     // States für Dialog und ob Änderungen vorliegen
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
-    
+
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
-        selectedDiagnosis, fatigueSensitivity, anaerobicThreshold,
-        bellScale, fitnessTracker
+        nickname,
+        birthYear,
+        heightCm,
+        weightKg,
+        restingHeartRateBpm,
+        selectedSex,
+        selectedAmputationLevel,
+        selectedDiagnosis,
+        fatigueSensitivity,
+        anaerobicThreshold,
+        bellScale,
+        fitnessTracker
     ) {
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },

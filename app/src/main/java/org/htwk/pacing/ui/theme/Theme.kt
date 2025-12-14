@@ -78,7 +78,31 @@ object Spacing {
 object CardStyle {
     val shape: CornerBasedShape
         @Composable @ReadOnlyComposable
-        get() = MaterialTheme.shapes.large
+        get() = MaterialTheme.shapes.medium
+
+    val shapeFirstInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() {
+            val smallShape = MaterialTheme.shapes.small
+            return shape.copy(
+                bottomStart = smallShape.bottomStart,
+                bottomEnd = smallShape.bottomEnd,
+            )
+        }
+
+    val shapeInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() = MaterialTheme.shapes.small
+
+    val shapeLastInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() {
+            val smallShape = MaterialTheme.shapes.small
+            return shape.copy(
+                topStart = smallShape.topStart,
+                topEnd = smallShape.topEnd,
+            )
+        }
 
     val shapeFirstInGroup: CornerBasedShape
         @Composable @ReadOnlyComposable

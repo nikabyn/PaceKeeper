@@ -18,7 +18,7 @@
     <string name="steps_yesterday">Steps yesterday: %1$s</string>
     <string name="steps_today">Steps today: %1$s</string>
     <string name="heart_rate_bpm">Heart Rate [bpm]</string>
-    <string name="connections_and_services">Connections and Services</string>
+    <string name="connections_and_services">Connections &amp; Services</string>
     <string name="health_connect">Health Connect</string>
     <string name="connected">Connected</string>
     <string name="not_connected">Not connected</string>

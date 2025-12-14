@@ -51,21 +51,21 @@ import org.htwk.pacing.ui.screens.DataScreen
 import org.htwk.pacing.ui.screens.AppearanceScreen
 import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesScreen
 import org.htwk.pacing.ui.theme.PacingTheme
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun Main() {
     val userProfileViewModel: UserProfileViewModel = koinViewModel()
     val themeMode by userProfileViewModel.themeMode.collectAsState()
-    
+
     // Determine dark theme based on user preference
     val darkTheme = when (themeMode) {
         "LIGHT" -> false
         "DARK" -> true
         else -> isSystemInDarkTheme() // AUTO or default
     }
-    
+
     PacingTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
         val navBackStackEntry = navController.currentBackStackEntryAsState()
@@ -154,6 +154,7 @@ object Route {
     const val HOME = "home"
     const val MEASUREMENTS = "measurements"
     const val SETTINGS = "settings"
+    const val CONNECTIONS_AND_SERVICES = "settings/connections_and_services"
     const val USERPROFILE = "userprofile"
     const val SERVICES = "services"
     const val FEEDBACK = "feedback"
@@ -236,6 +237,11 @@ fun AppNavHost(
                     viewModel = userProfileViewModel
                 )
             }
+        }
+
+        composable(route = Route.CONNECTIONS_AND_SERVICES) {
+            ConnectionsAndServicesScreen(navController)
+        }
 
             composable(
                 route = "symptoms/{feeling}",

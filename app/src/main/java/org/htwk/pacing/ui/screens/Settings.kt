@@ -3,19 +3,41 @@ package org.htwk.pacing.ui.screens
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.health.connect.client.HealthConnectClient
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -28,15 +50,21 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.UniversalSettingsCard
+import org.htwk.pacing.ui.components.Button
+import org.htwk.pacing.ui.components.ExportAndSendDataCard
+import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.UserProfileCard
+import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.CardStyle
-
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = koinViewModel(),
+    userProfileViewModel: UserProfileViewModel = koinViewModel()
 ) {
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
@@ -106,28 +134,7 @@ fun SettingsScreen(
     }
 }
 
-
-class SettingsViewModel(
-    context: Context,
-    val db: PacingDatabase
-) : ViewModel() {
-    private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-    private val _isConnected = MutableStateFlow(false)
-    /*
-    wird das weiter verwendet bei den Services?
-    val isConnected: StateFlow<Boolean> = _isConnected
-
-    fun checkPermissions() {
-        viewModelScope.launch {
-            try {
-                val granted = client.permissionController.getGrantedPermissions()
-                _isConnected.value = wantedPermissions.any { it in granted }
-            } catch (_: Exception) {
-                Log.e("SettingsViewModel", "Failed to get granted permissions.")
-            }
-        }
-    }*/
-
+class SettingsViewModel(val db: PacingDatabase) : ViewModel() {
     /**
      * Starts export as background thread.
      *
