@@ -15,9 +15,11 @@ data class QualityRatios(
 
 //TODO: add pattern-matching-based invalid data sanitization, so that for different kinds of errors we can respond in different ways
 fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, QualityRatios> {
-    val MAX_VALID_SPEED_MPS = 20.0 //max. accepted movement speed, walking (m/s)
+    val MAX_VALID_SPEED_MPS = 20.0 //movement speed, walking (m/s)
     val MAX_VALID_ELEVATION_CHANGE_MPS = 2.0 //max. accepted elevation change (m/s)
     val MAX_VALID_STEPS_PER_SECOND = 4.0 //max. accepted steps per second
+    val VALID_SKIN_TEMPERATURE_RANGE = ClosedRange<Double>(25.0..42.0); //allowed temperature range in degrees celsius
+    val MAX_VALID_SPEED_KPH = 500.0 //max. accepted movement speed
 
     fun continuousRateOfChange(
         start: Instant,
@@ -85,7 +87,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
                 it.end,
                 it.length.inMeters()
             )
-            changeRate == 0.0 || changeRate !in 0.0..MAX_VALID_SPEED_MPS
+            changeRate == 0.0 || changeRate !in 0.0..MAX_VALID_ELEVATION_CHANGE_MPS
         },
         distinctByKey = { it.start to it.end }
     )
@@ -93,7 +95,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedSkinTemperatures, correctionSkinTemperaturesRatio) = cleanData(
         list = raw.skinTemperature,
         timeSortKey = { it.time },
-        isInvalid = { it.temperature.inCelsius() !in 25.0..42.0 },
+        isInvalid = { it.temperature.inCelsius() !in VALID_SKIN_TEMPERATURE_RANGE},
         distinctByKey = { it.time }
     )
 
@@ -127,7 +129,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedSpeeds, correctionSpeedsRatio) = cleanData(
         list = raw.speed,
         timeSortKey = { it.end },
-        isInvalid = { it.velocity.inKilometersPerHour() !in 0.0..500.0 },
+        isInvalid = { it.velocity.inKilometersPerHour() !in 0..MAX_VALID_SPEED_KPH},
         distinctByKey = { it.start to it.end }
     )
 
