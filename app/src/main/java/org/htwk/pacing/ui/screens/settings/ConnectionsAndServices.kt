@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.data_collection.health_connect.wantedPermissions
+import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -53,6 +54,7 @@ fun ConnectionsAndServicesScreen(
 
     val context = LocalContext.current
     val isHealthConnectConnected by viewModel.isHealthConnectConnected.collectAsState()
+    val isFitbitConnected by viewModel.isFitbitConnected.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(Unit) {
@@ -80,8 +82,12 @@ fun ConnectionsAndServicesScreen(
         ) {
             ConnectionCard(
                 name = stringResource(R.string.health_connect),
-                tip = "Request permissions to connect",
-                connected = isHealthConnectConnected,
+                tip = if (isHealthConnectConnected) {
+                    stringResource(R.string.connected)
+                } else {
+                    stringResource(R.string.missing_permissions)
+                },
+                enabled = true,
                 iconId = R.drawable.health_connect,
                 onClick = {
                     if (isHealthConnectConnected) {
@@ -94,10 +100,14 @@ fun ConnectionsAndServicesScreen(
             )
             ConnectionCard(
                 name = stringResource(R.string.fitbit),
-                tip = "Login with Fitbit Account",
-                connected = true,
+                tip = if (isFitbitConnected) {
+                    stringResource(R.string.connected)
+                } else {
+                    stringResource(R.string.login_with_fitbit)
+                },
+                enabled = true,
                 iconId = R.drawable.fitbit,
-                onClick = { },
+                onClick = { navController.navigate(Route.FITBIT) },
             )
         }
     }
@@ -107,14 +117,15 @@ fun ConnectionsAndServicesScreen(
 fun ConnectionCard(
     name: String,
     tip: String,
+    enabled: Boolean,
     @DrawableRes iconId: Int,
-    connected: Boolean,
     onClick: () -> Unit,
 ) {
     Card(
         colors = CardStyle.colors,
         shape = CardStyle.shape,
         onClick = onClick,
+        enabled = enabled,
     ) {
         Row(
             modifier = Modifier
@@ -136,35 +147,31 @@ fun ConnectionCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Text(
-                        text = stringResource(
-                            if (connected) R.string.connected else R.string.not_connected
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Text(
                     text = tip,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
+            Icon(
+                painterResource(R.drawable.rounded_arrow_forward),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }
 
-class ConnectionsAndServicesViewModel(context: Context) : ViewModel() {
+class ConnectionsAndServicesViewModel(
+    context: Context,
+    fitbitViewModel: FitbitViewModel
+) : ViewModel() {
     private companion object {
         const val TAG = "ConnectionsAndServicesViewModel"
     }
@@ -189,4 +196,6 @@ class ConnectionsAndServicesViewModel(context: Context) : ViewModel() {
         SharingStarted.WhileSubscribed(),
         false
     )
+
+    val isFitbitConnected = fitbitViewModel.isFitbitConnected
 }

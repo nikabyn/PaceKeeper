@@ -1,10 +1,12 @@
 package org.htwk.pacing.ui.screens.settings
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,7 +29,9 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.OAuth2Provider
 import org.htwk.pacing.backend.OAuth2Result
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.SettingsSubScreen
+import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
@@ -39,7 +43,7 @@ fun FitbitScreen(
     viewModel: FitbitViewModel = koinViewModel(),
 ) {
     if (fitbitOauthUri != null) {
-        viewModel.onFitbitOAuth2Redirect(fitbitOauthUri)
+        viewModel.completeLogin(fitbitOauthUri)
     }
 
     val context = LocalContext.current
@@ -63,28 +67,32 @@ fun FitbitScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(Spacing.large),
         ) {
-            ConnectionCard(
-                name = stringResource(R.string.fitbit),
-                tip = "Login with Fitbit Account",
-                connected = isFitbitConnected,
-                iconId = R.drawable.fitbit,
+            Button(
                 onClick = {
-                    viewModel.fitbitOAuth.startLogin(
-                        context,
-                        FitbitViewModel.scopes.toList()
-                    )
+                    if (isFitbitConnected) {
+                        viewModel.logout()
+                    } else {
+                        viewModel.startLogin(context)
+                    }
                 },
-            )
+                style = PrimaryButtonStyle
+            ) {
+                if (isFitbitConnected) {
+                    Text(stringResource(R.string.logout))
+                } else {
+                    Text(stringResource(R.string.login))
+                }
+            }
         }
     }
 }
 
 class FitbitViewModel(
     private val db: PacingDatabase,
-    val fitbitOAuth: OAuth2Provider,
+    private val fitbitOAuth: OAuth2Provider,
 ) : ViewModel() {
-    companion object {
-        private const val TAG = "FitbitViewModel"
+    internal companion object {
+        const val TAG = "FitbitViewModel"
 
         val scopes = arrayOf(
             "activity",
@@ -102,42 +110,54 @@ class FitbitViewModel(
         )
     }
 
-    val refreshTrigger = MutableStateFlow(Unit)
-
-    fun onFitbitOAuth2Redirect(uri: Uri) {
-        viewModelScope.launch {
-            val loginResult = fitbitOAuth.completeLogin(uri)
-            val tokenResponse = when (loginResult) {
-                is OAuth2Result.TokenResponse -> loginResult
-
-                is OAuth2Result.RedirectUriError -> {
-                    Log.e(TAG, "Invalid redirect uri, ${loginResult.name}: $uri")
-                    return@launch
-                }
-
-                is OAuth2Result.HttpError -> {
-                    Log.e(TAG, "Error in http request, ${loginResult.status}: ${loginResult.body}")
-                    return@launch
-                }
-            }
-
-            // Store tokens in database
-            val newProfile = db.userProfileDao()
-                .getProfile()
-                ?.copy(fitbitTokenResponse = tokenResponse)
-                ?: error("Unreachable: Database must always have a user profile")
-            db.userProfileDao().insertOrUpdate(newProfile)
-        }
-    }
-
-    val isFitbitConnected = db.userProfileDao()
+    internal val refreshTrigger = MutableStateFlow(Unit)
+    internal val isFitbitConnected = db.userProfileDao()
         .getProfileLive()
         .map { userProfile ->
-            // TODO: ping fitbit to check whether token is still valid
             userProfile?.fitbitTokenResponse != null
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(),
             false
         )
+
+    internal fun startLogin(context: Context) {
+        fitbitOAuth.startLogin(context, scopes.asList())
+    }
+
+    internal fun completeLogin(uri: Uri) = viewModelScope.launch {
+        val loginResult = fitbitOAuth.completeLogin(uri)
+        val tokenResponse = when (loginResult) {
+            is OAuth2Result.TokenResponse -> loginResult
+
+            is OAuth2Result.RedirectUriError -> {
+                Log.e(TAG, "Invalid redirect uri, ${loginResult.name}: $uri")
+                return@launch
+            }
+
+            is OAuth2Result.HttpError -> {
+                Log.e(TAG, "Error in http request, ${loginResult.status}: ${loginResult.body}")
+                return@launch
+            }
+        }
+
+        // Store tokens in database
+        val newProfile = db.userProfileDao()
+            .getProfile()
+            ?.copy(fitbitTokenResponse = tokenResponse)
+            ?: error("Unreachable: Database must always have a user profile")
+        db.userProfileDao().insertOrUpdate(newProfile)
+    }
+
+    internal fun logout() = viewModelScope.launch {
+        val userProfile = db.userProfileDao().getProfile()
+        Log.d(TAG, "Logging out, ${userProfile?.fitbitTokenResponse}")
+
+        val accessToken = userProfile?.fitbitTokenResponse?.accessToken ?: return@launch
+
+        fitbitOAuth.revoke(accessToken)
+
+        // Delete tokens from db
+        db.userProfileDao().insertOrUpdate(userProfile.copy(fitbitTokenResponse = null))
+    }
 }

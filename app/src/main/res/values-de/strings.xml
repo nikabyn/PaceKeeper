@@ -21,7 +21,11 @@
     <string name="heart_rate_bpm">Herzfrequenz [bpm]</string>
     <string name="connections_and_services">Verbindungen &amp; Dienste</string>
     <string name="health_connect">Health Connect</string>
+    <string name="missing_permissions">Berechtigungen fehlen</string>
     <string name="fitbit">Fitbit</string>
+    <string name="login_with_fitbit">Mit Fitbit anmelden</string>
+    <string name="login">Anmelden</string>
+    <string name="logout">Abmelden</string>
     <string name="connected">Verbunden</string>
     <string name="not_connected">Nicht Verbunden</string>
     <string name="edit">Bearbeiten</string>

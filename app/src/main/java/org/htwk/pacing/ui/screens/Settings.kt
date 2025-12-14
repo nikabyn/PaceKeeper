@@ -29,14 +29,11 @@ import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = koinViewModel(),
-    userProfileViewModel: UserProfileViewModel = koinViewModel()
 ) {
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(

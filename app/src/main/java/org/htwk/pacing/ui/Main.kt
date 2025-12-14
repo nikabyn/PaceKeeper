@@ -75,11 +75,10 @@ import org.koin.androidx.compose.koinViewModel
 fun Main() {
     val userProfileViewModel: UserProfileViewModel = koinViewModel()
     val themeMode by userProfileViewModel.themeMode.collectAsState()
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
-    val snackbarHostState = remember { SnackbarHostState() }
 
+    val navController = rememberNavController()
+    val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
     val navBarVisible by remember {
         derivedStateOf {
             when (navBackStackEntry?.destination?.route) {
@@ -91,6 +90,7 @@ fun Main() {
             }
         }
     }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Determine dark theme based on user preference
     val darkTheme = when (themeMode) {

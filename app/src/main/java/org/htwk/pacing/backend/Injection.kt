@@ -89,7 +89,7 @@ val appModule = module {
     viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
-    viewModel { ConnectionsAndServicesViewModel(androidContext()) }
+    viewModel { ConnectionsAndServicesViewModel(androidContext(), get()) }
     viewModel { FitbitViewModel(get(), get(qualifier = named("fitbit"))) }
     viewModel { UserProfileViewModel(get()) }
 
