@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -105,7 +106,8 @@ fun ConnectionsAndServicesScreen(
                 } else {
                     stringResource(R.string.login_with_fitbit)
                 },
-                enabled = true,
+                // TODO Enable when fitbit implementation is done
+                enabled = false,
                 iconId = R.drawable.fitbit,
                 onClick = { navController.navigate(Route.FITBIT) },
             )
@@ -152,9 +154,9 @@ fun ConnectionCard(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = tip,
+                    text = if (enabled) tip else stringResource(R.string.currently_unavailable),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (enabled) MaterialTheme.colorScheme.primary else Color.Unspecified
                 )
             }
 

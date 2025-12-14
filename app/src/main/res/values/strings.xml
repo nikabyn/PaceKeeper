@@ -27,6 +27,7 @@
     <string name="logout">Logout</string>
     <string name="connected">Connected</string>
     <string name="not_connected">Not connected</string>
+    <string name="currently_unavailable">Currently unavailable</string>
     <string name="edit">Edit</string>
     <string name="track_symptoms">Track Symptoms</string>
     <string name="very_sad">very sad</string>

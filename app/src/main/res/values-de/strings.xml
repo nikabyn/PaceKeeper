@@ -28,6 +28,7 @@
     <string name="logout">Abmelden</string>
     <string name="connected">Verbunden</string>
     <string name="not_connected">Nicht Verbunden</string>
+    <string name="currently_unavailable">Aktuell nicht verfügbar</string>
     <string name="edit">Bearbeiten</string>
     <string name="track_symptoms">Symptome verfolgen</string>
     <string name="very_sad">sehr traurig</string>
