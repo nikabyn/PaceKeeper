@@ -23,7 +23,6 @@ fun NotificationsScreen(
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_notifications),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier

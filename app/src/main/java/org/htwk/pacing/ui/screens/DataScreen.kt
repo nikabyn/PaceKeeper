@@ -42,12 +42,11 @@ fun DataScreen(
     navController: NavController,
     viewModel: UserProfileViewModel,
     settingsViewModel: SettingsViewModel
+) {
+    SettingsSubScreen(
+        title = stringResource(R.string.title_settings_data),
+        navController = navController,
     ) {
-        SettingsSubScreen(
-            title = stringResource(R.string.title_settings_data),
-            navController = navController,
-            viewModel = viewModel
-        ) {
         val context = androidx.compose.ui.platform.LocalContext.current
 
         val launcher = rememberLauncherForActivityResult(
@@ -83,7 +82,10 @@ fun DataScreen(
                         vertical = Spacing.largeIncreased
                     )
                 ) {
-                    Text(stringResource(R.string.stored_data),style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.stored_data),
+                        style = MaterialTheme.typography.titleMedium
+                    )
 
                     var showDialog by remember { mutableStateOf(false) }
                     Button(

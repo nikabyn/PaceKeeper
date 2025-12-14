@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -33,12 +34,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,20 +55,21 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.Feeling
-import org.htwk.pacing.ui.screens.HomeScreen
-import org.htwk.pacing.ui.screens.MeasurementsScreen
-import org.htwk.pacing.ui.screens.SettingsScreen
+import org.htwk.pacing.ui.screens.AppearanceScreen
+import org.htwk.pacing.ui.screens.DataScreen
 import org.htwk.pacing.ui.screens.FeedbackScreen
+import org.htwk.pacing.ui.screens.HomeScreen
+import org.htwk.pacing.ui.screens.InformationScreen
+import org.htwk.pacing.ui.screens.MeasurementsScreen
+import org.htwk.pacing.ui.screens.NotificationsScreen
+import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
-import org.htwk.pacing.ui.screens.NotificationsScreen
-import org.htwk.pacing.ui.screens.InformationScreen
-import org.htwk.pacing.ui.screens.DataScreen
-import org.htwk.pacing.ui.screens.AppearanceScreen
-import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesScreen
+import org.htwk.pacing.ui.screens.settings.FitbitScreen
 import org.htwk.pacing.ui.theme.PacingTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun Main() {
@@ -171,17 +172,20 @@ enum class NavBarEntries(
 
 object Route {
     const val HOME = "home"
-    const val MEASUREMENTS = "measurements"
-    const val SETTINGS = "settings"
-    const val CONNECTIONS_AND_SERVICES = "settings/connections_and_services"
-    const val USERPROFILE = "userprofile"
-    const val SERVICES = "services"
-    const val FEEDBACK = "feedback"
-    const val DATA = "data"
-    const val NOTIFICATIONS = "notifications"
-    const val APPEAREANCE = "appeareance"
-    const val INFORMATION = "information"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
+
+    const val MEASUREMENTS = "measurements"
+
+    const val SETTINGS = "settings"
+    const val USERPROFILE = "settings/userprofile"
+    const val CONNECTIONS_AND_SERVICES = "settings/connections_and_services"
+    const val FITBIT = "settings/connections_and_services/fitbit"
+    const val FEEDBACK = "settings/feedback"
+    const val DATA = "settings/data"
+    const val NOTIFICATIONS = "settings/notifications"
+    const val APPEARANCE = "settings/appearance"
+    const val INFORMATION = "settings/information"
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -212,11 +216,10 @@ fun AppNavHost(
                     viewModel = userProfileViewModel
                 )
             }
-            composable(Route.SERVICES) {
+            composable(Route.CONNECTIONS_AND_SERVICES) {
                 val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                ServicesScreen(
+                ConnectionsAndServicesScreen(
                     navController = navController,
-                    viewModel = userProfileViewModel
                 )
             }
             composable(Route.FEEDBACK) {
@@ -228,7 +231,8 @@ fun AppNavHost(
             }
             composable(Route.DATA) {
                 val userProfileViewModel: UserProfileViewModel = koinViewModel()
-                val settingsViewModel: org.htwk.pacing.ui.screens.SettingsViewModel = koinViewModel()
+                val settingsViewModel: org.htwk.pacing.ui.screens.SettingsViewModel =
+                    koinViewModel()
                 DataScreen(
                     navController = navController,
                     viewModel = userProfileViewModel,
@@ -242,7 +246,7 @@ fun AppNavHost(
                     viewModel = userProfileViewModel
                 )
             }
-            composable(Route.APPEAREANCE) {
+            composable(Route.APPEARANCE) {
                 val userProfileViewModel: UserProfileViewModel = koinViewModel()
                 AppearanceScreen(
                     navController = navController,
@@ -259,7 +263,7 @@ fun AppNavHost(
         }
 
         composable(
-            route = Route.CONNECTIONS_AND_SERVICES,
+            route = Route.FITBIT,
             deepLinks = listOf(
                 navDeepLink {
                     uriPattern = "org.htwk.pacing://fitbit_oauth2_redirect"
@@ -285,17 +289,16 @@ fun AppNavHost(
                 ?.takeIf { uri -> uri.authority == "fitbit_oauth2_redirect" }
                 ?.also { uri -> Log.d("AppNavHost", "Received Fitbit OAuth redirect = $uri") }
 
-            ConnectionsAndServicesScreen(navController, fitbitOauthUri)
+            FitbitScreen(navController, fitbitOauthUri)
         }
 
-            composable(
-                route = "symptoms/{feeling}",
-                arguments = listOf(navArgument("feeling") { type = NavType.IntType })
-            ) { backStackEntry ->
-                val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
-                val feeling = Feeling.fromInt(feelingLevel)
-                SymptomScreen(navController, feeling)
-            }
+        composable(
+            route = "symptoms/{feeling}",
+            arguments = listOf(navArgument("feeling") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val feelingLevel = backStackEntry.arguments!!.getInt("feeling")
+            val feeling = Feeling.fromInt(feelingLevel)
+            SymptomScreen(navController, feeling)
         }
     }
 }

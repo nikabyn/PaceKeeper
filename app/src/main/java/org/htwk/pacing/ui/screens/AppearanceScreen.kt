@@ -35,18 +35,17 @@ fun AppearanceScreen(
 ) {
     val profile by viewModel.profile.collectAsState()
     val currentThemeMode = profile?.themeMode ?: "AUTO"
-    
+
     // Map database string to ThemeMode enum
     val selectedTheme = when (currentThemeMode) {
         "LIGHT" -> ThemeMode.LIGHT
         "DARK" -> ThemeMode.DARK
         else -> ThemeMode.AUTO
     }
-    
+
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_appearance),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier

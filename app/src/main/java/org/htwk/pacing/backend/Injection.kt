@@ -6,7 +6,6 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.HeartRateDao
@@ -23,14 +22,13 @@ import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
-import org.htwk.pacing.backend.mlmodel.MLModel
-import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesViewModel
+import org.htwk.pacing.ui.screens.settings.FitbitViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -91,13 +89,8 @@ val appModule = module {
     viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
-    viewModel {
-        ConnectionsAndServicesViewModel(
-            androidContext(),
-            get(),
-            get(qualifier = named("fitbit"))
-        )
-    }
+    viewModel { ConnectionsAndServicesViewModel(androidContext()) }
+    viewModel { FitbitViewModel(get(), get(qualifier = named("fitbit"))) }
     viewModel { UserProfileViewModel(get()) }
 
     /**

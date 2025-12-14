@@ -3,46 +3,22 @@ package org.htwk.pacing.ui.screens
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.health.connect.client.HealthConnectClient
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.htwk.pacing.R
@@ -50,14 +26,9 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.UniversalSettingsCard
-import org.htwk.pacing.ui.components.Button
-import org.htwk.pacing.ui.components.ExportAndSendDataCard
-import org.htwk.pacing.ui.components.ImportDataHealthConnect
-import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.UserProfileCard
-import org.htwk.pacing.ui.theme.PrimaryButtonStyle
-import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.CardStyle
+import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -76,7 +47,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(Spacing.large))
 
             UniversalSettingsCard(
-                route = Route.SERVICES,
+                route = Route.CONNECTIONS_AND_SERVICES,
                 name = stringResource(R.string.title_settings_services),
                 description = stringResource(R.string.subtitle_settings_services),
                 iconRes = R.drawable.settings_services,
@@ -103,7 +74,7 @@ fun SettingsScreen(
             )
 
             UniversalSettingsCard(
-                route = Route.APPEAREANCE,
+                route = Route.APPEARANCE,
                 name = stringResource(R.string.title_settings_appearance),
                 description = stringResource(R.string.subtitle_settings_appearance),
                 iconRes = R.drawable.settings_appereance,

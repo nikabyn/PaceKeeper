@@ -123,7 +123,7 @@ class FitbitViewModel(
 
             // Store tokens in database
             val newProfile = db.userProfileDao()
-                .getCurrentProfileDirect()
+                .getProfile()
                 ?.copy(fitbitTokenResponse = tokenResponse)
                 ?: error("Unreachable: Database must always have a user profile")
             db.userProfileDao().insertOrUpdate(newProfile)
@@ -131,7 +131,7 @@ class FitbitViewModel(
     }
 
     val isFitbitConnected = db.userProfileDao()
-        .getCurrentProfile()
+        .getProfileLive()
         .map { userProfile ->
             // TODO: ping fitbit to check whether token is still valid
             userProfile?.fitbitTokenResponse != null

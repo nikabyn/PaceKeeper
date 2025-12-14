@@ -23,7 +23,6 @@ fun ServicesScreen(
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_services),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier

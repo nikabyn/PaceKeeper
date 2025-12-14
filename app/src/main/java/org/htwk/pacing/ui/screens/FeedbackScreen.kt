@@ -31,7 +31,6 @@ fun FeedbackScreen(
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_feedback),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier
@@ -53,12 +52,12 @@ fun FeedbackScreen(
                 )
             }
 
-            Button (
-            onClick = {
-                val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
-                val intent = Intent(Intent.ACTION_VIEW, linkUri)
-                context.startActivity(intent)
-            },
+            Button(
+                onClick = {
+                    val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
+                    val intent = Intent(Intent.ACTION_VIEW, linkUri)
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(R.string.join_survey))

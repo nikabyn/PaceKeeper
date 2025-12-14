@@ -34,7 +34,6 @@ fun InformationScreen(
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_information),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier

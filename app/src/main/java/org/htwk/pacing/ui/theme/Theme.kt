@@ -83,10 +83,10 @@ object CardStyle {
     val shapeFirstInGroup: CornerBasedShape
         @Composable @ReadOnlyComposable
         get() {
-            val smallShape = MaterialTheme.shapes.small
+            val mediumShape = MaterialTheme.shapes.medium
             return shape.copy(
-                bottomStart = smallShape.bottomStart,
-                bottomEnd = smallShape.bottomEnd,
+                bottomStart = mediumShape.bottomStart,
+                bottomEnd = mediumShape.bottomEnd,
             )
         }
 
@@ -97,36 +97,13 @@ object CardStyle {
     val shapeLastInGroup: CornerBasedShape
         @Composable @ReadOnlyComposable
         get() {
-            val smallShape = MaterialTheme.shapes.small
+            val mediumShape = MaterialTheme.shapes.medium
             return shape.copy(
-                topStart = smallShape.topStart,
-                topEnd = smallShape.topEnd,
+                topStart = mediumShape.topStart,
+                topEnd = mediumShape.topEnd,
             )
         }
 
-    val shapeFirstInGroup: CornerBasedShape
-        @Composable @ReadOnlyComposable
-        get() {
-            val smallShape = MaterialTheme.shapes.medium
-            return shape.copy(
-                bottomStart = smallShape.bottomStart,
-                bottomEnd = smallShape.bottomEnd,
-            )
-        }
-
-    val shapeInGroup: CornerBasedShape
-        @Composable @ReadOnlyComposable
-        get() = MaterialTheme.shapes.medium
-
-    val shapeLastInGroup: CornerBasedShape
-        @Composable @ReadOnlyComposable
-        get() {
-            val smallShape = MaterialTheme.shapes.medium
-            return shape.copy(
-                topStart = smallShape.topStart,
-                topEnd = smallShape.topEnd,
-            )
-        }
     val colors: CardColors
         @Composable
         get() = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
