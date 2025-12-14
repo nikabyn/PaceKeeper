@@ -31,9 +31,6 @@ object Predictor {
     val TIME_SERIES_DURATION: Duration = 2.days
     val TIME_SERIES_STEP_DURATION: Duration = 10.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
-    /*val PREDICTION_WINDOW_DURATION: Duration = 2.hours
-    val PREDICTION_WINDOW_SAMPLE_COUNT: Int =
-        (PREDICTION_WINDOW_DURATION / TIME_SERIES_STEP_DURATION).toInt()*/
 
     /**
      * A container for raw, unprocessed, synchronized data from the database, such as heart rate and distance.
