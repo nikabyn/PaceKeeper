@@ -23,7 +23,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -189,7 +188,7 @@ class NotificationsBackgroundWorker(
      * It checks the user's profile settings and resting hours before deciding whether to show a notification.
      */
     override suspend fun doWork(): Result {
-        delay(2000)
+        //    delay(2000)
 
 
         val userProfile = userProfileRepository.getUserProfile()
