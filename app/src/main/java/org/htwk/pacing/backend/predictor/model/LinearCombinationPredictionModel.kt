@@ -4,7 +4,11 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.FeatureID
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
+import org.htwk.pacing.backend.predictor.stats.denormalize
+import org.htwk.pacing.backend.predictor.stats.normalize
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -26,6 +30,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients
     private var linearCoefficients: Map<PredictionHorizon, List<Double>> = mapOf()
+    private var stochasticDistributions: Map<FeatureID, StochasticDistribution> = mapOf()
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
@@ -130,6 +135,11 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @param targetTimeSeriesDiscrete The target energy level data used for training.
      */
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
+        //normalize each feature row and store the normalization parameters per feature
+        stochasticDistributions = input.getAllFeatureIDs().map { featureID ->
+            featureID to normalize(input.getMutableRow(featureID))
+        }.toMap()
+
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
                 input, targetTimeSeriesDiscrete,
@@ -158,6 +168,13 @@ object LinearCombinationPredictionModel : IPredictionModel {
         predictionHorizon: PredictionHorizon
     ): Double {
         require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
+
+        input.getAllFeatureIDs().forEach { featureID ->
+            denormalize(
+                input.getMutableRow(featureID),
+                stochasticDistributions[featureID]!!
+            )
+        }
 
         val flattenedExtrapolations =
             generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon)

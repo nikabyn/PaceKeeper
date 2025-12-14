@@ -5,6 +5,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.average
 import org.jetbrains.kotlinx.multik.ndarray.operations.forEach
+import org.jetbrains.kotlinx.multik.ndarray.operations.forEachIndexed
 import kotlin.math.pow
 
 data class StochasticDistribution(
@@ -18,6 +19,7 @@ data class StochasticDistribution(
             var stddev = 0.0
             input.forEach { x -> stddev += (x - mean).pow(2.0) }
             stddev /= input.size
+            stddev = stddev.pow(0.5)
 
             return StochasticDistribution(mean, stddev)
         }
@@ -36,6 +38,11 @@ fun normalize(
     input: D1Array<Double>,
     stochasticDistribution: StochasticDistribution = StochasticDistribution.ofArray(input)
 ): StochasticDistribution {
+    if (stochasticDistribution.stddev == 0.0) {
+        input.forEachIndexed { idx, _ -> input[idx] = 0.0 }
+        return stochasticDistribution
+    }
+
     for (i in 0 until input.size) {
         input[i] = (input[i] - stochasticDistribution.mean) / stochasticDistribution.stddev
     }
