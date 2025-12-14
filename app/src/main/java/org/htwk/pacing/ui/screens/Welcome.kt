@@ -54,6 +54,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -73,6 +75,11 @@ import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.random.Random
+
+/**
+ * Welcome and introduction to the most important components of the app.
+ * Screen is shown when opening the app for the very first time and reviewable in the settings.
+ */
 
 @Composable
 fun WelcomeScreen(onFinished: () -> Unit, viewModel: WelcomeViewModel = koinViewModel()) {
@@ -271,7 +278,7 @@ private fun PredictionPage() {
 private fun SymptomPage() {
     RollingEntry {
         AnimateFloating {
-            shuffleSmileys(
+            ShuffleSmileys(
                 R.drawable.very_happy,
                 R.drawable.happy,
                 R.drawable.sad,
@@ -368,14 +375,14 @@ fun RollingEntry(
         animationProgress.animateTo(
             targetValue = 1f,
             animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy, // Ein bisschen Bouncen am Ende
+                dampingRatio = Spring.DampingRatioMediumBouncy,
                 stiffness = Spring.StiffnessLow
             )
         )
     }
 
     val translationX = startOffsetPx * (1 - animationProgress.value)
-    val rotation = -360f * (1 - animationProgress.value) // Eine volle Drehung
+    val rotation = -360f * (1 - animationProgress.value)
 
     Box(
         modifier = modifier.graphicsLayer {
@@ -425,9 +432,9 @@ fun BlinkLogo(
 
         repeat(3) {
             blinking = true
-            delay(100) // Kurz zu
+            delay(100)
             blinking = false
-            delay(150) // Kurz offen
+            delay(150)
         }
 
         delay(1000)
@@ -448,7 +455,7 @@ fun BlinkLogo(
 }
 
 @Composable
-fun shuffleSmileys(
+fun ShuffleSmileys(
     verygood: Int,
     good: Int,
     sad: Int,
