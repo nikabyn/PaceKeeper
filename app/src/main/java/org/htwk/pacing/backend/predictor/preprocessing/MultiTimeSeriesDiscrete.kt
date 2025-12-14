@@ -19,6 +19,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -262,16 +263,17 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
         private val featureCount: Int = featureIndexMap.size
 
-        private val random: Random = Random(0)
 
         //fill with random to prevent colinearity/singularity in regression on empty data
-        private fun ensureData(genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
+        private fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
             if (genericTS.data.size >= 2) {
                 return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
             }
+            val random: Random = Random(id)
 
-            val steps = 100
-            val stepDuration = genericTS.duration / steps
+            val steps = genericTS.duration.inWholeHours.toInt()
+            val stepDuration = 1.hours
+
             val data = List<GenericTimedDataPoint>(steps) { index ->
                 GenericTimedDataPoint(
                     time = genericTS.timeStart + stepDuration * index,
@@ -319,7 +321,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
                 val discreteProportional = discretizeTimeSeries(
-                    ensureData(
+                    ensureData(id = metric.ordinal,
                         GenericTimedDataPointTimeSeries(
                             timeStart = raw.timeStart,
                             duration = raw.duration,
