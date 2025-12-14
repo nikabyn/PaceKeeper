@@ -31,6 +31,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients per Horizon
     private data class PerHorizonModel(
+        val bias: Double,
         val coefficients: List<Double>,
         val featureDists: List<StochasticDistribution>
     )
@@ -116,6 +117,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
             }
         }
 
+        //add one constant value to encode bias "weight" (constant offset)
         return flatExtrapolationResults + listOf(1.0)
     }
 
@@ -134,14 +136,16 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val allExtrapolationsMatrix: NDArray<Double, D2> = mk.ndarray(allExtrapolations).transpose()
         val allExpectedFutureValuesVector: NDArray<Double, D1> = mk.ndarray(allExpectedFutureValues)
 
-        //normalize extrapolations, this is essential for good regression stability
-        val extrapolationDistributions = (0 until allExtrapolationsMatrix.shape[0]).map { i ->
+        //normalize extrapolations, this is essential for good regression stability, skip the constant bias feature at the end
+        val extrapolationDistributions = (0 until allExtrapolationsMatrix.shape[0] - 1).map { i ->
             (allExtrapolationsMatrix[i] as D1Array<Double>).normalize()
         }
 
         val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector).toList()
 
-        return PerHorizonModel(coefficients, extrapolationDistributions)
+        val bias = coefficients.last()
+
+        return PerHorizonModel(bias, coefficients.dropLast(1), extrapolationDistributions)
     }
 
     /**
@@ -190,7 +194,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         require(model != null) { "No model trained, can't perform prediction." }
 
         val flattenedExtrapolations =
-            generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon)
+            generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
 
         //normalize extrapolations, this is essential for good regression stability
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations.mapIndexed {index, d ->
@@ -201,7 +205,9 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val coefficientsVector: D1Array<Double> =
             mk.ndarray(model!!.perHorizonModels[predictionHorizon]!!.coefficients)
 
-        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, coefficientsVector)))
+        val bias = model!!.perHorizonModels[predictionHorizon]!!.bias
+
+        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, coefficientsVector) + bias))
         //denormalize prediction out of normalized spaces
         prediction.denormalize(model!!.targetStochasticDistribution)
 
