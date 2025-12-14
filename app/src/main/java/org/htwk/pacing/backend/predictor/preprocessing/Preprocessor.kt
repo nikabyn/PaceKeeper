@@ -11,7 +11,7 @@ object Preprocessor {
      * turns it into a discrete, uniformly sampled format (multi time series per metric) suitable
      * for the prediction model.
      *
-     * @param raw The raw time series data, containing lists of data points for different metrics.
+     * @param input The raw time series data, containing lists of data points for different metrics.
      * @param fixedParameters Additional fixed parameters that might influence the preprocessing. (Currently unused).
      * @return A [MultiTimeSeriesDiscrete] object containing the processed and discretized time series data.
      */

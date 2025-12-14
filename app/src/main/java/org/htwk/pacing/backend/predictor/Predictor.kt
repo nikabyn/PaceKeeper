@@ -115,7 +115,7 @@ object Predictor {
         targetTimeSeries: List<ValidatedEnergyLevelEntry>,
         fixedParameters: FixedParameters,
     ) {
-        val mtsd = Preprocessor.run(inputTimeSeries, fixedParameters)
+        val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
 
         val targetTimeSeriesDiscrete = TimeSeriesDiscretizer.discretizeTimeSeries(
             GenericTimedDataPointTimeSeries(
@@ -126,11 +126,11 @@ object Predictor {
                     GenericTimedDataPoint(it.time, it.percentage.toDouble())
                 }
             ),
-            targetLength = mtsd.stepCount()
+            targetLength = multiTimeSeriesDiscrete.stepCount()
         )
 
 
-        LinearCombinationPredictionModel.train(mtsd, targetTimeSeriesDiscrete)
+        LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete, targetTimeSeriesDiscrete)
     }
 
     /**
@@ -164,7 +164,7 @@ object Predictor {
             IPredictionModel.PredictionHorizon.FUTURE
         );
         return PredictedEnergyLevelEntry(
-            inputTimeSeries.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.NOW.howFar,
+            time = inputTimeSeries.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.NOW.howFar,
             percentageNow = Percentage(predictedEnergyNow.coerceIn(0.0, 1.0)),
             timeFuture = inputTimeSeries.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
             percentageFuture = Percentage(predictedEnergyFuture.coerceIn(0.0, 1.0))

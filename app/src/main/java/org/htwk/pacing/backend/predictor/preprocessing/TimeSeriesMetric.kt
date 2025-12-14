@@ -29,10 +29,14 @@ enum class PIDComponent(val compute: (DoubleArray) -> DoubleArray) {
  */
 enum class TimeSeriesSignalClass(val components: List<PIDComponent>) {
     /** For values that change continuously over time, like heart rate. */
-    CONTINUOUS(listOf(PIDComponent.PROPORTIONAL, PIDComponent.INTEGRAL, PIDComponent.DERIVATIVE)),
+    CONTINUOUS(listOf(
+        PIDComponent.PROPORTIONAL,
+        PIDComponent.DERIVATIVE
+        //we don't need integral, because extrapolation averages encode same summation behaviour
+    )),
 
     /** For values that accumulate over time, like total steps or distance. */
-    AGGREGATED(listOf(PIDComponent.INTEGRAL)),
+    AGGREGATED(listOf(PIDComponent.PROPORTIONAL)),
 }
 
 /**

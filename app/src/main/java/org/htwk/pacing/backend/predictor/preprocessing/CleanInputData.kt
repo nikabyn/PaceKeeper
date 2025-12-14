@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import androidx.annotation.FloatRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -19,8 +18,10 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val MAX_VALID_SPEED_MPS = 20.0 //movement speed, walking (m/s)
     val MAX_VALID_ELEVATION_CHANGE_MPS = 2.0 //max. accepted elevation change (m/s)
     val MAX_VALID_STEPS_PER_SECOND = 4.0 //max. accepted steps per second
-    val VALID_SKIN_TEMPERATURE_RANGE = 25.0..42.0; //allowed temperature range in degrees celsius
+    val VALID_SKIN_TEMPERATURE_RANGE_CELSIUS = 25.0..42.0; //allowed temperature range in degrees celsius
     val MAX_VALID_SPEED_KPH = 500.0 //max. accepted movement speed
+    val VALID_OXYGEN_SATURATION_RANGE = 70.0..100.0
+    val VALID_HEART_RATE_RANGE = 30..220
 
     fun continuousRateOfChange(
         start: Instant,
@@ -61,7 +62,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedHeartRates, correctionHeartRatio) = cleanData(
         list = raw.heartRate,
         timeSortKey = { it.time },
-        isInvalid = { it.bpm !in 30..220 }, //filter out if bpm outside sensible range
+        isInvalid = { it.bpm !in VALID_HEART_RATE_RANGE }, //filter out if bpm outside sensible range
         distinctByKey = { it.time } //uniqueness based on timestamp
     )
 
@@ -74,7 +75,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
                 it.end,
                 it.length.inMeters()
             )
-            changeRate == 0.0 || changeRate !in 0.0..MAX_VALID_SPEED_MPS
+            changeRate !in 0.0..MAX_VALID_SPEED_MPS
         },
         distinctByKey = { it.start to it.end }
     )
@@ -88,7 +89,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
                 it.end,
                 it.length.inMeters()
             )
-            changeRate == 0.0 || changeRate !in 0.0..MAX_VALID_ELEVATION_CHANGE_MPS
+            changeRate !in 0.0..MAX_VALID_ELEVATION_CHANGE_MPS
         },
         distinctByKey = { it.start to it.end }
     )
@@ -96,7 +97,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedSkinTemperatures, correctionSkinTemperaturesRatio) = cleanData(
         list = raw.skinTemperature,
         timeSortKey = { it.time },
-        isInvalid = { it.temperature.inCelsius() !in VALID_SKIN_TEMPERATURE_RANGE},
+        isInvalid = { it.temperature.inCelsius() !in VALID_SKIN_TEMPERATURE_RANGE_CELSIUS},
         distinctByKey = { it.time }
     )
 
@@ -110,7 +111,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedOxygenSaturations, correctionOxygenSaturationsRatio) = cleanData(
         list = raw.oxygenSaturation,
         timeSortKey = { it.time },
-        isInvalid = { it.percentage.toDouble() !in 70.0..100.0 },
+        isInvalid = { it.percentage.toDouble() !in VALID_OXYGEN_SATURATION_RANGE },
         distinctByKey = { it.time }
     )
 
@@ -122,7 +123,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
             val deltaSeconds = (it.end - it.start).inMs / 1000.0
             if (deltaSeconds <= 0.0) return@cleanData true
             val stepsPerSecond = it.count.toDouble() / deltaSeconds
-            return@cleanData stepsPerSecond == 0.0 || stepsPerSecond !in 0.0..MAX_VALID_STEPS_PER_SECOND
+            return@cleanData stepsPerSecond !in 0.0..MAX_VALID_STEPS_PER_SECOND
         },
         distinctByKey = { it.start to it.end }
     )
