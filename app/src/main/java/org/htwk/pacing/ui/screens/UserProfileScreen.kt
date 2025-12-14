@@ -60,7 +60,6 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
 
 
-
 import org.htwk.pacing.ui.theme.Spacing
 
 
@@ -89,8 +88,16 @@ fun UserProfileScreen(
     var selectedSex by remember { mutableStateOf(profile.sex) }
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
-    var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
-    var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
+    var fatigueSensitivity by remember {
+        mutableStateOf(
+            profile.fatigueSensitivity?.toString() ?: ""
+        )
+    }
+    var anaerobicThreshold by remember {
+        mutableStateOf(
+            profile.anaerobicThreshold?.toString() ?: ""
+        )
+    }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
@@ -99,9 +106,18 @@ fun UserProfileScreen(
 
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
-        selectedDiagnosis, fatigueSensitivity, anaerobicThreshold,
-        bellScale, fitnessTracker
+        nickname,
+        birthYear,
+        heightCm,
+        weightKg,
+        restingHeartRateBpm,
+        selectedSex,
+        selectedAmputationLevel,
+        selectedDiagnosis,
+        fatigueSensitivity,
+        anaerobicThreshold,
+        bellScale,
+        fitnessTracker
     ) {
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },
@@ -155,7 +171,10 @@ fun UserProfileScreen(
                     contentDescription = stringResource(R.string.label_back)
                 )
             }
-            Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.title_user_profile),
+                style = MaterialTheme.typography.titleMedium
+            )
             Spacer(Modifier.weight(1f))
             org.htwk.pacing.ui.components.Button(
                 onClick = {
@@ -189,7 +208,7 @@ fun UserProfileScreen(
                         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.save) )
+                    Text(stringResource(R.string.save))
                 } else {
                     Icon(
                         imageVector = Icons.Filled.Check,

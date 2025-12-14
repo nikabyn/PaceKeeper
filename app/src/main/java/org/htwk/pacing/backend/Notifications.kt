@@ -248,7 +248,7 @@ class NotificationsBackgroundWorker(
         }
         return Result.success()
     }
-    Log.d("Notification", "Notification sent")
+    // Log.d("Notification", "Notification sent")
 }
 
 /**

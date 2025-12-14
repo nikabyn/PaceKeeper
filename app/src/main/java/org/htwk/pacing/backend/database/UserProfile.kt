@@ -41,10 +41,10 @@ data class UserProfileEntry(
     val reminderPermit: Boolean,
     val suggestionPermit: Boolean,
     val restingStart: LocalTime?,
-    val restingEnd: LocalTime?
+    val restingEnd: LocalTime?,
 
     val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
-    val createdAt: Long = System.currentTimeMillis()
+
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -122,5 +122,5 @@ interface UserProfileDao {
 
 class UserProfileRepository(private val userProfileDao: UserProfileDao) {
     // Die Methode, die du im Worker aufrufst
-    suspend fun getUserProfile(): UserProfileEntry? = userProfileDao.getCurrentProfileDirect()
+    suspend fun getUserProfile(): UserProfileEntry? = userProfileDao.getProfile()
 }
