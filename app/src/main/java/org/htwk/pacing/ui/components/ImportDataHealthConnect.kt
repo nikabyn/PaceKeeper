@@ -50,7 +50,6 @@ fun ImportDataHealthConnect() {
     var uri by remember { mutableStateOf<Uri?>(null) }
     var name by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
-
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { resultUri ->
@@ -69,8 +68,6 @@ fun ImportDataHealthConnect() {
         }
     )
 
-
-
     Card(
         colors = CardStyle.colors,
         shape = CardStyle.shape,
@@ -88,7 +85,9 @@ fun ImportDataHealthConnect() {
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(12.dp))
-            Button(onClick = { launcher.launch(arrayOf("text/*")) }, style = PrimaryButtonStyle) {
+            Button(onClick = { launcher.launch(arrayOf("text/*")) },
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                style = PrimaryButtonStyle) {
                 Text(stringResource(R.string.select_file))
             }
             if (name.isNotEmpty()) Text(name, Modifier.padding(top = 8.dp))
@@ -108,10 +107,6 @@ fun ImportDataHealthConnect() {
         }
     }
 }
-
-// ------------------------------------------------------------
-// Importfunktion ausgelagert in saubere Methoden
-// ------------------------------------------------------------
 
 suspend fun importHeartRateData(context: Context, uri: Uri?): String {
     if (uri == null) return context.getString(R.string.no_file_selected)

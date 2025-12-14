@@ -4,6 +4,7 @@
 
 package org.htwk.pacing.backend.database
 
+import android.util.Log
 import androidx.annotation.FloatRange
 
 class Length(private val lengthMeters: Double) {
@@ -45,11 +46,10 @@ class Percentage(private val percentage: Double) {
 
     companion object {
         fun fromDouble(@FloatRange(from = 0.0, to = 1.0) value: Double): Percentage {
-            // TODO: Should this really crash the app in production?
-            when (value) {
-                in 0.0..1.0 -> return Percentage(value)
-                else -> throw Exception("Percentage value `$value` not in range 0.0..=1.0")
+            if (value !in 0.0..1.0) {
+                Log.e("Percentage", "Percentage value `$value` not in range 0.0..=1.0")
             }
+            return Percentage(value.coerceIn(0.0, 1.0))
         }
     }
 }

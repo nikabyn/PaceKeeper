@@ -2,7 +2,17 @@ package org.htwk.pacing.ui.screens
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +27,24 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +63,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -44,14 +72,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.htwk.pacing.R
 import kotlinx.datetime.LocalTime
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.theme.Spacing
+
 
 /**
  * Defines the Android user profile editing screen built with Jetpack Compose.
@@ -78,17 +115,8 @@ fun UserProfileScreen(
     var selectedSex by remember { mutableStateOf(profile.sex) }
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
-    var fatigueSensitivity by remember {
-        mutableStateOf(
-            profile.fatigueSensitivity?.toString() ?: ""
-        )
-    }
-    var activityBaseline by remember { mutableStateOf(profile.activityBaseline?.toString() ?: "") }
-    var anaerobicThreshold by remember {
-        mutableStateOf(
-            profile.anaerobicThreshold?.toString() ?: ""
-        )
-    }
+    var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
+    var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
@@ -97,19 +125,9 @@ fun UserProfileScreen(
 
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname,
-        birthYear,
-        heightCm,
-        weightKg,
-        restingHeartRateBpm,
-        selectedSex,
-        selectedAmputationLevel,
-        selectedDiagnosis,
-        fatigueSensitivity,
-        activityBaseline,
-        anaerobicThreshold,
-        bellScale,
-        fitnessTracker
+        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
+        selectedDiagnosis, fatigueSensitivity, anaerobicThreshold,
+        bellScale, fitnessTracker
     ) {
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },
@@ -121,7 +139,6 @@ fun UserProfileScreen(
             amputationLevel = selectedAmputationLevel,
             diagnosis = selectedDiagnosis,
             fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
-            activityBaseline = activityBaseline.toIntOrNull(),
             anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
             bellScale = bellScale.toIntOrNull(),
             fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
@@ -143,7 +160,7 @@ fun UserProfileScreen(
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.large)
     ) {
 
         Row(
@@ -164,10 +181,51 @@ fun UserProfileScreen(
                     contentDescription = stringResource(R.string.label_back)
                 )
             }
-            Text(
-                stringResource(R.string.title_user_profile),
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.weight(1f))
+            org.htwk.pacing.ui.components.Button(
+                onClick = {
+                    val updatedProfile = profile.copy(
+                        nickname = nickname.takeIf { it.isNotBlank() },
+                        birthYear = birthYear.toIntOrNull(),
+                        heightCm = heightCm.toIntOrNull(),
+                        weightKg = weightKg.toIntOrNull(),
+                        restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
+                        sex = selectedSex,
+                        amputationLevel = selectedAmputationLevel,
+                        diagnosis = selectedDiagnosis,
+                        fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
+                        anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
+                        bellScale = bellScale.toIntOrNull(),
+                        fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
+                    )
+                    Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
+                    viewModel.saveProfile(updatedProfile)
+                    Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
+                    navController.navigate(Route.SETTINGS) {
+                        popUpTo(Route.USERPROFILE) { inclusive = true }
+                    }
+                },
+                style = if (hasUnsavedChanges) org.htwk.pacing.ui.theme.PrimaryButtonStyle else org.htwk.pacing.ui.theme.SecondaryButtonStyle,
+            ) {
+                if (hasUnsavedChanges) {
+                    Image(
+                        painter = painterResource(R.drawable.settings_save_icon),
+                        contentDescription = stringResource(R.string.save),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.save) )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = stringResource(R.string.save)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.saved))
+                }
+                Spacer(Modifier.width(8.dp))
+            }
         }
 
         OutlinedTextField(
@@ -249,15 +307,6 @@ fun UserProfileScreen(
         )
 
         OutlinedTextField(
-            value = activityBaseline,
-            onValueChange = { activityBaseline = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_activity_baseline)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
             value = anaerobicThreshold,
             onValueChange = { anaerobicThreshold = it.filter { c -> c.isDigit() } },
             label = { Text(stringResource(R.string.label_anaerobic_threshold)) },
@@ -283,37 +332,6 @@ fun UserProfileScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(32.dp))
-
-        Button(
-            onClick = {
-                val updatedProfile = profile.copy(
-                    nickname = nickname.takeIf { it.isNotBlank() },
-                    birthYear = birthYear.toIntOrNull(),
-                    heightCm = heightCm.toIntOrNull(),
-                    weightKg = weightKg.toIntOrNull(),
-                    restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
-                    sex = selectedSex,
-                    amputationLevel = selectedAmputationLevel,
-                    diagnosis = selectedDiagnosis,
-                    fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
-                    activityBaseline = activityBaseline.toIntOrNull(),
-                    anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
-                    bellScale = bellScale.toIntOrNull(),
-                    fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
-                )
-                Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
-                viewModel.saveProfile(updatedProfile)
-                //onSaveProfile(updatedProfile)
-                Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
-                navController.navigate(Route.SETTINGS) {
-                    popUpTo(Route.USERPROFILE) { inclusive = true }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.button_save_profile))
-        }
     }
     if (showUnsavedChangesDialog) {
         AlertDialog(
@@ -394,9 +412,12 @@ class UserProfileViewModel(
     private val _profile = MutableStateFlow<UserProfileEntry?>(null)
     val profile: StateFlow<UserProfileEntry?> = _profile.asStateFlow()
 
+    val themeMode: StateFlow<String> = profile.map { it?.themeMode ?: "AUTO" }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "AUTO")
+
     init {
         viewModelScope.launch {
-            dao.getCurrentProfile().collect { userProfile ->
+            dao.getProfileLive().collect { userProfile ->
                 _profile.value = userProfile ?: createPlaceholder()
             }
         }
@@ -405,6 +426,15 @@ class UserProfileViewModel(
     fun saveProfile(profile: UserProfileEntry) {
         viewModelScope.launch {
             dao.insertOrUpdate(profile)
+        }
+    }
+
+    fun updateThemeMode(mode: String) {
+        viewModelScope.launch {
+            _profile.value?.let { currentProfile ->
+                val updatedProfile = currentProfile.copy(themeMode = mode)
+                dao.insertOrUpdate(updatedProfile)
+            }
         }
     }
 
@@ -419,7 +449,6 @@ class UserProfileViewModel(
             restingHeartRateBpm = null,
             amputationLevel = UserProfileEntry.AmputationLevel.NONE,
             fatigueSensitivity = null,
-            activityBaseline = null,
             anaerobicThreshold = null,
             bellScale = null,
             illnessStartDate = null,

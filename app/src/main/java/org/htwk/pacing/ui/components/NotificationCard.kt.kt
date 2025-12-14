@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +45,7 @@ fun NotificationCard(navController: NavController) {
             )
         ) {
             Icon(
-                Icons.Filled.Person,
+                Icons.Filled.Notifications,
                 contentDescription = stringResource(R.string.icon_profile_description),
                 modifier = Modifier.size(32.dp)
             )

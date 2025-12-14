@@ -9,6 +9,25 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import org.htwk.pacing.ui.theme.ButtonStyle
 
+/**
+ * Button that wraps [androidx.compose.material3.Button] with
+ * a consistent style defined by [ButtonStyle].
+ *
+ * This button applies default minimum height, shape, colors, border, padding, and text style
+ * according to the provided [style], while still allowing full composable content.
+ *
+ * See [androidx.compose.material3.Button] for documentation of the parameters.
+ *
+ * ## Example:
+ * ```
+ * Button(
+ *     onClick = { /* handle click */ },
+ *     style = ButtonStyle.Primary
+ * ) {
+ *     Text("Click me")
+ * }
+ * ```
+ */
 @Composable
 fun Button(
     onClick: () -> Unit,

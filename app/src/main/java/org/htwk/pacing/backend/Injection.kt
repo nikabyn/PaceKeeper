@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectWorker
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.HeartRateDao
@@ -23,8 +22,6 @@ import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
-import org.htwk.pacing.backend.mlmodel.MLModel
-import org.htwk.pacing.backend.mlmodel.PredictionWorker
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 //import org.htwk.pacing.ui.screens.NotificationsViewModel
@@ -74,8 +71,6 @@ val appModule = module {
     single<PredictedHeartRateDao> { get<PacingDatabase>().predictedHeartRateDao() }
     single<PredictedEnergyLevelDao> { get<PacingDatabase>().predictedEnergyLevelDao() }
 
-    single<MLModel> { MLModel(get()) }
-
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
     }
@@ -93,18 +88,18 @@ val appModule = module {
      * the actual execution/scheduling is handled in Application.kt
      */
     worker { context, params -> HealthConnectWorker(context, params, get()) }
-    worker { context, params ->
-        PredictionWorker(
-            context,
-            params,
-            get(),
-            get(),
-            get(),
-            get(),
-            get()
-        )
-    }
+    /* worker { context, params ->
+         PredictionWorker(
+             context,
+             params,
+             get(),
+             get(),
+             get(),
+             get(),
+         )
+     } */
     worker { context, params -> NotificationsBackgroundWorker(context, params, get(), get()) }
+    worker { context, params -> ForegroundWorker(context, params, get()) }
 }
 
 /**

@@ -24,6 +24,7 @@ import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.math.floor
+import kotlin.random.Random
 
 @Composable
 fun LabelCard(
@@ -92,12 +93,40 @@ fun LabelCard(
                 )
                 Text(
                     // TODO: Add recommendations based on energy level (orga#44)
-                    text = "Placeholder for tips to be added soon.",
+                    text = getTipForLevel(level),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
     }
+}
+
+@Composable
+private fun getTipForLevel(level: Level): String {
+    val randomIndex = Random.nextInt(1, 5) // 1..3
+
+    val stringResId = when(level) {
+        Level.Error -> when(randomIndex) {
+            1 -> R.string.tips_error_1
+            2 -> R.string.tips_error_2
+            3 -> R.string.tips_error_3
+            else -> R.string.tips_error_4
+        }
+        Level.Warning -> when(randomIndex) {
+            1 -> R.string.tips_warning_1
+            2 -> R.string.tips_warning_2
+            3 -> R.string.tips_warning_3
+            else -> R.string.tips_warning_4
+        }
+        Level.Info -> when(randomIndex) {
+            1 -> R.string.tips_info_1
+            2 -> R.string.tips_info_2
+            3 -> R.string.tips_info_3
+            else -> R.string.tips_info_4
+        }
+    }
+
+    return stringResource(id = stringResId)
 }
 
 private enum class Level {

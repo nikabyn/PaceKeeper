@@ -47,6 +47,7 @@
     <string name="agree">Zustimmen</string>
     <string name="cancel">Abbrechen</string>
     <string name="save">Speichern</string>
+    <string name="saved">Gespeichert</string>
     <string name="correct">Korrekt</string>
     <string name="adjust">Anpassen</string>
     <string name="feeling_really_bad">Fühlst du dich richtig schlecht?</string>
@@ -67,6 +68,7 @@
     <string name="demo_data_dialog_text">Wenn Sie fortfahren werden Demodaten in Health Connect geladen. Diese können Sie nur manuell wieder über Health Connect löschen.</string>
     <string name="energy_prediction_running_channel">Energieprognosen im Hintergrund</string>
     <string name="energy_prediction_running">Energieprognose läuft im Hintergrund...</string>
+    <string name="predicting_energy">Energieprognose läuft</string>
     <string name="energy_level_debug_prediction">Energie-Prognose</string>
     <string name="label_energy_level_very_low">Sehr niedriges Energielevel</string>
     <string name="label_energy_level_low">Niedriges Energielevel</string>
@@ -81,8 +83,11 @@
     <string name="profile_card_description">Grunddaten für Pacing-Werte eingeben/bearbeiten</string>
     <string name="icon_profile_description">Profil Icon</string>
     <string name="icon_settings_description">Einstellungen Icon</string>
-    <string name="title_export_send_database">Datenbank exportieren und versenden</string>
-    <string name="description_export_send_database">Sendet die komplette Datenbank an den Server.</string>
+    <string name="title_export_send_database">Daten teilen</string>
+    <string name="description_export_send_database">
+        Sie können Ihre anonymisierten Daten mit den Entwicklern teilen, um das Vorhersagemodell zu verbessern.
+        Die Teilnahme ist freiwillig und unterstützt die laufende Forschung und Optimierung.
+    </string>
     <string name="button_send_now">Jetzt versenden</string>
     <string name="button_sending">Wird versendet...</string>
     <string name="status_success_database_sent">Datenbank erfolgreich versendet!</string>
@@ -123,4 +128,43 @@
     <string name="start_time_label">Startzeit (HH:mm)</string>
     <string name="end_time_label">Endzeit (HH:mm)</string>
     <string name="time_format_helper">Format: 00:00 bis 23:59</string>
+
+    <string name="title_settings_unknown_user">Unbekannte(r) Benutzer*in</string>
+    <string name="title_settings_services">Verbindungen &amp; Dienste</string>
+    <string name="title_settings_data">Daten &amp; Speicher</string>
+    <string name="title_settings_notifications">Benachrichtigungen</string>
+    <string name="title_settings_appearance">Erscheinungsbild</string>
+    <string name="title_settings_information">Informationen</string>
+    <string name="title_settings_feedback">Feedback</string>
+    <string name="subtitle_settings_user_profile">Profil bearbeiten</string>
+    <string name="subtitle_settings_services">Health Connect, Fitbit</string>
+    <string name="subtitle_settings_data">Health Connect, Fitbit</string>
+    <string name="subtitle_settings_notifications">Deine erfassten Daten verwalten</string>
+    <string name="subtitle_settings_appearance"> </string>
+    <string name="subtitle_settings_information">Legal, Privacy, Introduction</string>
+    <string name="subtitle_settings_feedback">Hilf uns, diese App zu verbessern!</string>
+    <string name="join_survey">An Umfrage teilnehmen</string>
+    <string name="title_survey">An der Umfrage teilnehmen</string>
+    <string name="description_survey">Hilf uns, die App zu verbessern, indem du an unserer kurzen Umfrage teilnimmst.</string>
+    <string name="settings_appearance_light">Hell</string>
+    <string name="settings_appearance_dark">Dunkel</string>
+    <string name="settings_appearance_auto">Automatisch (System)</string>
+
+    <string name="tips_error_1">Dunkle den Raum vollständig ab und lege dich hin, um alle sensorischen Reize zu minimieren.</string>
+    <string name="tips_error_2">Unterbreche jegliche sensorischen und mentalen Reize, um PEM zu verhindern.</string>
+    <string name="tips_error_3">Trinke kleine Mengen Wasser oder Elektrolyte und ruhe dich vollständig aus; keine Aktivitäten durchführen.</string>
+    <string name="tips_error_4">Bitte Freunde oder Familie um Hilfe bei allen Tätigkeiten, die Energie erfordern.</string>
+
+    <string name="tips_warning_1">Führe sanfte Atem- oder Entspannungsübungen ohne Anstrengung durch.</string>
+    <string name="tips_warning_2">Bereite einen sehr einfachen Snack zu oder iss Vorgekochtes.</string>
+    <string name="tips_warning_3">Passive Aktivitäten mit minimaler kognitiver Belastung sind möglich.</string>
+    <string name="tips_warning_4">Führe nur eine kleine mentale Aufgabe gleichzeitig aus und plane sofort danach Ruhe ein.</string>
+
+    <string name="tips_info_1">Trinke Wasser und überprüfe deinen Körper auf Belastungssymptome, bevor du aktiv wirst.</string>
+    <string name="tips_info_2">Gehe kurz nach draußen an die frische Luft, ohne dich zu überanstrengen.</string>
+    <string name="tips_info_3">Erledige sehr kleine Aufgaben, während du deutlich innerhalb deiner Energiegrenze bleibst.</string>
+    <string name="tips_info_4">Nimm an kurzen, energiearmen sozialen Interaktionen teil, falls tolerierbar.</string>
+    <string name="privacy_policy">Datenschutzerklärung</string>
+    <string name="view_licence">Zeige die Lizenz</string>
+
 </resources>
