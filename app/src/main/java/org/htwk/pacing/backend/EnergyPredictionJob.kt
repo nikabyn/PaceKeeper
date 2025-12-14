@@ -11,19 +11,9 @@ import org.htwk.pacing.backend.EnergyPredictionJob.predictContinuous
 import org.htwk.pacing.backend.EnergyPredictionJob.predictEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.retrainEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.trainOnce
-import org.htwk.pacing.backend.database.DistanceEntry
-import org.htwk.pacing.backend.database.ElevationGainedEntry
-import org.htwk.pacing.backend.database.HeartRateEntry
-import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
-import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
-import org.htwk.pacing.backend.database.SkinTemperatureEntry
-import org.htwk.pacing.backend.database.SleepSessionEntry
-import org.htwk.pacing.backend.database.SpeedEntry
-import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.TimedEntry
-import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -84,15 +74,15 @@ object EnergyPredictionJob {
      */
     private suspend fun predictContinuous(db: PacingDatabase) {
         val duration = predictionSeriesDuration
-        val heartRate = db.heartRateDao().getLastLive(duration)
-        val distance = db.distanceDao().getLastLive(duration)
-        val elevationGained = db.elevationGainedDao().getLastLive(duration)
-        val skinTemperature = db.skinTemperatureDao().getLastLive(duration)
-        val heartRateVariability = db.heartRateVariabilityDao().getLastLive(duration)
-        val oxygenSaturation = db.oxygenSaturationDao().getLastLive(duration)
-        val steps = db.stepsDao().getLastLive(duration)
-        val speed = db.speedDao().getLastLive(duration)
-        val sleepSession = db.sleepSessionsDao().getLastLive(duration)
+        val heartRate = db.heartRateDao().getChangeTrigger()
+        val distance = db.distanceDao().getChangeTrigger()
+        val elevationGained = db.elevationGainedDao().getChangeTrigger()
+        val skinTemperature = db.skinTemperatureDao().getChangeTrigger()
+        val heartRateVariability = db.heartRateVariabilityDao().getChangeTrigger()
+        val oxygenSaturation = db.oxygenSaturationDao().getChangeTrigger()
+        val steps = db.stepsDao().getChangeTrigger()
+        val speed = db.speedDao().getChangeTrigger()
+        val sleepSession = db.sleepSessionsDao().getChangeTrigger()
         val userProfile = db.userProfileDao().getProfileLive()
         val ticker = flow {
             while (true) {
@@ -112,53 +102,25 @@ object EnergyPredictionJob {
             speed,
             sleepSession,
             userProfile,
-            ticker
-        ) { values ->
-            @Suppress("UNCHECKED_CAST")
-            val heartRateValues = values[0] as List<HeartRateEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val distanceValues = values[1] as List<DistanceEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val elevationGainedValues = values[2] as List<ElevationGainedEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val skinTemperatureValues = values[3] as List<SkinTemperatureEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val heartRateVariabilityValues = values[4] as List<HeartRateVariabilityEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val oxygenSaturationValues = values[5] as List<OxygenSaturationEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val stepsValues = values[6] as List<StepsEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val speedValues = values[7] as List<SpeedEntry>
-
-            @Suppress("UNCHECKED_CAST")
-            val sleepSessionValues = values[8] as List<SleepSessionEntry>
-
-            val userProfileValue = values[9] // No cast needed if type is correct or handled below
-
+            ticker,
+        ) {
+            val now = Clock.System.now()
             Pair(
                 MultiTimeSeriesEntries(
-                    timeStart = Clock.System.now() - duration,
+                    timeStart = now - duration,
                     duration = duration,
-                    heartRate = heartRateValues,
-                    distance = distanceValues,
-                    elevationGained = elevationGainedValues,
-                    skinTemperature = skinTemperatureValues,
-                    heartRateVariability = heartRateVariabilityValues,
-                    oxygenSaturation = oxygenSaturationValues,
-                    steps = stepsValues,
-                    speed = speedValues,
-                    sleepSession = sleepSessionValues,
+                    heartRate = db.heartRateDao().getInRange(now - duration, now),
+                    distance = db.distanceDao().getInRange(now - duration, now),
+                    elevationGained = db.elevationGainedDao().getInRange(now - duration, now),
+                    skinTemperature = db.skinTemperatureDao().getInRange(now - duration, now),
+                    heartRateVariability = db.heartRateVariabilityDao().getInRange(now - duration, now),
+                    oxygenSaturation = db.oxygenSaturationDao().getInRange(now - duration, now),
+                    steps = db.stepsDao().getInRange(now - duration, now),
+                    speed = db.speedDao().getInRange(now - duration, now),
+                    sleepSession = db.sleepSessionsDao().getInRange(now - duration, now),
                 ),
                 FixedParameters(
-                    anaerobicThresholdBPM = (userProfileValue as? UserProfileEntry)
+                    anaerobicThresholdBPM = db.userProfileDao().getProfile()
                         ?.anaerobicThreshold?.toDouble()
                         ?: 0.0
                 )
