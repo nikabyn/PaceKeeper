@@ -19,7 +19,7 @@ class NormalizationTests {
     @Test
     fun emptyArrayReturnsEmptyArray() {
         val input = mk.ndarray(doubleArrayOf())
-        normalize(input)
+        input.normalize()
 
         val expected = doubleArrayOf()
         assertArrayEquals(input.toDoubleArray(), expected, delta)
@@ -28,7 +28,7 @@ class NormalizationTests {
     @Test
     fun valueEqualToMeanNormalizesToZero() {
         val input = mk.ndarray(doubleArrayOf(100.0, 100.0, 100.0))
-        normalize(input)
+        input.normalize()
 
         val expected = doubleArrayOf(0.0, 0.0, 0.0)
         assertArrayEquals(expected, input.toDoubleArray(), delta)
@@ -37,7 +37,7 @@ class NormalizationTests {
     @Test
     fun symmetricalValuesNormalizeToMinusOneAndOne() {
         val input = mk.ndarray(doubleArrayOf(HR_MEAN, HR_MEAN + HR_STANDARD_DEVIATION))
-        normalize(input)
+        input.normalize()
 
         val expected = doubleArrayOf(-1.0, 1.0)
         assertArrayEquals(expected, input.toDoubleArray(), delta)
@@ -46,7 +46,7 @@ class NormalizationTests {
     @Test
     fun symmetricalValuesNormalizeToOneAndMinusOne() {
         val input = mk.ndarray(doubleArrayOf(HR_MEAN, HR_MEAN - HR_STANDARD_DEVIATION))
-        normalize(input)
+        input.normalize()
 
         val expected = doubleArrayOf(1.0, -1.0)
         assertArrayEquals(expected, input.toDoubleArray(), delta)
@@ -58,7 +58,7 @@ class NormalizationTests {
         val input = mk.ndarray(doubleArrayOf(10.0, 70.0, 100.0))
         val stddev = 37.4165738677
 
-        normalize(input)
+        input.normalize()
 
         val expected = doubleArrayOf(
             (10.0 - 60.0) / stddev, // ≈ -1.336
@@ -77,7 +77,7 @@ class NormalizationTests {
         )
         val distribution = StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION)
 
-        normalize(input, distribution)
+        input.normalize(distribution)
 
         val expected = doubleArrayOf(
             -1.0,        // (40-70)/30
@@ -96,14 +96,14 @@ class NormalizationTests {
         val raw = mk.ndarray(DoubleArray(50) { random.nextDouble(-100000.0, 100000.0) })
         val input = raw.copy()
 
-        val distribution = normalize(input)
+        val distribution = input.normalize()
         val expectedDistribution = StochasticDistribution(-2712.369574, 62305.5474781)
         assertEquals(expectedDistribution.mean, distribution.mean, delta)
         assertEquals(expectedDistribution.stddev, distribution.stddev, delta)
 
         val inputNormalized = input.copy()
 
-        denormalize(inputNormalized, distribution)
+        inputNormalized.denormalize(distribution)
 
         assertArrayEquals(raw.toDoubleArray(), inputNormalized.toDoubleArray(), delta)
     }
@@ -115,14 +115,14 @@ class NormalizationTests {
         val raw = mk.ndarray(DoubleArray(1000) { random.nextDouble(-1000000.0, 1000000.0) })
         val input = raw.copy()
 
-        val distribution = normalize(input)
+        val distribution = input.normalize()
         val expectedDistribution = StochasticDistribution(-9728.245, 594895.610)
         assertEquals(expectedDistribution.mean, distribution.mean, delta)
         assertEquals(expectedDistribution.stddev, distribution.stddev, delta)
 
         val inputNormalized = input.copy()
 
-        denormalize(inputNormalized, distribution)
+        inputNormalized.denormalize(distribution)
 
         assertArrayEquals(raw.toDoubleArray(), inputNormalized.toDoubleArray(), delta)
     }

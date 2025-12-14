@@ -27,39 +27,37 @@ data class StochasticDistribution(
 }
 
 /**
- * Normalizes the input data, returns the normalized form and the stochastic properties for
- * later denormalization
- * @param input The input data to be normalized.
+ * Normalizes the array, and returns its [StochasticDistribution] for later denormalization
+ * @param StochasticDistribution The stochastic distribution for rescaling the array (only provide
+ *                               if you need a custom adjusted distribution)
  * @see StochasticDistribution
  * @see denormalize
  */
 
-fun normalize(
-    input: D1Array<Double>,
-    stochasticDistribution: StochasticDistribution = StochasticDistribution.ofArray(input)
+fun D1Array<Double>.normalize(
+    stochasticDistribution: StochasticDistribution = StochasticDistribution.ofArray(this)
 ): StochasticDistribution {
     if (stochasticDistribution.stddev == 0.0) {
-        input.forEachIndexed { idx, _ -> input[idx] = 0.0 }
+        this.forEachIndexed { idx, _ -> this[idx] = 0.0 }
         return stochasticDistribution
     }
 
-    for (i in 0 until input.size) {
-        input[i] = (input[i] - stochasticDistribution.mean) / stochasticDistribution.stddev
+    for (i in 0 until this.size) {
+        this[i] = (this[i] - stochasticDistribution.mean) / stochasticDistribution.stddev
     }
     return stochasticDistribution
 }
 
 /**
- * Denormalizes the [input] array
- * @param input The array to be denormalized.
+ * Denormalizes the array
+ * @param StochasticDistribution The stochastic distribution for rescaling the array.
  * @see StochasticDistribution
  * @see normalize
  */
-fun denormalize(
-    input: D1Array<Double>,
+fun D1Array<Double>.denormalize(
     stochasticDistribution: StochasticDistribution
 ) {
-    for (i in 0 until input.size) {
-        input[i] = input[i] * stochasticDistribution.stddev + stochasticDistribution.mean
+    for (i in 0 until this.size) {
+        this[i] = this[i] * stochasticDistribution.stddev + stochasticDistribution.mean
     }
 }

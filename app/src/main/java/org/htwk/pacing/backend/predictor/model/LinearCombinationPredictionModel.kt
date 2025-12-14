@@ -137,7 +137,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
         //normalize each feature row and store the normalization parameters per feature
         stochasticDistributions = input.getAllFeatureIDs().map { featureID ->
-            featureID to normalize(input.getMutableRow(featureID))
+            featureID to input.getMutableRow(featureID).normalize()
         }.toMap()
 
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
@@ -170,10 +170,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
         require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
 
         input.getAllFeatureIDs().forEach { featureID ->
-            denormalize(
-                input.getMutableRow(featureID),
-                stochasticDistributions[featureID]!!
-            )
+            input.getMutableRow(featureID).denormalize(stochasticDistributions[featureID]!!)
         }
 
         val flattenedExtrapolations =
