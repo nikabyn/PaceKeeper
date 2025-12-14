@@ -1,4 +1,5 @@
 package org.htwk.pacing.ui.screens
+
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -97,8 +98,6 @@ fun UserProfileScreen(
     }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
-
-    // States für Dialog und ob Änderungen vorliegen
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
 
     // 1. Funktion zur Prüfung auf Änderungen
@@ -128,7 +127,7 @@ fun UserProfileScreen(
             fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
             anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
             bellScale = bellScale.toIntOrNull(),
-            fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
+            fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() },
         )
         mutableStateOf(currentProfile != profile)
     }
@@ -449,7 +448,7 @@ class UserProfileViewModel(
             suggestionPermit = false,
             restingStart = LocalTime(0, 0),
             restingEnd = LocalTime(0, 0)
-
         )
     }
 }
+

@@ -29,7 +29,7 @@ data class UserProfileEntry(
 
     val amputationLevel: AmputationLevel?,
     val fatigueSensitivity: Int?,
-    val activityBaseline: Int?,
+    //val activityBaseline: Int?,
     val anaerobicThreshold: Int?,
     val bellScale: Int?,
     val illnessStartDate: Long?,
@@ -86,7 +86,7 @@ data class UserProfileEntry(
                 restingHeartRateBpm = 60,
                 amputationLevel = null,
                 fatigueSensitivity = null,
-                activityBaseline = null,
+                //  activityBaseline = null,
                 anaerobicThreshold = null,
                 bellScale = null,
                 illnessStartDate = null,
