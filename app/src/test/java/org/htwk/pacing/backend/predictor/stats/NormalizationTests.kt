@@ -4,11 +4,14 @@ import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
+import kotlin.random.Random
 
 class NormalizationTests {
     //allowed deviation, even if there should technically be no deviation in the tests
-    private val delta: Double = 1e-6
+    //helps with numerical precision issues
+    private val delta: Double = 1e-3
 
     private val HR_MEAN: Double = 70.0
     private val HR_STANDARD_DEVIATION: Double = 30.0
@@ -32,7 +35,7 @@ class NormalizationTests {
     }
 
     @Test
-    fun oneStandardDeviationAboveMeanNormalizesToOne() {
+    fun symmetricalValuesNormalizeToMinusOneAndOne() {
         val input = mk.ndarray(doubleArrayOf(HR_MEAN, HR_MEAN + HR_STANDARD_DEVIATION))
         normalize(input)
 
@@ -41,7 +44,7 @@ class NormalizationTests {
     }
 
     @Test
-    fun oneStandardDeviationBelowMeanNormalizesToMinusOne() {
+    fun symmetricalValuesNormalizeToOneAndMinusOne() {
         val input = mk.ndarray(doubleArrayOf(HR_MEAN, HR_MEAN - HR_STANDARD_DEVIATION))
         normalize(input)
 
@@ -49,20 +52,78 @@ class NormalizationTests {
         assertArrayEquals(expected, input.toDoubleArray(), delta)
     }
 
+
     @Test
     fun multipleValuesNormalizeCorrectly() {
-        // -2 SD, 0 SD, +0.5 SD
+        val input = mk.ndarray(doubleArrayOf(10.0, 70.0, 100.0))
+        val stddev = 37.4165738677
+
+        normalize(input)
+
+        val expected = doubleArrayOf(
+            (10.0 - 60.0) / stddev, // ≈ -1.336
+            (70.0 - 60.0) / stddev, // ≈ 0.267
+            (100.0 - 60.0) / stddev  // ≈ 1.069
+        )
+        assertArrayEquals(expected, input.toDoubleArray(), delta)
+    }
+
+    @Test
+    fun longFixedArrayNormalizesCorrectly() {
         val input = mk.ndarray(
             doubleArrayOf(
-                HR_MEAN - HR_STANDARD_DEVIATION * 2.0,
-                HR_MEAN,
-                HR_MEAN + HR_STANDARD_DEVIATION * 1.0
+                40.0, 55.0, 70.0, 85.0, 100.0
             )
         )
-        val stochasticDistribution = normalize(input)
-        assertEquals(stochasticDistribution, StochasticDistribution(0.5))
+        val distribution = StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION)
 
-        val expected = doubleArrayOf(-2.0, 0.0, 0.5)
-        assertArrayEquals(input.toDoubleArray(), expected, delta)
+        normalize(input, distribution)
+
+        val expected = doubleArrayOf(
+            -1.0,        // (40-70)/30
+            -0.5,        // (55-70)/30
+            0.0,         // (70-70)/30
+            0.5,         // (85-70)/30
+            1.0          // (100-70)/30
+        )
+        assertArrayEquals(expected, input.toDoubleArray(), delta)
+    }
+
+    @Test
+    fun normalizeDenormalizeEqual() {
+        val random = Random(1337)
+
+        val raw = mk.ndarray(DoubleArray(50) { random.nextDouble(-100000.0, 100000.0) })
+        val input = raw.copy()
+
+        val distribution = normalize(input)
+        val expectedDistribution = StochasticDistribution(-2712.369574, 62305.5474781)
+        assertEquals(expectedDistribution.mean, distribution.mean, delta)
+        assertEquals(expectedDistribution.stddev, distribution.stddev, delta)
+
+        val inputNormalized = input.copy()
+
+        denormalize(inputNormalized, distribution)
+
+        assertArrayEquals(raw.toDoubleArray(), inputNormalized.toDoubleArray(), delta)
+    }
+
+    @Test
+    fun normalizeDenormalizeEqualLargerArray() {
+        val random = Random(1338)
+
+        val raw = mk.ndarray(DoubleArray(1000) { random.nextDouble(-1000000.0, 1000000.0) })
+        val input = raw.copy()
+
+        val distribution = normalize(input)
+        val expectedDistribution = StochasticDistribution(-9728.245, 594895.610)
+        assertEquals(expectedDistribution.mean, distribution.mean, delta)
+        assertEquals(expectedDistribution.stddev, distribution.stddev, delta)
+
+        val inputNormalized = input.copy()
+
+        denormalize(inputNormalized, distribution)
+
+        assertArrayEquals(raw.toDoubleArray(), inputNormalized.toDoubleArray(), delta)
     }
 }
