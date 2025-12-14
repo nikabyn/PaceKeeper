@@ -16,12 +16,9 @@ object Preprocessor {
      * @return A [MultiTimeSeriesDiscrete] object containing the processed and discretized time series data.
      */
     fun run(
-        raw: MultiTimeSeriesEntries,
+        input: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
-        //val (rawCleaned, qualityRatios) = cleanInputData(raw)
-        //val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
-
-        return MultiTimeSeriesDiscrete.fromEntries(/*ensuredDataUsingFallback*/ raw);
+        return MultiTimeSeriesDiscrete.fromEntries(input);
     }
 }
