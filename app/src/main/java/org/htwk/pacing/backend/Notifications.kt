@@ -148,6 +148,7 @@ fun showNotification(context: Context) {
     val notificationManager = NotificationManagerCompat.from(context)
     notificationManager.notify(NotificationIds.ENERGY_WARNING_NOTIFICATION_ID, builder.build())
 
+    Log.d("Notification", "Notification sent")
     Log.d("Notification", "Notification wurde ausgelöst")
 }
 

@@ -31,6 +31,7 @@ import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.hours
 
+
 /**
  * Shows a graph of the last 6 hours of the users energy level
  * and a prediction for the next 6 hours.

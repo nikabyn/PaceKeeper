@@ -107,6 +107,7 @@ dependencies {
     // Room (database)
     implementation(libs.androidx.room.runtime)
     implementation(libs.transportation.consumer)
+    implementation(libs.androidx.graphics.shapes)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     testImplementation(libs.androidx.room.testing)

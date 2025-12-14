@@ -27,24 +27,17 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
-import org.htwk.pacing.ui.components.UniversalSettingsCard
-import org.htwk.pacing.ui.components.Button
-import org.htwk.pacing.ui.components.ExportAndSendDataCard
-import org.htwk.pacing.ui.components.HeartRateCard
-import org.htwk.pacing.ui.components.ImportDataHealthConnect
-import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.NotificationCard
+import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
-import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.CardStyle
+import org.htwk.pacing.ui.theme.Spacing
 
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = koinViewModel(),
-    userProfileViewModel: UserProfileViewModel = koinViewModel(),
+    modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
