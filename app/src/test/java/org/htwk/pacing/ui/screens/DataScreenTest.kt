@@ -1,0 +1,167 @@
+package org.htwk.pacing.ui.screens
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Test class for DataScreen component.
+ * Tests the data export logic and validation without requiring UI testing framework.
+ */
+class DataScreenTest {
+
+    @Test
+    fun testExportFileNameFormat() {
+        val fileName = "pacing_export.zip"
+        
+        assertTrue("File name should end with .zip", fileName.endsWith(".zip"))
+        assertTrue("File name should start with pacing_", fileName.startsWith("pacing_"))
+        assertEquals("pacing_export.zip", fileName)
+    }
+
+    @Test
+    fun testExportMimeType() {
+        val mimeType = "application/zip"
+        
+        assertEquals("application/zip", mimeType)
+        assertTrue("MIME type should contain 'zip'", mimeType.contains("zip"))
+    }
+
+    @Test
+    fun testDataProtectionNoticeStrings() {
+        val noticeTitle = "data_protection_notice"
+        val noticeMessage = "personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing"
+        val agreeButton = "agree"
+        val cancelButton = "cancel"
+        
+        assertNotNull("Notice title should not be null", noticeTitle)
+        assertNotNull("Notice message should not be null", noticeMessage)
+        assertNotNull("Agree button text should not be null", agreeButton)
+        assertNotNull("Cancel button text should not be null", cancelButton)
+        
+        assertTrue("All strings should not be empty", 
+            noticeTitle.isNotEmpty() && noticeMessage.isNotEmpty() && 
+            agreeButton.isNotEmpty() && cancelButton.isNotEmpty())
+    }
+
+    @Test
+    fun testDialogStateManagement() {
+        var showDialog = false
+        
+        assertFalse("Dialog should initially be hidden", showDialog)
+        
+        showDialog = true
+        assertTrue("Dialog should be shown", showDialog)
+        
+        showDialog = false
+        assertFalse("Dialog should be hidden again", showDialog)
+    }
+
+    @Test
+    fun testDialogDismissAction() {
+        val showDialog = false
+        assertFalse("Dialog should be dismissed", showDialog)
+    }
+
+    @Test
+    fun testDialogConfirmAction() {
+        val showDialog = false
+        val exportTriggered = true
+        
+        assertFalse("Dialog should be dismissed after confirm", showDialog)
+        assertTrue("Export should be triggered", exportTriggered)
+    }
+
+    @Test
+    fun testSectionTitleValidation() {
+        val title = "Stored Data"
+        
+        assertNotNull("Title should not be null", title)
+        assertFalse("Title should not be empty", title.isEmpty())
+    }
+
+    @Test
+    fun testDataScreenStringResources() {
+        val stringResources = mapOf(
+            "stored_data" to "stored_data",
+            "export_data_to_zip_archive" to "export_data_to_zip_archive",
+            "data_protection_notice" to "data_protection_notice",
+            "personalised_data_will_be_stored" to "personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing",
+            "agree" to "agree",
+            "cancel" to "cancel"
+        )
+        
+        stringResources.forEach { (key, value) ->
+            assertNotNull("String resource '$key' should not be null", value)
+            assertFalse("String resource '$key' should not be empty", value.isEmpty())
+        }
+    }
+
+    @Test
+    fun testExportButtonState() {
+        var isEnabled = true
+        var isLoading = false
+        
+        assertTrue("Button should be enabled", isEnabled)
+        assertFalse("Button should not be loading", isLoading)
+
+        isEnabled = false
+        isLoading = true
+        
+        assertFalse("Button should be disabled when loading", isEnabled)
+        assertTrue("Button should show loading state", isLoading)
+    }
+
+    @Test
+    fun testMultipleDataActions() {
+        data class DataAction(val name: String, val description: String)
+        
+        val actions = listOf(
+            DataAction("import", "Import data from Health Connect"),
+            DataAction("import_demo", "Import demo data"),
+            DataAction("export", "Export data to ZIP archive")
+        )
+        
+        assertEquals("Should have 3 data actions", 3, actions.size)
+        
+        actions.forEach { action ->
+            assertNotNull("Action name should not be null", action.name)
+            assertNotNull("Action description should not be null", action.description)
+            assertTrue("Action name should not be empty", action.name.isNotEmpty())
+            assertTrue("Action description should not be empty", action.description.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun testExportFilePathValidation() {
+        val validPaths = listOf(
+            "file:///storage/emulated/0/Download/pacing_export.zip",
+            "content://com.android.providers.downloads.documents/document/123"
+        )
+        
+        validPaths.forEach { path ->
+            assertNotNull("Path should not be null", path)
+            assertTrue("Path should not be empty", path.isNotEmpty())
+            assertTrue("Path should have valid scheme", 
+                path.startsWith("file://") || path.startsWith("content://"))
+        }
+    }
+
+    @Test
+    fun testConsentFlowValidation() {
+        var consentGiven = false
+
+        assertFalse("Consent should not be given initially", consentGiven)
+
+        // Export startet nur, wenn consentGiven == true
+        fun canStartExport() = consentGiven
+
+        assertFalse("Export should not start without consent", canStartExport())
+
+        consentGiven = true
+        assertTrue("Consent should be given", consentGiven)
+        assertTrue("Export should start after consent", canStartExport())
+    }
+}

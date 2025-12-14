@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -75,10 +76,33 @@ object Spacing {
 }
 
 object CardStyle {
-    val shape: Shape
+    val shape: CornerBasedShape
         @Composable @ReadOnlyComposable
         get() = MaterialTheme.shapes.large
 
+    val shapeFirstInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() {
+            val smallShape = MaterialTheme.shapes.medium
+            return shape.copy(
+                bottomStart = smallShape.bottomStart,
+                bottomEnd = smallShape.bottomEnd,
+            )
+        }
+
+    val shapeInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() = MaterialTheme.shapes.medium
+
+    val shapeLastInGroup: CornerBasedShape
+        @Composable @ReadOnlyComposable
+        get() {
+            val smallShape = MaterialTheme.shapes.medium
+            return shape.copy(
+                topStart = smallShape.topStart,
+                topEnd = smallShape.topEnd,
+            )
+        }
     val colors: CardColors
         @Composable
         get() = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
