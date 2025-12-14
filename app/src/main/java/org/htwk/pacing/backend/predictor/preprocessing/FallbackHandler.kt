@@ -298,8 +298,9 @@ object FallbackHandler {
         duration: Duration
     ): List<HeartRateEntry> {
 
+        val defaultBpm = 75L
         return generateDefaultSeries(start, duration) { from, _ ->
-            HeartRateEntry(from, random.nextLong(0, 100))
+            HeartRateEntry(from, defaultBpm)
         }
     }
 
@@ -308,8 +309,9 @@ object FallbackHandler {
         duration: Duration
     ): List<DistanceEntry> {
 
+        val defaultLength = 8.0
         return generateDefaultSeries(start, duration) { from, to ->
-            DistanceEntry(from, to, Length(random.nextDouble(0.0, 100.0)))
+            DistanceEntry(from, to, Length(defaultLength))
         }
     }
 
@@ -319,7 +321,7 @@ object FallbackHandler {
     ): List<ElevationGainedEntry> {
 
         return generateDefaultSeries(start, duration) { from, to ->
-            ElevationGainedEntry(from, to, Length(random.nextDouble(0.0, 100.0)))
+            ElevationGainedEntry(from, to, Length(0.0))
         }
     }
 
@@ -328,8 +330,9 @@ object FallbackHandler {
         duration: Duration
     ): List<SkinTemperatureEntry> {
 
+        val defaultTemp = 33.5
         return generateDefaultSeries(start, duration) { from, _ ->
-            SkinTemperatureEntry(from, Temperature.celsius(random.nextDouble(0.0, 100.0)))
+            SkinTemperatureEntry(from, Temperature.celsius(defaultTemp))
         }
     }
 
@@ -338,8 +341,9 @@ object FallbackHandler {
         duration: Duration
     ): List<HeartRateVariabilityEntry> {
 
+        val defaultRr = 50.0
         return generateDefaultSeries(start, duration) { from, _ ->
-            HeartRateVariabilityEntry(from, random.nextDouble(0.0, 100.0))
+            HeartRateVariabilityEntry(from, defaultRr)
         }
     }
 
@@ -348,8 +352,9 @@ object FallbackHandler {
         duration: Duration
     ): List<OxygenSaturationEntry> {
 
+        val defaultPercentage = Percentage(98.0)
         return generateDefaultSeries(start, duration) { from, _ ->
-            OxygenSaturationEntry(from, Percentage(random.nextDouble(0.0, 100.0)))
+            OxygenSaturationEntry(from, defaultPercentage)
         }
     }
 
@@ -359,7 +364,7 @@ object FallbackHandler {
     ): List<StepsEntry> {
 
         return generateDefaultSeries(start, duration) { from, to ->
-            StepsEntry(from, to, random.nextLong(0, 100))
+            StepsEntry(from, to, 50)
         }
     }
 
@@ -370,7 +375,7 @@ object FallbackHandler {
 
         val defaultVelocity = Velocity.kilometersPerHour(1.0)
         return generateDefaultSeries(start, duration) { from, _ ->
-            SpeedEntry(from, Velocity.kilometersPerHour(random.nextDouble(0.0, 100.0)))
+            SpeedEntry(from, defaultVelocity)
         }
     }
 

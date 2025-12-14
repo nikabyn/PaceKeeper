@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+import androidx.annotation.FloatRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -18,7 +19,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val MAX_VALID_SPEED_MPS = 20.0 //movement speed, walking (m/s)
     val MAX_VALID_ELEVATION_CHANGE_MPS = 2.0 //max. accepted elevation change (m/s)
     val MAX_VALID_STEPS_PER_SECOND = 4.0 //max. accepted steps per second
-    val VALID_SKIN_TEMPERATURE_RANGE = ClosedRange<Double>(25.0..42.0); //allowed temperature range in degrees celsius
+    val VALID_SKIN_TEMPERATURE_RANGE = 25.0..42.0; //allowed temperature range in degrees celsius
     val MAX_VALID_SPEED_KPH = 500.0 //max. accepted movement speed
 
     fun continuousRateOfChange(
@@ -129,7 +130,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
     val (cleanedSpeeds, correctionSpeedsRatio) = cleanData(
         list = raw.speed,
         timeSortKey = { it.end },
-        isInvalid = { it.velocity.inKilometersPerHour() !in 0..MAX_VALID_SPEED_KPH},
+        isInvalid = { it.velocity.inKilometersPerHour() !in 0.0..MAX_VALID_SPEED_KPH},
         distinctByKey = { it.start to it.end }
     )
 
