@@ -13,15 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -31,22 +22,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -77,11 +52,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.htwk.pacing.R
 import kotlinx.datetime.LocalTime
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.UserProfileDao
@@ -115,8 +86,16 @@ fun UserProfileScreen(
     var selectedSex by remember { mutableStateOf(profile.sex) }
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
-    var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
-    var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
+    var fatigueSensitivity by remember {
+        mutableStateOf(
+            profile.fatigueSensitivity?.toString() ?: ""
+        )
+    }
+    var anaerobicThreshold by remember {
+        mutableStateOf(
+            profile.anaerobicThreshold?.toString() ?: ""
+        )
+    }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
@@ -125,9 +104,18 @@ fun UserProfileScreen(
 
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
-        selectedDiagnosis, fatigueSensitivity, anaerobicThreshold,
-        bellScale, fitnessTracker
+        nickname,
+        birthYear,
+        heightCm,
+        weightKg,
+        restingHeartRateBpm,
+        selectedSex,
+        selectedAmputationLevel,
+        selectedDiagnosis,
+        fatigueSensitivity,
+        anaerobicThreshold,
+        bellScale,
+        fitnessTracker
     ) {
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },
@@ -181,7 +169,10 @@ fun UserProfileScreen(
                     contentDescription = stringResource(R.string.label_back)
                 )
             }
-            Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.title_user_profile),
+                style = MaterialTheme.typography.titleMedium
+            )
             Spacer(Modifier.weight(1f))
             org.htwk.pacing.ui.components.Button(
                 onClick = {
@@ -215,7 +206,7 @@ fun UserProfileScreen(
                         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.save) )
+                    Text(stringResource(R.string.save))
                 } else {
                     Icon(
                         imageVector = Icons.Filled.Check,
