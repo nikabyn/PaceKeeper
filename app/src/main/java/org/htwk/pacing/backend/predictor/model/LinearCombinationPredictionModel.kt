@@ -5,8 +5,6 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.FeatureID
-import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.denormalize
 import org.htwk.pacing.backend.predictor.stats.normalize
@@ -32,14 +30,17 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
  */
 object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients per Horizon
-    private data class HorizonModel(
+    private data class PerHorizonModel(
         val coefficients: List<Double>,
         val featureDists: List<StochasticDistribution>
     )
 
-    private var horizonModels: Map<PredictionHorizon, HorizonModel> = emptyMap()
+    private class Model(
+        val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
+        val targetStochasticDistribution: StochasticDistribution
+    )
 
-    private var targetStochasticDistribution: StochasticDistribution? = null
+    private var model: Model? = null
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
@@ -124,7 +125,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @throws IllegalStateException if no training samples have been added.
      */
-    private fun trainForHorizon(trainingSamples: List<TrainingSample>): HorizonModel {
+    private fun trainForHorizon(trainingSamples: List<TrainingSample>): PerHorizonModel {
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
 
         val allExtrapolations = trainingSamples.map { it.multiExtrapolations }
@@ -133,13 +134,14 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val allExtrapolationsMatrix: NDArray<Double, D2> = mk.ndarray(allExtrapolations).transpose()
         val allExpectedFutureValuesVector: NDArray<Double, D1> = mk.ndarray(allExpectedFutureValues)
 
+        //normalize extrapolations, this is essential for good regression stability
         val extrapolationDistributions = (0 until allExtrapolationsMatrix.shape[0]).map { i ->
             (allExtrapolationsMatrix[i] as D1Array<Double>).normalize()
         }
 
         val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector).toList()
 
-        return HorizonModel(coefficients, extrapolationDistributions)
+        return PerHorizonModel(coefficients, extrapolationDistributions)
     }
 
     /**
@@ -152,9 +154,9 @@ object LinearCombinationPredictionModel : IPredictionModel {
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
         //Also normalize the target variable and store its distribution
         val targetArray = mk.ndarray(targetTimeSeriesDiscrete)
-        targetStochasticDistribution = targetArray.normalize()
+        val targetStochasticDistribution = targetArray.normalize()
 
-        horizonModels = PredictionHorizon.entries.associateWith { predictionHorizon ->
+        val perHorizonModels = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
                 input, targetArray.toDoubleArray(), // Use the now-normalized target data
                 predictionHorizon
@@ -163,6 +165,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
             val horizonModel = trainForHorizon(trainingSamples)
             horizonModel
         }
+
+        this.model = Model(perHorizonModels, targetStochasticDistribution)
     }
 
     //TODO: add needs train check, the job should use this to check if we lost weights from restart
@@ -183,23 +187,24 @@ object LinearCombinationPredictionModel : IPredictionModel {
         input: MultiTimeSeriesDiscrete,
         predictionHorizon: PredictionHorizon
     ): Double {
-        require(horizonModels.isNotEmpty()) { "No model trained, can't perform prediction." }
+        require(model != null) { "No model trained, can't perform prediction." }
 
         val flattenedExtrapolations =
             generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon)
 
+        //normalize extrapolations, this is essential for good regression stability
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations.mapIndexed {index, d ->
-            val dist = horizonModels[predictionHorizon]!!.featureDists[index]
+            val dist = model!!.perHorizonModels[predictionHorizon]!!.featureDists[index]
             mk.ndarray(doubleArrayOf(d)).also { it.normalize(dist) }.first()
         })
 
         val coefficientsVector: D1Array<Double> =
-            mk.ndarray(horizonModels[predictionHorizon]!!.coefficients)
+            mk.ndarray(model!!.perHorizonModels[predictionHorizon]!!.coefficients)
 
         val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, coefficientsVector)))
-        prediction.denormalize(targetStochasticDistribution!!)
+        //denormalize prediction out of normalized spaces
+        prediction.denormalize(model!!.targetStochasticDistribution)
 
-        // Denormalize the prediction to return it to the original scale
         return prediction.first()
     }
 }
