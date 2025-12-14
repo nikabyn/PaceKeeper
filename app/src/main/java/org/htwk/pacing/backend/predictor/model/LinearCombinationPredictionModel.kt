@@ -1,3 +1,4 @@
+
 package org.htwk.pacing.backend.predictor.model
 
 import org.htwk.pacing.backend.predictor.Predictor
@@ -18,6 +19,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
+import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 
 /**
@@ -31,6 +33,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
     //stores "learned" / regressed linear coefficients
     private var linearCoefficients: Map<PredictionHorizon, List<Double>> = mapOf()
     private var stochasticDistributions: Map<FeatureID, StochasticDistribution> = mapOf()
+    private var targetStochasticDistribution: StochasticDistribution? = null
 
     /**
      * Represents a single training sample containing extrapolated multi-signal data
@@ -138,11 +141,17 @@ object LinearCombinationPredictionModel : IPredictionModel {
         //normalize each feature row and store the normalization parameters per feature
         stochasticDistributions =
             input.getAllFeatureIDs()
-                .associateWith { featureID -> input.getMutableRow(featureID).normalize() }
+                .associateWith { featureID ->
+                    input.getMutableRow(featureID).normalize()
+                }
+
+        //Also normalize the target variable and store its distribution
+        val targetArray = mk.ndarray(targetTimeSeriesDiscrete)
+        targetStochasticDistribution = targetArray.normalize()
 
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
-                input, targetTimeSeriesDiscrete,
+                input, targetArray.toDoubleArray(), // Use the now-normalized target data
                 predictionHorizon
             )
             trainForHorizon(trainingSamples)
@@ -168,9 +177,10 @@ object LinearCombinationPredictionModel : IPredictionModel {
         predictionHorizon: PredictionHorizon
     ): Double {
         require(linearCoefficients.isNotEmpty()) { "No coefficients generated yet, run training first." }
+        require(targetStochasticDistribution != null) { "Target distribution not available. Run training." }
 
         input.getAllFeatureIDs().forEach { featureID ->
-            input.getMutableRow(featureID).denormalize(stochasticDistributions[featureID]!!)
+            input.getMutableRow(featureID).normalize(stochasticDistributions[featureID]!!)
         }
 
         val flattenedExtrapolations =
@@ -180,7 +190,11 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val coefficientsVector: D1Array<Double> =
             mk.ndarray(linearCoefficients[predictionHorizon]!!)
 
-        val prediction = mk.linalg.dot(extrapolationsVector, coefficientsVector)
-        return prediction
+        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, coefficientsVector)))
+        prediction.denormalize(targetStochasticDistribution!!)
+
+
+        // Denormalize the prediction to return it to the original scale
+        return prediction.first()
     }
 }
