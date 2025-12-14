@@ -136,9 +136,9 @@ object LinearCombinationPredictionModel : IPredictionModel {
      */
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
         //normalize each feature row and store the normalization parameters per feature
-        stochasticDistributions = input.getAllFeatureIDs().map { featureID ->
-            featureID to input.getMutableRow(featureID).normalize()
-        }.toMap()
+        stochasticDistributions =
+            input.getAllFeatureIDs()
+                .associateWith { featureID -> input.getMutableRow(featureID).normalize() }
 
         linearCoefficients = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
