@@ -39,7 +39,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = "Fitbit",
-            warningPermit = false
+            warningPermit = false,
+            restingEnd = null,
+            restingStart = null
         )
 
         runBlocking {
@@ -70,7 +72,10 @@ class UserProfileDaoTest {
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         runBlocking {
@@ -99,7 +104,10 @@ class UserProfileDaoTest {
             bellScale = 8,
             illnessStartDate = null,
             diagnosis = UserProfileEntry.Diagnosis.MECFS,
-            fitnessTracker = "Apple Watch"
+            fitnessTracker = "Apple Watch",
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         runBlocking {
@@ -127,7 +135,10 @@ class UserProfileDaoTest {
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         runBlocking {
@@ -154,7 +165,10 @@ class UserProfileDaoTest {
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         val profile2 = profile1.copy(
@@ -188,7 +202,10 @@ class UserProfileDaoTest {
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         val updatedProfile = initialProfile.copy(
@@ -224,7 +241,10 @@ class UserProfileDaoTest {
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         runBlocking {
@@ -255,7 +275,10 @@ class UserProfileDaoTest {
             bellScale = null,
             illnessStartDate = null,
             diagnosis = null,
-            fitnessTracker = null
+            fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         runBlocking {
