@@ -9,9 +9,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import org.htwk.pacing.R
 
 @Composable
@@ -33,6 +34,7 @@ fun PrivacyPolicyDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.testTag("privacy_dialog"),
         title = {
             Text(
                 (stringResource(R.string.privacy_policy)),
@@ -50,7 +52,7 @@ fun PrivacyPolicyDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("privacy_close")) {
                 Text((stringResource(R.string.back)))
             }
         }

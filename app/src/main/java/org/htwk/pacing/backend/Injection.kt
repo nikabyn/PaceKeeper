@@ -29,6 +29,7 @@ import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesViewModel
 import org.htwk.pacing.ui.screens.settings.FitbitViewModel
+import org.htwk.pacing.ui.screens.WelcomeViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -84,6 +85,7 @@ val appModule = module {
     viewModel { ConnectionsAndServicesViewModel(androidContext(), get()) }
     viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
+    viewModel { WelcomeViewModel(get()) }
 
     /**
      * koin sets up the dependencies for the worker class instance here,

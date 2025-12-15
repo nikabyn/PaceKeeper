@@ -37,7 +37,8 @@ data class UserProfileEntry(
     val diagnosis: Diagnosis?,
     val fitnessTracker: String?,
     val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val checkedIn: Boolean
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -85,7 +86,8 @@ data class UserProfileEntry(
                 illnessStartDate = null,
                 diagnosis = null,
                 fitnessTracker = null,
-                themeMode = "AUTO"
+                themeMode = "AUTO",
+                checkedIn = false,
             )
         }
     }
@@ -93,7 +95,6 @@ data class UserProfileEntry(
 
 @Dao
 interface UserProfileDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(profile: UserProfileEntry)
 
@@ -105,4 +106,12 @@ interface UserProfileDao {
 
     @Query("SELECT * FROM user_profile LIMIT 1")
     fun getProfileLive(): Flow<UserProfileEntry?>
+
+    suspend fun updateCheckedIn(value: Boolean) {
+        val profile = getProfile() ?: error("Profile should always exist")
+        insertOrUpdate(profile.copy(checkedIn = value))
+    }
+
+    @Query("SELECT checkedIn FROM user_profile LIMIT 1")
+    fun getCheckedInLive(): Flow<Boolean>
 }
