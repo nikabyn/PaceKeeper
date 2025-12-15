@@ -1,14 +1,14 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import kotlinx.datetime.Instant
-import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
-import kotlin.time.Duration.Companion.minutes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.htwk.pacing.backend.database.Length
+import kotlin.time.Duration.Companion.minutes
 
 class FallbackHandlerTest {
 
@@ -17,7 +17,12 @@ class FallbackHandlerTest {
 
     @Test
     fun ensureDataGeneratesDefaultHeartRateAndDistanceIfEmpty() {
-        val raw = Predictor.MultiTimeSeriesEntries(timeStart, duration, emptyList(), emptyList())
+        val raw = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
+            timeStart = timeStart,
+            duration = duration,
+            heartRate =  emptyList(),
+            distance = emptyList(),
+        )
 
         val result = FallbackHandler.ensureDataFallback(raw)
 
@@ -43,7 +48,9 @@ class FallbackHandlerTest {
             DistanceEntry(timeStart, timeStart + 10.minutes, Length(0.0)),
             DistanceEntry(timeStart + 10.minutes, timeStart + 20.minutes, Length(50.0))
         )
-        val raw = Predictor.MultiTimeSeriesEntries(timeStart, duration, hr, dist)
+        val raw = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
+            timeStart, duration, heartRate = hr, distance = dist,
+        )
 
         val result = FallbackHandler.ensureDataFallback(raw)
 

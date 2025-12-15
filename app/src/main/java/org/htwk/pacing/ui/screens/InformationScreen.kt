@@ -26,15 +26,13 @@ import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
 fun InformationScreen(
-    navController: NavController,
-    viewModel: UserProfileViewModel
+    navController: NavController
 ) {
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showLicenceDialog by remember { mutableStateOf(false) }
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_information),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier

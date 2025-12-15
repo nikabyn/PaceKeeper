@@ -59,6 +59,7 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.compose.viewmodel.koinViewModel
 
 
 /**
@@ -69,7 +70,7 @@ import org.htwk.pacing.ui.theme.Spacing
 @Composable
 fun UserProfileScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel
+    viewModel: UserProfileViewModel = koinViewModel()
 ) {
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return
@@ -431,6 +432,7 @@ class UserProfileViewModel(
         return UserProfileEntry(
             userId = "",
             nickname = null,
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.UNSPECIFIED,
             birthYear = null,
             heightCm = null,

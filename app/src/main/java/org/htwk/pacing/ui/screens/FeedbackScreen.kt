@@ -21,17 +21,17 @@ import org.htwk.pacing.backend.DomainRoutes
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun FeedbackScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel
+    viewModel: UserProfileViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_feedback),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier
@@ -53,12 +53,12 @@ fun FeedbackScreen(
                 )
             }
 
-            Button (
-            onClick = {
-                val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
-                val intent = Intent(Intent.ACTION_VIEW, linkUri)
-                context.startActivity(intent)
-            },
+            Button(
+                onClick = {
+                    val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
+                    val intent = Intent(Intent.ACTION_VIEW, linkUri)
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(R.string.join_survey))

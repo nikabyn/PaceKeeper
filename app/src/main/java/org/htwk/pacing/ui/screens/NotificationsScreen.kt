@@ -16,14 +16,10 @@ import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
-fun ServicesScreen(
-    navController: NavController,
-    viewModel: UserProfileViewModel
-) {
+fun NotificationsScreen(navController: NavController) {
     SettingsSubScreen(
-        title = stringResource(R.string.title_settings_services),
+        title = stringResource(R.string.title_settings_notifications),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier
@@ -34,7 +30,8 @@ fun ServicesScreen(
             Text(
                 "Platzhalter",
                 style = MaterialTheme.typography.titleMedium
-            ) //TODO: #67
+            )
+
         }
     }
 }

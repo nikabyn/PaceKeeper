@@ -1,5 +1,7 @@
 import junit.framework.TestCase.assertEquals
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
+import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.howFarInSamples
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.jetbrains.kotlinx.multik.api.mk
@@ -26,7 +28,10 @@ class LinearExtrapolatorTest {
     fun `visualize the non-linear timeSeries using an external script`() {
         println("Preparing to plot time series data...")
 
-        val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
+        val result = LinearExtrapolator.multipleExtrapolate(
+            timeSeries,
+            IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples
+        )
 
         result.extrapolations.entries.forEach { (strategy, extrapolation) ->
             println("Strategy: $strategy")
@@ -72,7 +77,10 @@ class LinearExtrapolatorTest {
 
         )
 
-        val result = LinearExtrapolator.multipleExtrapolate(timeSeries)
+        val result = LinearExtrapolator.multipleExtrapolate(
+            timeSeries,
+            IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples
+        )
 
         assertEquals(
             "The number of strategies tested should match the number of results.",
@@ -99,7 +107,10 @@ class LinearExtrapolatorTest {
         val strategy = EXTRAPOLATION_STRATEGY.PAST_6_HOUR_TREND.strategy
         val expected = 100.0 //flat line, slope is 0, so result should be y1 (which is 100)
 
-        val result = strategy.runOnTimeSeries(constantTimeSeries)
+        val result = strategy.runOnTimeSeries(
+            constantTimeSeries,
+            IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples
+        )
 
         assertEquals(expected, result.resultPoint.second, 0.0001)
     }
@@ -110,7 +121,10 @@ class LinearExtrapolatorTest {
         val strategy = EXTRAPOLATION_STRATEGY.PAST_3_HOUR_TREND.strategy
         val expected = 190.95672 //expected value for this specific case
 
-        val result = strategy.runOnTimeSeries(timeSeries)
+        val result = strategy.runOnTimeSeries(
+            timeSeries,
+            IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples
+        )
 
         assertEquals(expected, result.resultPoint.second, 0.0001)
     }

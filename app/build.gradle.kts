@@ -84,7 +84,6 @@ android {
     room {
         schemaDirectory("$projectDir/schemas")
     }
-
 }
 
 dependencies {
@@ -117,6 +116,13 @@ dependencies {
 
     // Health Connect
     implementation(libs.androidx.health.connect)
+
+    // Http Client
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.logging)
 
     // Testing
     testImplementation(libs.junit)

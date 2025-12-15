@@ -21,6 +21,7 @@ import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.compose.viewmodel.koinViewModel
 
 enum class ThemeMode {
     LIGHT,
@@ -31,22 +32,21 @@ enum class ThemeMode {
 @Composable
 fun AppearanceScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel
+    viewModel: UserProfileViewModel = koinViewModel()
 ) {
     val profile by viewModel.profile.collectAsState()
     val currentThemeMode = profile?.themeMode ?: "AUTO"
-    
+
     // Map database string to ThemeMode enum
     val selectedTheme = when (currentThemeMode) {
         "LIGHT" -> ThemeMode.LIGHT
         "DARK" -> ThemeMode.DARK
         else -> ThemeMode.AUTO
     }
-    
+
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_appearance),
         navController = navController,
-        viewModel = viewModel
     ) {
         Column(
             modifier = Modifier

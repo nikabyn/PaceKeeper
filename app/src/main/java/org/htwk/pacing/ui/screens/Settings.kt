@@ -15,12 +15,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.htwk.pacing.R
@@ -29,14 +27,14 @@ import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
-import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.htwk.pacing.ui.theme.CardStyle
 
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
@@ -49,7 +47,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(Spacing.large))
 
             UniversalSettingsCard(
-                route = Route.SERVICES,
+                route = Route.CONNECTIONS_AND_SERVICES,
                 name = stringResource(R.string.title_settings_services),
                 description = stringResource(R.string.subtitle_settings_services),
                 iconRes = R.drawable.settings_services,
@@ -76,7 +74,7 @@ fun SettingsScreen(
             )
 
             UniversalSettingsCard(
-                route = Route.APPEAREANCE,
+                route = Route.APPEARANCE,
                 name = stringResource(R.string.title_settings_appearance),
                 description = stringResource(R.string.subtitle_settings_appearance),
                 iconRes = R.drawable.settings_appereance,
@@ -108,28 +106,7 @@ fun SettingsScreen(
     }
 }
 
-
-class SettingsViewModel(
-    context: Context,
-    val db: PacingDatabase
-) : ViewModel() {
-    private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-    private val _isConnected = MutableStateFlow(false)
-    /*
-    wird das weiter verwendet bei den Services?
-    val isConnected: StateFlow<Boolean> = _isConnected
-
-    fun checkPermissions() {
-        viewModelScope.launch {
-            try {
-                val granted = client.permissionController.getGrantedPermissions()
-                _isConnected.value = wantedPermissions.any { it in granted }
-            } catch (_: Exception) {
-                Log.e("SettingsViewModel", "Failed to get granted permissions.")
-            }
-        }
-    }*/
-
+class SettingsViewModel(val db: PacingDatabase) : ViewModel() {
     /**
      * Starts export as background thread.
      *

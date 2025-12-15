@@ -13,6 +13,7 @@ import org.htwk.pacing.backend.EnergyPredictionJob.retrainEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.trainOnce
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -35,8 +36,9 @@ object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
 
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION
-    private val trainingSeriesDuration = 30.days
-    private val retrainEvery = 8.hours
+    private val maximumTrainingSeriesDuration = 30.days
+    private val minimumTrainingSeriesDuration = 3.days
+    private val retrainEvery = 1.hours
     private val predictEvery = 10.minutes
 
     /**
@@ -73,29 +75,53 @@ object EnergyPredictionJob {
      */
     private suspend fun predictContinuous(db: PacingDatabase) {
         val duration = predictionSeriesDuration
-        val heartRate = db.heartRateDao().getLastLive(duration)
-        val distance = db.distanceDao().getLastLive(duration)
+        val heartRate = db.heartRateDao().getChangeTrigger()
+        val distance = db.distanceDao().getChangeTrigger()
+        val elevationGained = db.elevationGainedDao().getChangeTrigger()
+        val skinTemperature = db.skinTemperatureDao().getChangeTrigger()
+        val heartRateVariability = db.heartRateVariabilityDao().getChangeTrigger()
+        val oxygenSaturation = db.oxygenSaturationDao().getChangeTrigger()
+        val steps = db.stepsDao().getChangeTrigger()
+        val speed = db.speedDao().getChangeTrigger()
+        val sleepSession = db.sleepSessionsDao().getChangeTrigger()
         val userProfile = db.userProfileDao().getProfileLive()
         val ticker = flow {
-            delay(predictEvery)
-            emit(Unit)
+            while (true) {
+                emit(Unit)
+                delay(predictEvery)
+            }
         }
 
         combine(
             heartRate,
             distance,
+            elevationGained,
+            skinTemperature,
+            heartRateVariability,
+            oxygenSaturation,
+            steps,
+            speed,
+            sleepSession,
             userProfile,
-            ticker
-        ) { heartRate, distance, userProfile, _ ->
+            ticker,
+        ) {
+            val now = Clock.System.now()
             Pair(
                 MultiTimeSeriesEntries(
-                    timeStart = Clock.System.now() - duration,
+                    timeStart = now - duration,
                     duration = duration,
-                    heartRate = heartRate,
-                    distance = distance,
+                    heartRate = db.heartRateDao().getInRange(now - duration, now),
+                    distance = db.distanceDao().getInRange(now - duration, now),
+                    elevationGained = db.elevationGainedDao().getInRange(now - duration, now),
+                    skinTemperature = db.skinTemperatureDao().getInRange(now - duration, now),
+                    heartRateVariability = db.heartRateVariabilityDao().getInRange(now - duration, now),
+                    oxygenSaturation = db.oxygenSaturationDao().getInRange(now - duration, now),
+                    steps = db.stepsDao().getInRange(now - duration, now),
+                    speed = db.speedDao().getInRange(now - duration, now),
+                    sleepSession = db.sleepSessionsDao().getInRange(now - duration, now),
                 ),
                 FixedParameters(
-                    anaerobicThresholdBPM = userProfile
+                    anaerobicThresholdBPM = db.userProfileDao().getProfile()
                         ?.anaerobicThreshold?.toDouble()
                         ?: 0.0
                 )
@@ -114,19 +140,50 @@ object EnergyPredictionJob {
      * @throws Exception All exceptions are propagated to the caller.
      */
     private suspend fun trainOnce(db: PacingDatabase) {
-        val duration = trainingSeriesDuration
-        val end = Clock.System.now()
-        val start = end - duration
+        val latestEnd = Clock.System.now()
+        val oldestStart = latestEnd - maximumTrainingSeriesDuration
 
-        val heartRate = db.heartRateDao().getInRange(start, end)
-        val distance = db.distanceDao().getInRange(start, end)
+        val heartRate = db.heartRateDao().getInRange(oldestStart, latestEnd)
+        val distance = db.distanceDao().getInRange(oldestStart, latestEnd)
+        val elevationGained = db.elevationGainedDao().getInRange(oldestStart, latestEnd)
+        val skinTemperature = db.skinTemperatureDao().getInRange(oldestStart, latestEnd)
+        val heartRateVariability = db.heartRateVariabilityDao().getInRange(oldestStart, latestEnd)
+        val oxygenSaturation = db.oxygenSaturationDao().getInRange(oldestStart, latestEnd)
+        val steps = db.stepsDao().getInRange(oldestStart, latestEnd)
+        val speed = db.speedDao().getInRange(oldestStart, latestEnd)
+        val sleepSession = db.sleepSessionsDao().getInRange(oldestStart, latestEnd)
+        val validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(oldestStart, latestEnd)
+
+        val allLists: List<List<TimedEntry>> = listOf(
+            heartRate, distance, elevationGained, skinTemperature, heartRateVariability,
+            oxygenSaturation, steps, speed, sleepSession, validatedEnergyLevel
+        )
+
+        var earliestEntryTime = allLists
+            .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
+            .minOrNull() ?: oldestStart
+
+        val latestEntryTime = allLists
+            .mapNotNull { it.maxByOrNull { entry -> entry.end }?.end }
+            .maxOrNull() ?: latestEnd
+
+        if (latestEntryTime - earliestEntryTime < minimumTrainingSeriesDuration) {
+            earliestEntryTime = latestEntryTime - minimumTrainingSeriesDuration
+        }
         val userProfile = db.userProfileDao().getProfile()
 
         val multiSeries = MultiTimeSeriesEntries(
-            timeStart = start,
-            duration = duration,
+            timeStart = earliestEntryTime,
+            duration = latestEntryTime - earliestEntryTime,
             heartRate = heartRate,
             distance = distance,
+            elevationGained = elevationGained,
+            skinTemperature = skinTemperature,
+            heartRateVariability = heartRateVariability,
+            oxygenSaturation = oxygenSaturation,
+            steps = steps,
+            speed = speed,
+            sleepSession = sleepSession,
         )
         val fixedParams = FixedParameters(
             anaerobicThresholdBPM = userProfile
@@ -134,6 +191,6 @@ object EnergyPredictionJob {
                 ?: 0.0
         )
 
-        Predictor.train(multiSeries, fixedParams)
+        Predictor.train(multiSeries, targetEnergyTimeSeriesEntries = validatedEnergyLevel, fixedParams)
     }
 }
