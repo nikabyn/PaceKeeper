@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import org.htwk.pacing.backend.data_collection.fitbit.Fitbit
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.HeartRateDao
@@ -26,6 +27,8 @@ import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesViewModel
+import org.htwk.pacing.ui.screens.settings.FitbitViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -72,11 +75,14 @@ val appModule = module {
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
     }
+    single<OAuth2Provider>(qualifier = named(Fitbit.TAG)) { Fitbit.oAuth2Provider }
 
     viewModel { HomeViewModel(get(), get()) }
-    viewModel { MeasurementsViewModel(get(), get(), get(), get(), userProfileDao = get()) }
+    viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
-    viewModel { SettingsViewModel(androidContext(), get()) }
+    viewModel { SettingsViewModel(get()) }
+    viewModel { ConnectionsAndServicesViewModel(androidContext(), get()) }
+    viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
 
     /**

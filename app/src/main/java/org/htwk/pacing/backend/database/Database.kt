@@ -5,6 +5,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import kotlinx.datetime.Instant
+import kotlinx.serialization.json.Json
+import org.htwk.pacing.backend.OAuth2Result
 
 @Database(
     entities = [
@@ -134,4 +136,12 @@ class Converters {
     @TypeConverter
     fun toDiagnosis(value: String?): UserProfileEntry.Diagnosis? =
         value?.let { enumValueOf<UserProfileEntry.Diagnosis>(it) }
+
+    @TypeConverter
+    fun fromOAuth2TokenResponse(value: OAuth2Result.TokenResponse) =
+        Json.encodeToString(value)
+
+    @TypeConverter
+    fun toOAuth2TokenResponse(value: String) =
+        Json.decodeFromString<OAuth2Result.TokenResponse>(value)
 }

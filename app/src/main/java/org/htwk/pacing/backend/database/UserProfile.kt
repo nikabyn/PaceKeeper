@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import org.htwk.pacing.backend.OAuth2Result
 import java.util.UUID
 
 val cleanUuid: String = UUID.randomUUID().toString().replace("-", "")
@@ -19,6 +20,8 @@ data class UserProfileEntry(
 
     val userId: String,
     val nickname: String?,
+
+    val fitbitTokenResponse: OAuth2Result.TokenResponse?,
 
     val sex: Sex,
     val birthYear: Int?,
@@ -69,6 +72,7 @@ data class UserProfileEntry(
                 // id wird von Room generiert (0L)
                 userId = shortUserId,
                 nickname = null,
+                fitbitTokenResponse = null,
                 sex = Sex.FEMALE,
                 birthYear = 1990,
                 heightCm = null,

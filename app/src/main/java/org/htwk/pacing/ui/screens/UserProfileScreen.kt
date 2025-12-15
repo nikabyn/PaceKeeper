@@ -58,6 +58,7 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.compose.viewmodel.koinViewModel
 
 
 /**
@@ -68,7 +69,7 @@ import org.htwk.pacing.ui.theme.Spacing
 @Composable
 fun UserProfileScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel
+    viewModel: UserProfileViewModel = koinViewModel()
 ) {
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return
@@ -77,23 +78,44 @@ fun UserProfileScreen(
     var birthYear by remember { mutableStateOf(profile.birthYear?.toString() ?: "") }
     var heightCm by remember { mutableStateOf(profile.heightCm?.toString() ?: "") }
     var weightKg by remember { mutableStateOf(profile.weightKg?.toString() ?: "") }
-    var restingHeartRateBpm by remember { mutableStateOf(profile.restingHeartRateBpm?.toString() ?: "") }
+    var restingHeartRateBpm by remember {
+        mutableStateOf(
+            profile.restingHeartRateBpm?.toString() ?: ""
+        )
+    }
     var selectedSex by remember { mutableStateOf(profile.sex) }
     var selectedAmputationLevel by remember { mutableStateOf(profile.amputationLevel) }
     var selectedDiagnosis by remember { mutableStateOf(profile.diagnosis) }
-    var fatigueSensitivity by remember { mutableStateOf(profile.fatigueSensitivity?.toString() ?: "") }
-    var anaerobicThreshold by remember { mutableStateOf(profile.anaerobicThreshold?.toString() ?: "") }
+    var fatigueSensitivity by remember {
+        mutableStateOf(
+            profile.fatigueSensitivity?.toString() ?: ""
+        )
+    }
+    var anaerobicThreshold by remember {
+        mutableStateOf(
+            profile.anaerobicThreshold?.toString() ?: ""
+        )
+    }
     var bellScale by remember { mutableStateOf(profile.bellScale?.toString() ?: "") }
     var fitnessTracker by remember { mutableStateOf(profile.fitnessTracker ?: "") }
 
     // States für Dialog und ob Änderungen vorliegen
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
-    
+
     // 1. Funktion zur Prüfung auf Änderungen
     val hasUnsavedChanges by remember(
-        nickname, birthYear, heightCm, weightKg, restingHeartRateBpm, selectedSex, selectedAmputationLevel,
-        selectedDiagnosis, fatigueSensitivity, anaerobicThreshold,
-        bellScale, fitnessTracker
+        nickname,
+        birthYear,
+        heightCm,
+        weightKg,
+        restingHeartRateBpm,
+        selectedSex,
+        selectedAmputationLevel,
+        selectedDiagnosis,
+        fatigueSensitivity,
+        anaerobicThreshold,
+        bellScale,
+        fitnessTracker
     ) {
         val currentProfile = profile.copy(
             nickname = nickname.takeIf { it.isNotBlank() },
@@ -142,9 +164,15 @@ fun UserProfileScreen(
                     }
                 }
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.label_back))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.label_back)
+                )
             }
-            Text(stringResource(R.string.title_user_profile), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.title_user_profile),
+                style = MaterialTheme.typography.titleMedium
+            )
             Spacer(Modifier.weight(1f))
             org.htwk.pacing.ui.components.Button(
                 onClick = {
@@ -178,7 +206,7 @@ fun UserProfileScreen(
                         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.save) )
+                    Text(stringResource(R.string.save))
                 } else {
                     Icon(
                         imageVector = Icons.Filled.Check,
@@ -245,15 +273,18 @@ fun UserProfileScreen(
             label = stringResource(R.string.label_amputation_level),
             options = UserProfileEntry.AmputationLevel.entries.map { it.name },
             selectedOption = selectedAmputationLevel?.name ?: "NONE",
-            onOptionSelected = { selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it) }
+            onOptionSelected = {
+                selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it)
+            }
         )
 
         DropdownMenuField(
             label = stringResource(R.string.label_diagnosis),
             options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
             selectedOption = selectedDiagnosis?.name ?: "Keine",
-            onOptionSelected = { 
-                selectedDiagnosis = if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
+            onOptionSelected = {
+                selectedDiagnosis =
+                    if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
             }
         )
 
@@ -310,7 +341,9 @@ fun UserProfileScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showUnsavedChangesDialog = false } // Dialog schließen, auf Seite bleiben
+                    onClick = {
+                        showUnsavedChangesDialog = false
+                    } // Dialog schließen, auf Seite bleiben
                 ) {
                     Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
                 }
@@ -400,6 +433,7 @@ class UserProfileViewModel(
         return UserProfileEntry(
             userId = "",
             nickname = null,
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.UNSPECIFIED,
             birthYear = null,
             heightCm = null,

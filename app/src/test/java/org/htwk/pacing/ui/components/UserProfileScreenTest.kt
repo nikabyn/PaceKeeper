@@ -27,6 +27,7 @@ class UserProfileDaoTest {
         val profile = UserProfileEntry(
             userId = "test-user",
             nickname = "TestUser",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.MALE,
             birthYear = 1990,
             heightCm = 180,
@@ -58,6 +59,7 @@ class UserProfileDaoTest {
         val profile = UserProfileEntry(
             userId = "partial-user",
             nickname = "PartialUser",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.UNSPECIFIED,
             birthYear = null,
             heightCm = null,
@@ -87,6 +89,7 @@ class UserProfileDaoTest {
         val profile = UserProfileEntry(
             userId = "diagnosis-user",
             nickname = "DiagnosisUser",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.FEMALE,
             birthYear = 1988,
             heightCm = 175,
@@ -115,6 +118,7 @@ class UserProfileDaoTest {
         val profile = UserProfileEntry(
             userId = "amputation-user",
             nickname = "AmputationUser",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.MALE,
             birthYear = 1992,
             heightCm = 170,
@@ -142,6 +146,7 @@ class UserProfileDaoTest {
         val profile1 = UserProfileEntry(
             userId = "user1",
             nickname = "User1",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.MALE,
             birthYear = 1990,
             heightCm = 180,
@@ -176,6 +181,7 @@ class UserProfileDaoTest {
         val initialProfile = UserProfileEntry(
             userId = "user123",
             nickname = "InitialName",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.MALE,
             birthYear = 1990,
             heightCm = 180,
@@ -212,6 +218,7 @@ class UserProfileDaoTest {
         val profile = UserProfileEntry(
             userId = "test-user",
             nickname = "TestUser",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.MALE,
             birthYear = 1990,
             heightCm = 180,
@@ -243,6 +250,7 @@ class UserProfileDaoTest {
         val profile = UserProfileEntry(
             userId = "test-user",
             nickname = "TestUser",
+            fitbitTokenResponse = null,
             sex = UserProfileEntry.Sex.FEMALE,
             birthYear = 1992,
             heightCm = 165,
