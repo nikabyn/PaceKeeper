@@ -29,7 +29,6 @@ data class UserProfileEntry(
 
     val amputationLevel: AmputationLevel?,
     val fatigueSensitivity: Int?,
-    //val activityBaseline: Int?,
     val anaerobicThreshold: Int?,
     val bellScale: Int?,
     val illnessStartDate: Long?,
@@ -39,8 +38,6 @@ data class UserProfileEntry(
 
     //Settings
     val warningPermit: Boolean,
-    // val reminderPermit: Boolean,
-    //  val suggestionPermit: Boolean,
     val restingStart: LocalTime?,
     val restingEnd: LocalTime?,
 
@@ -86,7 +83,6 @@ data class UserProfileEntry(
                 restingHeartRateBpm = 60,
                 amputationLevel = null,
                 fatigueSensitivity = null,
-                //  activityBaseline = null,
                 anaerobicThreshold = null,
                 bellScale = null,
                 illnessStartDate = null,
@@ -94,8 +90,6 @@ data class UserProfileEntry(
                 fitnessTracker = null,
 
                 warningPermit = false,
-                // reminderPermit = false,
-                // suggestionPermit = false,
                 restingStart = LocalTime(22, 0),
                 restingEnd = LocalTime(3, 0),
 

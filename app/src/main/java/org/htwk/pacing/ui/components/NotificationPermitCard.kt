@@ -25,21 +25,13 @@ import org.htwk.pacing.ui.theme.CardStyle
  * A Composable that displays notification permission switches in a card.
  *
  * @param warningPermit Whether the user has permitted warnings.
- * @param reminderPermit Whether the user has permitted reminders.
- * @param suggestionPermit Whether the user has permitted suggestions.
  * @param onWarningChange A lambda to be invoked when the warning switch is changed.
- * @param onReminderChange A lambda to be invoked when the reminder switch is changed.
- * @param onSuggestionChange A lambda to be invoked when the suggestion switch is changed.
  */
 
 @Composable
 fun NotificationPermitCard(
     warningPermit: Boolean,
-    // reminderPermit: Boolean,
-    // suggestionPermit: Boolean,
     onWarningChange: (Boolean) -> Unit,
-    //  onReminderChange: (Boolean) -> Unit,
-    //  onSuggestionChange: (Boolean) -> Unit,
 ) {
     Card(
         colors = CardStyle.colors,
@@ -59,25 +51,6 @@ fun NotificationPermitCard(
                 onCheckedChange = onWarningChange,
                 titleStyle = MaterialTheme.typography.titleMedium
             )
-
-            // Perspektivisch für weitere Notifications
-            /*
-                        Switch(
-                            title = stringResource(R.string.reminders),
-                            description = stringResource(R.string.reminder_description),
-                            checked = reminderPermit,
-                            onCheckedChange = onReminderChange,
-                            titleStyle = MaterialTheme.typography.titleLarge
-                        )
-
-                        Switch(
-                            title = stringResource(R.string.suggestions),
-                            description = stringResource(R.string.suggestion_description),
-                            checked = suggestionPermit,
-                            onCheckedChange = onSuggestionChange,
-                            titleStyle = MaterialTheme.typography.titleLarge
-                        )
-            */
         }
     }
 }
