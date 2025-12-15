@@ -71,7 +71,6 @@
     <string name="demo_data_button_text">Load demo data</string>
     <string name="demo_data_dialog_title">Important notice</string>
     <string name="demo_data_dialog_text">If you proceed, demo data will be loaded into Health Connect. You can only delete this data manually via Health Connect.</string>
-    <string name="predicting_energy">Predicting energy</string>
     <string name="energy_prediction_running_channel">Background energy predictions</string>
     <string name="energy_prediction_running">Background energy prediction running…</string>
     <string name="energy_level_debug_prediction">Energy Prediction</string>
@@ -97,7 +96,6 @@
     <string name="status_success_database_sent">Database successfully sent!</string>
     <string name="status_error_sending_database">Error sending the database</string>
     <string name="status_error_generic_sending">Error:</string>
-
     <string name="label_back">Back</string>
     <string name="title_user_profile">User Profile</string>
     <string name="button_save_profile">Save Profile</string>
@@ -138,6 +136,19 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
+    <string name="warnings">Warnings</string>
+    <string name="warning_description">Receive notifications if your energy level is about to drop</string>
+    <string name="reminders">Reminders</string>
+    <string name="reminder_description">Receive regular reminders for tracking symptoms and validating your prognosis</string>
+    <string name="suggestion_description">Receive suggestions based on your current health status</string>
+    <string name="suggestions">Suggestions</string>
+    <string name="notifications">Notifications</string>
+    <string name="personal_resting_hours">Personal Resting Hours</string>
+    <string name="edit_resting_hours">Edit resting hours</string>
+    <string name="start_time_label">Start time (HH:mm)</string>
+    <string name="end_time_label">End time (HH:mm)</string>
+    <string name="time_format_helper">Format: 00:00 to 23:59</string>
+
     <string name="title_settings_unknown_user">Unknown User</string>
     <string name="title_settings_services">Connections &amp; Services</string>
     <string name="title_settings_data">Data &amp; Storage</string>
@@ -175,5 +186,6 @@
     <string name="tips_info_4">Engage in short, low-effort social interactions if tolerated.</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="view_licence">View Licence</string>
+    <string name="predicting_energy">energy is getting predicted</string>
 
 </resources>

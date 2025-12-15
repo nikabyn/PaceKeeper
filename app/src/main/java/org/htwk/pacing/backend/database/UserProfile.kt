@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalTime
 import org.htwk.pacing.backend.OAuth2Result
 import java.util.UUID
 
@@ -36,8 +37,14 @@ data class UserProfileEntry(
     val illnessStartDate: Long?,
     val diagnosis: Diagnosis?,
     val fitnessTracker: String?,
-    val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
     val createdAt: Long = System.currentTimeMillis(),
+
+    //Settings
+    val warningPermit: Boolean,
+    val restingStart: LocalTime?,
+    val restingEnd: LocalTime?,
+
+    val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
     val checkedIn: Boolean
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
@@ -86,6 +93,11 @@ data class UserProfileEntry(
                 illnessStartDate = null,
                 diagnosis = null,
                 fitnessTracker = null,
+
+                warningPermit = false,
+                restingStart = null,
+                restingEnd = null,
+
                 themeMode = "AUTO",
                 checkedIn = false,
             )
@@ -114,4 +126,8 @@ interface UserProfileDao {
 
     @Query("SELECT checkedIn FROM user_profile LIMIT 1")
     fun getCheckedInLive(): Flow<Boolean>
+}
+
+class UserProfileRepository(private val userProfileDao: UserProfileDao) {
+    suspend fun getUserProfile(): UserProfileEntry? = userProfileDao.getProfile()
 }

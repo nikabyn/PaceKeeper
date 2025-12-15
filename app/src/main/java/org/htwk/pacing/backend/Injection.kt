@@ -21,9 +21,11 @@ import org.htwk.pacing.backend.database.SleepSessionDao
 import org.htwk.pacing.backend.database.SpeedDao
 import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.database.UserProfileDao
+import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
+//import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
@@ -77,6 +79,8 @@ val appModule = module {
         get<PacingDatabase>().userProfileDao()
     }
     single<OAuth2Provider>(qualifier = named(Fitbit.TAG)) { Fitbit.oAuth2Provider }
+    single { UserProfileRepository(get()) }
+
 
     viewModel { HomeViewModel(get(), get()) }
     viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
@@ -91,7 +95,7 @@ val appModule = module {
      * koin sets up the dependencies for the worker class instance here,
      * the actual execution/scheduling is handled in Application.kt
      */
-    worker { context, params -> ForegroundWorker(context, params, get()) }
+    worker { context, params -> ForegroundWorker(context, params, get(), get()) }
 }
 
 /**

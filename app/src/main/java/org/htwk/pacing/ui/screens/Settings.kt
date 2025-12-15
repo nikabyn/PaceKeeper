@@ -30,6 +30,7 @@ import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 
+
 @Composable
 fun SettingsScreen(
     navController: NavController,
@@ -41,6 +42,7 @@ fun SettingsScreen(
         ) {
             UserProfileCard(navController = navController)
 
+            Spacer(modifier = Modifier.height(Spacing.large))
             Spacer(modifier = Modifier.height(Spacing.large))
 
             UniversalSettingsCard(

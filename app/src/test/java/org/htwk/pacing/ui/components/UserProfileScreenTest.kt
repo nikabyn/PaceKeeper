@@ -1,7 +1,5 @@
 package org.htwk.pacing.ui.screens
 
-import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.database.UserProfileDao
@@ -42,6 +40,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = "Fitbit",
+            warningPermit = false,
+            restingEnd = null,
+            restingStart = null,
             checkedIn = true
         )
 
@@ -75,6 +76,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false,
             checkedIn = false
         )
 
@@ -106,6 +110,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = UserProfileEntry.Diagnosis.MECFS,
             fitnessTracker = "Apple Watch",
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false,
             checkedIn = true
         )
 
@@ -136,6 +143,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false,
             checkedIn = true
         )
 
@@ -165,6 +175,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false,
             checkedIn = true
         )
 
@@ -201,6 +214,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false,
             checkedIn = true
         )
 
@@ -239,6 +255,9 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false,
             checkedIn = true
         )
 
@@ -272,7 +291,10 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
-            checkedIn = true
+            checkedIn = true,
+            restingEnd = null,
+            restingStart = null,
+            warningPermit = false
         )
 
         runBlocking {

@@ -7,6 +7,7 @@ import org.htwk.pacing.backend.EnergyNotificationJob.THRESHOLD
 import org.htwk.pacing.backend.EnergyNotificationJob.checkEvery
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.UserProfileRepository
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -31,7 +32,11 @@ object EnergyNotificationJob {
      * @param context Application context used to display notifications.
      * @param db [PacingDatabase] used to fetch predicted energy levels.
      */
-    suspend fun run(context: Context, db: PacingDatabase) {
+    suspend fun run(
+        context: Context,
+        db: PacingDatabase,
+        userProfileRepository: UserProfileRepository
+    ) {
         while (true) {
             delay(checkEvery)
 
@@ -43,7 +48,7 @@ object EnergyNotificationJob {
 
             if (predictedEnergy < THRESHOLD) {
                 Log.d(TAG, "Energy is low, showing notification")
-                showNotification(context)
+                showNotification(context, userProfileRepository)
             } else {
                 Log.d(TAG, "Energy is sufficient, no notification")
             }

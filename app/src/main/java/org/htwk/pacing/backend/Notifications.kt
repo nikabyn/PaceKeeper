@@ -16,9 +16,17 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.UserProfileEntry
+import org.htwk.pacing.backend.database.UserProfileRepository
 
+/**
+ * A collection of constant values for notification IDs and channel IDs.
+ */
 object NotificationIds {
     const val FOREGROUND_CHANNEL_ID = "foreground_ch"
     const val FOREGROUND_NOTIFICATION_ID = 1
@@ -27,6 +35,11 @@ object NotificationIds {
     const val ENERGY_WARNING_NOTIFICATION_ID = 2
 }
 
+/**
+ * Initializes the notification system by checking for and requesting notification permissions.
+ *
+ * @param activity The [ComponentActivity] from which to request permissions.
+ */
 fun initNotificationSystem(activity: ComponentActivity) {
     val sharedPrefs = activity.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
 
@@ -57,6 +70,13 @@ fun initNotificationSystem(activity: ComponentActivity) {
     }
 }
 
+/**
+ * Creates a notification channel for energy warnings.
+ *
+ * This function should be called before any notifications are sent on this channel.
+ *
+ * @param context The context.
+ */
 fun createNotificationChannel(context: Context) {
     // Create channel ONLY on API 26+
     val channelId = NotificationIds.ENERGY_WARNING_CHANNEL_ID
@@ -72,11 +92,23 @@ fun createNotificationChannel(context: Context) {
     notificationManager.createNotificationChannel(channel)
 }
 
-fun showNotification(context: Context) {
+/**
+ * Displays a notification to the user about low energy levels.
+ *
+ * @param context The context.
+ */
+suspend fun showNotification(
+    context: Context,
+    userProfile: UserProfileRepository
+) {
     createNotificationChannel(context)
 
-    val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
+    if (!isNotificationAllowedNow(userProfile.getUserProfile())) {
+        Log.d("Notification", "Notification blocked by resting hours or settings.")
+        return
+    }
 
+    val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
     val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
@@ -113,4 +145,42 @@ fun showNotification(context: Context) {
     notificationManager.notify(NotificationIds.ENERGY_WARNING_NOTIFICATION_ID, builder.build())
 
     Log.d("Notification", "Notification sent")
+    Log.d("Notification", "Notification wurde ausgelöst")
+}
+
+suspend fun isNotificationAllowedNow(userProfileEntry: UserProfileEntry?): Boolean {
+
+    if (userProfileEntry == null) {
+        Log.d("Notification", "User profile not found, notifications not allowed.")
+        return false
+    }
+
+    if (!userProfileEntry.warningPermit) {
+        Log.d("Notification", "Warnings disabled in user profile.")
+        return false
+    }
+
+    val restingStart = userProfileEntry.restingStart
+    val restingEnd = userProfileEntry.restingEnd
+
+    if (restingStart != null && restingEnd != null && userProfileEntry.warningPermit) {
+        val now = Clock.System.now()
+        val nowTime = now
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .time
+
+        val isInRestingTime = if (restingStart > restingEnd) {
+            // z.B. 22:00 – 07:00
+            nowTime >= restingStart || nowTime < restingEnd
+        } else {
+            nowTime in restingStart..restingEnd
+        }
+
+        if (isInRestingTime) {
+            Log.d("Notification", "Currently in resting hours.")
+            return false
+        }
+    }
+
+    return true
 }
