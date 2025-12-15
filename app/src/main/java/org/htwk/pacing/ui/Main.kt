@@ -33,6 +33,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -64,7 +65,7 @@ import org.htwk.pacing.ui.screens.FeedbackScreen
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.InformationScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
-import org.htwk.pacing.ui.screens.NotificationsScreen
+import org.htwk.pacing.ui.screens.NotificationScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
@@ -94,7 +95,6 @@ fun Main() {
                 Route.HOME,
                 Route.MEASUREMENTS,
                 Route.SETTINGS,
-                Route.MAIN_NAV,
                 null -> true
                 else -> false
             }
@@ -240,9 +240,19 @@ fun AppNavHost(
         startDestination = startDestination,
         modifier = modifier
     ) {
+
         composable(Route.WELCOME) {
             val viewModel: WelcomeViewModel = koinViewModel()
             val checkedIn by viewModel.checkedIn.collectAsState()
+
+            LaunchedEffect(checkedIn) {
+                if (checkedIn) {
+                    navController.navigate(Route.MAIN_NAV) {
+                        popUpTo(Route.WELCOME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
 
             if (!checkedIn) {
                 WelcomeScreen(
@@ -254,17 +264,14 @@ fun AppNavHost(
                         }
                     }
                 )
-            } else {
-                // Falls das Composable trotzdem gerendert wurde, direkt raus.
-                navController.navigate(Route.MAIN_NAV) {
-                    popUpTo(Route.WELCOME) { inclusive = true }
-                    launchSingleTop = true
-                }
             }
         }
 
         navigation(route = Route.MAIN_NAV, startDestination = Route.HOME) {
-            composable(Route.HOME) { HomeScreen(navController, snackbarHostState) }
+
+            composable(Route.HOME) {
+                HomeScreen(navController, snackbarHostState)
+            }
 
             composable(
                 route = "symptoms/{feeling}",
@@ -307,7 +314,7 @@ fun AppNavHost(
                 Route.NOTIFICATIONS,
                 enterTransition = { subScreenEntry },
                 exitTransition = { subScreenExit }
-            ) { NotificationsScreen(navController) }
+            ) { NotificationScreen(navController) }
 
             composable(
                 Route.APPEARANCE,
@@ -323,15 +330,14 @@ fun AppNavHost(
 
             composable(
                 route = Route.FITBIT,
-                deepLinks = listOf(
-                    navDeepLink { uriPattern = Fitbit.redirectUri.toString() }
-                ),
+                deepLinks = listOf(navDeepLink { uriPattern = Fitbit.redirectUri.toString() }),
                 enterTransition = { subScreenEntry },
                 exitTransition = { subScreenExit }
             ) { backStackEntry ->
                 val deepLinkIntent = backStackEntry.arguments?.getParcelableCompat<Intent>(
                     NavController.KEY_DEEP_LINK_INTENT
                 )
+
                 val fitbitOauthUri = deepLinkIntent?.data
                     ?.takeIf { uri -> uri.authority == "fitbit_oauth2_redirect" }
                     ?.also { uri -> Log.d("AppNavHost", "Received Fitbit OAuth redirect = $uri") }
