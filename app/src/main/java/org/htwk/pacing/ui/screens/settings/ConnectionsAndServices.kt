@@ -88,7 +88,7 @@ fun ConnectionsAndServicesScreen(
                 } else {
                     stringResource(R.string.missing_permissions)
                 },
-                enabled = true,
+                enabled = false,
                 iconId = R.drawable.health_connect,
                 onClick = {
                     if (isHealthConnectConnected) {
@@ -107,7 +107,7 @@ fun ConnectionsAndServicesScreen(
                     stringResource(R.string.login_with_fitbit)
                 },
                 // TODO Enable when fitbit implementation is done
-                enabled = false,
+                enabled = true,
                 iconId = R.drawable.fitbit,
                 onClick = { navController.navigate(Route.FITBIT) },
             )

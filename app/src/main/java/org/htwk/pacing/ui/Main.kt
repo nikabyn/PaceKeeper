@@ -54,6 +54,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.data_collection.fitbit.Fitbit
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.ui.screens.AppearanceScreen
 import org.htwk.pacing.ui.screens.DataScreen
@@ -272,7 +273,7 @@ fun AppNavHost(
             route = Route.FITBIT,
             deepLinks = listOf(
                 navDeepLink {
-                    uriPattern = "org.htwk.pacing://fitbit_oauth2_redirect"
+                    uriPattern = Fitbit.redirectUri.toString()
                 },
             ),
             enterTransition = { subScreenEntry },

@@ -2,10 +2,10 @@ package org.htwk.pacing.backend
 
 import android.content.Context
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import org.htwk.pacing.backend.data_collection.fitbit.Fitbit
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
 import org.htwk.pacing.backend.database.HeartRateDao
@@ -75,22 +75,14 @@ val appModule = module {
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
     }
-    single<OAuth2Provider>(qualifier = named("fitbit")) {
-        OAuth2Provider(
-            clientId = "23TLPD",
-            authUri = "https://www.fitbit.com/oauth2/authorize".toUri(),
-            tokenUri = "https://api.fitbit.com/oauth2/token".toUri(),
-            revokeUri = "https://api.fitbit.com/oauth2/revoke".toUri(),
-            redirectUri = "org.htwk.pacing://fitbit_oauth2_redirect".toUri(),
-        )
-    }
+    single<OAuth2Provider>(qualifier = named(Fitbit.TAG)) { Fitbit.oAuth2Provider }
 
     viewModel { HomeViewModel(get(), get()) }
     viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { ConnectionsAndServicesViewModel(androidContext(), get()) }
-    viewModel { FitbitViewModel(get(), get(qualifier = named("fitbit"))) }
+    viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
 
     /**
