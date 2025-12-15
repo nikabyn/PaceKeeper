@@ -107,22 +107,22 @@ object Predictor {
      * the `predict` function can be used to generate accurate forecasts.
      * Calling `train` updates the internal state of the model.
      *
-     * @param inputTimeSeries The historical multi-source time series data (e.g., heart rate, distance).
+     * @param multiTimeSeriesEntries The historical multi-source time series data (e.g., heart rate, distance).
      * @param fixedParameters Static user-specific parameters relevant to the training data.
      */
     fun train(
-        inputTimeSeries: MultiTimeSeriesEntries,
-        targetTimeSeries: List<ValidatedEnergyLevelEntry>,
+        multiTimeSeriesEntries: MultiTimeSeriesEntries,
+        targetEnergyTimeSeriesEntries: List<ValidatedEnergyLevelEntry>,
         fixedParameters: FixedParameters,
     ) {
-        val multiTimeSeriesDiscrete = Preprocessor.run(inputTimeSeries, fixedParameters)
+        val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
 
-        val targetTimeSeriesDiscrete = TimeSeriesDiscretizer.discretizeTimeSeries(
+        val targetEnergyTimeSeriesDiscrete = TimeSeriesDiscretizer.discretizeTimeSeries(
             GenericTimedDataPointTimeSeries(
-                timeStart = inputTimeSeries.timeStart,
-                duration = inputTimeSeries.duration,
+                timeStart = multiTimeSeriesEntries.timeStart,
+                duration = multiTimeSeriesEntries.duration,
                 isContinuous = true, //discretize: interpolate and edge fill validated energy level
-                data = targetTimeSeries.map { it ->
+                data = targetEnergyTimeSeriesEntries.map { it ->
                     GenericTimedDataPoint(it.time, it.percentage.toDouble())
                 }
             ),
@@ -130,7 +130,7 @@ object Predictor {
         )
 
 
-        LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete, targetTimeSeriesDiscrete)
+        LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete, targetEnergyTimeSeriesDiscrete)
     }
 
     /**

@@ -5,9 +5,11 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
+import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.denormalize
 import org.htwk.pacing.backend.predictor.stats.normalize
+import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -35,17 +37,17 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val bias: Double,
 
         //weight per extrapolation (how much each extrapolated trend affects prediction output)
-        val coefficients: List<Double>,
+        val extrapolationWeights: List<Double>,
 
-        //stochastic distribution per extrapolation we need this for normalization
-        val featureDists: List<StochasticDistribution>      )
+        //stochastic distribution per extrapolation, we need this for normalization
+        val extrapolationDistributions: List<StochasticDistribution>      )
 
     private class Model(
         //model parameters per prediction horizon (e.g. now vs. future)
         val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
 
         //stochastic distribution parameters for prediction target (energy), because we need to normalize it too
-        val targetStochasticDistribution: StochasticDistribution //
+        val targetStochasticDistribution: StochasticDistribution
     )
 
     private var model: Model? = null //hold everything in a single state, (model weights etc.)
@@ -119,8 +121,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                result
-                //if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
+                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
             }
         }
 
@@ -143,7 +144,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val allExtrapolationsMatrix: NDArray<Double, D2> = mk.ndarray(allExtrapolations).transpose()
         val allExpectedFutureValuesVector: NDArray<Double, D1> = mk.ndarray(allExpectedFutureValues)
 
-        //normalize extrapolations, this is essential for good regression stability, skip the constant bias feature at the end
+        //normalize extrapolations, this is essential for good regression stability, but skip the
+        //constant bias feature at the end so it doesn't get zeroed from normalization
         val extrapolationDistributions = (0 until allExtrapolationsMatrix.shape[0] - 1).map { i ->
             (allExtrapolationsMatrix[i] as D1Array<Double>).normalize()
         }
@@ -156,7 +158,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
     }
 
     /**
-     * Trains the prediction model using the provided training samples.
+     * Trains the prediction model using the provided training data.
      *
      * @param input The [MultiTimeSeriesDiscrete] object containing the preprocessed
      *              time series data, such as heart rate.
@@ -169,7 +171,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
         val perHorizonModels = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
-                input, targetArray.toDoubleArray(), // Use the now-normalized target data
+                input,
+                targetArray.toDoubleArray(),
                 predictionHorizon
             )
 
@@ -180,8 +183,6 @@ object LinearCombinationPredictionModel : IPredictionModel {
         this.model = Model(perHorizonModels, targetStochasticDistribution)
     }
 
-    //TODO: add needs train check, the job should use this to check if we lost weights from restart
-    //TODO: update Prediction Job for different Horizons
     /**
      * Predicts the next energy level data point based on the preprocessed time series data.
      * This model uses a linear combination of various time series features (e.g., integrals, derivatives)
@@ -192,6 +193,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @param input The [MultiTimeSeriesDiscrete] object containing the preprocessed
      *              time series data, such as heart rate.
+     * @param predictionHorizon The prediction horizon for which to make the prediction.
      * @return A [Double] representing the predicted energy level.
      */
     override fun predict(
@@ -200,21 +202,22 @@ object LinearCombinationPredictionModel : IPredictionModel {
     ): Double {
         require(model != null) { "No model trained, can't perform prediction." }
 
+        val perHorizonModel = model!!.perHorizonModels[predictionHorizon]!!
+
+        //drop last element, because it is the bias, normalizing it is useless anyways
         val flattenedExtrapolations =
             generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
 
         //normalize extrapolations, this is essential for good regression stability
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations.mapIndexed {index, d ->
-            val dist = model!!.perHorizonModels[predictionHorizon]!!.featureDists[index]
-            mk.ndarray(doubleArrayOf(d)).also { it.normalize(dist) }.first()
+            val distribution = perHorizonModel.extrapolationDistributions[index]
+            normalizeSingleValue(d, distribution)
         })
 
-        val coefficientsVector: D1Array<Double> =
-            mk.ndarray(model!!.perHorizonModels[predictionHorizon]!!.coefficients)
+        //get extrapolation weights (how much each extrapolation trend affects the prediction)
+        val extrapolationWeights: D1Array<Double> = mk.ndarray(perHorizonModel.extrapolationWeights)
 
-        val bias = model!!.perHorizonModels[predictionHorizon]!!.bias
-
-        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, coefficientsVector) + bias))
+        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights) + perHorizonModel.bias))
         //denormalize prediction out of normalized spaces
         prediction.denormalize(model!!.targetStochasticDistribution)
 

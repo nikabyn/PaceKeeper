@@ -264,7 +264,20 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
         private val featureCount: Int = featureIndexMap.size
 
 
-        //fill with random to prevent colinearity/singularity in regression on empty data
+        /**
+         * Fills a sparse time series with noise data to prevent collinearity in regression
+         * between features/metrics with empty data.
+         *
+         * If the input [genericTS] has fewer than two data points, this function generates a new
+         * time series with random hourly values for the entire duration. This prevents issues
+         * like singular matrices in regression models. The random data is seeded by [id] for
+         * deterministic, reproducible results.
+         *
+         * @param id A seed for the random number generator, ensuring consistency.
+         * @param genericTS The input time series to check.
+         * @return The original time series if it contains sufficient data, or a new one
+         *         filled with random data otherwise.
+         */
         private fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
             if (genericTS.data.size >= 2) {
                 return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
@@ -313,10 +326,10 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 return MultiTimeSeriesDiscrete(raw.timeStart, 0)
             }
 
-            val mtsd = MultiTimeSeriesDiscrete(raw.timeStart)
+            val multiTimeSeriesDiscrete = MultiTimeSeriesDiscrete(raw.timeStart)
 
             val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
-            mtsd.resize(stepCount)
+            multiTimeSeriesDiscrete.resize(stepCount)
 
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
@@ -350,12 +363,12 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 metric.signalClass.components.forEach { component ->
                     val featureID = FeatureID(metric, component)
                     val componentData = featureID.component.compute(discreteProportional)
-                    val featureView = mtsd.getMutableRow(featureID)
+                    val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
                     componentData.forEachIndexed { index, value -> featureView[index] = value }
                 }
             }
 
-            return mtsd
+            return multiTimeSeriesDiscrete
         }
     }
 }

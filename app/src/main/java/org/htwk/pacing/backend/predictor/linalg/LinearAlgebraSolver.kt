@@ -247,12 +247,10 @@ object LinearAlgebraSolver {
         //apply Tikhonov regularization/ridge regression.
         //add small offset to diagonal (lambda * Identity) of matrix A^T * A.
         //this ensures that the matrix (A^T * A + lambda * I) is invertible.
-        val unregularizedIndex = matrixAtA.shape[0] - 1
-
-        val n = matrixAtA.shape[0]
 
         //do ridge regularization for all features except the last one, which is a constant bias
-        val P = mk.identity<Double>(n)
+        val P = mk.identity<Double>(matrixAtA.shape[0])
+        val unregularizedIndex = matrixAtA.shape[0] - 1
         P[unregularizedIndex, unregularizedIndex] = 0.0
 
         val regularizedAtA = matrixAtA + P * regularization
