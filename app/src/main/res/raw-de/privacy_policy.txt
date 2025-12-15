@@ -1,16 +1,17 @@
 1. Wer sind wir?
 
-Dieses Projekt wird im Rahmen einer hochschulischen Lehrveranstaltung an der HTWK Leipzig in Zusammenarbeit mit dem Unternehmen FAKT Software GMBH entwickelt.
+Dieses Projekt wird im Rahmen einer hochschulischen Lehrveranstaltung an der HTWK Leipzig in Zusammenarbeit mit dem Unternehmen FAKT Software GmbH entwickelt.
 Ziel ist die Entwicklung und Erprobung eines App-Prototyps, der Gesundheits- und Aktivitätsdaten zur Prognose des Energiehaushaltes sowie zur Aufstellung von Handlungsempfehlungen nutzt.
 Eine kommerzielle Nutzung ist nicht vorgesehen.
 
 Verantwortlich für die Datenverarbeitung:
+Softwareprojekt Team F 2025/2026
 HTWK Leipzig
 Karl-Liebknecht-Str. 132
 04277 Leipzig
 Deutschland
 
-Durchgeführt im Rahmen eines studentischen Projekts an der Hochschule.
+durchgeführt im Rahmen eines studentischen Projekts an der Hochschule.
 Bei Fragen zum Datenschutz kannst du dich an die Hochschule oder den
 Datenschutzbeauftragten wenden.
 
@@ -45,9 +46,8 @@ Du kannst diese Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen �
 5. Wie und wo werden deine Daten gespeichert?
 
 • Deine Daten werden ausschließlich auf deinem eigenen Gerät gespeichert.
-• Eine Übermittlung an das Projektteam oder an FAKT Software GMBH erfolgt nur, wenn
-du dies manuell und ausdrücklich erlaubst (z. B. durch das Senden von
-Feedbackdaten zur Verbesserung des Prototyps).
+• Eine Übermittlung an das Projektteam erfolgt nur, wenn du dies manuell und ausdrücklich erlaubst (z. B. durch das Senden von Feedbackdaten zur Verbesserung des Prototyps).
+• Übermittelte Daten, die beim Projektteam eingehen, werden dauerhaft gespeichert.
 
 6. Datensicherheit
 
@@ -64,6 +64,11 @@ Du hast jederzeit das Recht auf:
 Wenn du Fragen oder Bedenken zum Umgang mit deinen Daten hast, kannst du dich jederzeit an uns wenden.
 Natürlich hast du auch das Recht, dich an die Datenschutzstelle der HTWK Leipzig oder an eine Datenschutzaufsichtsbehörde zu wenden.
 
+7a. Widerspruch zur Datenverarbeitung
+Du kannst der Verarbeitung deiner Daten jederzeit widersprechen.
+Der Widerspruch kann über folgende E-Mail erfolgen: privacy@pacekeeper.de.
+Sobald du widersprichst, werden keine weiteren Daten verarbeitet, und ggf. bereits übermittelte Daten werden auf deine Anfrage hin gelöscht.
+
 8. Keine automatisierten Entscheidungen
 
 Es findet keine automatisierte Entscheidungsfindung im Sinne von Art. 22 DSGVO statt.
@@ -77,3 +82,4 @@ Diese Auswertungen dienen ausschließlich zu Forschungs- und Testzwecken innerha
 Die Ergebnisse sind nicht medizinisch validiert und sollen dir lediglich informative Hinweise bieten.
 Die Verarbeitung und Auswertung dieser Daten erfolgt nur mit deiner ausdrücklichen Einwilligung.
 Du kannst diese Einwilligung jederzeit widerrufen.
+

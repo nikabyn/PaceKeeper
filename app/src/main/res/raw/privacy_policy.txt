@@ -1,10 +1,10 @@
 1. Who are we?
-
 This project is being developed as part of a university course at HTWK Leipzig in cooperation with the company FAKT Software GmbH.
 The goal is to develop and test an app prototype that uses health and activity data to predict energy levels and provide actionable recommendations.
 Commercial use is not intended.
 
 Responsible for data processing:
+Softwareproject Team F 2025/2026
 HTWK Leipzig
 Karl-Liebknecht-Str. 132
 04277 Leipzig
@@ -14,61 +14,59 @@ The project is carried out as part of a student assignment at the university.
 If you have any questions regarding data protection, you can contact the university or the data protection officer.
 
 2. What data do we process?
-
 We only process the data that you voluntarily provide to us or that you explicitly grant access to via Google Health Connect.
 This includes in particular:
-• Activity and health data (e.g., steps, heart rate, sleep duration, vital parameters)
+•	Activity and health data (e.g., steps, heart rate, sleep duration, vital parameters)
 The data is only retrieved if you explicitly allow access via Health Connect.
 
 2a. Data processing when using third-party services (e.g., Fitbit)
-
 If you connect an external service (such as a fitness or health service like Fitbit), we only receive the data you explicitly grant access to there. Depending on the service, this may include activity, health, or sensor data (e.g., steps, heart rate, workout data).
 Data transfer occurs solely on the basis of your explicit consent (Art. 6(1)(a), Art. 9(2)(a) GDPR). You may withdraw this consent at any time in the settings of the respective third-party provider. Once access is revoked, we will no longer receive any data from this service.
 We integrate such third-party providers exclusively to offer you additional features (e.g., synchronization of fitness data). Your data will not be shared with any other parties. Should we connect additional compatible services in the future, the principles described above will apply accordingly.
 
 3. Why do we process your data?
-
 We use the collected data exclusively for the following purposes:
-• Testing and analyzing app functions within the university project
-• Improving and evaluating our machine learning model
-• Synchronizing and displaying your data via Health Connect
+•	Testing and analyzing app functions within the university project
+•	Improving and evaluating our machine learning model
+•	Synchronizing and displaying your data via Health Connect
 There is no commercial use of your data.
 
 4. Legal basis
-
-• The processing of your health data takes place solely based on your explicit consent (Art. 6(1)(a), Art. 9(2)(a) GDPR).
-• You may withdraw this consent at any time with future effect — for example, directly in the app or by contacting the project team.
+The processing of your health data takes place solely based on your explicit consent (Art. 6(1)(a), Art. 9(2)(a) GDPR).
+You may withdraw this consent at any time with future effect — for example, directly in the app or by contacting the project team.
 
 5. How and where is your data stored?
-
-Your data is stored exclusively on your own device.
-Data is only transmitted to the project team or FAKT Software GmbH if you manually and explicitly allow this (e.g., by submitting feedback data to improve the prototype).
+•	Your data is stored exclusively on your own device.
+•	Data is only transmitted to the project team if you manually and explicitly allow this (e.g., by submitting feedback data to improve the prototype).
+•	Any data transmitted to the project team will be stored permanently.
 
 6. Data security
-
 The app is designed so that all data is stored solely on your device. This effectively prevents unauthorized access or misuse by third parties.
 
 7. Your rights
-
 You have the right at any time to:
-• Access your stored personal data
-• Request correction or deletion of your data
-• Request restriction of processing
-• Data portability
-• Withdraw your consent
+•	Access your stored personal data
+•	Request correction or deletion of your data
+•	Request restriction of processing
+•	Data portability
+•	Withdraw your consent
 If you have any questions or concerns about how your data is handled, you can contact us at any time.
 You also have the right to contact the data protection office of HTWK Leipzig or a supervisory authority.
 
-8. No automated decision-making
+7a. Objection to Data Processing
+You may object to the processing of your data at any time.
+The objection can be submitted via the following e-mail address: privacy@pacekeeper.de.
+Once you submit your objection, no further data will be processed, and any data previously transmitted can be deleted upon your request.
 
+8. No automated decision-making
 There is no automated decision-making within the meaning of Art. 22 GDPR.
 All recommendations provided by the app are for informational purposes only and have no legal or medically binding consequences.
 
 9. Automated analysis / profiling
-
 As part of this project, your health data is analyzed using machine learning methods.
 The goal is to identify patterns in your activity behavior and provide recommendations for energy savings or rest breaks.
 These analyses are carried out solely for research and testing within the project.
 The results are not medically validated and are intended only as informative suggestions.
 The processing and analysis of this data takes place only with your explicit consent.
 You may withdraw this consent at any time.
+

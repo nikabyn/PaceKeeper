@@ -45,6 +45,7 @@ data class UserProfileEntry(
     val restingEnd: LocalTime?,
 
     val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
+    val checkedIn: Boolean
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -97,7 +98,8 @@ data class UserProfileEntry(
                 restingStart = null,
                 restingEnd = null,
 
-                themeMode = "AUTO"
+                themeMode = "AUTO",
+                checkedIn = false,
             )
         }
     }
@@ -105,7 +107,6 @@ data class UserProfileEntry(
 
 @Dao
 interface UserProfileDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(profile: UserProfileEntry)
 
@@ -117,6 +118,14 @@ interface UserProfileDao {
 
     @Query("SELECT * FROM user_profile LIMIT 1")
     fun getProfileLive(): Flow<UserProfileEntry?>
+
+    suspend fun updateCheckedIn(value: Boolean) {
+        val profile = getProfile() ?: error("Profile should always exist")
+        insertOrUpdate(profile.copy(checkedIn = value))
+    }
+
+    @Query("SELECT checkedIn FROM user_profile LIMIT 1")
+    fun getCheckedInLive(): Flow<Boolean>
 }
 
 class UserProfileRepository(private val userProfileDao: UserProfileDao) {

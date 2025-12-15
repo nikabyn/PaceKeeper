@@ -1,5 +1,7 @@
 package org.htwk.pacing.ui.screens
 
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.database.UserProfileDao
@@ -42,7 +44,8 @@ class UserProfileDaoTest {
             fitnessTracker = "Fitbit",
             warningPermit = false,
             restingEnd = null,
-            restingStart = null
+            restingStart = null,
+            checkedIn = true
         )
 
         runBlocking {
@@ -77,7 +80,8 @@ class UserProfileDaoTest {
             fitnessTracker = null,
             restingEnd = null,
             restingStart = null,
-            warningPermit = false
+            warningPermit = false,
+            checkedIn = false
         )
 
         runBlocking {
@@ -111,6 +115,8 @@ class UserProfileDaoTest {
             restingEnd = null,
             restingStart = null,
             warningPermit = false
+            fitnessTracker = "Apple Watch",
+            checkedIn = true
         )
 
         runBlocking {
@@ -142,7 +148,8 @@ class UserProfileDaoTest {
             fitnessTracker = null,
             restingEnd = null,
             restingStart = null,
-            warningPermit = false
+            warningPermit = false,
+            checkedIn = true
         )
 
         runBlocking {
@@ -173,7 +180,8 @@ class UserProfileDaoTest {
             fitnessTracker = null,
             restingEnd = null,
             restingStart = null,
-            warningPermit = false
+            warningPermit = false,
+            checkedIn = true
         )
 
         val profile2 = profile1.copy(
@@ -211,7 +219,8 @@ class UserProfileDaoTest {
             fitnessTracker = null,
             restingEnd = null,
             restingStart = null,
-            warningPermit = false
+            warningPermit = false,
+            checkedIn = true
         )
 
         val updatedProfile = initialProfile.copy(
@@ -251,7 +260,8 @@ class UserProfileDaoTest {
             fitnessTracker = null,
             restingEnd = null,
             restingStart = null,
-            warningPermit = false
+            warningPermit = false,
+            checkedIn = true
         )
 
         runBlocking {
@@ -284,6 +294,7 @@ class UserProfileDaoTest {
             illnessStartDate = null,
             diagnosis = null,
             fitnessTracker = null,
+            checkedIn = true,
             restingEnd = null,
             restingStart = null,
             warningPermit = false
@@ -307,10 +318,12 @@ class FakeUserProfileDao : UserProfileDao {
     var insertOrUpdateCallCount = 0
     var deleteAllCalled = false
     var lastInsertedProfile: UserProfileEntry? = null
-
+    val checkedIn = MutableStateFlow(false)
     private val profileFlow = MutableStateFlow<UserProfileEntry?>(null)
 
     override fun getProfileLive() = profileFlow
+
+    override fun getCheckedInLive() = checkedIn
 
     override suspend fun getProfile(): UserProfileEntry? {
         return profileFlow.value
