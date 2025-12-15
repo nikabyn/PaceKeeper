@@ -181,12 +181,10 @@ private fun NavigationBar(
         }
     }
 
-    Row(modifier = Modifier.align(Alignment.Center)) {
-        NavigationPoints(
-            pagerState.currentPage,
-            numPages
-        )
-    }
+    NavigationPoints(
+        pagerState.currentPage,
+        numPages
+    )
 
     val isLastPage = pagerState.currentPage == numPages - 1
     Button(
@@ -214,18 +212,19 @@ private fun NavigationBar(
 
 @Composable
 private fun NavigationPoints(page: Int, numPages: Int) {
-    repeat(numPages) { iteration ->
-        val color =
-            if (page == iteration) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.outlineVariant
-        Box(
-            modifier = Modifier
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(color)
-                .size(10.dp)
-                .testTag("nav_dots"),
-        )
+    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.testTag("nav_dots")) {
+        repeat(numPages) { iteration ->
+            val color =
+                if (page == iteration) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outlineVariant
+            Box(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    .size(10.dp),
+            )
+        }
     }
 }
 

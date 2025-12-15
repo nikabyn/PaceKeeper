@@ -1,12 +1,14 @@
-package org.htwk.pacing.ui.screens
+package org.htwk.pacing
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import org.htwk.pacing.ui.screens.WelcomeScreen
 import org.junit.Rule
 import org.junit.Test
 
@@ -20,10 +22,7 @@ class WelcomeScreenTest {
 
     @Test
     fun firstPage_showsForwardEnabled_backHidden() {
-        val vm = FakeWelcomeViewModel()
-        setContent {
-            WelcomeScreen(onFinished = {}, viewModel = vm)
-        }
+        setContent { WelcomeScreen(onFinished = {}) }
 
         composeTestRule.onNodeWithTag("nav_back", useUnmergedTree = true)
             .assertDoesNotExist()
@@ -33,10 +32,7 @@ class WelcomeScreenTest {
 
     @Test
     fun navigateForward_and_back_viaButtons() {
-        val vm = FakeWelcomeViewModel()
-        setContent {
-            WelcomeScreen(onFinished = {}, viewModel = vm)
-        }
+        setContent { WelcomeScreen(onFinished = {}) }
 
         composeTestRule.onNodeWithTag("nav_forward").performClick()
         composeTestRule.onNodeWithTag("nav_back").assertIsDisplayed().assertIsEnabled()
@@ -47,10 +43,7 @@ class WelcomeScreenTest {
 
     @Test
     fun lastPage_forwardDisabled_untilAgreementChecked() {
-        val vm = FakeWelcomeViewModel()
-        setContent {
-            WelcomeScreen(onFinished = {}, viewModel = vm)
-        }
+        setContent { WelcomeScreen(onFinished = {}) }
 
         repeat(3) { composeTestRule.onNodeWithTag("nav_forward").performClick() }
         composeTestRule.onNodeWithTag("nav_forward").assertIsDisplayed().assertIsNotEnabled()
@@ -60,14 +53,13 @@ class WelcomeScreenTest {
 
     @Test
     fun privacyPolicy_opensAndClosesDialog() {
-        val vm = FakeWelcomeViewModel()
-        setContent {
-            WelcomeScreen(onFinished = {}, viewModel = vm)
-        }
+        setContent { WelcomeScreen(onFinished = {}) }
 
         repeat(3) { composeTestRule.onNodeWithTag("nav_forward").performClick() }
         composeTestRule.onNodeWithTag("privacy_button").performClick()
-        composeTestRule.onNodeWithTag("privacy_dialog").assertIsDisplayed()
+        composeTestRule.waitUntil(5000) {
+            composeTestRule.onNodeWithTag("privacy_dialog").isDisplayed()
+        }
         composeTestRule.onNodeWithTag("privacy_close").performClick()
         composeTestRule.onNodeWithTag("privacy_dialog").assertDoesNotExist()
     }
@@ -75,10 +67,7 @@ class WelcomeScreenTest {
     @Test
     fun finishing_callsOnFinished_whenAgreed() {
         var finishedCalled = false
-        val vm = FakeWelcomeViewModel()
-        setContent {
-            WelcomeScreen(onFinished = { finishedCalled = true }, viewModel = vm)
-        }
+        setContent { WelcomeScreen(onFinished = { finishedCalled = true }) }
 
         repeat(3) { composeTestRule.onNodeWithTag("nav_forward").performClick() }
         composeTestRule.onNodeWithTag("nav_forward").assertIsNotEnabled()
@@ -89,5 +78,3 @@ class WelcomeScreenTest {
         }
     }
 }
-
-class FakeWelcomeViewModel : WelcomeViewModel(dao = FakeUserProfileDao()) {}
