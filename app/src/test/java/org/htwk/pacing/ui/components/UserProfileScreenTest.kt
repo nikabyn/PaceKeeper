@@ -293,10 +293,12 @@ class FakeUserProfileDao : UserProfileDao {
     var insertOrUpdateCallCount = 0
     var deleteAllCalled = false
     var lastInsertedProfile: UserProfileEntry? = null
-    val checkedIn = MutableStateFlow<UserProfileEntry?>(null)
+    val checkedIn = MutableStateFlow(false)
     private val profileFlow = MutableStateFlow<UserProfileEntry?>(null)
 
     override fun getProfileLive() = profileFlow
+
+    override fun getCheckedInLive() = checkedIn
 
     override suspend fun getProfile(): UserProfileEntry? {
         return profileFlow.value

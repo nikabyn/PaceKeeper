@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -107,6 +108,7 @@ fun WelcomeScreen(onFinished: () -> Unit, viewModel: WelcomeViewModel = koinView
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .testTag("pager")
                 ) { pageIndex ->
                     Column(
                         modifier = Modifier
@@ -170,6 +172,7 @@ private fun NavigationBar(
         Button(
             onClick = onBackwards,
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+            modifier = Modifier.testTag("nav_back"),
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -190,7 +193,9 @@ private fun NavigationBar(
         onClick = onForwards,
         enabled = canContinue,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-        modifier = Modifier.align(Alignment.CenterEnd),
+        modifier = Modifier
+            .align(Alignment.CenterEnd)
+            .testTag("nav_forward"),
     ) {
         AnimatedVisibility(visible = isLastPage) {
             Icon(
@@ -219,6 +224,7 @@ private fun NavigationPoints(page: Int, numPages: Int) {
                 .clip(CircleShape)
                 .background(color)
                 .size(10.dp)
+                .testTag("nav_dots"),
         )
     }
 }
@@ -323,7 +329,10 @@ private fun DataUsagePage(viewModel: WelcomeViewModel) {
 
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
 
-    TextButton(onClick = { showPrivacyPolicyDialog = true }) {
+    TextButton(
+        onClick = { showPrivacyPolicyDialog = true },
+        modifier = Modifier.testTag("privacy_button")
+    ) {
         Text(
             text = stringResource(R.string.privacy_policy),
             style = MaterialTheme.typography.bodyMedium
@@ -341,7 +350,9 @@ private fun DataUsagePage(viewModel: WelcomeViewModel) {
         shape = CardStyle.shape,
         colors = CardStyle.colors,
         onClick = { onAcceptedChange(!viewModel.termsAccepted) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("agreement_card"),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.large),
@@ -350,7 +361,8 @@ private fun DataUsagePage(viewModel: WelcomeViewModel) {
         ) {
             Checkbox(
                 checked = viewModel.termsAccepted,
-                onCheckedChange = onAcceptedChange
+                onCheckedChange = onAcceptedChange,
+                modifier = Modifier.testTag("agreement_checkbox")
             )
             Text(
                 text = stringResource(R.string.agreement_policy),
@@ -503,7 +515,7 @@ private fun Description(text: String) = Text(
     modifier = Modifier.padding(horizontal = Spacing.large)
 )
 
-class WelcomeViewModel(
+open class WelcomeViewModel(
     private val dao: UserProfileDao
 ) : ViewModel() {
     var termsAccepted by mutableStateOf(false)
