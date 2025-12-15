@@ -23,10 +23,12 @@ import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun InformationScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: UserProfileViewModel = koinViewModel(),
 ) {
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showLicenceDialog by remember { mutableStateOf(false) }
