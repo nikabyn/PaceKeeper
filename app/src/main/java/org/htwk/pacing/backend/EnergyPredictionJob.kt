@@ -21,6 +21,7 @@ import org.htwk.pacing.backend.predictor.Predictor.predict
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Responsible for continuously predicting the user's energy level using historical and live data.
@@ -38,8 +39,8 @@ object EnergyPredictionJob {
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION
     private val maximumTrainingSeriesDuration = 30.days
     private val minimumTrainingSeriesDuration = 3.days
-    private val retrainEvery = 60.seconds
-    private val predictEvery = 10.seconds
+    private val retrainEvery = 1.hours
+    private val predictEvery = 10.minutes
 
     /**
      * Entry point for the [EnergyPredictionJob].
