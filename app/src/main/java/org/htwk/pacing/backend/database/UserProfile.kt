@@ -120,6 +120,5 @@ interface UserProfileDao {
 }
 
 class UserProfileRepository(private val userProfileDao: UserProfileDao) {
-    // Die Methode, die du im Worker aufrufst
     suspend fun getUserProfile(): UserProfileEntry? = userProfileDao.getProfile()
 }
