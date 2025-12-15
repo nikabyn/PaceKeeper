@@ -126,4 +126,24 @@ class NormalizationTests {
 
         assertArrayEquals(raw.toDoubleArray(), inputNormalized.toDoubleArray(), delta)
     }
+
+    @Test
+    fun normalizeSingleValue1() {
+        val input = HR_MEAN
+
+        val output = normalizeSingleValue(input, StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION))
+
+        val expected = 0.0
+        assertEquals(expected, output, delta)
+    }
+
+    @Test
+    fun normalizeSingleValue2() {
+        val input = HR_MEAN + HR_STANDARD_DEVIATION * 0.5
+
+        val output = normalizeSingleValue(input, StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION))
+
+        val expected = 0.5
+        assertEquals(expected, output, delta)
+    }
 }

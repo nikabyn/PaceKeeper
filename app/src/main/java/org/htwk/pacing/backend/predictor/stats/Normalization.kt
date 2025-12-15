@@ -1,5 +1,7 @@
 package org.htwk.pacing.backend.predictor.stats
 
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
@@ -49,10 +51,30 @@ fun D1Array<Double>.normalize(
 }
 
 /**
+ * Normalizes a single value using standard score (z-score) normalization.
+ *
+ * @param value The value to normalize.
+ * @param stochasticDistribution The distribution (mean, stddev) to use for normalization.
+ *                               If omitted, the value is normalized against itself, resulting in 0.0.
+ * @return The normalized value. Returns 0.0 if the standard deviation is zero.
+ */
+fun normalizeSingleValue(
+    value: Double,
+    stochasticDistribution: StochasticDistribution = StochasticDistribution.ofArray(mk.ndarray(doubleArrayOf(value)))
+): Double {
+    return if (stochasticDistribution.stddev == 0.0) {
+        0.0
+    } else {
+        (value - stochasticDistribution.mean) / stochasticDistribution.stddev
+    }
+}
+
+
+/**
  * Denormalizes the array
  * @param StochasticDistribution The stochastic distribution for rescaling the array.
  * @see StochasticDistribution
- * @see normalize
+ * @see normalizeSingleValue
  */
 fun D1Array<Double>.denormalize(
     stochasticDistribution: StochasticDistribution
