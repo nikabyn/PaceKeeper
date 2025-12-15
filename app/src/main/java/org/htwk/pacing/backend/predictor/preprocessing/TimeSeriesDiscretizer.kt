@@ -22,11 +22,10 @@ object TimeSeriesDiscretizer {
      * @return A map where keys are discrete time buckets (relative to startTime) and values are the averaged data points.
      */
     private fun calculateTimeBucketAverages(
-        input: GenericTimedDataPointTimeSeries
+        input: GenericTimedDataPointTimeSeries,
     ): SortedMap<Int, Double> {
         val timeStart = input.timeStart
         val entries = input.data
-        val timeSeriesType = input.metric.signalClass
 
         require(entries.isNotEmpty()) { "Input entries list cannot be empty." }
         require(entries.minOf { it.time } >= timeStart) { "All entry times must be at or after the start time." }
@@ -41,13 +40,11 @@ object TimeSeriesDiscretizer {
         }
 
         val timeBucketValues = timeBucketGroups.mapValues { (_, group) ->
-            when (timeSeriesType) {
-                TimeSeriesSignalClass.AGGREGATED ->
-                    group.sumOf { it.value }
-
-                TimeSeriesSignalClass.CONTINUOUS ->
-                    group.map { it.value }
-                        .average() // TODO: weighted resampling/average, because incoming HR data points are probably unevenly spaced
+            if (input.isContinuous) {
+                // TODO: weighted resampling/average, as HR data points are probably unevenly spaced
+                group.map { it.value }.average() //for continuous values, calculate average
+            } else {
+                group.sumOf { it.value } //for aggregated values, like steps, just sum, don't average
             }
         }
 
@@ -160,6 +157,8 @@ object TimeSeriesDiscretizer {
      * for continuous data (like heart rate), or sums for aggregated data (like steps) in each time bucket.
      * For continuous data, it also extrapolates to the start and end of the time series if needed.
      * @param input The generic time series data to be processed.
+     * @param isContinuous Determines whether to perform interpolation or not (only interpolate/edge
+     *                     fill for continuous metric, not for aggregated metrics like steps)
      * @return A [DoubleArray] representing the discretized time series.
      */
     fun discretizeTimeSeries(
@@ -171,17 +170,14 @@ object TimeSeriesDiscretizer {
         //optionally pin the first and last known value to the borders so that we don't get missing
         //values,this will lead to constant extrapolation at the edges
         //only makes sense with continuous time series(bpm), not with aggregated ones (like steps)
-        val isContinuous =
-            (input.metric.signalClass == TimeSeriesSignalClass.CONTINUOUS)
-
-        if (isContinuous) {
+        if (input.isContinuous) {
             fillEdgeBuckets(timeBucketAverages, targetLength)
         }
 
         val discreteTimeSeries =
             bucketsToDiscreteTimeSeries(
                 timeBucketAverages,
-                doInterpolateBetweenBuckets = isContinuous,
+                doInterpolateBetweenBuckets = input.isContinuous,
                 targetLength = targetLength
             )
 

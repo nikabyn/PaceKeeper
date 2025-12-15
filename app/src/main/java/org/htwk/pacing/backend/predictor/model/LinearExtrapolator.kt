@@ -8,8 +8,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.average
 
 object LinearExtrapolator {
-    private val stepsIntoFuture = Predictor.PREDICTION_WINDOW_SAMPLE_COUNT
-
     /**
      * Represents the outcome of a linear extrapolation.
      *
@@ -42,7 +40,13 @@ object LinearExtrapolator {
      * @param y1 The value at time `x1`.
      * @return The extrapolated `y` value at x = now + stepsIntoFuture
      */
-    private fun linearExtrapolate(x0: Double, y0: Double, x1: Double, y1: Double): Double {
+    private fun linearExtrapolate(
+        x0: Double,
+        y0: Double,
+        x1: Double,
+        y1: Double,
+        stepsIntoFuture: Int
+    ): Double {
         //flip the sign, because the indices are counted in reverse time
         //e.g.: x0 > x1 when in reality, x0 refers to a timepoint that comes before x1
         val slope = (y1 - y0) / -(x1 - x0)
@@ -169,19 +173,19 @@ object LinearExtrapolator {
          * @return An [ExtrapolationLine] object containing the two sampled points and the resulting
          *         extrapolated point.
          */
-        fun runOnTimeSeries(timeSeries: D1Array<Double>): ExtrapolationLine {
+        fun runOnTimeSeries(timeSeries: D1Array<Double>, stepsIntoFuture: Int): ExtrapolationLine {
             val x0 = samplingDescriptors.first.getSamplePositionX()
             val y0 = samplingDescriptors.first.getSampleResultY(timeSeries)
 
             val x1 = samplingDescriptors.second.getSamplePositionX()
             val y1 = samplingDescriptors.second.getSampleResultY(timeSeries)
 
-            val result = linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
+            val result = linearExtrapolate(x0 = x0, y0 = y0, x1 = x1, y1 = y1, stepsIntoFuture)
 
             return ExtrapolationLine(
                 firstPoint = x0 to y0,
                 secondPoint = x1 to y1,
-                resultPoint = (stepsIntoFuture + timeSeries.size).toDouble() to result
+                resultPoint = (stepsIntoFuture + timeSeries.size - 1).toDouble() to result
             )
         }
     }
@@ -197,9 +201,10 @@ object LinearExtrapolator {
 
     fun multipleExtrapolate(
         timeSeries: D1Array<Double>,
+        stepsIntoFuture: Int
     ): MultiExtrapolationResult {
         return MultiExtrapolationResult(extrapolations = EXTRAPOLATION_STRATEGY.entries.associateWith {
-            it.strategy.runOnTimeSeries(timeSeries)
+            it.strategy.runOnTimeSeries(timeSeries, stepsIntoFuture)
         })
     }
 

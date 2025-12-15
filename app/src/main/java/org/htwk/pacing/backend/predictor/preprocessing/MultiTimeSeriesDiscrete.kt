@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+import android.util.Log
 import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
@@ -17,7 +18,9 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
+import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -181,7 +184,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             "Expected ${featureCount} features, got ${newSamples.shape[0]}"
         }
 
-        reserveCapacity(stepCount + newSteps);
+        reserveCapacity(stepCount + newSteps)
 
         // Copy new samples
         for (row in 0 until featureCount) {
@@ -285,24 +288,41 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 return MultiTimeSeriesDiscrete(raw.timeStart, 0)
             }
 
-            val mtsd = MultiTimeSeriesDiscrete(raw.timeStart)
+            val multiTimeSeriesDiscrete = MultiTimeSeriesDiscrete(raw.timeStart)
 
             val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
-            mtsd.resize(stepCount)
+            multiTimeSeriesDiscrete.resize(stepCount)
+
+            val metricCounts = mutableMapOf<TimeSeriesMetric, Int>()
 
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
                 val discreteProportional = discretizeTimeSeries(
-                    GenericTimedDataPointTimeSeries(
-                        timeStart = raw.timeStart,
-                        duration = raw.duration,
-                        metric = metric,
-                        data = when (metric) {
-                            TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
-                            TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
+                    ensureData(id = metric.ordinal,
+                        GenericTimedDataPointTimeSeries(
+                            timeStart = raw.timeStart,
+                            duration = raw.duration,
+                            isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
+                            data = when (metric) {
+                                TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
+                                    ::GenericTimedDataPoint
+                                )
+
+                                TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
+                            }
+                        ).also {it ->
+                            //count how many entries we got
+                            metricCounts[metric] = it.data.size
                         }
                     ),
-                    stepCount
+                    targetLength = stepCount
                 )
 
                 require(discreteProportional.size == stepCount);
@@ -310,12 +330,20 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 metric.signalClass.components.forEach { component ->
                     val featureID = FeatureID(metric, component)
                     val componentData = featureID.component.compute(discreteProportional)
-                    val featureView = mtsd.getMutableRow(featureID)
+                    val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
                     componentData.forEachIndexed { index, value -> featureView[index] = value }
                 }
             }
 
-            return mtsd
+            val debug = metricCounts.entries
+                .sortedBy { it.key.ordinal } //keep defined enum order in output
+                .joinToString(", ") { (metric, count) ->
+                    "${metric.name}=$count"
+                }
+
+            println("per-metric input entry counts (before ensureData): $debug")
+
+            return multiTimeSeriesDiscrete
         }
     }
 }

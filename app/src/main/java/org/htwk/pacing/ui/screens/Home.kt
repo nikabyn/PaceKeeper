@@ -42,6 +42,11 @@ import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
+data class EnergyGraphData(
+    val seriesPastToNow : Series<List<Double>>,
+    val futureValue : Double
+)
+
 @Composable
 fun HomeScreen(
     navController: NavController,
@@ -53,28 +58,23 @@ fun HomeScreen(
 
     // cache remembers the most recent non‑empty series to fix flickering
     var cached by remember {
-        mutableStateOf<Series<out List<Double>>>(
-            Series<List<Double>>(
-                listOf(0.0, 0.0), // dummy value
-                listOf(0.0, 0.0)  // dummy value
-            )
+        mutableStateOf(
+            EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
         )
     }
 
-    if (latest.y.isNotEmpty()) cached = latest
+    if (latest.seriesPastToNow.y.isNotEmpty()) cached = latest
 
-    val series = cached
+    val energyGraphData = cached
     // always draw the cache
-    if (series.y.isEmpty()) return//should never happen in runtime, but may happen during startup
+    if (energyGraphData.seriesPastToNow.y.isEmpty()) return//should never happen in runtime, but may happen during startup
 
-    val mid = series.x.size / 2
+    val futureValue = energyGraphData.futureValue
 
-    val secondHalfValues = series.y.drop(mid)
-
-    val currentEnergy = secondHalfValues.first()
-    val minPrediction = secondHalfValues.min().toFloat()
-    val maxPrediction = secondHalfValues.max().toFloat()
-    val avgPrediction = secondHalfValues.average().toFloat()
+    val currentEnergy = energyGraphData.seriesPastToNow.y.last()
+    val minPrediction = futureValue - 0.1
+    val maxPrediction = futureValue + 0.1
+    val avgPrediction = futureValue
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
@@ -82,11 +82,11 @@ fun HomeScreen(
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
         ) {
             EnergyPredictionCard(
-                series = series,
+                series = energyGraphData.seriesPastToNow,
                 currentEnergy = currentEnergy.toFloat(),
-                minPrediction = minPrediction,
-                avgPrediction = avgPrediction,
-                maxPrediction = maxPrediction,
+                minPrediction = minPrediction.toFloat(),
+                avgPrediction = avgPrediction.toFloat(),
+                maxPrediction = maxPrediction.toFloat(),
                 modifier = Modifier.height(300.dp)
             )
             LabelCard(energy = currentEnergy)
@@ -110,20 +110,21 @@ class HomeViewModel(
         .filter { it.isNotEmpty() }
         .debounce(200)
         .map { entries ->
-            val updated = Series(mutableListOf(), mutableListOf())
+            val energySeries = Series(mutableListOf(), mutableListOf())
 
-            entries.forEach { (time, value) ->
-                updated.x.add(time.toEpochMilliseconds().toDouble())
-                updated.y.add(value.toDouble())
+            entries.forEach { entry ->
+                energySeries.x.add(entry.time.toEpochMilliseconds().toDouble())
+                energySeries.y.add(entry.percentageNow.toDouble())
             }
-            updated
+
+            EnergyGraphData(
+                Series(energySeries.x.toList(), energySeries.y.toList()),
+                entries.last().percentageFuture.toDouble()
+            )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = Series(
-                listOf(0.0, 0.0),
-                listOf(0.0, 0.0),
-            )
+            initialValue = EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
         )
 
     fun storeValidatedEnergyLevel(validation: Validation, energy: Double) {

@@ -30,7 +30,7 @@ suspend fun exportAllAsZip(db: PacingDatabase, outputStream: OutputStream) = wit
 
         exportEntityToCsv("energy_level.csv", zipOut) {
             db.predictedEnergyLevelDao().getAll().map {
-                CsvRow(it.time.toString(), mapOf("energyLevel" to it.percentage.toString()))
+                CsvRow(it.time.toString(), mapOf("energyLevel" to it.percentageFuture.toString()))
             }
         }
 

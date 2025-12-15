@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.backend.predictor.preprocessing.FallbackHandler.ensureDataFallback
 
 object Preprocessor {
     /**
@@ -12,17 +11,14 @@ object Preprocessor {
      * turns it into a discrete, uniformly sampled format (multi time series per metric) suitable
      * for the prediction model.
      *
-     * @param raw The raw time series data, containing lists of data points for different metrics.
+     * @param input The raw time series data, containing lists of data points for different metrics.
      * @param fixedParameters Additional fixed parameters that might influence the preprocessing. (Currently unused).
      * @return A [MultiTimeSeriesDiscrete] object containing the processed and discretized time series data.
      */
     fun run(
-        raw: MultiTimeSeriesEntries,
+        input: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
-        val (rawCleaned, qualityRatios) = cleanInputData(raw)
-        val ensuredDataUsingFallback = ensureDataFallback(rawCleaned)
-
-        return MultiTimeSeriesDiscrete.fromEntries(ensuredDataUsingFallback);
+        return MultiTimeSeriesDiscrete.fromEntries(input);
     }
 }
