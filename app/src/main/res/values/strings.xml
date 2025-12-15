@@ -164,5 +164,6 @@
     <string name="tips_info_4">Engage in short, low-effort social interactions if tolerated.</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="view_licence">View Licence</string>
+    <string name="predicting_energy">energy is getting predicted</string>
 
 </resources>
