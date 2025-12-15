@@ -37,8 +37,9 @@ object EnergyPredictionJob {
 
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION
     private val maximumTrainingSeriesDuration = 30.days
-    private val retrainEvery = 8.hours
-    private val predictEvery = 10.minutes
+    private val minimumTrainingSeriesDuration = 3.days
+    private val retrainEvery = 60.seconds
+    private val predictEvery = 10.seconds
 
     /**
      * Entry point for the [EnergyPredictionJob].
