@@ -116,29 +116,12 @@ fun NotificationScreen(
 
             NotificationPermitCard(
                 warningPermit = warningPermit,
-                // reminderPermit = reminderPermit,
-                // suggestionPermit = suggestionPermit,
-
                 onWarningChange = { enabled ->
                     warningPermit = enabled
                     profile?.let {
                         userProfileViewModel.saveProfile(it.copy(warningPermit = enabled))
                     }
                 },
-                /*
-                                onReminderChange = { enabled ->
-                                    reminderPermit = enabled
-                                    profile?.let {
-                                        userProfileViewModel.saveProfile(it.copy(reminderPermit = enabled))
-                                    }
-                                },
-                                onSuggestionChange = { enabled ->
-                                    suggestionPermit = enabled
-                                    profile?.let {
-                                        userProfileViewModel.saveProfile(it.copy(suggestionPermit = enabled))
-                                    }
-                                },
-                */
             )
 
             Spacer(modifier = Modifier.padding(top = 20.dp))
