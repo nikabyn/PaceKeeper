@@ -158,7 +158,7 @@ object EnergyPredictionJob {
             oxygenSaturation, steps, speed, sleepSession, validatedEnergyLevel
         )
 
-        val earliestEntryTime = allLists
+        var earliestEntryTime = allLists
             .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
             .minOrNull() ?: oldestStart
 
@@ -166,6 +166,9 @@ object EnergyPredictionJob {
             .mapNotNull { it.maxByOrNull { entry -> entry.end }?.end }
             .maxOrNull() ?: latestEnd
 
+        if (latestEntryTime - earliestEntryTime < minimumTrainingSeriesDuration) {
+            earliestEntryTime = latestEntryTime - minimumTrainingSeriesDuration
+        }
         val userProfile = db.userProfileDao().getProfile()
 
         val multiSeries = MultiTimeSeriesEntries(
@@ -187,6 +190,6 @@ object EnergyPredictionJob {
                 ?: 0.0
         )
 
-        Predictor.train(multiSeries, targetTimeSeries = validatedEnergyLevel, fixedParams)
+        Predictor.train(multiSeries, targetEnergyTimeSeriesEntries = validatedEnergyLevel, fixedParams)
     }
 }

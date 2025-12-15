@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+import android.util.Log
 import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
@@ -263,45 +264,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
         private val featureCount: Int = featureIndexMap.size
 
-
-        /**
-         * Fills a sparse time series with noise data to prevent collinearity in regression
-         * between features/metrics with empty data.
-         *
-         * If the input [genericTS] has fewer than two data points, this function generates a new
-         * time series with random hourly values for the entire duration. This prevents issues
-         * like singular matrices in regression models. The random data is seeded by [id] for
-         * deterministic, reproducible results.
-         *
-         * @param id A seed for the random number generator, ensuring consistency.
-         * @param genericTS The input time series to check.
-         * @return The original time series if it contains sufficient data, or a new one
-         *         filled with random data otherwise.
-         */
-        private fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
-            if (genericTS.data.size >= 2) {
-                return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
-            }
-            val random: Random = Random(id)
-
-            val steps = genericTS.duration.inWholeHours.toInt()
-            val stepDuration = 1.hours
-
-            val data = List<GenericTimedDataPoint>(steps) { index ->
-                GenericTimedDataPoint(
-                    time = genericTS.timeStart + stepDuration * index,
-                    value = random.nextDouble(0.0, 100.0)
-                )
-            }
-
-            return GenericTimedDataPointTimeSeries(
-                genericTS.timeStart,
-                genericTS.duration,
-                genericTS.isContinuous,
-                data
-            )
-        }
-
         /**
          * Creates a [MultiTimeSeriesDiscrete] instance from raw, continuous time series data.
          *
@@ -331,6 +293,8 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
             multiTimeSeriesDiscrete.resize(stepCount)
 
+            val metricCounts = mutableMapOf<TimeSeriesMetric, Int>()
+
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
                 val discreteProportional = discretizeTimeSeries(
@@ -353,7 +317,10 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                                 TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
                             }
-                        )
+                        ).also {it ->
+                            //count how many entries we got
+                            metricCounts[metric] = it.data.size
+                        }
                     ),
                     targetLength = stepCount
                 )
@@ -367,6 +334,14 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     componentData.forEachIndexed { index, value -> featureView[index] = value }
                 }
             }
+
+            val debug = metricCounts.entries
+                .sortedBy { it.key.ordinal } //keep defined enum order in output
+                .joinToString(", ") { (metric, count) ->
+                    "${metric.name}=$count"
+                }
+
+            println("per-metric input entry counts (before ensureData): $debug")
 
             return multiTimeSeriesDiscrete
         }

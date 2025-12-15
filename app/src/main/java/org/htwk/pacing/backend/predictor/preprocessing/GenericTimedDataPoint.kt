@@ -11,8 +11,48 @@ import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+
+/**
+ * Fills a sparse time series with noise data to prevent collinearity in regression
+ * between features/metrics with empty data.
+ *
+ * If the input [genericTS] has fewer than two data points, this function generates a new
+ * time series with random hourly values for the entire duration. This prevents issues
+ * like singular matrices in regression models. The random data is seeded by [id] for
+ * deterministic, reproducible results.
+ *
+ * @param id A seed for the random number generator, ensuring consistency.
+ * @param genericTS The input time series to check.
+ * @return The original time series if it contains sufficient data, or a new one
+ *         filled with random data otherwise.
+ */
+fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
+    if (genericTS.data.size >= 2) {
+        return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
+    }
+    val random: Random = Random(id)
+
+    val steps = genericTS.duration.inWholeHours.toInt()
+    val stepDuration = 1.hours
+
+    val data = List<GenericTimedDataPoint>(steps) { index ->
+        GenericTimedDataPoint(
+            time = genericTS.timeStart + stepDuration * index,
+            value = random.nextDouble(0.0, 100.0)
+        )
+    }
+
+    return GenericTimedDataPointTimeSeries(
+        genericTS.timeStart,
+        genericTS.duration,
+        genericTS.isContinuous,
+        data
+    )
+}
 
 /**
  * A generic container for a single time series before preprocessing.

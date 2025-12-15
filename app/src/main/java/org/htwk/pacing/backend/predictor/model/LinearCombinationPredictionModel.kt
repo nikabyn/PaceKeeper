@@ -1,6 +1,7 @@
 
 package org.htwk.pacing.backend.predictor.model
 
+import android.util.Log
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
@@ -31,6 +32,8 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
  * using preprocessed time-series data provided by an [IPreprocessor].
  */
 object LinearCombinationPredictionModel : IPredictionModel {
+    private var LOGGING_TAG = "LinearCombinationPredictionModel"
+
     //stores "learned" / regressed linear coefficients per Horizon
     private data class PerHorizonModel(
         //bias (linear offset so that our fit "line" doesn't have to go through 0)
@@ -165,9 +168,14 @@ object LinearCombinationPredictionModel : IPredictionModel {
      * @param targetTimeSeriesDiscrete The target energy level data used for training.
      */
     fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
+        Log.i(LOGGING_TAG, "input duration: ${input.getDuration()}")
         //Also normalize the target variable and store its distribution
         val targetArray = mk.ndarray(targetTimeSeriesDiscrete)
         val targetStochasticDistribution = targetArray.normalize()
+
+        Log.i(LOGGING_TAG, "target data distribution: (mean:" +
+                "${targetStochasticDistribution.mean}, " +
+                "stddev: ${targetStochasticDistribution.stddev})")
 
         val perHorizonModels = PredictionHorizon.entries.associateWith { predictionHorizon ->
             val trainingSamples = createTrainingSamples(
@@ -175,12 +183,21 @@ object LinearCombinationPredictionModel : IPredictionModel {
                 targetArray.toDoubleArray(),
                 predictionHorizon
             )
+            Log.i(LOGGING_TAG, "created Training Samples for: ${predictionHorizon.name}")
 
             val horizonModel = trainForHorizon(trainingSamples)
+
+            Log.i(LOGGING_TAG, "trained model config for ${predictionHorizon.name}: " +
+                    "bias: ${horizonModel.bias}")
+
+            Log.i(LOGGING_TAG, "trained model config for ${predictionHorizon.name}: " +
+                    "weights: ${horizonModel.extrapolationWeights.joinToString(", ") { "%.2e".format(it) }}")
+
             horizonModel
         }
 
         this.model = Model(perHorizonModels, targetStochasticDistribution)
+        Log.i(LOGGING_TAG, "model set, training done")
     }
 
     /**
@@ -208,6 +225,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val flattenedExtrapolations =
             generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
 
+        Log.i(LOGGING_TAG, "prediction extrapolations: " + flattenedExtrapolations.joinToString(", ") { "%.2e".format(it) })
+
         //normalize extrapolations, this is essential for good regression stability
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations.mapIndexed {index, d ->
             val distribution = perHorizonModel.extrapolationDistributions[index]
@@ -220,6 +239,8 @@ object LinearCombinationPredictionModel : IPredictionModel {
         val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights) + perHorizonModel.bias))
         //denormalize prediction out of normalized spaces
         prediction.denormalize(model!!.targetStochasticDistribution)
+
+        Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
 
         return prediction.first()
     }

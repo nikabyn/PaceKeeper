@@ -20,6 +20,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTime
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
+import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -118,6 +119,7 @@ object Predictor {
         val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
 
         val targetEnergyTimeSeriesDiscrete = TimeSeriesDiscretizer.discretizeTimeSeries(
+            ensureData(id = 1000,
             GenericTimedDataPointTimeSeries(
                 timeStart = multiTimeSeriesEntries.timeStart,
                 duration = multiTimeSeriesEntries.duration,
@@ -125,7 +127,8 @@ object Predictor {
                 data = targetEnergyTimeSeriesEntries.map { it ->
                     GenericTimedDataPoint(it.time, it.percentage.toDouble())
                 }
-            ),
+            )
+        ),
             targetLength = multiTimeSeriesDiscrete.stepCount()
         )
 
