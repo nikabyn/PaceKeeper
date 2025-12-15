@@ -67,6 +67,8 @@ import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.ui.screens.WelcomeScreen
+import org.htwk.pacing.ui.screens.WelcomeViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesScreen
 import org.htwk.pacing.ui.screens.settings.FitbitScreen
 import org.htwk.pacing.ui.theme.PacingTheme
@@ -101,6 +103,10 @@ fun Main() {
     }
 
     PacingTheme(darkTheme = darkTheme) {
+        // TODO: Load value from data store
+        val onboardingCompleted = false
+
+        val startDestination = if (onboardingCompleted) Route.HOME else Route.WELCOME
 
         Scaffold(
             bottomBar = {
@@ -126,6 +132,7 @@ fun Main() {
             AppNavHost(
                 navController = navController,
                 snackbarHostState = snackbarHostState,
+                startDestination = startDestination,
                 modifier = Modifier
                     .padding(contentPadding)
                     .consumeWindowInsets(contentPadding)
@@ -183,6 +190,8 @@ enum class NavBarEntries(
 }
 
 object Route {
+    const val WELCOME = "welcome"
+
     const val HOME = "home"
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 
@@ -204,6 +213,7 @@ object Route {
 @Composable
 fun AppNavHost(
     navController: NavHostController,
+    startDestination: String,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier,
 ) {
@@ -217,10 +227,20 @@ fun AppNavHost(
     )
 
     NavHost(
-        navController,
-        startDestination = Route.HOME,
+        navController = navController,
+        startDestination = startDestination,
         modifier = modifier
     ) {
+        composable(Route.WELCOME) {
+            val viewModel: WelcomeViewModel = koinViewModel()
+            WelcomeScreen(
+                onFinished = {
+                    viewModel.completeOnboarding({})
+                    navController.navigate("main_nav") {  }
+                }
+            )
+        }
+
         composable(Route.HOME) { HomeScreen(navController, snackbarHostState) }
         composable(
             route = "symptoms/{feeling}",
