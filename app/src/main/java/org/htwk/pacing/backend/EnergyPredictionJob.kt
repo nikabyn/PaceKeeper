@@ -21,7 +21,6 @@ import org.htwk.pacing.backend.predictor.Predictor.predict
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Responsible for continuously predicting the user's energy level using historical and live data.
@@ -88,8 +87,8 @@ object EnergyPredictionJob {
         val userProfile = db.userProfileDao().getProfileLive()
         val ticker = flow {
             while (true) {
-                delay(predictEvery)
                 emit(Unit)
+                delay(predictEvery)
             }
         }
 
