@@ -163,7 +163,7 @@ suspend fun isNotificationAllowedNow(userProfileEntry: UserProfileEntry?): Boole
     val restingStart = userProfileEntry.restingStart
     val restingEnd = userProfileEntry.restingEnd
 
-    if (restingStart != null && restingEnd != null) {
+    if (restingStart != null && restingEnd != null && userProfileEntry.warningPermit) {
         val now = Clock.System.now()
         val nowTime = now
             .toLocalDateTime(TimeZone.currentSystemDefault())
