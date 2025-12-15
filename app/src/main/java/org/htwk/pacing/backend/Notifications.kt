@@ -16,24 +16,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.work.Constraints
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
-import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.UserProfileRepository
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.hours
 
 /**
  * A collection of constant values for notification IDs and channel IDs.
@@ -112,7 +100,6 @@ fun showNotification(context: Context) {
     createNotificationChannel(context)
 
     val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
-
     val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
@@ -152,135 +139,40 @@ fun showNotification(context: Context) {
     Log.d("Notification", "Notification wurde ausgelöst")
 }
 
-/**
- * A background worker that checks the user's predicted energy level and shows a notification if it's low.
- *
- * @param context The application context.
- * @param workerParams Parameters for the worker.
- * @param predictedEnergyLevelDao The DAO for accessing predicted energy levels.
- * @param userProfileRepository The repository for accessing the user profile.
- */
-class NotificationsBackgroundWorker(
-    context: Context,
-    workerParams: WorkerParameters,
-    val predictedEnergyLevelDao: PredictedEnergyLevelDao,
-    val userProfileRepository: UserProfileRepository
-) : CoroutineWorker(context, workerParams) {
+suspend fun isNotificationAllowedNow(userProfileRepository: UserProfileRepository): Boolean {
+    val userProfile = userProfileRepository.getUserProfile()
 
-    /**
-     * Retrieves the minimum predicted energy level from the database within the next 6 hours.
-     *
-     * @return The minimum energy level as a Double, or null if no data is available.
-     */
-    private suspend fun getRelevantPredictedEnergyLevelFromDB(): Double? {
+    if (userProfile == null) {
+        Log.d("Notification", "User profile not found, notifications not allowed.")
+        return false
+    }
+
+    if (!userProfile.warningPermit) {
+        Log.d("Notification", "Warnings disabled in user profile.")
+        return false
+    }
+
+    val restingStart = userProfile.restingStart
+    val restingEnd = userProfile.restingEnd
+
+    if (restingStart != null && restingEnd != null) {
         val now = Clock.System.now()
-        val energyLevelDataWindow: List<PredictedEnergyLevelEntry> =
-            predictedEnergyLevelDao.getInRange(now, now + 6.hours)
-        val minimumEntry =
-            energyLevelDataWindow.minByOrNull { it.percentage.toDouble() }
+        val nowTime = now
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .time
 
-        return minimumEntry?.percentage?.toDouble()
-    }
-
-    /**
-     * The main work to be performed by the worker.
-     *
-     * It checks the user's profile settings and resting hours before deciding whether to show a notification.
-     */
-    override suspend fun doWork(): Result {
-        //    delay(2000)
-
-
-        val userProfile = userProfileRepository.getUserProfile()
-
-        if (userProfile == null) {
-            Log.d("NotificationsBackgroundWorker", "User profile not found. No notification.")
-            return Result.success()
-        }
-
-        val warningsPermitted = userProfile.warningPermit
-        val restingStart = userProfile.restingStart // z.B. "22:00"
-        val restingEnd = userProfile.restingEnd     // z.B. "07:00"
-
-        if (!warningsPermitted) {
-            Log.d(
-                "NotificationsBackgroundWorker",
-                "User has disabled warnings in profile. No notification."
-            )
-            return Result.success()
-        }
-
-        if (restingStart != null && restingEnd != null) {
-            val now = Clock.System.now()
-            val nowTime = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
-            val restingStartTime: LocalTime = restingStart
-            val restingEndTime: LocalTime = restingEnd
-
-
-            val isInRestingTime = if (restingStartTime > restingEndTime) {
-                nowTime >= restingStartTime || nowTime < restingEndTime
-            } else {
-                nowTime in restingStartTime..restingEndTime
-            }
-
-            if (isInRestingTime) {
-                Log.d(
-                    "NotificationsBackgroundWorker",
-                    "Current time is within resting period. No notification."
-                )
-                return Result.success()
-            }
-        }
-
-        // 4. Prüfe das Energielevel (deine bisherige Logik)
-        val predictedEnergy = getRelevantPredictedEnergyLevelFromDB()
-            ?: 1.0
-
-        Log.d(
-            "NotificationsBackgroundWorker",
-            "Predicted Energy level of %.2f".format(predictedEnergy)
-        )
-
-        if (predictedEnergy < 0.2) {
-            Log.d("NotificationsBackgroundWorker", "Energy is low, showing notification")
-            showNotification(applicationContext)
+        val isInRestingTime = if (restingStart > restingEnd) {
+            // z.B. 22:00 – 07:00
+            nowTime >= restingStart || nowTime < restingEnd
         } else {
-            Log.d("NotificationsBackgroundWorker", "Energy is sufficient, no notification")
+            nowTime in restingStart..restingEnd
         }
-        return Result.success()
-    }
-    // Log.d("Notification", "Notification sent")
-}
 
-/**
- * Schedules the [NotificationsBackgroundWorker] to run periodically or as a one-time request for debugging.
- *
- * @param wm The [WorkManager] instance.
- */
-fun scheduleEnergyCheckWorker(wm: WorkManager) {
-    val DEBUG_RUN_IMMEDIATELY = true
-    if (DEBUG_RUN_IMMEDIATELY) {
-        val workRequest = OneTimeWorkRequestBuilder<NotificationsBackgroundWorker>()
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiresBatteryNotLow(true)
-                    .build()
-            )
-            .build()
-        wm.enqueue(workRequest)
-    } else {
-        val workRequest =
-            PeriodicWorkRequestBuilder<NotificationsBackgroundWorker>(15, TimeUnit.MINUTES)
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiresBatteryNotLow(true)
-                        .build()
-                )
-                .build()
-        wm.enqueueUniquePeriodicWork(
-            "EnergyCheckWorker",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
-        )
+        if (isInRestingTime) {
+            Log.d("Notification", "Currently in resting hours.")
+            return false
+        }
     }
+
+    return true
 }
