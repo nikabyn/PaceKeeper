@@ -128,7 +128,7 @@ class CleanInputDataTests {
 
         val (results, ratios) = cleanInputData(raw)
 
-        val expectedDistances = floatArrayOf(50f)
+        val expectedDistances = floatArrayOf(50f, 0.0f)
         assertArrayEquals(
             expectedDistances,
             results.distance.map { it.length.inMeters().toFloat() }.toFloatArray(),

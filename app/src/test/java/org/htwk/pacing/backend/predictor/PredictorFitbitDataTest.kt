@@ -124,7 +124,7 @@ class PredictorFitbitDataTest {
 
         Predictor.train(
             multiTimeSeriesEntries,
-            targetTimeSeries = multiTimeSeriesEntries.heartRate.map { it ->
+            targetEnergyTimeSeriesEntries = multiTimeSeriesEntries.heartRate.map { it ->
                 ValidatedEnergyLevelEntry(
                     it.time, Validation.Correct,
                     Percentage(it.bpm.toDouble() / 100.0)
