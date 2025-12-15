@@ -1,7 +1,5 @@
 package org.htwk.pacing.ui.screens
 
-import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.database.UserProfileDao
@@ -114,8 +112,7 @@ class UserProfileDaoTest {
             fitnessTracker = "Apple Watch",
             restingEnd = null,
             restingStart = null,
-            warningPermit = false
-            fitnessTracker = "Apple Watch",
+            warningPermit = false,
             checkedIn = true
         )
 
