@@ -42,7 +42,7 @@ fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTime
     val data = List<GenericTimedDataPoint>(steps) { index ->
         GenericTimedDataPoint(
             time = genericTS.timeStart + stepDuration * index,
-            value = random.nextDouble(0.0, 100.0)
+            value = random.nextDouble(0.0, 1.0)
         )
     }
 
