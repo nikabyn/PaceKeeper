@@ -7,8 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
-import org.htwk.pacing.backend.OAuth2Result
 import kotlinx.datetime.LocalTime
+import org.htwk.pacing.backend.OAuth2Result
 import java.util.UUID
 
 val cleanUuid: String = UUID.randomUUID().toString().replace("-", "")
@@ -94,8 +94,8 @@ data class UserProfileEntry(
                 fitnessTracker = null,
 
                 warningPermit = false,
-                restingStart = LocalTime(22, 0),
-                restingEnd = LocalTime(3, 0),
+                restingStart = null,
+                restingEnd = null,
 
                 themeMode = "AUTO"
             )

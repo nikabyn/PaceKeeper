@@ -19,6 +19,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_CHANNEL_ID
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_NOTIFICATION_ID
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.database.UserProfileRepository
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
@@ -41,6 +42,7 @@ class ForegroundWorker(
     private val context: Context,
     workerParams: WorkerParameters,
     private val db: PacingDatabase,
+    val userProfileRepository: UserProfileRepository
 ) : CoroutineWorker(context, workerParams) {
     private companion object {
         const val WORK_NAME = "ForegroundWorker"
@@ -68,7 +70,11 @@ class ForegroundWorker(
                 EnergyPredictionJob.run(db = db)
             }
             launchRepeating(EnergyNotificationJob.TAG) {
-                EnergyNotificationJob.run(context = applicationContext, db = db)
+                EnergyNotificationJob.run(
+                    context = applicationContext,
+                    db = db,
+                    userProfileRepository
+                )
             }
         }
 

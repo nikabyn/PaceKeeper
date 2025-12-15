@@ -21,6 +21,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.MainActivity
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.backend.database.UserProfileRepository
 
 /**
@@ -96,8 +97,16 @@ fun createNotificationChannel(context: Context) {
  *
  * @param context The context.
  */
-fun showNotification(context: Context) {
+suspend fun showNotification(
+    context: Context,
+    userProfile: UserProfileRepository
+) {
     createNotificationChannel(context)
+
+    if (!isNotificationAllowedNow(userProfile.getUserProfile())) {
+        Log.d("Notification", "Notification blocked by resting hours or settings.")
+        return
+    }
 
     val prefs = context.getSharedPreferences("notification_prefs", Context.MODE_PRIVATE)
     val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -139,21 +148,20 @@ fun showNotification(context: Context) {
     Log.d("Notification", "Notification wurde ausgelöst")
 }
 
-suspend fun isNotificationAllowedNow(userProfileRepository: UserProfileRepository): Boolean {
-    val userProfile = userProfileRepository.getUserProfile()
+suspend fun isNotificationAllowedNow(userProfileEntry: UserProfileEntry?): Boolean {
 
-    if (userProfile == null) {
+    if (userProfileEntry == null) {
         Log.d("Notification", "User profile not found, notifications not allowed.")
         return false
     }
 
-    if (!userProfile.warningPermit) {
+    if (!userProfileEntry.warningPermit) {
         Log.d("Notification", "Warnings disabled in user profile.")
         return false
     }
 
-    val restingStart = userProfile.restingStart
-    val restingEnd = userProfile.restingEnd
+    val restingStart = userProfileEntry.restingStart
+    val restingEnd = userProfileEntry.restingEnd
 
     if (restingStart != null && restingEnd != null) {
         val now = Clock.System.now()

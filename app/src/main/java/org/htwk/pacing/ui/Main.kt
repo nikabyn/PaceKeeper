@@ -16,7 +16,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,7 +63,6 @@ import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.InformationScreen
 import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.NotificationScreen
-import org.htwk.pacing.ui.screens.ServicesScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
 import org.htwk.pacing.ui.screens.UserProfileScreen
@@ -260,7 +258,7 @@ fun AppNavHost(
             Route.NOTIFICATIONS,
             enterTransition = { subScreenEntry },
             exitTransition = { subScreenExit }
-        ) { NotificationsScreen(navController) }
+        ) { NotificationScreen(navController) }
         composable(
             Route.APPEARANCE,
             enterTransition = { subScreenEntry },
@@ -292,7 +290,6 @@ fun AppNavHost(
         }
     }
 }
-
 
 
 private inline fun <reified T : Parcelable> Bundle.getParcelableCompat(key: String): T? =

@@ -88,12 +88,11 @@ val appModule = module {
     viewModel { ConnectionsAndServicesViewModel(androidContext(), get()) }
     viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
-    // viewModel { NotificationsViewModel() }
     /**
      * koin sets up the dependencies for the worker class instance here,
      * the actual execution/scheduling is handled in Application.kt
      */
-    worker { context, params -> ForegroundWorker(context, params, get()) }
+    worker { context, params -> ForegroundWorker(context, params, get(), get()) }
 }
 
 /**
