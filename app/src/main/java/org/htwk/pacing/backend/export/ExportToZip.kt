@@ -28,9 +28,31 @@ suspend fun exportAllAsZip(db: PacingDatabase, outputStream: OutputStream) = wit
             }
         }
 
-        exportEntityToCsv("energy_level.csv", zipOut) {
+        exportEntityToCsv("validated_energy_level.csv", zipOut) {
             db.validatedEnergyLevelDao().getAll().map {
-                CsvRow(it.time.toString(), mapOf("energyLevel" to it.percentage.toString()))
+                CsvRow(it.time.toString(), mapOf(
+                    "validation" to it.validation.toString(),
+                    "percentage" to it.percentage.toString()
+                ))
+            }
+        }
+
+        exportEntityToCsv("predicted_energy_level.csv", zipOut) {
+            db.predictedEnergyLevelDao().getAll().map {
+                CsvRow(it.time.toString(), mapOf(
+                    "percentageNow" to it.percentageNow.toString(),
+                    "timeFuture" to it.timeFuture.toString(),
+                    "percentageFuture" to it.percentageFuture.toString(),
+                ))
+            }
+        }
+
+        exportEntityToCsv("manual_symptoms.csv", zipOut) {
+            db.manualSymptomDao().getAll().map { it ->
+                CsvRow(it.feeling.time.toString(), mapOf(
+                    "level" to it.feeling.feeling.level.toString(),
+                    "symptoms" to it.symptoms.joinToString(",") { symptom -> symptom.name }
+                ))
             }
         }
 
