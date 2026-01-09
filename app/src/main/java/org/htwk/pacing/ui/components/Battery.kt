@@ -252,7 +252,7 @@ private fun EnergyBar(
                 .rulerTicks(
                     ticks = 20,
                     majorEvery = 5,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
                 )
                 .testTag("BatteryBar")
         )
