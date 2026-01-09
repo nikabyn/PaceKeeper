@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -48,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -247,6 +249,11 @@ private fun EnergyBar(
                     cornerShape = cornerShape,
                     adjusting = adjusting
                 )
+                .rulerTicks(
+                    ticks = 20,
+                    majorEvery = 5,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                )
                 .testTag("BatteryBar")
         )
 
@@ -362,6 +369,37 @@ private fun Modifier.gradientBars(
         }
     }
 )
+
+private fun Modifier.rulerTicks(
+    ticks: Int = 10,              // number of intervals (=> ticks+1 lines incl. ends)
+    majorEvery: Int = 5,          // every Nth is a “major” tick
+    majorHeightFraction: Float = 0.5f,
+    minorHeightFraction: Float = 0.25f,
+    stroke: Dp = 2.dp,
+    color: Color,
+): Modifier = this.drawWithCache {
+    val strokePx = stroke.toPx()
+    val step = if (ticks > 0) size.width / ticks else size.width
+
+    onDrawBehind {
+        // draw ticks on top of what’s already behind; call this AFTER gradients if you want above them
+        for (i in 1..<ticks) {
+            val x = i * step
+            val isMajor = (majorEvery > 0) && (i % majorEvery == 0)
+
+            val h = size.height * if (isMajor) majorHeightFraction else minorHeightFraction
+            val yTop = (size.height - h) / 2f
+            val yBottom = yTop + h
+
+            drawLine(
+                color = color,
+                start = androidx.compose.ui.geometry.Offset(x, yTop),
+                end = androidx.compose.ui.geometry.Offset(x, yBottom),
+                strokeWidth = strokePx
+            )
+        }
+    }
+}
 
 /**
  * Builds a [Path] representing the filled area for the current energy value.
