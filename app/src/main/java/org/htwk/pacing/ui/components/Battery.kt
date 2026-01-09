@@ -12,13 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,12 +31,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -333,24 +329,20 @@ private fun Modifier.gradientBars(
             if (adjustedEnergy > currentEnergy) Change.Positive
             else Change.Negative
 
-        val pathCurrent = pathCurrent(
+        val pathCurrent = pathEnergy(
             drawScope = this,
             currentEnergy = currentEnergy,
             cornerShape = cornerShape,
         )
-        val pathAdjusted = pathAdjusted(
+        val pathAdjusted = pathEnergy(
             drawScope = this,
-            adjustedEnergy = adjustedEnergy,
-            change = change,
+            currentEnergy = adjustedEnergy,
             cornerShape = cornerShape,
         )
 
         // Calculate overlapping and difference paths for clipping regions
-        val pathCutoffCurrent = Path.combine(
-            when (change) {
-                Change.Negative -> PathOperation.ReverseDifference
-                Change.Positive -> PathOperation.Intersect
-            },
+        /*val pathCutoffCurrent = Path.combine(
+            PathOperation.Intersect,
             pathAdjusted,
             pathCurrent,
         )
@@ -362,10 +354,18 @@ private fun Modifier.gradientBars(
             )
 
             Change.Positive -> pathAdjusted
+        }*/
+
+        // Draw the solid gradient fill for the current energy level
+        clipPath(pathCurrent) {
+            drawRect(
+                brush = Brush.horizontalGradient(colors.asList()),
+                size = Size(size.width, size.height)
+            )
         }
 
         // Draw translucent overlay for the adjusted region
-        clipPath(pathCutoffAdjusted) {
+        clipPath(pathAdjusted) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
                 alpha = 0.2f,
@@ -374,25 +374,17 @@ private fun Modifier.gradientBars(
         }
 
         // Draw diagonal stripes over the translucent region
-        val pathStripes = pathDiagonalStripes(
+        /*val pathStripes = pathDiagonalStripes(
             size = size,
             stripeWidthPx = 2.dp.toPx(),
             stripeSpacingPx = 12.dp.toPx(),
         )
-        clipPath(Path.combine(PathOperation.Intersect, pathCutoffAdjusted, pathStripes)) {
+        clipPath(Path.combine(PathOperation.Intersect, pathAdjusted, pathStripes)) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
                 size = Size(size.width, size.height)
             )
-        }
-
-        // Draw the solid gradient fill for the current energy level
-        clipPath(pathCutoffCurrent) {
-            drawRect(
-                brush = Brush.horizontalGradient(colors.asList()),
-                size = Size(size.width, size.height)
-            )
-        }
+        }*/
     }
 )
 
@@ -404,7 +396,7 @@ private fun Modifier.gradientBars(
  * @param cornerShape The shape defining the corners of the bar.
  * @return A [Path] covering the current energy portion of the bar.
  */
-private fun pathCurrent(
+private fun pathEnergy(
     drawScope: DrawScope,
     currentEnergy: Double,
     cornerShape: Shape,
@@ -417,48 +409,6 @@ private fun pathCurrent(
     )
 
     return Path().apply { addOutline(outlineCurrent) }
-}
-
-/**
- * Builds a [Path] representing the adjusted energy level area.
- *
- * Depending on the direction of change, the path is offset so that
- * positive changes grow rightward and negative changes shrink leftward.
- *
- * @param drawScope The current [DrawScope].
- * @param adjustedEnergy The adjusted energy level (0.0..=1.0).
- * @param change Whether the energy increased or decreased.
- * @param cornerShape The shape defining the corners of the bar.
- *
- * @return A [Path] representing the adjusted energy region.
- */
-private fun pathAdjusted(
-    drawScope: DrawScope,
-    adjustedEnergy: Double,
-    change: Change,
-    cornerShape: Shape,
-): Path {
-    val widthAdjusted = drawScope.size.width * when (change) {
-        Change.Positive -> adjustedEnergy.toFloat()
-        Change.Negative -> 1f - adjustedEnergy.toFloat()
-    }
-    val offsetAdjusted = Offset(
-        when (change) {
-            Change.Positive -> 0f
-            Change.Negative -> drawScope.size.width - widthAdjusted
-        },
-        0f
-    )
-    val outlineAdjusted = cornerShape.createOutline(
-        Size(widthAdjusted, drawScope.size.height),
-        drawScope.layoutDirection,
-        drawScope
-    )
-
-    return Path().apply {
-        addOutline(outlineAdjusted)
-        translate(offsetAdjusted)
-    }
 }
 
 /**
