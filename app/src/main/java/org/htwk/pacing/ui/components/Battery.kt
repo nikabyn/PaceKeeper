@@ -36,10 +36,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -62,6 +64,7 @@ import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.SecondaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.htwk.pacing.ui.theme.extendedColors
+import androidx.compose.ui.graphics.lerp
 
 /**
  * Displays a card representing the user's current energy level with interactive validation.
@@ -159,7 +162,7 @@ fun BatteryCard(
                     onClick = onAdjust,
                     style = PrimaryButtonStyle,
                     iconPainter = painterResource(R.drawable.rounded_edit_24px),
-                    actionText = "Adjust",
+                    actionText = stringResource(R.string.adjust),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("ValidationAdjustButton"),
@@ -355,18 +358,31 @@ private fun Modifier.gradientBars(
             )
         }
 
-        // Draw diagonal stripes over the translucent region
+        //create combined path for adjusted part
         val pathStripes = pathDiagonalStripes(
             size = size,
             stripeWidthPx = 4.dp.toPx(),
             stripeSpacingPx = 12.dp.toPx(),
         )
-        clipPath(Path.combine(PathOperation.Intersect, pathAdjusted, pathStripes)) {
+        val combinedPath = Path.combine(PathOperation.Intersect, pathAdjusted, pathStripes);
+
+        // Draw diagonal stripes over the translucent region
+        clipPath(combinedPath) {
             drawRect(
                 brush = Brush.horizontalGradient(colors.asList()),
                 size = Size(size.width, size.height)
             )
         }
+
+        drawPath(
+            path = pathAdjusted,
+            color = interpolatedGradientColor(colors.asList(), adjustedEnergy.toFloat()),
+            style = Stroke(
+                width = 4.dp.toPx(),
+                // optional: makes it look less “boxy” / nicer with the diagonal edges
+                pathEffect = PathEffect.cornerPathEffect(4.dp.toPx())
+            )
+        )
     }
 )
 
@@ -456,4 +472,21 @@ private fun pathDiagonalStripes(
     }
 
     return path
+}
+
+private fun interpolatedGradientColor(
+    colors: List<Color>,
+    fraction: Float, // 0f..1f
+): Color {
+    if (colors.isEmpty()) return Color.Transparent
+    if (colors.size == 1) return colors.first()
+
+    val clamped = fraction.coerceIn(0f, 1f)
+
+    val segmentCount = colors.size - 1
+    val segment = clamped * segmentCount
+    val index = segment.toInt().coerceAtMost(segmentCount - 1)
+    val t = segment - index
+
+    return lerp(colors[index], colors[index + 1], t)
 }
