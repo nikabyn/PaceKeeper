@@ -25,13 +25,12 @@ import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
-//import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.ui.screens.WelcomeViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesViewModel
 import org.htwk.pacing.ui.screens.settings.FitbitViewModel
-import org.htwk.pacing.ui.screens.WelcomeViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
@@ -40,24 +39,21 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.ext.getFullName
 
-val testModule = module {
-    single<PacingDatabase> {
-        Room.inMemoryDatabaseBuilder(androidContext(), PacingDatabase::class.java)
-            .allowMainThreadQueries()
-            .fallbackToDestructiveMigration(dropAllTables = true)
-            .build()
-    }
-}
-
-val productionModule = module {
-    single<PacingDatabase> {
-        Room.databaseBuilder(androidContext(), PacingDatabase::class.java, "pacing.db")
-            .fallbackToDestructiveMigration(dropAllTables = true)
-            .build()
-    }
-}
+data class DemoStatus(val inDemoModus: Boolean)
 
 val appModule = module {
+    single<DemoStatus> { DemoStatus(false) }
+    single<PacingDatabase> {
+        val dbName = if (get<DemoStatus>().inDemoModus) {
+            "demo.db"
+        } else {
+            "pacing.db"
+        }
+        Room.databaseBuilder(androidContext(), PacingDatabase::class.java, dbName)
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
+
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
