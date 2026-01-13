@@ -131,7 +131,8 @@ fun MeasurementsScreen(
                     steps = 2u,
                 ),
                 yConfig = AxisConfig(
-                    range = 40.0..160.0
+                    range = 40.0..160.0,
+                    steps = 6u
                 ),
                 zonesResult = heartRateZonesResult
             )

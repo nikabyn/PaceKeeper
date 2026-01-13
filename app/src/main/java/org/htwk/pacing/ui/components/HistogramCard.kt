@@ -46,7 +46,7 @@ fun <C : Collection<Double>> HistogramCard(
 ) = CardWithTitle(title, modifier) {
     Annotation(
         series = series,
-        yConfig = AxisConfig(steps = 5u, formatFunction = { "" }),
+        yConfig = AxisConfig(steps = 6u, formatFunction = { "" }),
     ) { xRange, yRange ->
         val heartRateSpan = xRange.endInclusive - xRange.start
         val zonesToColors = zones.zip(
