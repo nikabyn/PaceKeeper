@@ -14,10 +14,10 @@ import org.htwk.pacing.backend.EnergyPredictionJob.trainOnce
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.TimedEntry
-import org.htwk.pacing.predictor.Predictor
-import org.htwk.pacing.predictor.Predictor.FixedParameters
-import org.htwk.pacing.predictor.Predictor.MultiTimeSeriesEntries
-import org.htwk.pacing.predictor.Predictor.predict
+import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
+import org.htwk.pacing.backend.predictor.Predictor.predict
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes

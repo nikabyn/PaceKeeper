@@ -1,7 +1,7 @@
 package org.htwk.pacing.backend.helpers
 
-import org.htwk.pacing.predictor.model.LinearExtrapolator
-import org.htwk.pacing.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
+import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
+import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import java.io.File
 import java.util.concurrent.TimeUnit
 

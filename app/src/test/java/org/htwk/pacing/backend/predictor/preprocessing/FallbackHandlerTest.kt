@@ -4,8 +4,7 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
-import org.htwk.pacing.predictor.Predictor
-import org.htwk.pacing.predictor.preprocessing.FallbackHandler
+import org.htwk.pacing.backend.predictor.Predictor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

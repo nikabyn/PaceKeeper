@@ -146,9 +146,6 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.material)
 
-    //Predictor shared library
-    implementation(project(":predictor"))
-
     //Multik for Matrix Math
     implementation(libs.multik.kotlin)
     testImplementation(libs.kotlinx.serialization.json)
