@@ -48,7 +48,7 @@ fun ImportDataHealthConnect() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val msgSelectCSVFile = context.getString(R.string.select_csv_file)
+    val msgSelectCSVFile = stringResource(R.string.select_csv_file)
 
     var uri by remember { mutableStateOf<Uri?>(null) }
     var name by remember { mutableStateOf("") }
