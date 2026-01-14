@@ -92,6 +92,9 @@ fun BatteryCard(
     val coroutineScope = rememberCoroutineScope()
     val localContext = LocalContext.current
 
+    val msgCurrentSaved = stringResource(R.string.current_energy_saved)
+    val msgAdjustedSaved = stringResource(R.string.adjusted_energy_saved)
+
     val latestValidation by viewModel.latestValidatedEnergyLevel.collectAsState()
     val adjustedEnergy = remember { mutableDoubleStateOf(energy) }
     val adjustingEnergy = remember { mutableStateOf(false) }
@@ -116,7 +119,7 @@ fun BatteryCard(
     val onCorrect = {
         adjustedEnergy.doubleValue = energy
         viewModel.storeValidatedEnergyLevel(Validation.Correct, energy)
-        showSnackbar(localContext.getString(R.string.current_energy_saved))
+        showSnackbar(msgCurrentSaved)
     }
     val onAdjust = {
         previousAdjustedEnergy = energy
@@ -129,7 +132,7 @@ fun BatteryCard(
     val onSave = {
         adjustingEnergy.value = false;
         viewModel.storeValidatedEnergyLevel(Validation.Adjusted, adjustedEnergy.doubleValue)
-        showSnackbar(localContext.getString(R.string.adjusted_energy_saved))
+        showSnackbar(msgAdjustedSaved)
     }
 
     CardWithTitle(
