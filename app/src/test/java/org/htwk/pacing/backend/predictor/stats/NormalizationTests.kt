@@ -1,5 +1,9 @@
 package org.htwk.pacing.backend.predictor.stats
 
+import org.htwk.pacing.predictor.stats.StochasticDistribution
+import org.htwk.pacing.predictor.stats.denormalize
+import org.htwk.pacing.predictor.stats.normalize
+import org.htwk.pacing.predictor.stats.normalizeSingleValue
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
@@ -131,7 +135,8 @@ class NormalizationTests {
     fun normalizeSingleValue1() {
         val input = HR_MEAN
 
-        val output = normalizeSingleValue(input, StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION))
+        val output =
+            normalizeSingleValue(input, StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION))
 
         val expected = 0.0
         assertEquals(expected, output, delta)
@@ -141,7 +146,8 @@ class NormalizationTests {
     fun normalizeSingleValue2() {
         val input = HR_MEAN + HR_STANDARD_DEVIATION * 0.5
 
-        val output = normalizeSingleValue(input, StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION))
+        val output =
+            normalizeSingleValue(input, StochasticDistribution(HR_MEAN, HR_STANDARD_DEVIATION))
 
         val expected = 0.5
         assertEquals(expected, output, delta)

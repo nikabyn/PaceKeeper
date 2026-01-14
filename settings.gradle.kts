@@ -24,5 +24,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ui"
-include(":app")
- 
+include(":app", ":predictor" ,":evaluator")

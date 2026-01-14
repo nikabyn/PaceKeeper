@@ -1,6 +1,6 @@
 package org.htwk.pacing.backend.predictor.linalg
 
-import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresQR
+import org.htwk.pacing.predictor.linalg.LinearAlgebraSolver.leastSquaresQR
 import org.junit.Assert.*
 import org.junit.Test
 import org.jetbrains.kotlinx.multik.api.*

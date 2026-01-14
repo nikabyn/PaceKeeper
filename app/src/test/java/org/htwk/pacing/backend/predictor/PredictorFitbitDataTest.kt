@@ -9,16 +9,16 @@ import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
-import org.htwk.pacing.backend.predictor.model.IPredictionModel
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.howFarInSamples
-import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
-import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesSignalClass
-import org.jetbrains.kotlinx.multik.api.mk
+import org.htwk.pacing.predictor.model.IPredictionModel
+import org.htwk.pacing.predictor.model.LinearCombinationPredictionModel.howFarInSamples
+import org.htwk.pacing.predictor.model.LinearExtrapolator
+import org.htwk.pacing.predictor.preprocessing.GenericTimedDataPointTimeSeries
+import org.htwk.pacing.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.predictor.preprocessing.TimeSeriesDiscretizer
+import org.htwk.pacing.predictor.preprocessing.TimeSeriesMetric
+import org.htwk.pacing.predictor.preprocessing.TimeSeriesSignalClass
+import org.htwk.pacing.predictor.Predictor
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.junit.Before
 import org.junit.Ignore
@@ -95,7 +95,7 @@ class PredictorFitbitDataTest {
             )
 
         val result = LinearExtrapolator.multipleExtrapolate(
-            mk.ndarray(derivedTimeSeries),
+            ndarray(derivedTimeSeries),
             IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples
         )
 
