@@ -47,6 +47,9 @@ import java.time.ZonedDateTime
 fun ImportDataHealthConnect() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    val msgSelectCSVFile = context.getString(R.string.select_csv_file)
+
     var uri by remember { mutableStateOf<Uri?>(null) }
     var name by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
@@ -56,7 +59,7 @@ fun ImportDataHealthConnect() {
             if (resultUri != null) {
                 val fileName = getFileName(context, resultUri)
                 if (!fileName.endsWith(".csv", ignoreCase = true)) {
-                    status = context.getString(R.string.select_csv_file)
+                    status = msgSelectCSVFile
                     uri = null
                     name = ""
                 } else {
