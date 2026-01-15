@@ -1,7 +1,8 @@
 
 package org.htwk.pacing.backend.predictor.model
 
-import android.util.Log
+//import android.util.Log
+import org.htwk.pacing.backend.predictor.Log
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
