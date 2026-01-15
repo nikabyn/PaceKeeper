@@ -51,12 +51,15 @@ class PredictorFitbitDataTest {
 
         fun <T> readCSVFileEntries(
             file: File,
+            minTime: Instant,
             entryGenerator: (List<String>) -> T
         ): List<T> {
             return file.readLines()
                 .drop(1) // skip header
                 .mapNotNull { line ->
                     val parts = line.split(",")
+                    val time = Instant.parse(parts[0].trim())
+                    if(time < minTime) return@mapNotNull null
                     try {
                         entryGenerator(parts)
                     } catch (e: Exception) {
@@ -73,10 +76,23 @@ class PredictorFitbitDataTest {
                 ?.associateBy { it.name }
                 .orEmpty()
 
+            // --- validated_energy_level.csv ---
+            val validatedEnergyEntries =
+                csvFiles["validated_energy_level.csv"]?.let { file ->
+                    readCSVFileEntries(file, Instant.fromEpochMilliseconds(0)) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val percent = parts[1].trim().removeSuffix("%").toDouble()
+                        val validation = parts[2].trim()
+                        ValidatedEnergyLevelEntry(time, Validation.valueOf(validation), Percentage(percent / 100.0))
+                    }
+                } ?: emptyList()
+
+            val minTime = validatedEnergyEntries.minBy{it.time}.time
+
             // --- distance.csv ---
             val distance =
                 csvFiles["distance.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val meters = parts[1].trim().toDouble()
                         DistanceEntry(time, time, Length(meters))
@@ -86,7 +102,7 @@ class PredictorFitbitDataTest {
             // --- elevation.csv ---
             val elevationGained =
                 csvFiles["elevation.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val meters = parts[1].trim().toDouble()
                         ElevationGainedEntry(time, time, Length(meters))
@@ -96,7 +112,7 @@ class PredictorFitbitDataTest {
             // --- heart_rate.csv ---
             val heartRate =
                 csvFiles["heart_rate.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val bpm = parts[1].trim().toLong()
                         HeartRateEntry(time, bpm)
@@ -106,7 +122,7 @@ class PredictorFitbitDataTest {
             // --- heart_rate_variability.csv ---
             val heartRateVariability =
                 csvFiles["heart_rate_variability.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val value = parts[1].trim().toDouble()
                         HeartRateVariabilityEntry(time, value)
@@ -116,7 +132,7 @@ class PredictorFitbitDataTest {
             // --- manual_symptom.csv ---
             /*val manualSymptomEntries =
                 csvFiles["manual_symptom.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val symptom = parts[1].trim()
                         ManualSymptomEntry(time, symptom)
@@ -126,7 +142,7 @@ class PredictorFitbitDataTest {
             // --- menstruation.csv ---
             /*val menstruationEntries =
                 csvFiles["menstruation.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val value = parts[1].trim()
                         MenstruationPeriodEntry(time, time, value)
@@ -136,7 +152,7 @@ class PredictorFitbitDataTest {
             // --- oxygen_saturation.csv ---
             val oxygenSaturation =
                 csvFiles["oxygen_saturation.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val percent = parts[1].trim().removeSuffix("%").toDouble()
                         OxygenSaturationEntry(time, Percentage(percent / 100.0))
@@ -163,7 +179,7 @@ class PredictorFitbitDataTest {
             // --- skin_temperature.csv ---
             val skinTemperature =
                 csvFiles["skin_temperature.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val temp = parts[1].trim().toDouble()
                         SkinTemperatureEntry(time, Temperature(temp))
@@ -173,7 +189,7 @@ class PredictorFitbitDataTest {
             // --- sleep_sessions.csv ---
             val sleepSession =
                 csvFiles["sleep_sessions.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val start = Instant.parse(parts[0].trim())
                         val end = Instant.fromEpochMilliseconds(parts[1].trim().toLong())
                         val stage = parts[2].trim()
@@ -184,7 +200,7 @@ class PredictorFitbitDataTest {
             // --- speed.csv ---
             val speed =
                 csvFiles["speed.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val speed = parts[1].trim().toDouble()
                         SpeedEntry(time, Velocity(speed))
@@ -194,7 +210,7 @@ class PredictorFitbitDataTest {
             // --- steps.csv ---
             val steps =
                 csvFiles["steps.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
+                    readCSVFileEntries(file, minTime) { parts ->
                         val start = Instant.parse(parts[0].trim())
                         val end = Instant.fromEpochMilliseconds(parts[1].trim().toLong())
                         val count = parts[2].trim().toLong()
@@ -202,20 +218,12 @@ class PredictorFitbitDataTest {
                     }
                 } ?: emptyList()
 
-            // --- validated_energy_level.csv ---
-            val validatedEnergyEntries =
-                csvFiles["validated_energy_level.csv"]?.let { file ->
-                    readCSVFileEntries(file) { parts ->
-                        val time = Instant.parse(parts[0].trim())
-                        val percent = parts[1].trim().removeSuffix("%").toDouble()
-                        val validation = parts[2].trim()
-                        ValidatedEnergyLevelEntry(time, Validation.valueOf(validation), Percentage(percent / 100.0))
-                    }
-                } ?: emptyList()
+
 
             val allLists: List<List<TimedEntry>> = listOf(
-                heartRate, distance, elevationGained, skinTemperature, heartRate,
-                oxygenSaturation, steps, speed, sleepSession
+                //heartRate, distance, elevationGained, skinTemperature, heartRate,
+                //oxygenSaturation, steps, speed, sleepSession
+                validatedEnergyEntries
             )
 
             var earliestEntryTime = allLists
@@ -329,7 +337,7 @@ class PredictorFitbitDataTest {
         println("Plotting finished.")
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+    //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
@@ -384,6 +392,7 @@ class PredictorFitbitDataTest {
         //after adding averaging for csv downsampling:                            70.94812981216073
         println("training done")
 
-        assertEquals(71.02011198570813, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
+        //assertEquals(71.02011198570813, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
+        assertEquals(83.74639384260114, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
     }
 }
