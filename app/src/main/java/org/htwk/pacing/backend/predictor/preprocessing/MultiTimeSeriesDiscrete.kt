@@ -283,7 +283,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          * @param raw An object containing the raw, non-uniform time series data points.
          * @return A fully populated [MultiTimeSeriesDiscrete] instance.
          */
-        fun fromEntries(raw: Predictor.MultiTimeSeriesEntries): MultiTimeSeriesDiscrete {
+        fun fromEntries(raw: Predictor.MultiTimeSeriesEntries, fixedParameters: Predictor.FixedParameters): MultiTimeSeriesDiscrete {
             if (TimeSeriesMetric.entries.isEmpty()) {
                 return MultiTimeSeriesDiscrete(raw.timeStart, 0)
             }
@@ -304,13 +304,27 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             duration = raw.duration,
                             isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
                             data = when (metric) {
-                                TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.HEART_RATE -> raw.heartRate.map { point ->
+                                    val hrValue = point.bpm
+                                    val adjustedHR = if (hrValue > fixedParameters.anaerobicThresholdBPM) {
+                                        hrValue * 1.5 //
+                                    } else {
+                                        hrValue
+                                    }
+                                    GenericTimedDataPoint(point.time, adjustedHR.toDouble())
+                                }
                                 TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
-                                    ::GenericTimedDataPoint
-                                )
+                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map { point ->
+                                    val variabilityValue = point.variability
+                                    val adjustedVarability = if (variabilityValue > fixedParameters.anaerobicThresholdBPM) {
+                                        variabilityValue* 0.7 //
+                                    } else {
+                                        variabilityValue
+                                    }
+                                    GenericTimedDataPoint(point.time, adjustedVarability)
+                                }
 
                                 TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
