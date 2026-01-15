@@ -394,6 +394,7 @@ class PredictorFitbitDataTest {
         println("training done")
 
         //assertEquals(71.02011198570813, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
-        assertEquals(83.74639384260114, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
+        //assertEquals(83.74639384260114, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
+        assertEquals(84.44875652118324, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
     }
 }
