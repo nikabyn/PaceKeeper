@@ -3,11 +3,23 @@ package org.htwk.pacing.backend.predictor
 import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
 import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SleepSessionEntry
+import org.htwk.pacing.backend.database.SleepStage
+import org.htwk.pacing.backend.database.SpeedEntry
+import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.Temperature
+import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
+import org.htwk.pacing.backend.database.Velocity
+import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.howFarInSamples
@@ -24,6 +36,7 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import java.io.File
+import kotlin.let
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
@@ -33,6 +46,200 @@ class PredictorFitbitDataTest {
     private lateinit var distanceEntries: List<DistanceEntry>
     private lateinit var timeSeriesStart: Instant
     private lateinit var timeSeriesEnd: Instant
+
+    class CSVHelper {
+
+        fun <T> readCSVFileEntries(
+            file: File,
+            entryGenerator: (List<String>) -> T
+        ): List<T> {
+            return file.readLines()
+                .drop(1) // skip header
+                .mapNotNull { line ->
+                    val parts = line.split(",")
+                    try {
+                        entryGenerator(parts)
+                    } catch (e: Exception) {
+                        println("Malformed line in ${file.name}: $line")
+                        null
+                    }
+                }
+        }
+
+        fun readMultiCSV(path: String):  Pair<Predictor.MultiTimeSeriesEntries, List<ValidatedEnergyLevelEntry>> {
+            val directory = File(path)
+            val csvFiles = directory
+                .listFiles { file -> file.extension == "csv" }
+                ?.associateBy { it.name }
+                .orEmpty()
+
+            // --- distance.csv ---
+            val distance =
+                csvFiles["distance.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val meters = parts[1].trim().toDouble()
+                        DistanceEntry(time, time, Length(meters))
+                    }
+                } ?: emptyList()
+
+            // --- elevation.csv ---
+            val elevationGained =
+                csvFiles["elevation.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val meters = parts[1].trim().toDouble()
+                        ElevationGainedEntry(time, time, Length(meters))
+                    }
+                } ?: emptyList()
+
+            // --- heart_rate.csv ---
+            val heartRate =
+                csvFiles["heart_rate.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val bpm = parts[1].trim().toLong()
+                        HeartRateEntry(time, bpm)
+                    }
+                } ?: emptyList()
+
+            // --- heart_rate_variability.csv ---
+            val heartRateVariability =
+                csvFiles["heart_rate_variability.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val value = parts[1].trim().toDouble()
+                        HeartRateVariabilityEntry(time, value)
+                    }
+                } ?: emptyList()
+
+            // --- manual_symptom.csv ---
+            /*val manualSymptomEntries =
+                csvFiles["manual_symptom.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val symptom = parts[1].trim()
+                        ManualSymptomEntry(time, symptom)
+                    }
+                } ?: emptyList()*/
+
+            // --- menstruation.csv ---
+            /*val menstruationEntries =
+                csvFiles["menstruation.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val value = parts[1].trim()
+                        MenstruationPeriodEntry(time, time, value)
+                    }
+                } ?: emptyList()*/
+
+            // --- oxygen_saturation.csv ---
+            val oxygenSaturation =
+                csvFiles["oxygen_saturation.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val percent = parts[1].trim().removeSuffix("%").toDouble()
+                        OxygenSaturationEntry(time, Percentage(percent / 100.0))
+                    }
+                } ?: emptyList()
+
+            // --- predicted_energy_level.csv ---
+            /*val predictedEnergyEntries =
+                csvFiles["predicted_energy_level.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val timeNow = Instant.parse(parts[0].trim())
+                        val percentageNow = parts[1].trim().removeSuffix("%").toDouble()
+                        val timeFuture = Instant.parse(parts[2].trim())
+                        val percentageFuture = parts[3].trim().removeSuffix("%").toDouble()
+                        PredictedEnergyLevelEntry(
+                            timeNow,
+                            Percentage(percentageNow),
+                            timeFuture,
+                            Percentage(percentageFuture)
+                        )
+                    }
+                } ?: emptyList()*/
+
+            // --- skin_temperature.csv ---
+            val skinTemperature =
+                csvFiles["skin_temperature.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val temp = parts[1].trim().toDouble()
+                        SkinTemperatureEntry(time, Temperature(temp))
+                    }
+                } ?: emptyList()
+
+            // --- sleep_sessions.csv ---
+            val sleepSession =
+                csvFiles["sleep_sessions.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val start = Instant.parse(parts[0].trim())
+                        val end = Instant.fromEpochMilliseconds(parts[1].trim().toLong())
+                        val stage = parts[2].trim()
+                        SleepSessionEntry(start, end, SleepStage.valueOf(stage))
+                    }
+                } ?: emptyList()
+
+            // --- speed.csv ---
+            val speed =
+                csvFiles["speed.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val speed = parts[1].trim().toDouble()
+                        SpeedEntry(time, Velocity(speed))
+                    }
+                } ?: emptyList()
+
+            // --- steps.csv ---
+            val steps =
+                csvFiles["steps.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val start = Instant.parse(parts[0].trim())
+                        val end = Instant.fromEpochMilliseconds(parts[1].trim().toLong())
+                        val count = parts[2].trim().toLong()
+                        StepsEntry(start, end, count)
+                    }
+                } ?: emptyList()
+
+            // --- validated_energy_level.csv ---
+            val validatedEnergyEntries =
+                csvFiles["validated_energy_level.csv"]?.let { file ->
+                    readCSVFileEntries(file) { parts ->
+                        val time = Instant.parse(parts[0].trim())
+                        val percent = parts[1].trim().removeSuffix("%").toDouble()
+                        val validation = parts[2].trim()
+                        ValidatedEnergyLevelEntry(time, Validation.valueOf(validation), Percentage(percent / 100.0))
+                    }
+                } ?: emptyList()
+
+            val allLists: List<List<TimedEntry>> = listOf(
+                heartRate, distance, elevationGained, skinTemperature, heartRate,
+                oxygenSaturation, steps, speed, sleepSession
+            )
+
+            var earliestEntryTime = allLists
+                .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
+                .minOrNull()
+
+            val ret = Pair(Predictor.MultiTimeSeriesEntries(
+                timeStart = earliestEntryTime!!,
+                distance = distance,
+                elevationGained = elevationGained,
+                heartRate = heartRate,
+                heartRateVariability = heartRateVariability,
+                oxygenSaturation = oxygenSaturation,
+                skinTemperature = skinTemperature,
+                sleepSession = sleepSession,
+                speed = speed,
+                steps = steps
+            ),
+                validatedEnergyEntries)
+
+            return ret
+        }
+    }
+
 
     @Before
     fun setUp() {
@@ -71,6 +278,16 @@ class PredictorFitbitDataTest {
 
         timeSeriesStart = earliestEntryTime
         timeSeriesEnd = latestEntryTime + 5.minutes
+    }
+
+    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Test
+    fun testPlotDatasetFromCSV(){
+        val (mtse, validatedEnergy) = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
+
+        println(mtse.heartRate.size)
+        println(validatedEnergy.size)
+        plotMultiTimeSeriesEntriesWithPython(mtse, validatedEnergy)
     }
 
     @Ignore("only for manual validation, not to be run in pipeline")
