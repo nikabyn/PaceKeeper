@@ -12,6 +12,7 @@ import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
+import org.htwk.pacing.backend.database.ModeDatabase
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
@@ -44,7 +45,11 @@ data class DemoStatus(val inDemoModus: Boolean)
 val appModule = module {
     single<DemoStatus> { DemoStatus(false) }
     single<PacingDatabase> {
-        val dbName = if (get<DemoStatus>().inDemoModus) {
+        val modeDB =
+            Room.databaseBuilder(androidContext(), ModeDatabase::class.java, "mode.db")
+                .fallbackToDestructiveMigration(dropAllTables = true)
+                .build()
+        val dbName = if (modeDB.modeDao().getMode()) {
             "demo.db"
         } else {
             "pacing.db"
@@ -52,6 +57,7 @@ val appModule = module {
         Room.databaseBuilder(androidContext(), PacingDatabase::class.java, dbName)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
+
     }
 
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }

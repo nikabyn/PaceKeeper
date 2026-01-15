@@ -18,7 +18,7 @@ data class ModeEntry(
 interface ModeDao {
 
     @Query("SELECT * FROM mode WHERE id = 0")
-    suspend fun getMode(): ModeEntry?
+    fun getMode(): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setMode(mode: ModeEntry)

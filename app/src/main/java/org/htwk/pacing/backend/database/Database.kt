@@ -75,7 +75,7 @@ abstract class PacingDatabase : RoomDatabase() {
     entities = [
         ModeDatabase::class,
     ],
-    version = 6,
+    version = 1,
     exportSchema = false,
 )
 
