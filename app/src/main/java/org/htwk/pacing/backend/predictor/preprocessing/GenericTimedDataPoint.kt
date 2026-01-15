@@ -11,6 +11,7 @@ import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -138,6 +139,11 @@ data class GenericTimedDataPointTimeSeries(
                 ) -> 0.0 //awake
                 else -> (src.end - src.start) / 1.hours //asleep, count hours
             }
+        )
+
+        constructor(src: ValidatedEnergyLevelEntry) : this(
+            time = src.time,
+            value = src.percentage.toDouble()
         )
     }
 }

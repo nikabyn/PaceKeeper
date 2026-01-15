@@ -146,6 +146,7 @@ object FallbackHandler {
             steps = steps,
             speed = speed,
             sleepSession = sleep,
+            validatedEnergyLevel = raw.validatedEnergyLevel
         )
     }
 

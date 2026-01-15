@@ -316,6 +316,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                                 TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
+                                TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> raw.sleepSession.map(::GenericTimedDataPoint)
                             }
                         ).also {it ->
                             //count how many entries we got

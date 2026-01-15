@@ -119,6 +119,7 @@ object EnergyPredictionJob {
                     steps = db.stepsDao().getInRange(now - duration, now),
                     speed = db.speedDao().getInRange(now - duration, now),
                     sleepSession = db.sleepSessionsDao().getInRange(now - duration, now),
+                    validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(now - duration, now),
                 ),
                 FixedParameters(
                     anaerobicThresholdBPM = db.userProfileDao().getProfile()
@@ -184,6 +185,7 @@ object EnergyPredictionJob {
             steps = steps,
             speed = speed,
             sleepSession = sleepSession,
+            validatedEnergyLevel = validatedEnergyLevel
         )
         val fixedParams = FixedParameters(
             anaerobicThresholdBPM = userProfile

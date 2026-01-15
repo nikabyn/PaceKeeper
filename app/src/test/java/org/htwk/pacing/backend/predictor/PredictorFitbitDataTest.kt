@@ -240,7 +240,8 @@ class PredictorFitbitDataTest {
                 skinTemperature = skinTemperature,
                 sleepSession = sleepSession,
                 speed = speed,
-                steps = steps
+                steps = steps,
+                validatedEnergyLevel = validatedEnergyEntries
             ),
                 validatedEnergyEntries)
 

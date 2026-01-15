@@ -18,6 +18,7 @@ import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
@@ -54,6 +55,7 @@ object Predictor {
         val steps: List<StepsEntry>,
         val speed: List<SpeedEntry>,
         val sleepSession: List<SleepSessionEntry>,
+        val validatedEnergyLevel: List<ValidatedEnergyLevelEntry>
     ) {
         companion object {
             //use in unit tests when you only care about certain metrics
@@ -69,6 +71,7 @@ object Predictor {
                 steps: List<StepsEntry> = listOf(),
                 speed: List<SpeedEntry> = listOf(),
                 sleepSession: List<SleepSessionEntry> = listOf(),
+                validatedEnergyLevel: List<ValidatedEnergyLevelEntry> = listOf()
             ): MultiTimeSeriesEntries {
                 return MultiTimeSeriesEntries(
                     timeStart = timeStart,
@@ -81,7 +84,8 @@ object Predictor {
                     oxygenSaturation = oxygenSaturation,
                     steps = steps,
                     speed = speed,
-                    sleepSession = sleepSession
+                    sleepSession = sleepSession,
+                    validatedEnergyLevel = validatedEnergyLevel
                 )
             }
         }
@@ -115,7 +119,7 @@ object Predictor {
         multiTimeSeriesEntries: MultiTimeSeriesEntries,
         targetEnergyTimeSeriesEntries: List<ValidatedEnergyLevelEntry>,
         fixedParameters: FixedParameters,
-    ) {
+    ):Pair<MultiTimeSeriesDiscrete, DoubleArray> {
         val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
 
         val targetEnergyTimeSeriesDiscrete = TimeSeriesDiscretizer.discretizeTimeSeries(
@@ -134,6 +138,8 @@ object Predictor {
 
 
         LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete, targetEnergyTimeSeriesDiscrete)
+
+        return Pair(multiTimeSeriesDiscrete, targetEnergyTimeSeriesDiscrete)
     }
 
     /**
