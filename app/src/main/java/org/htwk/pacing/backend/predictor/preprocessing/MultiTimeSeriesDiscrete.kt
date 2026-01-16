@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import android.util.Log
 import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
@@ -18,9 +17,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
-import kotlin.random.Random
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -306,24 +303,39 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             data = when (metric) {
                                 TimeSeriesMetric.HEART_RATE -> raw.heartRate.map { point ->
                                     val hrValue = point.bpm
-                                    val adjustedHR = if (hrValue > fixedParameters.anaerobicThresholdBPM) {
-                                        hrValue * 1.5 //
-                                    } else {
-                                        hrValue
-                                    }
-                                    GenericTimedDataPoint(point.time, adjustedHR.toDouble())
+
+                                    val overload = (hrValue - fixedParameters.anaerobicThresholdBPM).coerceAtLeast(0.0)
+                                    // Smooth adjustment factor
+                                    val factor = (1.0 + overload / 50.0).coerceIn(1.0, 1.5)
+                                    val adjustedHR = hrValue * factor
+
+                                    GenericTimedDataPoint(point.time, adjustedHR)
                                 }
                                 TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map { point ->
-                                    val variabilityValue = point.variability
-                                    val adjustedVarability = if (variabilityValue > fixedParameters.anaerobicThresholdBPM) {
-                                        variabilityValue* 0.7 //
+                                    // Determine heart rate at the time of HRV
+                                    val hrAtTime = raw.heartRate
+                                        .lastOrNull { it.time <= point.time }
+                                        ?.bpm
+
+                                    // Excess load above the anaerobic threshold (in BPM)
+                                    val overload = if (hrAtTime != null) {
+                                        (hrAtTime - fixedParameters.anaerobicThresholdBPM).coerceAtLeast(
+                                            0.0
+                                        )
                                     } else {
-                                        variabilityValue
+                                        0.0
                                     }
-                                    GenericTimedDataPoint(point.time, adjustedVarability)
+
+                                    // Damping factor for HRV
+                                    val factor = (1.0 - overload / 100.0).coerceIn(0.5, 1.0)
+
+                                    // Stress-adjusted HRV
+                                    val adjustedVariability = point.variability * factor
+
+                                    GenericTimedDataPoint(point.time, adjustedVariability)
                                 }
 
                                 TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
