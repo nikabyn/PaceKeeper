@@ -239,7 +239,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
         val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights) + perHorizonModel.bias))
         //denormalize prediction out of normalized spaces
-        prediction.denormalize(model!!.targetStochasticDistribution)
+        //prediction.denormalize(model!!.targetStochasticDistribution)
 
         Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
 

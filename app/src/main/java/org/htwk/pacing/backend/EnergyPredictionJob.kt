@@ -18,6 +18,7 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.Predictor.predict
+import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -128,7 +129,8 @@ object EnergyPredictionJob {
                 )
             )
         }.collect { (multiSeries, fixedParams) ->
-            val energyPrediction = predict(multiSeries, fixedParams)
+            val multiTimeSeriesDiscrete = Preprocessor.run(multiSeries, fixedParams)
+            val energyPrediction = predict(multiTimeSeriesDiscrete)
             Log.d(TAG, "Predicted: $energyPrediction")
             db.predictedEnergyLevelDao().insert(energyPrediction)
         }
@@ -173,7 +175,7 @@ object EnergyPredictionJob {
         }
         val userProfile = db.userProfileDao().getProfile()
 
-        val multiSeries = MultiTimeSeriesEntries(
+        val multiTimeSeriesEntries = MultiTimeSeriesEntries(
             timeStart = earliestEntryTime,
             duration = latestEntryTime - earliestEntryTime,
             heartRate = heartRate,
@@ -187,12 +189,14 @@ object EnergyPredictionJob {
             sleepSession = sleepSession,
             validatedEnergyLevel = validatedEnergyLevel
         )
-        val fixedParams = FixedParameters(
+        val fixedParameters = FixedParameters(
             anaerobicThresholdBPM = userProfile
                 ?.anaerobicThreshold?.toDouble()
                 ?: 0.0
         )
 
-        Predictor.train(multiSeries, targetEnergyTimeSeriesEntries = validatedEnergyLevel, fixedParams)
+        val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
+
+        Predictor.train(multiTimeSeriesDiscrete, fixedParameters)
     }
 }
