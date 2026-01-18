@@ -1,36 +1,45 @@
-import json
+import csv
 import sys
 import matplotlib.pyplot as plt
-from datetime import datetime
-import numpy as np
 
-def plot_mtse(file_path):
+def plot_mtsd_from_csv(file_path):
+    series = {}
     with open(file_path, 'r') as f:
-        data = json.load(f)
+        reader = csv.reader(f)
+        headers = next(reader)
+        for header in headers:
+            series[header] = []
+        for row in reader:
+            for i, value in enumerate(row):
+                series[headers[i]].append(value)
 
     plt.figure(figsize=(15, 10))
 
-    for series_name, series_data in data.items():
-        if not series_data:
-            continue
+    index_col_name = headers[0]
+    indices = [int(i) for i in series[index_col_name]]
 
-        timestamps = [datetime.fromisoformat(point['time']) for point in series_data]
-        values = np.array([float(point['value']) for point in series_data])
+    for series_name in headers[1:]:
+        values = []
+        plot_indices = []
+        # Using zip to pair indices with values and filter those with empty value strings
+        for index, value in zip(indices, series[series_name]):
+            if value:
+                plot_indices.append(index)
+                values.append(float(value))
 
-        # --- idiomatic z-normalization ---
-        z_values = (values - values.mean()) / values.std() if values.std() != 0 else np.zeros_like(values)
+        if values:
+            plt.plot(plot_indices, values, marker='o', markersize=3, linestyle='-', label=series_name)
 
-        plt.plot(timestamps, z_values, marker='o', linestyle='-', label=series_name)
-
-    plt.xlabel("Time")
-    plt.ylabel("Z‑Normalized Value")
-    plt.title("Z‑Normalized Multi-Time-Series Data")
+    plt.xlabel("Index")
+    plt.ylabel("Value")
+    plt.title("Multi-Time-Series Discrete Data")
     plt.legend()
     plt.grid(True)
     plt.show()
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        plot_mtse(sys.argv[1])
+        file_path = sys.argv[1]
+        plot_mtsd_from_csv(file_path)
     else:
         print("No data file provided.")
