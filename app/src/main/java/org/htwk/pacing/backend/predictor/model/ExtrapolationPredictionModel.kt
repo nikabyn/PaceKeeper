@@ -9,7 +9,6 @@ import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizo
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
-import org.htwk.pacing.backend.predictor.stats.denormalize
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
 import org.jetbrains.kotlinx.multik.api.linalg.dot
@@ -32,7 +31,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
  * The model learns linear coefficients via Tikhonov regularized least squares regression
  * using preprocessed time-series data provided by an [IPreprocessor].
  */
-object LinearCombinationPredictionModel : IPredictionModel {
+object ExtrapolationPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "LinearCombinationPredictionModel"
 
     //stores "learned" / regressed linear coefficients per Horizon
