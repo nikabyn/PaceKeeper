@@ -32,7 +32,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
  * using preprocessed time-series data provided by an [IPreprocessor].
  */
 object ExtrapolationPredictionModel : IPredictionModel {
-    private var LOGGING_TAG = "LinearCombinationPredictionModel"
+    private var LOGGING_TAG = "ExtrapolationPredictionModel"
 
     //stores "learned" / regressed linear coefficients per Horizon
     private data class PerHorizonModel(
