@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.data_collection.fitbit.Fitbit
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
@@ -13,7 +14,6 @@ import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.ModeDatabase
-import org.htwk.pacing.backend.database.ModeStore
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
@@ -43,23 +43,22 @@ import org.koin.ext.getFullName
 
 val appModule = module {
 
-    single { ModeStore(androidContext()) }
+    single {
+        Room.databaseBuilder(androidContext(), ModeDatabase::class.java, "mode.db")
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
 
     single<PacingDatabase> {
-        val mS = get<ModeStore>()
-        val modeDB =
-            Room.databaseBuilder(androidContext(), ModeDatabase::class.java, "mode.db")
-                .fallbackToDestructiveMigration(dropAllTables = true)
-                .build()
-        val dbName = if (mS.isDemo()) {
-            "demo.db"
-        } else {
-            "pacing.db"
+        val modeDB = get<ModeDatabase>()
+
+        val dbName = runBlocking {
+            val modeEntry = modeDB.modeDao().getMode()
+            if (modeEntry?.demo == true) "demo.db" else "pacing.db"
         }
         Room.databaseBuilder(androidContext(), PacingDatabase::class.java, dbName)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
-
     }
 
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }
