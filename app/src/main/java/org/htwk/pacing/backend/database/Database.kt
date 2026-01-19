@@ -73,7 +73,7 @@ abstract class PacingDatabase : RoomDatabase() {
 
 @Database(
     entities = [
-        ModeDatabase::class,
+        ModeEntry::class,
     ],
     version = 1,
     exportSchema = false,

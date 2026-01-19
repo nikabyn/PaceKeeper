@@ -13,6 +13,7 @@ import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.ModeDatabase
+import org.htwk.pacing.backend.database.ModeStore
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
@@ -40,16 +41,17 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.ext.getFullName
 
-data class DemoStatus(val inDemoModus: Boolean)
-
 val appModule = module {
-    single<DemoStatus> { DemoStatus(false) }
+
+    single { ModeStore(androidContext()) }
+
     single<PacingDatabase> {
+        val mS = get<ModeStore>()
         val modeDB =
             Room.databaseBuilder(androidContext(), ModeDatabase::class.java, "mode.db")
                 .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
-        val dbName = if (modeDB.modeDao().getMode()) {
+        val dbName = if (mS.isDemo()) {
             "demo.db"
         } else {
             "pacing.db"
