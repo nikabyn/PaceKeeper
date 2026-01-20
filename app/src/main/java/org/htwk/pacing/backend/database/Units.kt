@@ -47,7 +47,8 @@ class Percentage(private val percentage: Double) {
     companion object {
         fun fromDouble(@FloatRange(from = 0.0, to = 1.0) value: Double): Percentage {
             if (value !in 0.0..1.0) {
-                Log.e("Percentage", "Percentage value `$value` not in range 0.0..=1.0")
+                println("Percentage value `$value` not in range 0.0..=1.0")
+                //Log.e("Percentage", "Percentage value `$value` not in range 0.0..=1.0")
             }
             return Percentage(value.coerceIn(0.0, 1.0))
         }

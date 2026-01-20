@@ -17,6 +17,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
+import kotlin.math.pow
 import kotlin.time.Duration
 
 
@@ -302,14 +303,18 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
                             data = when (metric) {
                                 TimeSeriesMetric.HEART_RATE -> raw.heartRate.map { point ->
-                                    val hrValue = point.bpm
+                                    val hr = point.bpm
+                                    val threshold = fixedParameters.anaerobicThresholdBPM
 
-                                    val overload = (hrValue - fixedParameters.anaerobicThresholdBPM).coerceAtLeast(0.0)
-                                    // Smooth adjustment factor
-                                    val factor = (1.0 + overload / 50.0).coerceIn(1.0, 1.5)
-                                    val adjustedHR = hrValue * factor
+                                    // relative Überlast (schwellenbasiert)
+                                    val overload = ((hr - threshold) / threshold).coerceAtLeast(0.0)
 
-                                    GenericTimedDataPoint(point.time, adjustedHR)
+                                    // nichtlineare Intensitätsverstärkung
+                                    val intensityFactor = (1.0 + 5 * overload.pow(1.5)).coerceAtMost(1.6)
+
+                                    val cardiacLoad = hr * intensityFactor
+
+                                    GenericTimedDataPoint(point.time, cardiacLoad)
                                 }
                                 TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
