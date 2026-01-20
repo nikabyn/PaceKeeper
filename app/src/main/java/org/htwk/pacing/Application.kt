@@ -20,7 +20,6 @@ import org.htwk.pacing.backend.ForegroundWorker
 import org.htwk.pacing.backend.appModule
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
-import org.htwk.pacing.backend.productionModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
@@ -49,7 +48,7 @@ open class ProductionApplication : Application(), KoinComponent {
     open fun startInjection() {
         startKoin {
             androidContext(this@ProductionApplication)
-            modules(productionModule, appModule)
+            modules(appModule)
         }
         Log.d("ProductionApplication", "Started Koin for production")
     }
@@ -98,6 +97,11 @@ fun enqueueForegroundWorker(wm: WorkManager) {
         workRequest
     )
     Log.d("PacingApp", "Enqueued ForegroundWorker")
+}
+
+fun stopForegroundWorker(wm: WorkManager) {
+    wm.cancelUniqueWork("HealthDataCollection")
+    Log.d("PacingApp", "Cancelled ForegroundWorker")
 }
 
 @Volatile
