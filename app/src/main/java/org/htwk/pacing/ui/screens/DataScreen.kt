@@ -30,8 +30,8 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
-import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.SettingsSubScreen
+import org.htwk.pacing.ui.components.StartEvaluationMode
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -67,7 +67,7 @@ fun DataScreen(
             ImportDataHealthConnect()
 
 
-            ImportDemoDataHealthConnect()
+            StartEvaluationMode()
 
 
             Card(

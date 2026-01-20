@@ -39,7 +39,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 @Composable
-fun ImportDemoDataHealthConnect() {
+fun StartEvaluationMode() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
@@ -100,7 +100,7 @@ fun ImportDemoDataHealthConnect() {
     }
 }
 
-class gitDemoDataImpl {
+class DemoDataImpl {
 
     suspend fun run(context: android.content.Context): String = withContext(Dispatchers.IO) {
         try {
