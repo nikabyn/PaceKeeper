@@ -81,7 +81,7 @@ fun ImportDemoDataHealthConnect() {
                     onClick = {
                         showDialog = false
                         scope.launch {
-                            val result = ImportDemoDataHealthConnectImpl().run(context)
+                            val result = DemoDataImpl().run(context)
                             Toast
                                 .makeText(context, result, Toast.LENGTH_LONG)
                                 .show()
@@ -100,7 +100,7 @@ fun ImportDemoDataHealthConnect() {
     }
 }
 
-class ImportDemoDataHealthConnectImpl {
+class gitDemoDataImpl {
 
     suspend fun run(context: android.content.Context): String = withContext(Dispatchers.IO) {
         try {

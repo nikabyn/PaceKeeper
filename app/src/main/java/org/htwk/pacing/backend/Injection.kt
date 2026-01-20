@@ -25,13 +25,12 @@ import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
-//import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.ui.screens.WelcomeViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesViewModel
 import org.htwk.pacing.ui.screens.settings.FitbitViewModel
-import org.htwk.pacing.ui.screens.WelcomeViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.module.Module
