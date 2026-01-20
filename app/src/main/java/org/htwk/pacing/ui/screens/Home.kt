@@ -3,6 +3,7 @@ package org.htwk.pacing.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +36,7 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.ui.components.BatteryCard
+import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
@@ -43,8 +45,8 @@ import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
 data class EnergyGraphData(
-    val seriesPastToNow : Series<List<Double>>,
-    val futureValue : Double
+    val seriesPastToNow: Series<List<Double>>,
+    val futureValue: Double
 )
 
 @Composable
@@ -75,27 +77,32 @@ fun HomeScreen(
     val minPrediction = futureValue - 0.1
     val maxPrediction = futureValue + 0.1
     val avgPrediction = futureValue
-
-    Box(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
-        ) {
-            EnergyPredictionCard(
-                series = energyGraphData.seriesPastToNow,
-                currentEnergy = currentEnergy.toFloat(),
-                minPrediction = minPrediction.toFloat(),
-                avgPrediction = avgPrediction.toFloat(),
-                maxPrediction = maxPrediction.toFloat(),
-                modifier = Modifier.height(300.dp)
-            )
-            LabelCard(energy = currentEnergy)
-            BatteryCard(
-                energy = currentEnergy,
-                viewModel = viewModel,
-                snackbarHostState = snackbarHostState,
-            )
-            FeelingSelectionCard(navController)
+    Column(modifier = modifier.fillMaxSize()) {
+        DemoBanner(visible = true)
+        Box(modifier = modifier.verticalScroll(rememberScrollState())) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
+                modifier = Modifier.padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.extraLarge
+                )
+            ) {
+                EnergyPredictionCard(
+                    series = energyGraphData.seriesPastToNow,
+                    currentEnergy = currentEnergy.toFloat(),
+                    minPrediction = minPrediction.toFloat(),
+                    avgPrediction = avgPrediction.toFloat(),
+                    maxPrediction = maxPrediction.toFloat(),
+                    modifier = Modifier.height(300.dp)
+                )
+                LabelCard(energy = currentEnergy)
+                BatteryCard(
+                    energy = currentEnergy,
+                    viewModel = viewModel,
+                    snackbarHostState = snackbarHostState,
+                )
+                FeelingSelectionCard(navController)
+            }
         }
     }
 }
