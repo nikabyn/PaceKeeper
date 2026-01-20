@@ -305,27 +305,20 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                                 TimeSeriesMetric.HEART_RATE -> raw.heartRate.map { point ->
                                     val hr = point.bpm
                                     val threshold = fixedParameters.anaerobicThresholdBPM
-
-                                    // relative Überlast (schwellenbasiert)
                                     val overload = ((hr - threshold) / threshold).coerceAtLeast(0.0)
 
-                                    // nichtlineare Intensitätsverstärkung
+                                    // nonlinear intensity amplification
                                     val intensityFactor = (1.0 + 5 * overload.pow(1.5)).coerceAtMost(1.6)
-
                                     val cardiacLoad = hr * intensityFactor
-
                                     GenericTimedDataPoint(point.time, cardiacLoad)
                                 }
                                 TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map { point ->
-                                    // Determine heart rate at the time of HRV
                                     val hrAtTime = raw.heartRate
                                         .lastOrNull { it.time <= point.time }
                                         ?.bpm
-
-                                    // Excess load above the anaerobic threshold (in BPM)
                                     val overload = if (hrAtTime != null) {
                                         (hrAtTime - fixedParameters.anaerobicThresholdBPM).coerceAtLeast(
                                             0.0
@@ -333,13 +326,11 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                                     } else {
                                         0.0
                                     }
-
                                     // Damping factor for HRV
                                     val factor = (1.0 - overload / 100.0).coerceIn(0.5, 1.0)
 
                                     // Stress-adjusted HRV
                                     val adjustedVariability = point.variability * factor
-
                                     GenericTimedDataPoint(point.time, adjustedVariability)
                                 }
 
