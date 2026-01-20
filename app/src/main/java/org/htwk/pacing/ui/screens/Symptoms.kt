@@ -59,6 +59,7 @@ import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.ManualSymptomEntry
 import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.components.DemoBanner
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -90,36 +91,39 @@ fun SymptomScreen(
                 Icon(Icons.Filled.Add, "Floating action button.")
             }
         }) { contentPadding ->
+        Column {
+            DemoBanner()
 
-        Column(
-            modifier = Modifier
-                .padding(contentPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .testTag("SymptomsScreenCheckboxes")
-        ) {
-            symptoms.forEach {
-                SymptomCheckBox(
-                    it.name,
-                    onChange = { checked, name ->
-                        if (checked && !selected.contains(name)) {
-                            selected.add(name)
-                            return@SymptomCheckBox
-                        }
-                        selected.remove(name)
+            Column(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .testTag("SymptomsScreenCheckboxes")
+            ) {
+                symptoms.forEach {
+                    SymptomCheckBox(
+                        it.name,
+                        onChange = { checked, name ->
+                            if (checked && !selected.contains(name)) {
+                                selected.add(name)
+                                return@SymptomCheckBox
+                            }
+                            selected.remove(name)
+                        })
+                }
+            }
+
+            if (openDialog) {
+                AddSymptomDialog(
+                    onCancel = {
+                        openDialog = false
+                    },
+                    onConfirm = { newSymptom ->
+                        openDialog = false
+                        viewModel.storeSymptom(newSymptom)
                     })
             }
-        }
-
-        if (openDialog) {
-            AddSymptomDialog(
-                onCancel = {
-                    openDialog = false
-                },
-                onConfirm = { newSymptom ->
-                    openDialog = false
-                    viewModel.storeSymptom(newSymptom)
-                })
         }
     }
 }

@@ -78,7 +78,7 @@ fun HomeScreen(
     val maxPrediction = futureValue + 0.1
     val avgPrediction = futureValue
     Column(modifier = modifier.fillMaxSize()) {
-        DemoBanner(visible = true)
+        DemoBanner()
         Box(modifier = modifier.verticalScroll(rememberScrollState())) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),

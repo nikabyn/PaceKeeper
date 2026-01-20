@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Button
+import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -36,43 +37,47 @@ fun InformationScreen(
         title = stringResource(R.string.title_settings_information),
         navController = navController,
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.large)
-        ) {
-            Button(
-                onClick = { viewModel.openWelcomeScreen(navController) },
-                style = PrimaryButtonStyle,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.welcome_screen))
-            }
-            Button(
-                onClick = { showPrivacyPolicyDialog = true },
-                style = PrimaryButtonStyle,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.privacy_policy))
-            }
-            Button(
-                onClick = { showLicenceDialog = true },
-                style = PrimaryButtonStyle,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.view_licence))
-            }
+        Column {
+            DemoBanner()
 
-            if (showPrivacyPolicyDialog) {
-                PrivacyPolicyDialog(
-                    onDismiss = { showPrivacyPolicyDialog = false }
-                )
-            }
-            if (showLicenceDialog) {
-                LicenceDialog(
-                    onDismiss = { showLicenceDialog = false }
-                )
+            Column(
+                modifier = Modifier
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.large)
+            ) {
+                Button(
+                    onClick = { viewModel.openWelcomeScreen(navController) },
+                    style = PrimaryButtonStyle,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.welcome_screen))
+                }
+                Button(
+                    onClick = { showPrivacyPolicyDialog = true },
+                    style = PrimaryButtonStyle,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.privacy_policy))
+                }
+                Button(
+                    onClick = { showLicenceDialog = true },
+                    style = PrimaryButtonStyle,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.view_licence))
+                }
+
+                if (showPrivacyPolicyDialog) {
+                    PrivacyPolicyDialog(
+                        onDismiss = { showPrivacyPolicyDialog = false }
+                    )
+                }
+                if (showLicenceDialog) {
+                    LicenceDialog(
+                        onDismiss = { showLicenceDialog = false }
+                    )
+                }
             }
         }
     }

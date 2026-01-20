@@ -187,5 +187,6 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="view_licence">View Licence</string>
     <string name="predicting_energy">energy is getting predicted</string>
+    <string name="demo_banner">Evaluation mode active</string>
 
 </resources>

@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.Button
+import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.components.StartEvaluationMode
@@ -57,66 +58,68 @@ fun DataScreen(
                 }
             }
         }
-
-        Column(
-            modifier = Modifier
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.large)
-        ) {
-            ImportDataHealthConnect()
-
-
-            StartEvaluationMode()
-
-
-            Card(
-                colors = CardStyle.colors,
-                shape = CardStyle.shape,
-                modifier = Modifier.fillMaxWidth()
+        Column {
+            DemoBanner()
+            Column(
+                modifier = Modifier
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.large)
             ) {
-                Column(
-                    modifier = Modifier.padding(
-                        horizontal = Spacing.large,
-                        vertical = Spacing.largeIncreased
-                    )
-                ) {
-                    Text(
-                        stringResource(R.string.stored_data),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                ImportDataHealthConnect()
 
-                    var showDialog by remember { mutableStateOf(false) }
-                    Button(
-                        onClick = { showDialog = true },
-                        style = PrimaryButtonStyle,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.export_data_to_zip_archive))
-                    }
-                    Spacer(modifier = Modifier.height(Spacing.large))
-                    if (showDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showDialog = false },
-                            title = { Text(stringResource(R.string.data_protection_notice)) },
-                            text = {
-                                Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
-                            },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        showDialog = false
-                                        launcher.launch("pacing_export.zip")
-                                    }) {
-                                    Text(stringResource(R.string.agree))
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showDialog = false }) {
-                                    Text(stringResource(R.string.cancel))
-                                }
-                            }
+
+                StartEvaluationMode()
+
+
+                Card(
+                    colors = CardStyle.colors,
+                    shape = CardStyle.shape,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = Spacing.large,
+                            vertical = Spacing.largeIncreased
                         )
+                    ) {
+                        Text(
+                            stringResource(R.string.stored_data),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        var showDialog by remember { mutableStateOf(false) }
+                        Button(
+                            onClick = { showDialog = true },
+                            style = PrimaryButtonStyle,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.export_data_to_zip_archive))
+                        }
+                        Spacer(modifier = Modifier.height(Spacing.large))
+                        if (showDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showDialog = false },
+                                title = { Text(stringResource(R.string.data_protection_notice)) },
+                                text = {
+                                    Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
+                                },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            showDialog = false
+                                            launcher.launch("pacing_export.zip")
+                                        }) {
+                                        Text(stringResource(R.string.agree))
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showDialog = false }) {
+                                        Text(stringResource(R.string.cancel))
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

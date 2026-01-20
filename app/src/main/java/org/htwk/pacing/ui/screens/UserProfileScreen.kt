@@ -58,6 +58,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -140,214 +141,216 @@ fun UserProfileScreen(
             navController.popBackStack()
         }
     }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.large)
-    ) {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    Column {
+        DemoBanner()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
-            IconButton(
-                onClick = {
-                    if (hasUnsavedChanges) {
-                        showUnsavedChangesDialog = true
-                    } else {
-                        navController.popBackStack()
-                    }
-                }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.label_back)
-                )
-            }
-            Text(
-                stringResource(R.string.title_user_profile),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(Modifier.weight(1f))
-            org.htwk.pacing.ui.components.Button(
-                onClick = {
-                    val updatedProfile = profile.copy(
-                        nickname = nickname.takeIf { it.isNotBlank() },
-                        birthYear = birthYear.toIntOrNull(),
-                        heightCm = heightCm.toIntOrNull(),
-                        weightKg = weightKg.toIntOrNull(),
-                        restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
-                        sex = selectedSex,
-                        amputationLevel = selectedAmputationLevel,
-                        diagnosis = selectedDiagnosis,
-                        fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
-                        anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
-                        bellScale = bellScale.toIntOrNull(),
-                        fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
+                IconButton(
+                    onClick = {
+                        if (hasUnsavedChanges) {
+                            showUnsavedChangesDialog = true
+                        } else {
+                            navController.popBackStack()
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.label_back)
                     )
-                    Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
-                    viewModel.saveProfile(updatedProfile)
-                    Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
-                    navController.navigate(Route.SETTINGS) {
-                        popUpTo(Route.USERPROFILE) { inclusive = true }
+                }
+                Text(
+                    stringResource(R.string.title_user_profile),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.weight(1f))
+                org.htwk.pacing.ui.components.Button(
+                    onClick = {
+                        val updatedProfile = profile.copy(
+                            nickname = nickname.takeIf { it.isNotBlank() },
+                            birthYear = birthYear.toIntOrNull(),
+                            heightCm = heightCm.toIntOrNull(),
+                            weightKg = weightKg.toIntOrNull(),
+                            restingHeartRateBpm = restingHeartRateBpm.toIntOrNull(),
+                            sex = selectedSex,
+                            amputationLevel = selectedAmputationLevel,
+                            diagnosis = selectedDiagnosis,
+                            fatigueSensitivity = fatigueSensitivity.toIntOrNull(),
+                            anaerobicThreshold = anaerobicThreshold.toIntOrNull(),
+                            bellScale = bellScale.toIntOrNull(),
+                            fitnessTracker = fitnessTracker.takeIf { it.isNotBlank() }
+                        )
+                        Log.d("UserProfileScreen", "Saving profile: $updatedProfile")
+                        viewModel.saveProfile(updatedProfile)
+                        Log.d("UserProfileScreen", "Profile saved, navigating back to settings")
+                        navController.navigate(Route.SETTINGS) {
+                            popUpTo(Route.USERPROFILE) { inclusive = true }
+                        }
+                    },
+                    style = if (hasUnsavedChanges) org.htwk.pacing.ui.theme.PrimaryButtonStyle else org.htwk.pacing.ui.theme.SecondaryButtonStyle,
+                ) {
+                    if (hasUnsavedChanges) {
+                        Image(
+                            painter = painterResource(R.drawable.settings_save_icon),
+                            contentDescription = stringResource(R.string.save),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.save))
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = stringResource(R.string.save)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.saved))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                }
+            }
+
+            OutlinedTextField(
+                value = nickname,
+                onValueChange = { nickname = it },
+                label = { Text(stringResource(R.string.label_nickname)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = birthYear,
+                onValueChange = { birthYear = it.filter { c -> c.isDigit() }.take(4) },
+                label = { Text(stringResource(R.string.label_birth_year)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = heightCm,
+                onValueChange = { heightCm = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_height_cm)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = weightKg,
+                onValueChange = { weightKg = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_weight_kg)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = restingHeartRateBpm,
+                onValueChange = { restingHeartRateBpm = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_restingHeartRateBpm)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            DropdownMenuField(
+                label = stringResource(R.string.label_sex),
+                options = UserProfileEntry.Sex.entries.map { it.name },
+                selectedOption = selectedSex.name,
+                onOptionSelected = { selectedSex = UserProfileEntry.Sex.valueOf(it) }
+            )
+
+            DropdownMenuField(
+                label = stringResource(R.string.label_amputation_level),
+                options = UserProfileEntry.AmputationLevel.entries.map { it.name },
+                selectedOption = selectedAmputationLevel?.name ?: "NONE",
+                onOptionSelected = {
+                    selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it)
+                }
+            )
+
+            DropdownMenuField(
+                label = stringResource(R.string.label_diagnosis),
+                options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
+                selectedOption = selectedDiagnosis?.name ?: "Keine",
+                onOptionSelected = {
+                    selectedDiagnosis =
+                        if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
+                }
+            )
+
+            OutlinedTextField(
+                value = fatigueSensitivity,
+                onValueChange = { fatigueSensitivity = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_fatigue_sensitivity)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = anaerobicThreshold,
+                onValueChange = { anaerobicThreshold = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_anaerobic_threshold)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = bellScale,
+                onValueChange = { bellScale = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_bell_scale)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = fitnessTracker,
+                onValueChange = { fitnessTracker = it },
+                label = { Text(stringResource(R.string.label_fitness_tracker)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+        }
+        if (showUnsavedChangesDialog) {
+            AlertDialog(
+                onDismissRequest = { showUnsavedChangesDialog = false },
+                title = { Text(stringResource(R.string.dialog_unsaved_title)) },
+                text = { Text(stringResource(R.string.dialog_unsaved_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showUnsavedChangesDialog = false
+                            navController.popBackStack() // Seite verlassen
+                        }
+                    ) {
+                        Text(stringResource(R.string.dialog_unsaved_confirm_leave))
                     }
                 },
-                style = if (hasUnsavedChanges) org.htwk.pacing.ui.theme.PrimaryButtonStyle else org.htwk.pacing.ui.theme.SecondaryButtonStyle,
-            ) {
-                if (hasUnsavedChanges) {
-                    Image(
-                        painter = painterResource(R.drawable.settings_save_icon),
-                        contentDescription = stringResource(R.string.save),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.save))
-                } else {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.save)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.saved))
-                }
-                Spacer(Modifier.width(8.dp))
-            }
-        }
-
-        OutlinedTextField(
-            value = nickname,
-            onValueChange = { nickname = it },
-            label = { Text(stringResource(R.string.label_nickname)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = birthYear,
-            onValueChange = { birthYear = it.filter { c -> c.isDigit() }.take(4) },
-            label = { Text(stringResource(R.string.label_birth_year)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = heightCm,
-            onValueChange = { heightCm = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_height_cm)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = weightKg,
-            onValueChange = { weightKg = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_weight_kg)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = restingHeartRateBpm,
-            onValueChange = { restingHeartRateBpm = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_restingHeartRateBpm)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        DropdownMenuField(
-            label = stringResource(R.string.label_sex),
-            options = UserProfileEntry.Sex.entries.map { it.name },
-            selectedOption = selectedSex.name,
-            onOptionSelected = { selectedSex = UserProfileEntry.Sex.valueOf(it) }
-        )
-
-        DropdownMenuField(
-            label = stringResource(R.string.label_amputation_level),
-            options = UserProfileEntry.AmputationLevel.entries.map { it.name },
-            selectedOption = selectedAmputationLevel?.name ?: "NONE",
-            onOptionSelected = {
-                selectedAmputationLevel = UserProfileEntry.AmputationLevel.valueOf(it)
-            }
-        )
-
-        DropdownMenuField(
-            label = stringResource(R.string.label_diagnosis),
-            options = listOf("Keine") + UserProfileEntry.Diagnosis.entries.map { it.name },
-            selectedOption = selectedDiagnosis?.name ?: "Keine",
-            onOptionSelected = {
-                selectedDiagnosis =
-                    if (it == "Keine") null else UserProfileEntry.Diagnosis.valueOf(it)
-            }
-        )
-
-        OutlinedTextField(
-            value = fatigueSensitivity,
-            onValueChange = { fatigueSensitivity = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_fatigue_sensitivity)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = anaerobicThreshold,
-            onValueChange = { anaerobicThreshold = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_anaerobic_threshold)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = bellScale,
-            onValueChange = { bellScale = it.filter { c -> c.isDigit() } },
-            label = { Text(stringResource(R.string.label_bell_scale)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = fitnessTracker,
-            onValueChange = { fitnessTracker = it },
-            label = { Text(stringResource(R.string.label_fitness_tracker)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-    }
-    if (showUnsavedChangesDialog) {
-        AlertDialog(
-            onDismissRequest = { showUnsavedChangesDialog = false },
-            title = { Text(stringResource(R.string.dialog_unsaved_title)) },
-            text = { Text(stringResource(R.string.dialog_unsaved_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showUnsavedChangesDialog = false
-                        navController.popBackStack() // Seite verlassen
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showUnsavedChangesDialog = false
+                        } // Dialog schließen, auf Seite bleiben
+                    ) {
+                        Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
                     }
-                ) {
-                    Text(stringResource(R.string.dialog_unsaved_confirm_leave))
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showUnsavedChangesDialog = false
-                    } // Dialog schließen, auf Seite bleiben
-                ) {
-                    Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
-                }
-            }
-        )
+            )
+        }
     }
 }
 

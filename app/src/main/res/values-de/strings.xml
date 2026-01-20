@@ -189,5 +189,6 @@
     <string name="start_time_label">Startzeit (HH:mm)</string>
     <string name="end_time_label">Endzeit (HH:mm)</string>
     <string name="time_format_helper">Format: 00:00 bis 23:59</string>
+    <string name="demo_banner">Demomodus aktiv</string>
 
 </resources>
