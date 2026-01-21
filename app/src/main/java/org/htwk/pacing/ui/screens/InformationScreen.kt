@@ -21,6 +21,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -30,6 +31,7 @@ import org.koin.androidx.compose.koinViewModel
 fun InformationScreen(
     navController: NavController,
     viewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showLicenceDialog by remember { mutableStateOf(false) }
@@ -38,7 +40,7 @@ fun InformationScreen(
         navController = navController,
     ) {
         Column {
-            DemoBanner()
+            DemoBanner(modeViewModel = modeViewModel)
 
             Column(
                 modifier = Modifier

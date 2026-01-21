@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
@@ -33,7 +34,8 @@ enum class ThemeMode {
 @Composable
 fun AppearanceScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel = koinViewModel()
+    viewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     val profile by viewModel.profile.collectAsState()
     val currentThemeMode = profile?.themeMode ?: "AUTO"
@@ -49,7 +51,7 @@ fun AppearanceScreen(
         navController = navController,
     ) {
         Column {
-            DemoBanner()
+            DemoBanner(modeViewModel = modeViewModel)
 
             Column(
                 modifier = Modifier

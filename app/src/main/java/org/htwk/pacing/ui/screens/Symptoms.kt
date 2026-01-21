@@ -60,6 +60,7 @@ import org.htwk.pacing.backend.database.ManualSymptomEntry
 import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -71,6 +72,7 @@ fun SymptomScreen(
     navController: NavController,
     feeling: Feeling,
     viewModel: SymptomsViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     var openDialog by remember { mutableStateOf(false) }
     val symptoms by viewModel.symptoms.collectAsState()
@@ -92,7 +94,7 @@ fun SymptomScreen(
             }
         }) { contentPadding ->
         Column {
-            DemoBanner()
+            DemoBanner(modeViewModel = modeViewModel)
 
             Column(
                 modifier = Modifier

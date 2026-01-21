@@ -26,19 +26,22 @@ import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.androidx.compose.koinViewModel
 
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     Column {
-        DemoBanner()
+        DemoBanner(modeViewModel = modeViewModel)
         Box(modifier = modifier.verticalScroll(rememberScrollState())) {
 
             Column(

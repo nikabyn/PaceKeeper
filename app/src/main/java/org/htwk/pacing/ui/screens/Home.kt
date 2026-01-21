@@ -40,6 +40,7 @@ import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
@@ -55,6 +56,7 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     val latest by viewModel.predictedEnergyLevel.collectAsState()
 
@@ -78,7 +80,7 @@ fun HomeScreen(
     val maxPrediction = futureValue + 0.1
     val avgPrediction = futureValue
     Column(modifier = modifier.fillMaxSize()) {
-        DemoBanner()
+        DemoBanner(modeViewModel = modeViewModel)
         Box(modifier = modifier.verticalScroll(rememberScrollState())) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),

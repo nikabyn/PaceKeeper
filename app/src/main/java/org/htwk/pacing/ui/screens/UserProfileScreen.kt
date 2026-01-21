@@ -59,6 +59,7 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -71,7 +72,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun UserProfileScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel = koinViewModel()
+    viewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = org.koin.androidx.compose.koinViewModel()
 ) {
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return
@@ -142,7 +144,7 @@ fun UserProfileScreen(
         }
     }
     Column {
-        DemoBanner()
+        DemoBanner(modeViewModel = modeViewModel)
         Column(
             modifier = Modifier
                 .fillMaxSize()

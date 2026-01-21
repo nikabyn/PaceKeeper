@@ -45,6 +45,7 @@ import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.HeartRateGraphCard
 import org.htwk.pacing.ui.components.HeartRatePredictionCard
 import org.htwk.pacing.ui.components.HistogramCard
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
@@ -56,6 +57,7 @@ import kotlin.time.Duration.Companion.minutes
 fun MeasurementsScreen(
     modifier: Modifier = Modifier,
     viewModel: MeasurementsViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     val heartRate by viewModel.heartRate.collectAsState()
     val heartRateHistogram by viewModel.heartRateHistogram.collectAsState()
@@ -76,7 +78,7 @@ fun MeasurementsScreen(
         }
     }
     Column {
-        DemoBanner()
+        DemoBanner(modeViewModel = modeViewModel)
         Box(
             modifier = modifier
                 .verticalScroll(rememberScrollState())

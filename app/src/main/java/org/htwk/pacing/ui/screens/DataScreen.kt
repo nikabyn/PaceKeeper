@@ -31,6 +31,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.components.StartEvaluationMode
 import org.htwk.pacing.ui.theme.CardStyle
@@ -42,6 +43,7 @@ import org.koin.androidx.compose.koinViewModel
 fun DataScreen(
     navController: NavController,
     settingsViewModel: SettingsViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_data),
@@ -59,7 +61,7 @@ fun DataScreen(
             }
         }
         Column {
-            DemoBanner()
+            DemoBanner(modeViewModel = modeViewModel)
             Column(
                 modifier = Modifier
                     .padding(16.dp),

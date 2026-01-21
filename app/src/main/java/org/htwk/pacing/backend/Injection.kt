@@ -13,6 +13,7 @@ import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
+import org.htwk.pacing.backend.database.ModeDao
 import org.htwk.pacing.backend.database.ModeDatabase
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
@@ -25,6 +26,7 @@ import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
@@ -72,6 +74,7 @@ val appModule = module {
     single<SleepSessionDao> { get<PacingDatabase>().sleepSessionsDao() }
     single<SpeedDao> { get<PacingDatabase>().speedDao() }
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
+    single<ModeDao> { get<ModeDatabase>().modeDao() }
 
     single<ValidatedEnergyLevelDao> { get<PacingDatabase>().validatedEnergyLevelDao() }
 
@@ -93,6 +96,7 @@ val appModule = module {
     viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
     viewModel { WelcomeViewModel(get()) }
+    viewModel { ModeViewModel(get()) }
 
     /**
      * koin sets up the dependencies for the worker class instance here,

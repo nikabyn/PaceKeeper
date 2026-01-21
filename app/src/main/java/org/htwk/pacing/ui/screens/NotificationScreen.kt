@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import kotlinx.datetime.LocalTime
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.NotificationPermitCard
 import org.htwk.pacing.ui.components.RestingHoursCard
 import org.koin.androidx.compose.koinViewModel
@@ -67,7 +68,8 @@ fun String.parseTime(): LocalTime? {
 fun NotificationScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    userProfileViewModel: UserProfileViewModel = koinViewModel()
+    userProfileViewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
 
     // Hol die UserProfile-Daten
@@ -103,7 +105,7 @@ fun NotificationScreen(
         }
     ) { innerPadding ->
         Column {
-            DemoBanner()
+            DemoBanner(modeViewModel = modeViewModel)
 
             Column(
                 modifier = modifier
