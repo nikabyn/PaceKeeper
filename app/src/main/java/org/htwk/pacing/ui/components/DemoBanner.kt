@@ -61,6 +61,7 @@ fun DemoBanner(
     modeViewModel: ModeViewModel = koinViewModel(),
     minHeight: Dp = 32.dp,
 ) {
+    modeViewModel.setDemoMode(true)
     val mode by modeViewModel.mode.collectAsState()
     if (mode?.demo != true) return
 
