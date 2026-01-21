@@ -15,6 +15,7 @@ import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.ModeDao
 import org.htwk.pacing.backend.database.ModeDatabase
+import org.htwk.pacing.backend.database.ModeEntry
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
@@ -50,10 +51,17 @@ val appModule = module {
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
-
+    //run blocking ist evtl. nicht korrekt
     single<PacingDatabase> {
         val modeDB = get<ModeDatabase>()
+        val mode = runBlocking { modeDB.modeDao().getMode() }
 
+        // set default mode
+        if (mode == null) {
+            runBlocking {
+                modeDB.modeDao().setMode(ModeEntry(demo = false))
+            }
+        }
         val dbName = runBlocking {
             val modeEntry = modeDB.modeDao().getMode()
             if (modeEntry?.demo == true) "demo.db" else "pacing.db"
