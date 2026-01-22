@@ -72,6 +72,7 @@
     <string name="demo_data_button_text">Demomodus starten</string>
     <string name="demo_data_dialog_title">Wichtiger Hiweis</string>
     <string name="demo_data_dialog_text">Wenn Sie fortfahren werden Demodaten in Health Connect geladen. Diese können Sie nur manuell wieder über Health Connect löschen.</string>
+    <string name="evaluation_mode_dialog_text">Wenn Sie fortfahren, wird die App neu gestartet.</string>
     <string name="energy_prediction_running_channel">Energieprognosen im Hintergrund</string>
     <string name="energy_prediction_running">Energieprognose läuft im Hintergrund...</string>
     <string name="predicting_energy">Energieprognose läuft</string>

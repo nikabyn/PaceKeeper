@@ -74,7 +74,7 @@ fun StartEvaluationMode() {
             onDismissRequest = { showDialog = false },
             title = { Text(stringResource(R.string.demo_data_dialog_title)) },
             text = {
-                Text(stringResource(R.string.demo_data_dialog_text))
+                Text(stringResource(R.string.evaluation_mode_dialog_text))
             },
             confirmButton = {
                 TextButton(
