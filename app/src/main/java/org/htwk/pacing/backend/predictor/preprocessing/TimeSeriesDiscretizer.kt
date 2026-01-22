@@ -164,7 +164,7 @@ object TimeSeriesDiscretizer {
     fun discretizeTimeSeries(
         input: GenericTimedDataPointTimeSeries,
         targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
-    ): DoubleArray {
+    ): Pair<DoubleArray, SortedMap<Int, Double>> {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
         //optionally pin the first and last known value to the borders so that we don't get missing
@@ -181,6 +181,6 @@ object TimeSeriesDiscretizer {
                 targetLength = targetLength
             )
 
-        return discreteTimeSeries
+        return Pair(discreteTimeSeries, timeBucketAverages)
     }
 }
