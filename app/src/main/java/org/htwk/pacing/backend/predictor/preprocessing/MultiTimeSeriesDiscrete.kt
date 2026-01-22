@@ -3,7 +3,6 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.featureCount
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.stepDuration
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
@@ -17,7 +16,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
-import kotlin.math.pow
 import kotlin.time.Duration
 
 
@@ -80,7 +78,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
     // ---- general state / time queries ----
     fun stepCount(): Int = stepCount
     private fun resize(newStepCount: Int) {
-        reserveCapacity(newStepCount);
+        reserveCapacity(newStepCount)
         this.stepCount = newStepCount
     }
 
@@ -179,7 +177,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
         if (newSteps == 0) return
 
         require(newSamples.shape[0] == featureCount) {
-            "Expected ${featureCount} features, got ${newSamples.shape[0]}"
+            "Expected $featureCount features, got ${newSamples.shape[0]}"
         }
 
         reserveCapacity(stepCount + newSteps)
@@ -205,7 +203,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
      * @param minimumSteps The minimum number of time steps that must be accommodatable.
      */
     private fun reserveCapacity(minimumSteps: Int) {
-        if (minimumSteps <= capacityInSteps) return;
+        if (minimumSteps <= capacityInSteps) return
 
         //next-highest power of two relative to minimumSteps
         val newCapacity = minimumSteps.takeHighestOneBit() shl 1
@@ -250,7 +248,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          *
          * This allows for efficient, `O(1)` access to a feature's time series data row within the matrix.
          */
-        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.values()
+        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
             .map { metric ->
                 metric.signalClass.components.map { component ->
                     FeatureID(
@@ -288,72 +286,35 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
             val multiTimeSeriesDiscrete = MultiTimeSeriesDiscrete(raw.timeStart)
 
-            val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
+            val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
             multiTimeSeriesDiscrete.resize(stepCount)
 
             val metricCounts = mutableMapOf<TimeSeriesMetric, Int>()
 
             TimeSeriesMetric.entries.forEach { metric ->
-                //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
+
                 val discreteProportional = discretizeTimeSeries(
-                    ensureData(id = metric.ordinal,
-                        GenericTimedDataPointTimeSeries(
-                            timeStart = raw.timeStart,
-                            duration = raw.duration,
-                            isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
-                            data = when (metric) {
-                                TimeSeriesMetric.HEART_RATE -> raw.heartRate.map { point ->
-                                    val hr = point.bpm
-                                    val threshold = fixedParameters.anaerobicThresholdBPM
-                                    val overload = ((hr - threshold) / threshold).coerceAtLeast(0.0)
-
-                                    // nonlinear intensity amplification
-                                    val intensityFactor = (1.0 + 5 * overload.pow(1.5)).coerceAtMost(1.6)
-                                    val cardiacLoad = hr * intensityFactor
-                                    GenericTimedDataPoint(point.time, cardiacLoad)
-                                }
-                                TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map { point ->
-                                    val hrAtTime = raw.heartRate
-                                        .lastOrNull { it.time <= point.time }
-                                        ?.bpm
-                                    val overload = if (hrAtTime != null) {
-                                        (hrAtTime - fixedParameters.anaerobicThresholdBPM).coerceAtLeast(
-                                            0.0
-                                        )
-                                    } else {
-                                        0.0
-                                    }
-                                    // Damping factor for HRV
-                                    val factor = (1.0 - overload / 100.0).coerceIn(0.5, 1.0)
-
-                                    // Stress-adjusted HRV
-                                    val adjustedVariability = point.variability * factor
-                                    GenericTimedDataPoint(point.time, adjustedVariability)
-                                }
-
-                                TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
+                    ensureData(
+                        id = metric.ordinal,
+                        buildMetricTimeSeries(metric, raw, fixedParameters)
+                            .also { series ->
+                                // count how many entries we got
+                                metricCounts[metric] = series.data.size
                             }
-                        ).also {it ->
-                            //count how many entries we got
-                            metricCounts[metric] = it.data.size
-                        }
                     ),
                     targetLength = stepCount
                 )
 
-                require(discreteProportional.size == stepCount);
+                require(discreteProportional.size == stepCount)
 
                 metric.signalClass.components.forEach { component ->
                     val featureID = FeatureID(metric, component)
                     val componentData = featureID.component.compute(discreteProportional)
                     val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
-                    componentData.forEachIndexed { index, value -> featureView[index] = value }
+
+                    componentData.forEachIndexed { index, value ->
+                        featureView[index] = value
+                    }
                 }
             }
 
