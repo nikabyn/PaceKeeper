@@ -13,6 +13,8 @@ import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import kotlin.math.pow
+import kotlin.math.sign
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -32,12 +34,14 @@ import kotlin.time.Duration.Companion.hours
  *         filled with random data otherwise.
  */
 fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
+
     if (genericTS.data.size >= 2) {
         return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
     }
+
     val random: Random = Random(id)
 
-    val steps = genericTS.duration.inWholeHours.toInt()
+    val steps = 2//genericTS.duration.inWholeHours.toInt()
     val stepDuration = 1.hours
 
     val data = List<GenericTimedDataPoint>(steps) { index ->
@@ -85,7 +89,17 @@ data class GenericTimedDataPointTimeSeries(
          */
         constructor(src: HeartRateEntry) : this(
             time = src.time,
-            value = src.bpm.toDouble()
+            value = src.bpm.toDouble().let {
+                bpm ->
+                val limit = 900.0
+                val diff = bpm - limit
+                diff * diff * diff
+                /*when {
+                    bpm < 60.0 -> bpm - 60.0
+                    bpm > 90.0 -> bpm - 90.0
+                    else -> 0.0
+                }*/
+            }
         )
 
         /**

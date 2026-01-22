@@ -9,6 +9,7 @@ import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizo
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
+import org.htwk.pacing.backend.predictor.stats.denormalize
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
 import org.htwk.pacing.ui.math.discreteDerivative
@@ -24,6 +25,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.slice
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
+import kotlin.math.absoluteValue
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -36,9 +38,9 @@ object DifferentialPredictionModel/* : IPredictionModel*/ {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
     //stores "learned" / regressed linear coefficients per Horizon
-    private data class PerHorizonModel(
+    data class PerHorizonModel(
         //bias (linear offset so that our fit "line" doesn't have to go through 0)
-        val bias: Double,
+        //val bias: Double,
 
         //weight per extrapolation (how much each extrapolated trend affects prediction output)
         val weights: List<Double>,
@@ -47,29 +49,29 @@ object DifferentialPredictionModel/* : IPredictionModel*/ {
         val extrapolationDistributions: List<StochasticDistribution>
     )
 
-    /*private class Model(
+    class Model(
         //model parameters per prediction horizon (e.g. now vs. future)
-        val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
+        val perHorizonModel: PerHorizonModel,
+        //val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
+    )
 
-        //stochastic distribution parameters for prediction target (energy), because we need to normalize it too
-        val targetStochasticDistribution: StochasticDistribution
-    )*/
-
-    private var model: PerHorizonModel? = null //hold everything in a single state, (model weights etc.)*/
+    var model: Model? = null //hold everything in a single state, (model weights etc.)*/
 
     data class TrainingSample(
         val metricValues: List<Double>,
         val targetValue: Double
     )
 
+    var timeOffset = 0
+
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
         targetTimeSeriesDiscrete: DoubleArray,
     ): List<TrainingSample> {
 
-        return (0 until input.stepCount()).map { offset ->
+        return (timeOffset until input.stepCount()).map { offset ->
             TrainingSample(
-                metricValues = input.allFeaturesAt(offset).toList(),
+                metricValues = input.allFeaturesAt(offset - timeOffset).toList() + listOf(1.0),
                 targetValue = targetTimeSeriesDiscrete[offset]
             )
         }
@@ -103,37 +105,48 @@ object DifferentialPredictionModel/* : IPredictionModel*/ {
 
         val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector).toList()
 
-        val bias = coefficients.last()
+        model = Model (
+            PerHorizonModel(coefficients, extrapolationDistributions)
+        )
 
-        model = PerHorizonModel(bias, coefficients.dropLast(1), extrapolationDistributions)
+        val ids = input.getAllFeatureIDs().toList()
+
+        println()
+        coefficients.dropLast(1).forEachIndexed { i, x ->
+            print("${ids[i].metric}, ${ids[i].component.toString().substring(0,4)}; ")
+            println("%.6f".format(x * 1000.0))
+        }
+        print("bias:")
+        println("%.6f".format(coefficients.last() * 1000.0))
+        println()
 
     }
 
     fun predictStep(input: List<Double>): Double {
         require(model != null) { "No model trained, can't perform prediction." }
 
-        val perHorizonModel = model!!//.perHorizonModels[predictionHorizon]!!
+        val perHorizonModel = model!!.perHorizonModel//.perHorizonModels[predictionHorizon]!!
 
         //drop last element, because it is the bias, normalizing it is useless anyways
-        val flattenedExtrapolations = input
+        val flattenedExtrapolations = input//.dropLast(1)
             //generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
 
-        Log.i(LOGGING_TAG, "prediction extrapolations: " + flattenedExtrapolations.joinToString(", ") { "%.2e".format(it) })
+        //Log.i(LOGGING_TAG, "prediction extrapolations: " + flattenedExtrapolations.joinToString(", ") { "%.2e".format(it) })
 
         //normalize extrapolations, this is essential for good regression stability
-        val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations.mapIndexed {index, d ->
+        val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations
+            .mapIndexed {index, d ->
             val distribution = perHorizonModel.extrapolationDistributions[index]
             normalizeSingleValue(d, distribution)
-        })
+        } + listOf(1.0))
 
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(perHorizonModel.weights)
 
-        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights) + perHorizonModel.bias))
+        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights)))
         //denormalize prediction out of normalized spaces
-        //prediction.denormalize(model!!.targetStochasticDistribution)
 
-        Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
+        //Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
 
         return prediction.first()
     }
@@ -141,11 +154,9 @@ object DifferentialPredictionModel/* : IPredictionModel*/ {
     fun predict(
         input: MultiTimeSeriesDiscrete,
         predictionHorizon: PredictionHorizon,
-        anchorIndex: Int,
-        anchorEnergy: Double
     ): Double {
-        var currentEnergy = anchorEnergy
-        for(i in anchorIndex until input.stepCount()) {
+        var currentEnergy = 0.0
+        for(i in 0 until input.stepCount()) {
             val currentMetrics = input.allFeaturesAt(i).toList()
             currentEnergy += predictStep(currentMetrics)
         }

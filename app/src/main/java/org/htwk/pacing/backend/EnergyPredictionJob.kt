@@ -197,6 +197,6 @@ object EnergyPredictionJob {
 
         val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
 
-        Predictor.train(multiTimeSeriesDiscrete, fixedParameters)
+        //Predictor.train(multiTimeSeriesDiscrete, fixedParameters)
     }
 }

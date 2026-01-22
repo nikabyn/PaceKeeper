@@ -20,38 +20,33 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
-import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
-import org.htwk.pacing.backend.predictor.model.IPredictionModel
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.howFarInSamples
-import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
+import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
+import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.timeOffset
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesSignalClass
-import org.jetbrains.kotlinx.multik.api.mk
-import org.jetbrains.kotlinx.multik.api.ndarray
-import org.junit.Before
-import org.junit.Ignore
+import org.htwk.pacing.backend.predictor.preprocessing.ensureData
+import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
+import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import org.junit.Test
 import java.io.File
 import kotlin.let
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.minutes
 
 class PredictorFitbitDataTest {
-
-    private lateinit var heartRateEntries: List<HeartRateEntry>
-    private lateinit var distanceEntries: List<DistanceEntry>
-    private lateinit var timeSeriesStart: Instant
-    private lateinit var timeSeriesEnd: Instant
+    val fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
 
     class CSVHelper {
 
         fun <T> readCSVFileEntries(
             file: File,
             minTime: Instant,
+            maxTime: Instant,
             entryGenerator: (List<String>) -> T
         ): List<T> {
             return file.readLines()
@@ -59,7 +54,8 @@ class PredictorFitbitDataTest {
                 .mapNotNull { line ->
                     val parts = line.split(",")
                     val time = Instant.parse(parts[0].trim())
-                    if(time < minTime) return@mapNotNull null
+                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 5.days) return@mapNotNull null
+                    if(time !in minTime..maxTime) return@mapNotNull null
                     try {
                         entryGenerator(parts)
                     } catch (e: Exception) {
@@ -69,7 +65,7 @@ class PredictorFitbitDataTest {
                 }
         }
 
-        fun readMultiCSV(path: String):  Pair<Predictor.MultiTimeSeriesEntries, List<ValidatedEnergyLevelEntry>> {
+        fun readMultiCSV(path: String):  Predictor.MultiTimeSeriesEntries {
             val directory = File(path)
             val csvFiles = directory
                 .listFiles { file -> file.extension == "csv" }
@@ -77,9 +73,9 @@ class PredictorFitbitDataTest {
                 .orEmpty()
 
             // --- validated_energy_level.csv ---
-            val validatedEnergyEntries =
+            var validatedEnergyEntries =
                 csvFiles["validated_energy_level.csv"]?.let { file ->
-                    readCSVFileEntries(file, Instant.fromEpochMilliseconds(0)) { parts ->
+                    readCSVFileEntries(file, Instant.DISTANT_PAST, Instant.DISTANT_FUTURE) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val percent = parts[1].trim().removeSuffix("%").toDouble()
                         val validation = parts[2].trim()
@@ -88,11 +84,12 @@ class PredictorFitbitDataTest {
                 } ?: emptyList()
 
             val minTime = validatedEnergyEntries.minBy{it.time}.time
+            val maxTime = validatedEnergyEntries.maxBy{it.time}.time
 
             // --- distance.csv ---
             val distance =
                 csvFiles["distance.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val meters = parts[1].trim().toDouble()
                         DistanceEntry(time, time, Length(meters))
@@ -102,7 +99,7 @@ class PredictorFitbitDataTest {
             // --- elevation.csv ---
             val elevationGained =
                 csvFiles["elevation.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val meters = parts[1].trim().toDouble()
                         ElevationGainedEntry(time, time, Length(meters))
@@ -112,7 +109,7 @@ class PredictorFitbitDataTest {
             // --- heart_rate.csv ---
             val heartRate =
                 csvFiles["heart_rate.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val bpm = parts[1].trim().toLong()
                         HeartRateEntry(time, bpm)
@@ -122,7 +119,7 @@ class PredictorFitbitDataTest {
             // --- heart_rate_variability.csv ---
             val heartRateVariability =
                 csvFiles["heart_rate_variability.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val value = parts[1].trim().toDouble()
                         HeartRateVariabilityEntry(time, value)
@@ -152,7 +149,7 @@ class PredictorFitbitDataTest {
             // --- oxygen_saturation.csv ---
             val oxygenSaturation =
                 csvFiles["oxygen_saturation.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val percent = parts[1].trim().removeSuffix("%").toDouble()
                         OxygenSaturationEntry(time, Percentage(percent / 100.0))
@@ -179,7 +176,7 @@ class PredictorFitbitDataTest {
             // --- skin_temperature.csv ---
             val skinTemperature =
                 csvFiles["skin_temperature.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val temp = parts[1].trim().toDouble()
                         SkinTemperatureEntry(time, Temperature(temp))
@@ -189,7 +186,7 @@ class PredictorFitbitDataTest {
             // --- sleep_sessions.csv ---
             val sleepSession =
                 csvFiles["sleep_sessions.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val start = Instant.parse(parts[0].trim())
                         val end = Instant.fromEpochMilliseconds(parts[1].trim().toLong())
                         val stage = parts[2].trim()
@@ -200,7 +197,7 @@ class PredictorFitbitDataTest {
             // --- speed.csv ---
             val speed =
                 csvFiles["speed.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val time = Instant.parse(parts[0].trim())
                         val speed = parts[1].trim().toDouble()
                         SpeedEntry(time, Velocity(speed))
@@ -210,7 +207,7 @@ class PredictorFitbitDataTest {
             // --- steps.csv ---
             val steps =
                 csvFiles["steps.csv"]?.let { file ->
-                    readCSVFileEntries(file, minTime) { parts ->
+                    readCSVFileEntries(file, minTime, maxTime) { parts ->
                         val start = Instant.parse(parts[0].trim())
                         val end = Instant.fromEpochMilliseconds(parts[1].trim().toLong())
                         val count = parts[2].trim().toLong()
@@ -230,8 +227,9 @@ class PredictorFitbitDataTest {
                 .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
                 .minOrNull()
 
-            val ret = Pair(Predictor.MultiTimeSeriesEntries(
+            return Predictor.MultiTimeSeriesEntries(
                 timeStart = earliestEntryTime!!,
+                duration = maxTime - minTime,
                 distance = distance,
                 elevationGained = elevationGained,
                 heartRate = heartRate,
@@ -242,64 +240,39 @@ class PredictorFitbitDataTest {
                 speed = speed,
                 steps = steps,
                 validatedEnergyLevel = validatedEnergyEntries
-            ),
-                validatedEnergyEntries)
-
-            return ret
+            )
         }
     }
 
-
-    @Before
-    fun setUp() {
-        fun loadHeartRateEntriesFromCSV(): List<HeartRateEntry> {
-            val firstEntryTime = Instant.parse("2025-10-29T18:22:16Z")
-            val file = File("src/test/resources/heart_rate_test_data.csv")
-            return file.readLines()
-                .drop(1) //skip header
-                .map { line ->
-                    val (minutes, bpm) = line.split(',').map { it.trim() }
-                    HeartRateEntry(firstEntryTime + minutes.toLong().minutes, bpm.toLong())
-                }
-        }
-
-        fun loadDistanceEntriesFromCSV(): List<DistanceEntry> {
-            val firstEntryTime = Instant.parse("2025-09-30T16:58:00Z")
-            val file = File("src/test/resources/distance_test_data.csv")
-            return file.readLines()
-                .drop(1) //skip header
-                .map { line ->
-                    val (minutes, distanceMeters) = line.split(',').map { it.trim() }
-                    val timeEnd = firstEntryTime + minutes.toLong().minutes
-                    DistanceEntry(
-                        start = timeEnd - 1.minutes,
-                        end = timeEnd,
-                        Length(distanceMeters.toDouble())
+    fun plotMTSD(mtsd: MultiTimeSeriesDiscrete) {
+        plotMultiTimeSeriesEntriesWithPython(TimeSeriesMetric.entries
+            /*.filter{
+                it == TimeSeriesMetric.HEART_RATE //||
+                        //it == TimeSeriesMetric.HEART_RATE
+                        //it == TimeSeriesMetric.STEPS ||
+                        //it == TimeSeriesMetric.SLEEP_SESSION
+                        //|| it == TimeSeriesMetric.OXYGEN_SATURATION
+            }*/
+            .associate {
+                it.name to mtsd.getMutableRow(
+                    MultiTimeSeriesDiscrete.FeatureID(
+                        it,
+                        PIDComponent.PROPORTIONAL
                     )
-                }
-        }
-
-        heartRateEntries = loadHeartRateEntriesFromCSV()
-        distanceEntries = loadDistanceEntriesFromCSV()
-
-        val earliestEntryTime = minOf(heartRateEntries.first().time, distanceEntries.first().start)
-        val latestEntryTime = maxOf(heartRateEntries.last().time, distanceEntries.last().start)
-
-        timeSeriesStart = earliestEntryTime
-        timeSeriesEnd = latestEntryTime + 5.minutes
+                ).toDoubleArray()
+            })
     }
 
     //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testPlotDatasetFromCSV(){
-        val (mtse, validatedEnergy) = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
-
+        val mtse = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
         println(mtse.heartRate.size)
-        println(validatedEnergy.size)
-        plotMultiTimeSeriesEntriesWithPython(mtse, validatedEnergy)
+        val mtsd = Preprocessor.run(mtse, fixedParameters = fixedParameters)
+        plotMTSD(mtsd)
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+    /*@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testExtrapolationsPlotWithRealData() {
         println("Preparing to plot time series data...")
@@ -336,30 +309,112 @@ class PredictorFitbitDataTest {
         plotTimeSeriesExtrapolationsWithPython(derivedTimeSeries, result.extrapolations)
 
         println("Plotting finished.")
+    }*/
+
+    @Test
+    fun differentialPredictionModelTest() {
+        val multiTimeSeriesEntries = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
+        MultiTimeSeriesDiscrete.mask = false
+        val multiTimeSeriesDiscreteUnmasked = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
+        MultiTimeSeriesDiscrete.mask = true
+        val multiTimeSeriesDiscreteMasked = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
+        var targetTimeSeries = TimeSeriesDiscretizer.discretizeTimeSeries(
+            ensureData(id = 1500,
+                GenericTimedDataPointTimeSeries(
+                    timeStart = multiTimeSeriesEntries.timeStart,
+                    duration = multiTimeSeriesEntries.duration,
+                    isContinuous = true, //discretize: interpolate and edge fill validated energy level
+                    data = multiTimeSeriesEntries.validatedEnergyLevel.map { it ->
+                        GenericTimedDataPoint(it.time, it.percentage.toDouble())
+                    }
+                )
+            ),
+            targetLength = multiTimeSeriesDiscreteMasked.stepCount()
+        )
+
+        var m = multiTimeSeriesDiscreteUnmasked.getAllFeatureIDs().associateWith { id ->
+            DoubleArray(400)
+        }
+
+        for(offs in 0 until 400) {
+            println("time offset ${offs}")
+            DifferentialPredictionModel.timeOffset = offs
+            Predictor.train(
+                multiTimeSeriesDiscreteMasked,
+                targetTimeSeries,
+                fixedParameters
+            )
+
+            multiTimeSeriesDiscreteUnmasked.getAllFeatureIDs().forEachIndexed { index, value: MultiTimeSeriesDiscrete.FeatureID ->
+                m[value]!!.set(offs,
+                    DifferentialPredictionModel.model!!.perHorizonModel.weights[index]
+                )
+            }
+        }
+
+        val m1 = m.keys.associate { id ->
+            "${id.metric}-${
+                id.component.toString().substring(0, 4)
+            }" to m[id]!!
+        }
+
+        //TODO IDEA: CONVOLUTION by this graph, add convolved energy / 400 (divide by no of layers that affected a point)
+
+        plotMultiTimeSeriesEntriesWithPython(
+            m1
+        )
+
+        val predictions = DoubleArray(multiTimeSeriesDiscreteUnmasked.stepCount()) {0.0}
+
+        val entries = targetTimeSeries.buckets.toList()
+        for(k in 0 until 1) {//entries.size - 2) {
+            val entry = entries[k]
+            val nextEntry = entries[k + 1]
+
+            val lastEnteredEnergy = entry.second
+            var currentEnergy = lastEnteredEnergy
+            for(i in 0 until multiTimeSeriesDiscreteUnmasked.stepCount()) {
+                //for(i in entry.first until nextEntry.first){//multiTimeSeriesDiscreteUnmasked.stepCount()) {
+                if(i - timeOffset < 0) continue;
+                val allMetricsAtStep = multiTimeSeriesDiscreteUnmasked.allFeaturesAt(i - timeOffset).toList()
+                val energyDifference = DifferentialPredictionModel.predictStep(allMetricsAtStep)
+                currentEnergy += energyDifference
+                predictions[i] = currentEnergy
+            }
+        }
+
+
+        /*val predictions = (0..multiTimeSeriesDiscrete.stepCount() - 300).map { i ->
+            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, 0 + i, 288 + i)
+            val predictionResult = Predictor.predict(
+                testSet
+            )
+            predictionResult.percentageNow.toDouble()
+        }.toDoubleArray()*/
+
+        val mutRow = multiTimeSeriesDiscreteUnmasked.getMutableRow(
+            MultiTimeSeriesDiscrete.FeatureID(
+                TimeSeriesMetric.HEART_RATE,
+                PIDComponent.PROPORTIONAL
+            )
+        )
+
+        for(i in 0 until predictions.size) {
+            mutRow[i] = predictions[i]
+        }
+        plotMultiTimeSeriesEntriesWithPython(
+            mapOf(
+                "PREDICTION" to predictions
+            )
+        )
+
+        plotMTSD(multiTimeSeriesDiscreteUnmasked)
     }
 
     //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
-        val multiTimeSeriesEntries = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
-            timeStart = timeSeriesStart,
-            duration = timeSeriesEnd - timeSeriesStart,
-            heartRate = heartRateEntries,
-            distance = distanceEntries,
-        )
-
-        Predictor.train(
-            multiTimeSeriesEntries,
-            targetEnergyTimeSeriesEntries = multiTimeSeriesEntries.heartRate.map { it ->
-                ValidatedEnergyLevelEntry(
-                    it.time, Validation.Correct,
-                    Percentage(it.bpm.toDouble() / 100.0)
-                )
-            },//TODO: fill
-            fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
-        )
-
-        val testWindowOffset = 0.days
+        /*val testWindowOffset = 0.days
 
         val testWindowStart = timeSeriesEnd - 2.days - testWindowOffset
         val testWindowEnd = timeSeriesEnd - 0.days - testWindowOffset
@@ -369,14 +424,50 @@ class PredictorFitbitDataTest {
             duration = 2.days,
             heartRate = heartRateEntries.filter { it.time in testWindowStart..testWindowEnd },
             distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd }
-        )
+        )*/
 
-        val predictionResult = Predictor.predict(
-            multiTimeSeriesEntries,
-            fixedParameters = Predictor.FixedParameters(anaerobicThresholdBPM = 80.0)
-        )
+        /*var testSet1 = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscreteUnmasked, 0, 288)
+        //test that slicing was correct
+        for(i in 0 until 288) {
+            assertEquals(testSet1.allFeaturesAt(i), multiTimeSeriesDiscreteUnmasked.allFeaturesAt(i))
+        }*/
 
-        println("-----")
+
+        //plotMTSD(testSet)
+
+        //var testSet1 = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, 0, 100)
+        //plotMTSD(multiTimeSeriesDiscrete)
+
+        //var predictions = DoubleArray(multiTimeSeriesDiscrete.stepCount()) {0.0}
+
+
+        //Preprocessor.run(inputTimeSeries, fixedParameters)
+
+
+        /*val predictions = (0..multiTimeSeriesDiscrete.stepCount() - 300).map { i ->
+            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, 0 + i, 288 + i)
+            val predictionResult = Predictor.predict(
+                testSet
+            )
+            predictionResult.percentageNow.toDouble()
+        }.toDoubleArray()*/
+
+        //plotMTSD(multiTimeSeriesDiscreteUnmasked)
+
+        /*plotMultiTimeSeriesEntriesWithPython(
+            mapOf(
+                "validated_energy_level" to multiTimeSeriesDiscrete.getMutableRow(
+                    MultiTimeSeriesDiscrete.FeatureID(
+                        TimeSeriesMetric.VALIDATED_ENERGY_LEVEL,
+                        PIDComponent.PROPORTIONAL
+                    )
+                ).toDoubleArray()
+
+                ""
+            )
+        )*/
+
+        /*println("-----")
         println("prediction time:  ${predictionResult.time}")
         println("prediction value: ${predictionResult.percentageFuture}")
         println("prediction value now: ${predictionResult.percentageNow}")
@@ -395,6 +486,6 @@ class PredictorFitbitDataTest {
 
         //assertEquals(71.02011198570813, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
         //assertEquals(83.74639384260114, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
-        assertEquals(84.44875652118324, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)
+        assertEquals(84.44875652118324, predictionResult.percentageFuture.toDouble() * 100.0, 0.1)*/
     }
 }

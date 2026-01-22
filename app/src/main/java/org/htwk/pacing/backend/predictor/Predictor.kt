@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor
 
+import android.text.method.SingleLineTransformationMethod
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
@@ -14,16 +15,13 @@ import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor.train
+import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
-import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -34,7 +32,7 @@ object Predictor {
 
     //time duration/length of input time series;
     val TIME_SERIES_DURATION: Duration = 2.days
-    val TIME_SERIES_STEP_DURATION: Duration = 10.minutes
+    val TIME_SERIES_STEP_DURATION: Duration = 30.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 
     /**
@@ -120,19 +118,21 @@ object Predictor {
      */
     fun train(
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
+        singleTargetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
         fixedParameters: FixedParameters,
     ) {
         //val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
 
-        val targetFeatureID = MultiTimeSeriesDiscrete.FeatureID(TimeSeriesMetric.HEART_RATE, PIDComponent.PROPORTIONAL)
+        //val targetFeatureID = MultiTimeSeriesDiscrete.FeatureID(TimeSeriesMetric.HEART_RATE, PIDComponent.PROPORTIONAL)
 
-        val target = multiTimeSeriesDiscrete.getMutableRow(targetFeatureID).toDoubleArray()
+        //val target = multiTimeSeriesDiscrete.getMutableRow(targetFeatureID).toDoubleArray()
 
-        target.forEachIndexed { index, value ->
+        /*target.forEachIndexed { index, value ->
             println("target[$index] = $value")
-        }
+        }*/
 
-        LinearCombinationPredictionModel.train(multiTimeSeriesDiscrete, target)
+        DifferentialPredictionModel.train(multiTimeSeriesDiscrete, singleTargetTimeSeries.values)
+        //ExtrapolationPredictionModel.train(multiTimeSeriesDiscrete, target)
     }
 
     /**
@@ -156,19 +156,19 @@ object Predictor {
         // (1.5) TODO: cache (don't need that for now)
 
         // 2.) run model and return energy prediction
-        val predictedEnergyNow = LinearCombinationPredictionModel.predict(
+        val predictedEnergyNow = DifferentialPredictionModel.predict(
             multiTimeSeriesDiscrete,
             IPredictionModel.PredictionHorizon.NOW
         );
-        val predictedEnergyFuture = LinearCombinationPredictionModel.predict(
+        /*val predictedEnergyFuture = ExtrapolationPredictionModel.predict(
             multiTimeSeriesDiscrete,
             IPredictionModel.PredictionHorizon.FUTURE
-        );
+        );*/
         return PredictedEnergyLevelEntry(
             time = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.NOW.howFar,
             percentageNow = Percentage(predictedEnergyNow/*.coerceIn(0.0, 1.0)*/),
             timeFuture = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
-            percentageFuture = Percentage(predictedEnergyFuture/*.coerceIn(0.0, 1.0)*/)
+            percentageFuture = Percentage(0.0)//Percentage(predictedEnergyFuture/*.coerceIn(0.0, 1.0)*/)
         )
     }
 }
