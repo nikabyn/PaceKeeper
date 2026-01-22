@@ -5,6 +5,11 @@ import org.htwk.pacing.backend.predictor.Predictor
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
+    class SingleDiscreteTimeSeries (
+        val values: DoubleArray,
+        val buckets: SortedMap<Int, Double>
+    )
+
     /**
      * Converts an [Instant] to a discrete time step.
      * @param instant The [Instant] to discretize.
@@ -164,7 +169,7 @@ object TimeSeriesDiscretizer {
     fun discretizeTimeSeries(
         input: GenericTimedDataPointTimeSeries,
         targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
-    ): Pair<DoubleArray, SortedMap<Int, Double>> {
+    ): SingleDiscreteTimeSeries {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
         //optionally pin the first and last known value to the borders so that we don't get missing
@@ -181,6 +186,6 @@ object TimeSeriesDiscretizer {
                 targetLength = targetLength
             )
 
-        return Pair(discreteTimeSeries, timeBucketAverages)
+        return SingleDiscreteTimeSeries(discreteTimeSeries, timeBucketAverages)
     }
 }
