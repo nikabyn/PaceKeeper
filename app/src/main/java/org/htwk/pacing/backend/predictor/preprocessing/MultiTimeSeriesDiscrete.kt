@@ -5,19 +5,23 @@ import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.featureCount
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.stepDuration
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
+import org.htwk.pacing.backend.predictor.stats.normalize
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
+import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -263,6 +267,24 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             }.flatten().mapIndexed { index, featureID -> featureID to index }.toMap()
 
         private val featureCount: Int = featureIndexMap.size
+
+        //TODO: interop with capacity
+        //TODO: copy safety (what happens if multiple views into same memory through slices)
+        //TODO: index safety
+        fun fromSubSlice(input: MultiTimeSeriesDiscrete, indexStart: Int, indexEnd: Int) : MultiTimeSeriesDiscrete {
+            val newSteps: Int = (indexEnd - indexStart).toInt()
+
+            val newMTSD = MultiTimeSeriesDiscrete(timeStart = input.timeStart, initialCapacityInSteps = newSteps)
+            newMTSD.stepCount = newSteps
+
+
+            newMTSD.featureMatrix =
+                (input.featureMatrix[0 until featureCount, indexStart until indexEnd] as D2Array<Double>)
+
+            return newMTSD
+        }
+
+        var mask = true
 
         /**
          * Creates a [MultiTimeSeriesDiscrete] instance from raw, continuous time series data.
