@@ -188,5 +188,6 @@
     <string name="view_licence">View Licence</string>
     <string name="predicting_energy">energy is getting predicted</string>
     <string name="demo_banner">Evaluation mode active</string>
+    <string name="hc_demo_data_button_text">Load demo data</string>
 
 </resources>
