@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.components
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,24 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.metadata.Metadata
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.htwk.pacing.R
-import org.htwk.pacing.backend.data_collection.health_connect.HealthConnectHelper.insertHeartRateRecords
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun StartEvaluationMode() {
+fun StartEvaluationMode(
+    modeViewModel: ModeViewModel = koinViewModel()
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
@@ -80,12 +71,20 @@ fun StartEvaluationMode() {
                 TextButton(
                     onClick = {
                         showDialog = false
-                        scope.launch {
-                            val result = DemoDataImpl().run(context)
-                            Toast
-                                .makeText(context, result, Toast.LENGTH_LONG)
-                                .show()
-                        }
+                        if (modeViewModel.mode.value?.demo == true) (
+                                modeViewModel.setDemoMode(false)
+                                )
+                        else (
+                                modeViewModel.setDemoMode(true)
+                                )
+
+                        Toast
+                            .makeText(
+                                context,
+                                "Test",
+                                Toast.LENGTH_LONG
+                            )
+                            .show()
                     }
                 ) {
                     Text(stringResource(R.string.agree))
@@ -99,7 +98,7 @@ fun StartEvaluationMode() {
         )
     }
 }
-
+/*
 class DemoDataImpl {
 
     suspend fun run(context: android.content.Context): String = withContext(Dispatchers.IO) {
@@ -158,3 +157,4 @@ class DemoDataImpl {
         return ZonedDateTime.of(date, localTime, zone)
     }
 }
+*/

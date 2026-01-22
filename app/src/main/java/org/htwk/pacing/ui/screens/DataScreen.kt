@@ -72,7 +72,7 @@ fun DataScreen(
                 ImportDataHealthConnect()
 
                 ImportDemoDataHealthConnect()
-                StartEvaluationMode()
+                StartEvaluationMode(modeViewModel)
 
 
                 Card(
