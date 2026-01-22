@@ -1,5 +1,7 @@
 package org.htwk.pacing.ui.components
 
+import android.app.Activity
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.work.WorkManager
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
@@ -89,6 +92,7 @@ fun StartEvaluationMode(
                                 Toast.LENGTH_LONG
                             )
                             .show()
+                        // exitApp(context)
                     }
                 ) {
                     Text(stringResource(R.string.agree))
@@ -162,3 +166,16 @@ class DemoDataImpl {
     }
 }
 */
+
+fun exitApp(context: Context) {
+    // 1. Worker stoppen
+    WorkManager.getInstance(context).cancelAllWork()
+
+    // 2. Activities schließen
+    if (context is Activity) {
+        context.finishAffinity()
+    }
+
+    // 3. (Optional) Prozess beenden
+    // android.os.Process.killProcess(android.os.Process.myPid())
+}
