@@ -3,6 +3,7 @@ package org.htwk.pacing.backend.predictor.preprocessing
 import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.featureCount
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.stepDuration
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
@@ -267,16 +268,19 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          * 1.  It takes a [Predictor.MultiTimeSeriesEntries] object containing lists of raw data points
          *     (e.g., heart rate, distance) with their timestamps.
          * 2.  For each [TimeSeriesMetric] (like `HEART_RATE`, `DISTANCE`), it discretizes the raw data
-         *     into a uniformly sampled time series. This creates the proportional (P) component.
+         *     into a [GenericTimedDataPointTimeSeries]. This creates the proportional (P) component.
          * 3.  It then computes the other feature components (e.g., integral (I), derivative (D))
          *     from the discretized proportional data.
-         * 4.  Finally, it populates a new [MultiTimeSeriesDiscrete] instance, organizing all computed
+         * 4.  Populates a new [MultiTimeSeriesDiscrete] instance, organizing all computed
          *     feature components into the 2D matrix structure.
+         * 5.  Performs final adjustments for heart rate (HR) and heart rate variability (HRV) using [adjustHR]
+         *     and [adjustHRV] based on the provided [Predictor.FixedParameters].
          *
          * The resulting object is aligned, uniformly sampled, and ready for use as model input.
          * All generated time series share the same start time and step size.
          *
          * @param raw An object containing the raw, non-uniform time series data points.
+         * @param fixedParameters Data class containing human physiological variables that are (difficult to) change
          * @return A fully populated [MultiTimeSeriesDiscrete] instance.
          */
         fun fromEntries(raw: Predictor.MultiTimeSeriesEntries, fixedParameters: Predictor.FixedParameters): MultiTimeSeriesDiscrete {
@@ -296,7 +300,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 val discreteProportional = discretizeTimeSeries(
                     ensureData(
                         id = metric.ordinal,
-                        buildMetricTimeSeries(metric, raw, fixedParameters)
+                        buildGenericTimeSeries(metric, raw)
                             .also { series ->
                                 // count how many entries we got
                                 metricCounts[metric] = series.data.size
@@ -326,7 +330,80 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
             println("per-metric input entry counts (before ensureData): $debug")
 
+            val mutableHeartRateArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE,
+                PIDComponent.PROPORTIONAL))
+
+            val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
+                PIDComponent.PROPORTIONAL))
+
+            mutableHeartRateArray.indices.forEach { i ->
+                val hr = mutableHeartRateArray[i]
+                val hrv = mutableHRVArray[i]
+                mutableHeartRateArray[i] = adjustHR(hr, fixedParameters)
+                mutableHRVArray[i] = adjustHRV(hr, hrv, fixedParameters)
+            }
+
             return multiTimeSeriesDiscrete
         }
     }
+}
+
+/**
+ * Creates a generic time series (`GenericTimedDataPointTimeSeries`) from the raw
+ * MultiTimeSeries data of a `Predictor` object for the specified metric.
+ *
+ * The function automatically selects the appropriate data series from [raw] based on the
+ * passed [metric] and converts each entry into a [GenericTimedDataPoint].
+ * In addition, the metadata `timeStart`, `duration`, and the continuity of the metric
+ * are included in the result.
+ *
+ * @param metric The metric for which the time series is to be created. Determines which
+ *               list of `raw` is used (e.g., heart rate, steps, speed).
+ * @param raw The raw MultiTimeSeries data containing all possible time series.
+ *
+ * @return A [GenericTimedDataPointTimeSeries] object that:
+ *  - contains the mapped data points (`GenericTimedDataPoint`),
+ *  - adopts the start time (`timeStart`) and total duration (`duration`) of the time series,
+ *  - specifies whether the metric is continuous (`isContinuous`).
+ */
+internal fun buildGenericTimeSeries(
+    metric: TimeSeriesMetric,
+    raw: Predictor.MultiTimeSeriesEntries
+): GenericTimedDataPointTimeSeries {
+
+    val data = when (metric) {
+        TimeSeriesMetric.HEART_RATE ->
+            raw.heartRate.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.DISTANCE ->
+            raw.distance.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.ELEVATION_GAINED ->
+            raw.elevationGained.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.SKIN_TEMPERATURE ->
+            raw.skinTemperature.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.HEART_RATE_VARIABILITY ->
+            raw.heartRateVariability.map (::GenericTimedDataPoint)
+
+        TimeSeriesMetric.OXYGEN_SATURATION ->
+            raw.oxygenSaturation.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.STEPS ->
+            raw.steps.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.SPEED ->
+            raw.speed.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.SLEEP_SESSION ->
+            raw.sleepSession.map(::GenericTimedDataPoint)
+    }
+
+    return GenericTimedDataPointTimeSeries(
+        timeStart = raw.timeStart,
+        duration = raw.duration,
+        isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
+        data = data
+    )
 }

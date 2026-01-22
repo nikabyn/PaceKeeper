@@ -2,34 +2,17 @@ package org.htwk.pacing.backend.predictor.preprocessing
 
 import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
-import org.htwk.pacing.backend.database.DistanceEntry
-import org.htwk.pacing.backend.database.ElevationGainedEntry
-import org.htwk.pacing.backend.database.HeartRateEntry
-import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
-import org.htwk.pacing.backend.database.Length
-import org.htwk.pacing.backend.database.OxygenSaturationEntry
-import org.htwk.pacing.backend.database.Percentage
-import org.htwk.pacing.backend.database.SkinTemperatureEntry
-import org.htwk.pacing.backend.database.SleepSessionEntry
-import org.htwk.pacing.backend.database.SleepStage
-import org.htwk.pacing.backend.database.SpeedEntry
-import org.htwk.pacing.backend.database.StepsEntry
-import org.htwk.pacing.backend.database.Temperature
-import org.htwk.pacing.backend.database.Velocity
+import org.htwk.pacing.backend.database.*
 import org.htwk.pacing.backend.predictor.Predictor
 import org.junit.Test
-import kotlin.math.pow
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class BuildMetricTimeSeriesTest {
+class MultiTimesSeriesDiscreteTest {
     private val timeStart = Instant.fromEpochMilliseconds(0)
     private val duration = 60.minutes
 
-    private val threshold = 110.0
-
     fun buildExampleRaw(metric: TimeSeriesMetric): Predictor.MultiTimeSeriesEntries {
-
         return Predictor.MultiTimeSeriesEntries(
             timeStart = timeStart,
             duration = duration,
@@ -96,14 +79,14 @@ class BuildMetricTimeSeriesTest {
             sleepSession = if (metric == TimeSeriesMetric.SLEEP_SESSION)
                 listOf(
                     SleepSessionEntry(
-                        timeStart + 0.seconds, timeStart + 10.seconds, SleepStage.Sleeping
+                        timeStart + 0.seconds, timeStart + 10.seconds, SleepStage.Awake
                     )
                 )
             else emptyList()
         )
     }
 
-    // Oxygen Saturation uses Log, can't be checked here
+    // Oxygen Saturation and Sleep couldn't be checked
     val metricsToTest = listOf(
         TimeSeriesMetric.HEART_RATE,
         TimeSeriesMetric.HEART_RATE_VARIABILITY,
@@ -111,17 +94,21 @@ class BuildMetricTimeSeriesTest {
         TimeSeriesMetric.ELEVATION_GAINED,
         TimeSeriesMetric.SKIN_TEMPERATURE,
         TimeSeriesMetric.STEPS,
-        TimeSeriesMetric.SPEED,
-        TimeSeriesMetric.SLEEP_SESSION
+        TimeSeriesMetric.SPEED
     )
 
     @Test
-    fun `buildMetricTimeSeries produces expected results for all metrics`() {
+    fun `buildGenericTimeSeries produces expected results for all metrics`() {
         metricsToTest.forEach { metric ->
             val raw = buildExampleRaw(metric)
-            val result = buildMetricTimeSeries(metric, raw, Predictor.FixedParameters(110.0))
+            val result = buildGenericTimeSeries(metric, raw)
 
             println("Testing metric: $metric")
+
+            assertEquals(raw.timeStart, result.timeStart)
+            assertEquals(raw.duration, result.duration)
+
+            assertEquals(metric.signalClass == TimeSeriesSignalClass.CONTINUOUS, result.isContinuous)
 
             val expectedSize = when (metric) {
                 TimeSeriesMetric.HEART_RATE, TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRate.size
@@ -137,38 +124,21 @@ class BuildMetricTimeSeriesTest {
             assertEquals(expectedSize, result.data.size)
 
             result.data.forEachIndexed { index, dp ->
-                val expectedValue = when (metric) {
-                    TimeSeriesMetric.HEART_RATE -> {
-                        val hr = raw.heartRate[index].bpm
-                        val overload = ((hr - threshold) / threshold).coerceAtLeast(0.0)
-                        val intensityFactor = (1.0 + 5 * overload.pow(1.5)).coerceAtMost(1.6)
-                        hr * intensityFactor
+                    val expectedValue = when (metric) {
+                        TimeSeriesMetric.HEART_RATE -> raw.heartRate[index].bpm.toDouble()
+                        TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability[index].variability
+                        TimeSeriesMetric.DISTANCE -> raw.distance[index].length.inMeters()
+                        TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained[index].length.inMeters()
+                        TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature[index].temperature.inCelsius()
+                        TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation[index].percentage.toDouble()
+                        TimeSeriesMetric.STEPS -> raw.steps[index].count.toDouble()
+                        TimeSeriesMetric.SPEED -> raw.speed[index].velocity.inKilometersPerHour()
+                        else -> throw IllegalStateException("Untreated metric: $metric")
                     }
-
-                    TimeSeriesMetric.HEART_RATE_VARIABILITY -> {
-                        val hrAtTime = raw.heartRate
-                            .lastOrNull { it.time <= raw.heartRateVariability[index].time }
-                            ?.bpm
-                        val overload = if (hrAtTime != null) {
-                            (hrAtTime - threshold).coerceAtLeast(0.0)
-                        } else {
-                            0.0
-                        }
-                        val factor = (1.0 - overload / 100.0).coerceIn(0.5, 1.0)
-                        raw.heartRateVariability[index].variability * factor
-                    }
-                    else -> {
-                        dp.value
-                    }
+                    assertEquals(expectedValue, dp.value)
+                    println("Index $index, expected=$expectedValue, actual=${dp.value}")
                 }
-
-                assertEquals(expectedValue, dp.value)
-
-                println("Index $index, expected=$expectedValue, actual=${dp.value}")
-
             }
         }
     }
-}
-
 
