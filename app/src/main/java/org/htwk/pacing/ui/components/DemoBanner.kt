@@ -17,9 +17,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.ModeDao
@@ -30,28 +29,20 @@ import org.koin.androidx.compose.koinViewModel
 class ModeViewModel(
     private val modeDao: ModeDao
 ) : ViewModel() {
-
-    private val _mode = MutableStateFlow<ModeEntry?>(null)
-    val mode: StateFlow<ModeEntry?> = _mode.asStateFlow()
-
-    init {
-        loadMode()
-    }
-
-    private fun loadMode() {
-        viewModelScope.launch {
-            _mode.value = modeDao.getMode()
-        }
-    }
+    val mode = modeDao.getModeLive().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
 
     fun setDemoMode(enabled: Boolean) {
         viewModelScope.launch {
-            val newMode = ModeEntry(
-                id = 0,
-                demo = enabled
+            modeDao.setMode(
+                ModeEntry(
+                    id = 0,
+                    demo = enabled
+                )
             )
-            modeDao.setMode(newMode)
-            _mode.value = newMode
         }
     }
 }
