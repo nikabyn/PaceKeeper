@@ -33,6 +33,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
+import org.junit.Before
 import org.junit.Test
 import java.io.File
 import kotlin.let
@@ -244,6 +245,22 @@ class PredictorFitbitDataTest {
         }
     }
 
+    val multiTimeSeriesEntries = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
+    val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
+    val targetTimeSeries = TimeSeriesDiscretizer.discretizeTimeSeries(
+        ensureData(id = 1500,
+            GenericTimedDataPointTimeSeries(
+                timeStart = multiTimeSeriesEntries.timeStart,
+                duration = multiTimeSeriesEntries.duration,
+                isContinuous = true, //discretize: interpolate and edge fill validated energy level
+                data = multiTimeSeriesEntries.validatedEnergyLevel.map { it ->
+                    GenericTimedDataPoint(it.time, it.percentage.toDouble())
+                }
+            )
+        ),
+        targetLength = multiTimeSeriesDiscrete.stepCount()
+    )
+    
     fun plotMTSD(mtsd: MultiTimeSeriesDiscrete) {
         plotMultiTimeSeriesEntriesWithPython(TimeSeriesMetric.entries
             /*.filter{
@@ -312,27 +329,8 @@ class PredictorFitbitDataTest {
     }*/
 
     @Test
-    fun differentialPredictionModelTest() {
-        val multiTimeSeriesEntries = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
-        MultiTimeSeriesDiscrete.mask = false
-        val multiTimeSeriesDiscreteUnmasked = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
-        MultiTimeSeriesDiscrete.mask = true
-        val multiTimeSeriesDiscreteMasked = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
-        var targetTimeSeries = TimeSeriesDiscretizer.discretizeTimeSeries(
-            ensureData(id = 1500,
-                GenericTimedDataPointTimeSeries(
-                    timeStart = multiTimeSeriesEntries.timeStart,
-                    duration = multiTimeSeriesEntries.duration,
-                    isContinuous = true, //discretize: interpolate and edge fill validated energy level
-                    data = multiTimeSeriesEntries.validatedEnergyLevel.map { it ->
-                        GenericTimedDataPoint(it.time, it.percentage.toDouble())
-                    }
-                )
-            ),
-            targetLength = multiTimeSeriesDiscreteMasked.stepCount()
-        )
-
-        var m = multiTimeSeriesDiscreteUnmasked.getAllFeatureIDs().associateWith { id ->
+    fun plotTimeshiftCorrelations() {
+        var m = multiTimeSeriesDiscrete.getAllFeatureIDs().associateWith { id ->
             DoubleArray(400)
         }
 
@@ -340,12 +338,12 @@ class PredictorFitbitDataTest {
             println("time offset ${offs}")
             DifferentialPredictionModel.timeOffset = offs
             Predictor.train(
-                multiTimeSeriesDiscreteMasked,
+                multiTimeSeriesDiscrete,
                 targetTimeSeries,
                 fixedParameters
             )
 
-            multiTimeSeriesDiscreteUnmasked.getAllFeatureIDs().forEachIndexed { index, value: MultiTimeSeriesDiscrete.FeatureID ->
+            multiTimeSeriesDiscrete.getAllFeatureIDs().forEachIndexed { index, value: MultiTimeSeriesDiscrete.FeatureID ->
                 m[value]!!.set(offs,
                     DifferentialPredictionModel.model!!.perHorizonModel.weights[index]
                 )
@@ -363,8 +361,18 @@ class PredictorFitbitDataTest {
         plotMultiTimeSeriesEntriesWithPython(
             m1
         )
+    }
 
-        val predictions = DoubleArray(multiTimeSeriesDiscreteUnmasked.stepCount()) {0.0}
+    @Test
+    fun differentialPredictionModelTest() {
+        DifferentialPredictionModel.timeOffset = 0
+        Predictor.train(
+            multiTimeSeriesDiscrete,
+            targetTimeSeries,
+            fixedParameters
+        )
+
+        val predictions = DoubleArray(multiTimeSeriesDiscrete.stepCount()) {0.0}
 
         val entries = targetTimeSeries.buckets.toList()
         for(k in 0 until 1) {//entries.size - 2) {
@@ -373,26 +381,17 @@ class PredictorFitbitDataTest {
 
             val lastEnteredEnergy = entry.second
             var currentEnergy = lastEnteredEnergy
-            for(i in 0 until multiTimeSeriesDiscreteUnmasked.stepCount()) {
-                //for(i in entry.first until nextEntry.first){//multiTimeSeriesDiscreteUnmasked.stepCount()) {
+            for(i in 0 until multiTimeSeriesDiscrete.stepCount()) {
+                //for(i in entry.first until nextEntry.first){//multiTimeSeriesDiscrete.stepCount()) {
                 if(i - timeOffset < 0) continue;
-                val allMetricsAtStep = multiTimeSeriesDiscreteUnmasked.allFeaturesAt(i - timeOffset).toList()
+                val allMetricsAtStep = multiTimeSeriesDiscrete.allFeaturesAt(i - timeOffset).toList()
                 val energyDifference = DifferentialPredictionModel.predictStep(allMetricsAtStep)
                 currentEnergy += energyDifference
                 predictions[i] = currentEnergy
             }
         }
 
-
-        /*val predictions = (0..multiTimeSeriesDiscrete.stepCount() - 300).map { i ->
-            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, 0 + i, 288 + i)
-            val predictionResult = Predictor.predict(
-                testSet
-            )
-            predictionResult.percentageNow.toDouble()
-        }.toDoubleArray()*/
-
-        val mutRow = multiTimeSeriesDiscreteUnmasked.getMutableRow(
+        val mutRow = multiTimeSeriesDiscrete.getMutableRow(
             MultiTimeSeriesDiscrete.FeatureID(
                 TimeSeriesMetric.HEART_RATE,
                 PIDComponent.PROPORTIONAL
@@ -408,7 +407,7 @@ class PredictorFitbitDataTest {
             )
         )
 
-        plotMTSD(multiTimeSeriesDiscreteUnmasked)
+        plotMTSD(multiTimeSeriesDiscrete)
     }
 
     //@Ignore("only for manual validation, not to be run in pipeline")
@@ -426,10 +425,10 @@ class PredictorFitbitDataTest {
             distance = distanceEntries.filter { it.end in testWindowStart..testWindowEnd }
         )*/
 
-        /*var testSet1 = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscreteUnmasked, 0, 288)
+        /*var testSet1 = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, 0, 288)
         //test that slicing was correct
         for(i in 0 until 288) {
-            assertEquals(testSet1.allFeaturesAt(i), multiTimeSeriesDiscreteUnmasked.allFeaturesAt(i))
+            assertEquals(testSet1.allFeaturesAt(i), multiTimeSeriesDiscrete.allFeaturesAt(i))
         }*/
 
 
@@ -452,7 +451,7 @@ class PredictorFitbitDataTest {
             predictionResult.percentageNow.toDouble()
         }.toDoubleArray()*/
 
-        //plotMTSD(multiTimeSeriesDiscreteUnmasked)
+        //plotMTSD(multiTimeSeriesDiscrete)
 
         /*plotMultiTimeSeriesEntriesWithPython(
             mapOf(
