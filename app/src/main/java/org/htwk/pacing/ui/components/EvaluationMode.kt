@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,7 +60,7 @@ fun StartEvaluationMode(
                 style = PrimaryButtonStyle,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (modeViewModel.mode.value?.demo == true) (
+                if (modeViewModel.mode.collectAsState().value?.demo == true) (
                         Text(stringResource(R.string.demo_start_button_text)))
                 else
                     (Text(stringResource(R.string.demo_end_button_text)))
@@ -92,6 +93,14 @@ fun StartEvaluationMode(
                                 Toast.LENGTH_LONG
                             )
                             .show()
+                        //worker stoppen
+
+                        //app killen
+
+                        //CSV laden
+                        modeViewModel.storeDemoRecords(
+                            "/storage/emulated/0/Downloads/pacing_export (4).zip"
+                        )
                         // exitApp(context)
                     }
                 ) {
