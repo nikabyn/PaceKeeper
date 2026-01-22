@@ -284,8 +284,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             return newMTSD
         }
 
-        var mask = true
-
         /**
          * Creates a [MultiTimeSeriesDiscrete] instance from raw, continuous time series data.
          *
