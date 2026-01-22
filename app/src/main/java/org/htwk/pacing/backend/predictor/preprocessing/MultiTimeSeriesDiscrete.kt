@@ -319,7 +319,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
             TimeSeriesMetric.entries.forEach { metric ->
                 //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
-                val discreteProportional = discretizeTimeSeries(
+                val (discreteProportionalRaw, _) = discretizeTimeSeries(
                     ensureData(id = metric.ordinal,
                         GenericTimedDataPointTimeSeries(
                             timeStart = raw.timeStart,
@@ -328,17 +328,18 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                             data = when (metric) {
                                 TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
+                                //TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
+                                /*TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
                                     ::GenericTimedDataPoint
-                                )
+                                )*/
 
-                                TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
+                                //TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
+                                //TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
                                 TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> raw.sleepSession.map(::GenericTimedDataPoint)
+                                //TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> if(mask) listOf() else raw.validatedEnergyLevel.map(::GenericTimedDataPoint) //hide interpolated validated energy level, maybe we could enter last known value later here
+                                //TODO IDEA: always use "last known value" vs interpolated values so that training/predict match is fair.
                             }
                         ).also {it ->
                             //count how many entries we got
@@ -347,6 +348,21 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     ),
                     targetLength = stepCount
                 )
+
+                val window = 2/* when(metric) {
+                    TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> 32
+                    else -> 32
+                }*/
+
+                //var discreteProportionalNormalized: D1Array<Double> = mk.ndarray(discreteProportionalRaw)
+                //discreteProportionalNormalized.normalize()
+                //val discreteProportional = discreteProportionalNormalized.toDoubleArray()
+                val discreteProportional = centeredMovingAverage(discreteProportionalRaw, window = window)
+
+                //daily standard curve
+                /*for(i in 0 until discreteProportional.size) {
+                    discreteProportional[i % 48] += discreteProportional[i]
+                }*/
 
                 require(discreteProportional.size == stepCount);
 
@@ -369,4 +385,36 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             return multiTimeSeriesDiscrete
         }
     }
+}
+
+fun centeredMovingAverage(data: DoubleArray, window: Int): DoubleArray {
+    require(window > 0 && window % 2 == 0) {
+        "Window must be a positive even number for centered average"
+    }
+
+    val n = data.size
+    val half = window / 2
+    val result = DoubleArray(n)
+
+    // Prefix sums
+    val prefix = DoubleArray(n + 1)
+    for (i in 0 until n) prefix[i + 1] = prefix[i] + data[i]
+
+    for (i in 0 until n) {
+        val start = i - half
+        val end = start + window
+
+        if (start < 0) {
+            result[i] = data.first()
+            continue
+        }
+        else if(end > n) {
+            result[i] = data.last()
+            continue
+        }
+
+        result[i] = (prefix[end] - prefix[start]) / window
+    }
+
+    return result
 }
