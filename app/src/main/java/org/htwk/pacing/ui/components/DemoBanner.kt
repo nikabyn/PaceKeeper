@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,6 +40,7 @@ import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.Temperature
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
+import org.htwk.pacing.ui.theme.extendedColors
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
 import java.util.zip.ZipInputStream
@@ -225,7 +227,8 @@ fun DemoBanner(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .background(Color(0xFFFF9800))
+            // .background(Color(0xFFFF9800))
+            .background(MaterialTheme.extendedColors.green)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {

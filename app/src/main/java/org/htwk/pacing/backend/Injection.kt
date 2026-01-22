@@ -104,7 +104,7 @@ val appModule = module {
     viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
     viewModel { WelcomeViewModel(get()) }
-    viewModel { ModeViewModel(get()) }
+    viewModel { ModeViewModel(get(), modeDao = get()) }
 
     /**
      * koin sets up the dependencies for the worker class instance here,
