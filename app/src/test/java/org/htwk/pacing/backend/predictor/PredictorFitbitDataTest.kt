@@ -22,6 +22,7 @@ import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.timeOffset
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
@@ -330,7 +331,7 @@ class PredictorFitbitDataTest {
 
     @Test
     fun plotTimeshiftCorrelations() {
-        var m = multiTimeSeriesDiscrete.getAllFeatureIDs().associateWith { id ->
+        /*var m = multiTimeSeriesDiscrete.getAllFeatureIDs().associateWith { id ->
             DoubleArray(400)
         }
 
@@ -345,7 +346,7 @@ class PredictorFitbitDataTest {
 
             multiTimeSeriesDiscrete.getAllFeatureIDs().forEachIndexed { index, value: MultiTimeSeriesDiscrete.FeatureID ->
                 m[value]!!.set(offs,
-                    DifferentialPredictionModel.model!!.perHorizonModel.weights[index]
+                    DifferentialPredictionModel.model!!.weights[index]
                 )
             }
         }
@@ -360,7 +361,7 @@ class PredictorFitbitDataTest {
 
         plotMultiTimeSeriesEntriesWithPython(
             m1
-        )
+        )*/
     }
 
     @Test
@@ -372,35 +373,12 @@ class PredictorFitbitDataTest {
             fixedParameters
         )
 
-        val predictions = DoubleArray(multiTimeSeriesDiscrete.stepCount()) {0.0}
-
-        val entries = targetTimeSeries.buckets.toList()
-        for(k in 0 until 1) {//entries.size - 2) {
-            val entry = entries[k]
-            val nextEntry = entries[k + 1]
-
-            val lastEnteredEnergy = entry.second
-            var currentEnergy = lastEnteredEnergy
-            for(i in 0 until multiTimeSeriesDiscrete.stepCount()) {
-                //for(i in entry.first until nextEntry.first){//multiTimeSeriesDiscrete.stepCount()) {
-                if(i - timeOffset < 0) continue;
-                val allMetricsAtStep = multiTimeSeriesDiscrete.allFeaturesAt(i - timeOffset).toList()
-                val energyDifference = DifferentialPredictionModel.predictStep(allMetricsAtStep)
-                currentEnergy += energyDifference
-                predictions[i] = currentEnergy
-            }
-        }
-
-        val mutRow = multiTimeSeriesDiscrete.getMutableRow(
-            MultiTimeSeriesDiscrete.FeatureID(
-                TimeSeriesMetric.HEART_RATE,
-                PIDComponent.PROPORTIONAL
-            )
+        val predictions = DifferentialPredictionModel.backTestMany(
+            multiTimeSeriesDiscrete,
+            targetTimeSeries,
+            IPredictionModel.PredictionHorizon.NOW
         )
 
-        for(i in 0 until predictions.size) {
-            mutRow[i] = predictions[i]
-        }
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
                 "PREDICTION" to predictions

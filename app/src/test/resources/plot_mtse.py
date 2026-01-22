@@ -51,7 +51,7 @@ def plot_mtsd_from_csv(discrete_path, irregular_path=None):
     if start_time is not None:
         # Each index step = 10 minutes
         discrete_times = [
-            start_time + timedelta(minutes=30 * idx) + timedelta(days=5) + timedelta(hours=6)
+            start_time + timedelta(minutes=30 * idx) + timedelta(days=5)# + timedelta(hours=6)
             for idx in indices
         ]
         x_discrete = discrete_times

@@ -186,6 +186,6 @@ object TimeSeriesDiscretizer {
                 targetLength = targetLength
             )
 
-        return SingleDiscreteTimeSeries(discreteTimeSeries, timeBucketAverages)
+        return SingleDiscreteTimeSeries(discreteTimeSeries, timeBucketAverages.toSortedMap())
     }
 }

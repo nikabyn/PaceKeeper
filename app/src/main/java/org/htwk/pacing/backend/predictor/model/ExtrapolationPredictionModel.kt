@@ -8,6 +8,7 @@ import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquares
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
@@ -213,7 +214,7 @@ object ExtrapolationPredictionModel : IPredictionModel {
      * @param predictionHorizon The prediction horizon for which to make the prediction.
      * @return A [Double] representing the predicted energy level.
      */
-    override fun predict(
+    fun predict(
         input: MultiTimeSeriesDiscrete,
         predictionHorizon: PredictionHorizon
     ): Double {
@@ -243,5 +244,13 @@ object ExtrapolationPredictionModel : IPredictionModel {
         Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
 
         return prediction.first()
+    }
+
+    override fun backTestMany(
+        inputMTSD: MultiTimeSeriesDiscrete,
+        targetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
+        predictionHorizon: PredictionHorizon
+    ): DoubleArray {
+        TODO("Not yet implemented")
     }
 }

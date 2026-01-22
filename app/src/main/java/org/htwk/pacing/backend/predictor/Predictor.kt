@@ -156,10 +156,10 @@ object Predictor {
         // (1.5) TODO: cache (don't need that for now)
 
         // 2.) run model and return energy prediction
-        val predictedEnergyNow = DifferentialPredictionModel.predict(
+        val predictedEnergyNow = 0.0/*DifferentialPredictionModel.predict(
             multiTimeSeriesDiscrete,
             IPredictionModel.PredictionHorizon.NOW
-        );
+        );*/
         /*val predictedEnergyFuture = ExtrapolationPredictionModel.predict(
             multiTimeSeriesDiscrete,
             IPredictionModel.PredictionHorizon.FUTURE
