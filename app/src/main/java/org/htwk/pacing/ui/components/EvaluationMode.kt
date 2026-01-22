@@ -49,13 +49,17 @@ fun StartEvaluationMode(
                 stringResource(R.string.demo_data_button_text),
                 style = MaterialTheme.typography.titleMedium
             )
+
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = { showDialog = true },
                 style = PrimaryButtonStyle,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.demo_data_button_text))
+                if (modeViewModel.mode.value?.demo == true) (
+                        Text(stringResource(R.string.demo_start_button_text)))
+                else
+                    (Text(stringResource(R.string.demo_end_button_text)))
             }
         }
     }
