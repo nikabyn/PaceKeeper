@@ -31,6 +31,7 @@ import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.Button
 import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
+import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.components.StartEvaluationMode
@@ -70,7 +71,7 @@ fun DataScreen(
             ) {
                 ImportDataHealthConnect()
 
-
+                ImportDemoDataHealthConnect()
                 StartEvaluationMode()
 
 
