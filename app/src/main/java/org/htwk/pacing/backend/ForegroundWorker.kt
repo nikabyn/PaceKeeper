@@ -18,6 +18,7 @@ import kotlinx.coroutines.supervisorScope
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_CHANNEL_ID
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_NOTIFICATION_ID
+import org.htwk.pacing.backend.database.ModeDatabase
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.UserProfileRepository
 import kotlin.time.Duration.Companion.hours
@@ -42,6 +43,7 @@ class ForegroundWorker(
     private val context: Context,
     workerParams: WorkerParameters,
     private val db: PacingDatabase,
+    private val modeDb: ModeDatabase,
     val userProfileRepository: UserProfileRepository
 ) : CoroutineWorker(context, workerParams) {
     private companion object {
@@ -63,9 +65,17 @@ class ForegroundWorker(
         setForeground(getForegroundInfo())
 
         supervisorScope {
-            launchRepeating(HealthConnectJob.TAG) {
-                HealthConnectJob.run(context = applicationContext, db = db)
+            val isInDemo = modeDb.modeDao().getMode()?.demo ?: false
+            if (isInDemo) {
+                launchRepeating(DataGenerateJob.TAG) {
+                    DataGenerateJob.run(context = applicationContext, db = db)
+                }
+            } else {
+                launchRepeating(HealthConnectJob.TAG) {
+                    HealthConnectJob.run(context = applicationContext, db = db)
+                }
             }
+
             launchRepeating(EnergyPredictionJob.TAG) {
                 EnergyPredictionJob.run(db = db)
             }
