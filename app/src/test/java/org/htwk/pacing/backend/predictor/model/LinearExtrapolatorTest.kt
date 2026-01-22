@@ -1,7 +1,7 @@
 import junit.framework.TestCase.assertEquals
 import org.htwk.pacing.backend.helpers.plotTimeSeriesExtrapolationsWithPython
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
-import org.htwk.pacing.backend.predictor.model.LinearCombinationPredictionModel.howFarInSamples
+import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel.howFarInSamples
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.jetbrains.kotlinx.multik.api.mk
