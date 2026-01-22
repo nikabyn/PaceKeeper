@@ -42,7 +42,7 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, DoubleArray>) {
         }
         println("Data dumped to temporary file: ${dataFile.absolutePath}")
 
-        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath)
+        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath, "/home/u/git/pacing-app/ui/app/src/test/resources/exported/1/validated_energy_level.csv")
 
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)
