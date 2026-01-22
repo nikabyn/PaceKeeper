@@ -31,12 +31,13 @@ enum class TimeSeriesSignalClass(val components: List<PIDComponent>) {
     /** For values that change continuously over time, like heart rate. */
     CONTINUOUS(listOf(
         PIDComponent.PROPORTIONAL,
-        PIDComponent.DERIVATIVE
+        PIDComponent.DERIVATIVE,
+        //PIDComponent.INTEGRAL,
         //we don't need integral, because extrapolation averages encode same summation behaviour
     )),
 
     /** For values that accumulate over time, like total steps or distance. */
-    AGGREGATED(listOf(PIDComponent.PROPORTIONAL)),
+    AGGREGATED(listOf(PIDComponent.PROPORTIONAL/*, PIDComponent.INTEGRAL*/)),
 }
 
 /**
@@ -50,12 +51,12 @@ enum class TimeSeriesSignalClass(val components: List<PIDComponent>) {
 enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
     HEART_RATE(TimeSeriesSignalClass.CONTINUOUS),
     DISTANCE(TimeSeriesSignalClass.AGGREGATED),
-    ELEVATION_GAINED(TimeSeriesSignalClass.AGGREGATED),
-    HEART_RATE_VARIABILITY(TimeSeriesSignalClass.CONTINUOUS),
-    OXYGEN_SATURATION(TimeSeriesSignalClass.CONTINUOUS),
+    //ELEVATION_GAINED(TimeSeriesSignalClass.AGGREGATED),
+    /*HEART_RATE_VARIABILITY(TimeSeriesSignalClass.CONTINUOUS),
+    OXYGEN_SATURATION(TimeSeriesSignalClass.CONTINUOUS),*/
     SKIN_TEMPERATURE(TimeSeriesSignalClass.CONTINUOUS),
     STEPS(TimeSeriesSignalClass.AGGREGATED),
-    SPEED(TimeSeriesSignalClass.CONTINUOUS),
+    //SPEED(TimeSeriesSignalClass.CONTINUOUS),
     SLEEP_SESSION(TimeSeriesSignalClass.AGGREGATED),
-    VALIDATED_ENERGY_LEVEL(TimeSeriesSignalClass.CONTINUOUS)
+    //VALIDATED_ENERGY_LEVEL(TimeSeriesSignalClass.CONTINUOUS),
 }
