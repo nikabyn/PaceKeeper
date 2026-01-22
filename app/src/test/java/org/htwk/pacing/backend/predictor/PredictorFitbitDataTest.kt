@@ -21,7 +21,6 @@ import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
-import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.timeOffset
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
@@ -366,7 +365,6 @@ class PredictorFitbitDataTest {
 
     @Test
     fun differentialPredictionModelTest() {
-        DifferentialPredictionModel.timeOffset = 0
         Predictor.train(
             multiTimeSeriesDiscrete,
             targetTimeSeries,
@@ -381,6 +379,7 @@ class PredictorFitbitDataTest {
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
+                "TARGET" to targetTimeSeries.values,
                 "PREDICTION" to predictions
             )
         )

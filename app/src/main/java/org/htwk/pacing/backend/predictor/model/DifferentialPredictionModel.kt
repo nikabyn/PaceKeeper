@@ -33,6 +33,8 @@ import kotlin.toString
 object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
+    val horizons = (0 until 288).toList()
+
     //stores "learned" / regressed linear coefficients per Offset
     class Model(
         //model parameters per prediction horizon (e.g. now vs. future)
@@ -48,16 +50,14 @@ object DifferentialPredictionModel : IPredictionModel {
         val targetValue: Double
     )
 
-    var timeOffset = 0
-
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
         targetTimeSeriesDiscrete: DoubleArray,
     ): List<TrainingSample> {
 
-        return (timeOffset until input.stepCount()).map { offset ->
+        return (0 until input.stepCount()).map { offset ->
             TrainingSample(
-                metricValues = input.allFeaturesAt(offset - timeOffset).toList() + listOf(1.0),
+                metricValues = input.allFeaturesAt(offset).toList() + listOf(1.0),
                 targetValue = targetTimeSeriesDiscrete[offset]
             )
         }
@@ -84,7 +84,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         val coefficientsMap = mutableMapOf<Int, List<Double>>()
 
-        for(offs in 5 until 10) {
+        for(offs in horizons) {
             val coefficients = trainForOffset(metricMatrix, targetVector, offs)
             coefficientsMap[offs] = coefficients
         }
@@ -195,7 +195,7 @@ object DifferentialPredictionModel : IPredictionModel {
     ): Double {
         var sum = 0.0
         var count = 0
-        for(offs in 5 until 10) {
+        for(offs in horizons) {
             if(step - offs < 0 || step + offs >= inputMTSD.stepCount()) continue
             val allMetricsAtStep = inputMTSD.allFeaturesAt(step - offs).toList()
             val energyDifference = predictStepForOffset(allMetricsAtStep, offs)
