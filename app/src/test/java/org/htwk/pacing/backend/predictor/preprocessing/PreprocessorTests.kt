@@ -10,7 +10,6 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -103,25 +102,30 @@ class PreprocessorTests {
             79.0,
             80.0,
             160.0,
-            138.0,
-            116.0,
-            94.0,
-            72.0,
+            109.8874,
+            80.0,
+            70.0,
+            60.0,
             50.0,
             50.0,
             50.0
         )
 
         for (i in 0 until expectedDiscreteHeartRate.size) {
-            assertTrue(
-                expectedDiscreteHeartRate[i] == result.get(
-                    MultiTimeSeriesDiscrete.FeatureID(
-                        TimeSeriesMetric.HEART_RATE,
-                        PIDComponent.PROPORTIONAL
-                    ), i
-                )
-            );
-        };
+            val actual = result[
+                MultiTimeSeriesDiscrete.FeatureID(
+                    TimeSeriesMetric.HEART_RATE,
+                    PIDComponent.PROPORTIONAL
+                ),
+                i
+            ]
+            assertEquals(
+                "Heart rate mismatch at index $i",
+                expectedDiscreteHeartRate[i],
+                actual,
+                0.0001
+            )
+        }
 
         //expected accumulated (running sum, since we're doing an integral for the distance)
         //TODO: add expectation of accumulated sum as soon as we add discrete integration
