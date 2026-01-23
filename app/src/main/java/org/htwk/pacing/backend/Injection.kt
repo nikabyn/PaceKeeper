@@ -110,7 +110,7 @@ val appModule = module {
      * koin sets up the dependencies for the worker class instance here,
      * the actual execution/scheduling is handled in Application.kt
      */
-    worker { context, params -> ForegroundWorker(context, params, get(), get()) }
+    worker { context, params -> ForegroundWorker(context, params, get(), get(), get()) }
 }
 
 /**

@@ -91,13 +91,7 @@ fun StartEvaluationMode(
                             )
                             .show()
                         //worker stoppen
-
                         //app killen
-
-                        //CSV laden
-                        modeViewModel.storeDemoRecords(
-                            "/storage/emulated/0/Downloads/pacing_export (4).zip"
-                        )
                         // exitApp(context)
                     }
                 ) {
