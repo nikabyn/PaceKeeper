@@ -352,9 +352,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     else -> 32
                 }*/
 
-                //var discreteProportionalNormalized: D1Array<Double> = mk.ndarray(discreteProportionalRaw)
-                //discreteProportionalNormalized.normalize()
-                //val discreteProportional = discreteProportionalNormalized.toDoubleArray()
                 val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = window)
 
                 //daily standard curve

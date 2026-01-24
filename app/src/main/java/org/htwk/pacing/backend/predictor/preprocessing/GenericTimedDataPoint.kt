@@ -91,9 +91,9 @@ data class GenericTimedDataPointTimeSeries(
             time = src.time,
             value = src.bpm.toDouble().let {
                 bpm ->
-                val limit = 900.0
+                val limit = 85.0
                 val diff = bpm - limit
-                diff * diff * diff
+                diff * diff * diff / 100.0
                 /*when {
                     bpm < 60.0 -> bpm - 60.0
                     bpm > 90.0 -> bpm - 90.0

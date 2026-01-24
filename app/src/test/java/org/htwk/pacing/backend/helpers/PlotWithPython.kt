@@ -20,6 +20,8 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, DoubleArray>) {
             return
         }
 
+        val validatedEnergyLevelCSV = {}.javaClass.classLoader?.getResource("exported/2/validated_energy_level.csv")!!
+
         scriptFile = File.createTempFile("plot_script_", ".py")
         scriptFile.outputStream().use { fileOut ->
             scriptUrl.openStream().use { resourceIn ->
@@ -42,7 +44,7 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, DoubleArray>) {
         }
         println("Data dumped to temporary file: ${dataFile.absolutePath}")
 
-        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath, "/home/u/git/pacing-app/ui/app/src/test/resources/exported/1/validated_energy_level.csv")
+        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath, validatedEnergyLevelCSV.path)
 
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)

@@ -25,7 +25,7 @@ def read_irregular_csv(file_path):
             if not row:
                 continue
             ts = datetime.fromisoformat(row[0].replace("Z", "+00:00"))
-            perc = float(row[1].replace("%", "")) / 100.0
+            perc = float(row[2].replace("%", "")) / 100.0
             timestamps.append(ts)
             percentages.append(perc)
     return timestamps, percentages

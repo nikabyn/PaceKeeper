@@ -9,6 +9,7 @@ import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
@@ -30,6 +31,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
+import org.htwk.pacing.backend.predictor.stats.normalize
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
@@ -66,7 +68,7 @@ class PredictorFitbitDataTest {
                 }
         }
 
-        fun readMultiCSV(path: String):  Predictor.MultiTimeSeriesEntries {
+        fun readMultiCSV(path: String): Predictor.MultiTimeSeriesEntries {
             val directory = File(path)
             val csvFiles = directory
                 .listFiles { file -> file.extension == "csv" }
@@ -78,8 +80,8 @@ class PredictorFitbitDataTest {
                 csvFiles["validated_energy_level.csv"]?.let { file ->
                     readCSVFileEntries(file, Instant.DISTANT_PAST, Instant.DISTANT_FUTURE) { parts ->
                         val time = Instant.parse(parts[0].trim())
-                        val percent = parts[1].trim().removeSuffix("%").toDouble()
-                        val validation = parts[2].trim()
+                        val validation = parts[1].trim()
+                        val percent = parts[2].trim().removeSuffix("%").toDouble()
                         ValidatedEnergyLevelEntry(time, Validation.valueOf(validation), Percentage(percent / 100.0))
                     }
                 } ?: emptyList()
@@ -245,7 +247,7 @@ class PredictorFitbitDataTest {
         }
     }
 
-    val multiTimeSeriesEntries = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
+    val multiTimeSeriesEntries = CSVHelper().readMultiCSV("src/test/resources/exported/2/")
     val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
     val targetTimeSeries = TimeSeriesDiscretizer.discretizeTimeSeries(
         ensureData(id = 1500,
@@ -263,30 +265,28 @@ class PredictorFitbitDataTest {
     
     fun plotMTSD(mtsd: MultiTimeSeriesDiscrete) {
         plotMultiTimeSeriesEntriesWithPython(TimeSeriesMetric.entries
-            /*.filter{
-                it == TimeSeriesMetric.HEART_RATE //||
-                        //it == TimeSeriesMetric.HEART_RATE
-                        //it == TimeSeriesMetric.STEPS ||
-                        //it == TimeSeriesMetric.SLEEP_SESSION
-                        //|| it == TimeSeriesMetric.OXYGEN_SATURATION
-            }*/
-            .associate {
+            .filter{
+                true
+            }
+            .associate { it ->
                 it.name to mtsd.getMutableRow(
                     MultiTimeSeriesDiscrete.FeatureID(
                         it,
                         PIDComponent.PROPORTIONAL
                     )
-                ).toDoubleArray()
+                ).let {
+                    var discreteProportionalNormalized = it
+                    discreteProportionalNormalized.normalize() //normalize for plotting, we dont care about relative amplitude here
+                    discreteProportionalNormalized.toDoubleArray()
+                }
             })
     }
 
     //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testPlotDatasetFromCSV(){
-        val mtse = CSVHelper().readMultiCSV("src/test/resources/exported/1/")
-        println(mtse.heartRate.size)
-        val mtsd = Preprocessor.run(mtse, fixedParameters = fixedParameters)
-        plotMTSD(mtsd)
+        println(multiTimeSeriesEntries.heartRate.size)
+        plotMTSD(multiTimeSeriesDiscrete)
     }
 
     /*@Ignore("only for manual validation, not to be run in pipeline")
