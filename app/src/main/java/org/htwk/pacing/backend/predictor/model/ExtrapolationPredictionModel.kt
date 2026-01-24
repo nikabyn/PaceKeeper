@@ -166,12 +166,12 @@ object ExtrapolationPredictionModel : IPredictionModel {
      *
      * @param input The [MultiTimeSeriesDiscrete] object containing the preprocessed
      *              time series data, such as heart rate.
-     * @param targetTimeSeriesDiscrete The target energy level data used for training.
+     * @param trainTarget The target energy level data used for training.
      */
-    fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
+    override fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray) {
         Log.i(LOGGING_TAG, "input duration: ${input.getDuration()}")
         //Also normalize the target variable and store its distribution
-        val targetArray = mk.ndarray(targetTimeSeriesDiscrete)
+        val targetArray = mk.ndarray(trainTarget)
         val targetStochasticDistribution = targetArray.normalize()
 
         Log.i(LOGGING_TAG, "target data distribution: (mean:" +
@@ -214,7 +214,7 @@ object ExtrapolationPredictionModel : IPredictionModel {
      * @param predictionHorizon The prediction horizon for which to make the prediction.
      * @return A [Double] representing the predicted energy level.
      */
-    fun predict(
+    override fun predict(
         input: MultiTimeSeriesDiscrete,
         predictionHorizon: PredictionHorizon
     ): Double {
@@ -244,13 +244,5 @@ object ExtrapolationPredictionModel : IPredictionModel {
         Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
 
         return prediction.first()
-    }
-
-    override fun backTestMany(
-        inputMTSD: MultiTimeSeriesDiscrete,
-        targetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
-        predictionHorizon: PredictionHorizon
-    ): DoubleArray {
-        TODO("Not yet implemented")
     }
 }

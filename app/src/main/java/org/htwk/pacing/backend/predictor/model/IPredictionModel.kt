@@ -17,12 +17,15 @@ interface IPredictionModel {
     val PredictionHorizon.howFarInSamples: Int
         get() = (howFar / Predictor.TIME_SERIES_STEP_DURATION).toInt()
 
-
-    fun backTestMany(
+    /*fun backTestMany(
         inputMTSD: MultiTimeSeriesDiscrete,
         targetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
         predictionHorizon: PredictionHorizon
-    ): DoubleArray
+    ): DoubleArray*/
+
+    //TODO: we shouldn't differentiate between derivative or proportional energy level at this point, because the derivative can be passed from the callee, the model implementation itself shouldn't care wether it's predicting derivative or proportional
+    fun predict(input: MultiTimeSeriesDiscrete, predictionHorizon: PredictionHorizon): Double
+    fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray)
 
     //predict one timepoint
     /*fun predictSingle(

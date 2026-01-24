@@ -2,10 +2,10 @@
 package org.htwk.pacing.backend.predictor.model
 
 //import android.util.Log
+import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
@@ -21,7 +21,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import kotlin.toString
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -33,7 +32,8 @@ import kotlin.toString
 object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
-    val horizons = (0 until 288).toList()
+    val horizons = setOf(0, 4, 8, 12, 16, 24, 48
+            ).toList()
 
     //stores "learned" / regressed linear coefficients per Offset
     class Model(
@@ -63,12 +63,11 @@ object DifferentialPredictionModel : IPredictionModel {
         }
     }
 
-    fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
-        val energyChanges = targetTimeSeriesDiscrete.discreteDerivative()
+    override fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray) {
 
         val trainingSamples = createTrainingSamples(
             input,
-            energyChanges
+            trainTarget
         )
 
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
@@ -158,7 +157,7 @@ object DifferentialPredictionModel : IPredictionModel {
         return currentEnergy
     }*/
 
-    override fun backTestMany(
+   /*override fun backTestMany(
         inputMTSD: MultiTimeSeriesDiscrete,
         targetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
         predictionHorizon: PredictionHorizon
@@ -187,6 +186,14 @@ object DifferentialPredictionModel : IPredictionModel {
         }
 
         return predictions
+    }*/
+
+    override fun predict(
+        input: MultiTimeSeriesDiscrete,
+        predictionHorizon: PredictionHorizon
+    ): Double {
+        require(predictionHorizon == PredictionHorizon.NOW)
+        return predictStep(input, 0)
     }
 
     private fun predictStep(

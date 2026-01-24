@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor
 
-import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
@@ -9,7 +8,6 @@ import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.Percentage
-import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
@@ -32,10 +30,9 @@ import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import org.htwk.pacing.backend.predictor.stats.normalize
-import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.htwk.pacing.ui.math.discreteDerivative
+import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
-import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import org.junit.Before
 import org.junit.Test
 import java.io.File
 import kotlin.let
@@ -365,26 +362,44 @@ class PredictorFitbitDataTest {
 
     @Test
     fun differentialPredictionModelTest() {
-        Predictor.train(
+        val target = targetTimeSeries.values
+        val targetDerivative = target.discreteDerivative().map{x ->
+            x.coerceIn(-0.1, 0.1)
+        }.toDoubleArray()
+
+        DifferentialPredictionModel.train(
             multiTimeSeriesDiscrete,
-            targetTimeSeries,
-            fixedParameters
+            targetDerivative
         )
 
-        val predictions = DifferentialPredictionModel.backTestMany(
-            multiTimeSeriesDiscrete,
-            targetTimeSeries,
-            IPredictionModel.PredictionHorizon.NOW
+        val predictionsDerivative = (0 until multiTimeSeriesDiscrete.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
+            i ->
+            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, i, i + Predictor.TIME_SERIES_SAMPLE_COUNT)
+            DifferentialPredictionModel.predict(
+                testSet,
+                IPredictionModel.PredictionHorizon.NOW
+            )
+        }.toDoubleArray()
+
+        val predictions = predictionsDerivative.discreteTrapezoidalIntegral(target.first())
+
+        val minLength = minOf(
+            predictions.size,
+            targetDerivative.size,
+            predictionsDerivative.size,
+            target.size
         )
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
-                "TARGET" to targetTimeSeries.values,
-                "PREDICTION" to predictions
+                "TARGET" to target.slice(0 until minLength).toDoubleArray(),
+                "TARGET_DERIVATIVE" to targetDerivative.slice(0 until minLength).toDoubleArray(),
+                "PREDICTION_DERIVATIVE" to predictionsDerivative.slice(0 until minLength).toDoubleArray(),
+                "PREDICTION" to predictions.slice(0 until minLength).toDoubleArray()
             )
         )
 
-        plotMTSD(multiTimeSeriesDiscrete)
+        //plotMTSD(multiTimeSeriesDiscrete)
     }
 
     //@Ignore("only for manual validation, not to be run in pipeline")
