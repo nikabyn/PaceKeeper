@@ -35,6 +35,7 @@ fun StartEvaluationMode(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
+    val mode by modeViewModel.mode.collectAsState()
     Card(
         colors = CardStyle.colors,
         shape = CardStyle.shape,
@@ -57,10 +58,10 @@ fun StartEvaluationMode(
                 style = PrimaryButtonStyle,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (modeViewModel.mode.collectAsState().value?.demo == true) (
-                        Text(stringResource(R.string.demo_start_button_text)))
+                if (mode?.demo == true) (
+                        Text(stringResource(R.string.demo_end_button_text)))
                 else
-                    (Text(stringResource(R.string.demo_end_button_text)))
+                    (Text(stringResource(R.string.demo_start_button_text)))
             }
         }
     }
@@ -76,7 +77,7 @@ fun StartEvaluationMode(
                 TextButton(
                     onClick = {
                         showDialog = false
-                        if (modeViewModel.mode.value?.demo == true) (
+                        if (mode?.demo == true) (
                                 modeViewModel.setDemoMode(false)
                                 )
                         else (
@@ -172,9 +173,11 @@ fun exitApp(context: Context) {
     //   WorkManager.getInstance(context).cancelAllWork()
     //ForegroundWorker
 
-    stopForegroundWorker(WorkManagerImpl(contgitext))
+    stopForegroundWorker(WorkManagerImpl(context))
 
     // 3. (Optional) Prozess beenden
     // android.os.Process.killProcess(android.os.Process.myPid())
 }
+
+
 */
