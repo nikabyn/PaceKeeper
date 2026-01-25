@@ -68,7 +68,7 @@
     <string name="apply">Anwenden</string>
     <string name="add_symptom">Symptom hinzufügen</string>
     <string name="should_not_be_empty">Darf nicht leer sein</string>
-    <string name="symptom_already_exists">Symptom gibt es schon</string>
+    <string name="symptom_already_exists">Symptom bereits vorhanden</string>
     <string name="confirm">Bestätigen</string>
     <string name="dismiss">Verwerfen</string>
     <string name="energy_warning_text">Dein Energielevel ist niedrig. Mach eine Pause!</string>
@@ -87,13 +87,13 @@
     <string name="label_energy_icon_name">Energielevel Icon</string>
     <string name="current_energy_saved">Aktuelles Energielevel als korrekt gespeichert.</string>
     <string name="adjusted_energy_saved">Angepasstes Energielevel als korrekt gespeichert.</string>
-    <string name="profile_card_title">Benutzerprofil</string>
+    <string name="profile_card_title">Nutzendenprofil</string>
     <string name="profile_card_description">Grunddaten für Pacing-Werte eingeben/bearbeiten</string>
     <string name="icon_profile_description">Profil Icon</string>
     <string name="icon_settings_description">Einstellungen Icon</string>
     <string name="title_export_send_database">Daten teilen</string>
     <string name="description_export_send_database">
-        Sie können Ihre anonymisierten Daten mit den Entwicklern teilen, um das Vorhersagemodell zu verbessern.
+        Sie können Ihre anonymisierten Daten mit den Entwickler:innen teilen, um das Vorhersagemodell zu verbessern.
         Die Teilnahme ist freiwillig und unterstützt die laufende Forschung und Optimierung.
     </string>
     <string name="button_send_now">Jetzt versenden</string>
@@ -102,7 +102,7 @@
     <string name="status_error_sending_database">Fehler beim Versenden der Datenbank</string>
     <string name="status_error_generic_sending">Fehler:</string>
     <string name="label_back">Zurück</string>
-    <string name="title_user_profile">Benutzerprofil</string>
+    <string name="title_user_profile">Nutzendenprofil</string>
     <string name="button_save_profile">Profil speichern</string>
 
     <string name="welcome_screen">Einführung</string>
@@ -125,7 +125,7 @@
     <string name="label_birth_year">Geburtsjahr</string>
     <string name="label_height_cm">Größe (cm)</string>
     <string name="label_weight_kg">Gewicht (kg)</string>
-    <string name="label_restingHeartRateBpm">Ruhepuls (min^−1)</string>
+    <string name="label_restingHeartRateBpm">Ruhepuls (bpm)</string>
     <string name="label_sex">Geschlecht</string>
     <string name="label_amputation_level">Amputationslevel</string>
     <string name="label_diagnosis">Diagnose</string>
@@ -150,10 +150,10 @@
     <string name="title_settings_feedback">Feedback</string>
     <string name="subtitle_settings_user_profile">Profil bearbeiten</string>
     <string name="subtitle_settings_services">Health Connect, Fitbit</string>
-    <string name="subtitle_settings_data">Health Connect, Fitbit</string>
-    <string name="subtitle_settings_notifications">Deine erfassten Daten verwalten</string>
-    <string name="subtitle_settings_appearance"> </string>
-    <string name="subtitle_settings_information">Legal, Privacy, Introduction</string>
+    <string name="subtitle_settings_data">Datenerfassung</string>
+    <string name="subtitle_settings_notifications">Warnungen, Ruhezeiten</string>
+    <string name="subtitle_settings_appearance">Hell-Dunkel-Modus</string>
+    <string name="subtitle_settings_information">Lizenz, Datenschutz, Einführung</string>
     <string name="subtitle_settings_feedback">Hilf uns, diese App zu verbessern!</string>
     <string name="join_survey">An Umfrage teilnehmen</string>
     <string name="title_survey">An der Umfrage teilnehmen</string>
@@ -165,7 +165,7 @@
     <string name="tips_error_1">Dunkle den Raum vollständig ab und lege dich hin, um alle sensorischen Reize zu minimieren.</string>
     <string name="tips_error_2">Unterbreche jegliche sensorischen und mentalen Reize, um PEM zu verhindern.</string>
     <string name="tips_error_3">Trinke kleine Mengen Wasser oder Elektrolyte und ruhe dich vollständig aus; keine Aktivitäten durchführen.</string>
-    <string name="tips_error_4">Bitte Freunde oder Familie um Hilfe bei allen Tätigkeiten, die Energie erfordern.</string>
+    <string name="tips_error_4">Bitte Freund:innen oder Familie um Hilfe bei allen Tätigkeiten, die Energie erfordern.</string>
 
     <string name="tips_warning_1">Führe sanfte Atem- oder Entspannungsübungen ohne Anstrengung durch.</string>
     <string name="tips_warning_2">Bereite einen sehr einfachen Snack zu oder iss Vorgekochtes.</string>

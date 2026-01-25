@@ -124,7 +124,7 @@
     <string name="label_birth_year">Birth Year</string>
     <string name="label_height_cm">Height (cm)</string>
     <string name="label_weight_kg">Weight (kg)</string>
-    <string name="label_restingHeartRateBpm">Resting Heart Rate (Bpm)</string>
+    <string name="label_restingHeartRateBpm">Resting Heart Rate (bpm)</string>
     <string name="label_sex">Sex</string>
     <string name="label_amputation_level">Amputation Level</string>
     <string name="label_diagnosis">Diagnosis</string>
@@ -148,11 +148,11 @@
     <string name="title_settings_appearance">Appearance</string>
     <string name="title_settings_information">Information</string>
     <string name="title_settings_feedback">Feedback</string>
-    <string name="subtitle_settings_user_profile">Edit Profile</string>
+    <string name="subtitle_settings_user_profile">Edit profile</string>
     <string name="subtitle_settings_services">Health Connect, Fitbit</string>
-    <string name="subtitle_settings_data">Manage your tracked data</string>
-    <string name="subtitle_settings_notifications"> </string>
-    <string name="subtitle_settings_appearance"> </string>
+    <string name="subtitle_settings_data">Tracked data</string>
+    <string name="subtitle_settings_notifications">Warnings, resting hours</string>
+    <string name="subtitle_settings_appearance">Dark / light mode</string>
     <string name="subtitle_settings_information">Legal, Privacy, Introduction </string>
     <string name="subtitle_settings_feedback">Help us to improve this app!</string>
     <string name="join_survey">Join the survey</string>
