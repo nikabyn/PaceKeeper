@@ -1,5 +1,6 @@
 package org.htwk.pacing
 
+import android.app.Activity
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -25,6 +26,7 @@ import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
+import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -99,9 +101,38 @@ fun enqueueForegroundWorker(wm: WorkManager) {
     Log.d("PacingApp", "Enqueued ForegroundWorker")
 }
 
-fun stopForegroundWorker(wm: WorkManager) {
+fun hardKillApp(context: Context) {
+    // 1. Alle Worker stoppen
+    val wm = getWorkManager(context)
     wm.cancelUniqueWork("HealthDataCollection")
-    Log.d("PacingApp", "Cancelled ForegroundWorker")
+    wm.pruneWork()
+
+    // 2. Alle Activities schließen
+    (context as? Activity)?.finishAffinity()
+
+    // 3. Prozess beenden (hart)
+    android.os.Process.killProcess(android.os.Process.myPid())
+    exitProcess(0)
+}
+
+fun restartApp(context: Context) {
+    // 1. Worker stoppen
+    val wm = getWorkManager(context)
+    wm.cancelUniqueWork("HealthDataCollection")
+    wm.pruneWork()
+
+    // 2. Restart-Intent erzeugen
+    val pm = context.packageManager
+    val launchIntent = pm.getLaunchIntentForPackage(context.packageName)
+        ?: return
+
+    val restartIntent = Intent.makeRestartActivityTask(launchIntent.component)
+
+    // 3. App neu starten
+    context.startActivity(restartIntent)
+
+    // 4. Alten Prozess sicher beenden
+    android.os.Process.killProcess(android.os.Process.myPid())
 }
 
 @Volatile
