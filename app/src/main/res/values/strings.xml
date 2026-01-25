@@ -55,15 +55,19 @@
     <string name="saved">Saved</string>
     <string name="correct">Correct</string>
     <string name="adjust">Adjust</string>
-    <string name="feeling_really_bad">Feeling really bad?</string>
-    <string name="feeling_bad">Feeling bad?</string>
-    <string name="feeling_good">Feeling good?</string>
-    <string name="feeling_really_good">Feeling really good?</string>
-    <string name="select_symptoms">Select Symptoms</string>
+    <string name="feeling_really_bad">Why are you feeling really bad?</string>
+    <string name="feeling_bad">Why are you feeling bad?</string>
+    <string name="feeling_good">Why are you feeling good?</string>
+    <string name="feeling_really_good">Why are you feeling really good?</string>
+    <string name="select_symptoms">Select symptoms</string>
+    <string name="fatigue">Fatigue</string>
+    <string name="headache">Headache</string>
+    <string name="brain_fog">Brain Fog</string>
     <string name="back">Back</string>
     <string name="apply">Apply</string>
     <string name="add_symptom">Add symptom</string>
     <string name="should_not_be_empty">Should not be empty</string>
+    <string name="symptom_already_exists">Symptom already exists</string>
     <string name="confirm">Confirm</string>
     <string name="dismiss">Dismiss</string>
     <string name="energy_warning_text">Your Energy level is low. Please take a rest!</string>
@@ -136,18 +140,6 @@
     <string name="dialog_unsaved_confirm_leave">Leave</string>
     <string name="dialog_unsaved_dismiss_cancel">Cancel</string>
 
-    <string name="warnings">Warnings</string>
-    <string name="warning_description">Receive notifications if your energy level is about to drop</string>
-    <string name="reminders">Reminders</string>
-    <string name="reminder_description">Receive regular reminders for tracking symptoms and validating your prognosis</string>
-    <string name="suggestion_description">Receive suggestions based on your current health status</string>
-    <string name="suggestions">Suggestions</string>
-    <string name="notifications">Notifications</string>
-    <string name="personal_resting_hours">Personal Resting Hours</string>
-    <string name="edit_resting_hours">Edit resting hours</string>
-    <string name="start_time_label">Start time (HH:mm)</string>
-    <string name="end_time_label">End time (HH:mm)</string>
-    <string name="time_format_helper">Format: 00:00 to 23:59</string>
 
     <string name="title_settings_unknown_user">Unknown User</string>
     <string name="title_settings_services">Connections &amp; Services</string>
@@ -186,6 +178,18 @@
     <string name="tips_info_4">Engage in short, low-effort social interactions if tolerated.</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="view_licence">View Licence</string>
-    <string name="predicting_energy">energy is getting predicted</string>
+    <string name="predicting_energy">Energy is getting predicted</string>
 
+    <string name="warnings">Warnings</string>
+    <string name="warning_description">Receive notifications if your energy level is about to drop</string>
+    <string name="reminders">Reminders</string>
+    <string name="reminder_description">Receive regular reminders for tracking symptoms and validating your prognosis</string>
+    <string name="suggestions">Suggestions</string>
+    <string name="suggestion_description">Receive suggestions based on your current health status</string>
+    <string name="notifications">Notifications</string>
+    <string name="personal_resting_hours">Personal Resting Hours</string>
+    <string name="edit_resting_hours">Edit resting hours</string>
+    <string name="start_time_label">Start time (HH:mm)</string>
+    <string name="end_time_label">End time (HH:mm)</string>
+    <string name="time_format_helper">Format: 00:00 to 23:59</string>
 </resources>
