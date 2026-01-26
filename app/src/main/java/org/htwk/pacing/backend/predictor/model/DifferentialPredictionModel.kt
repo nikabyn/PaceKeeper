@@ -2,13 +2,13 @@
 package org.htwk.pacing.backend.predictor.model
 
 //import android.util.Log
-import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
+import org.htwk.pacing.ui.math.centeredMovingAverage
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
@@ -70,11 +70,15 @@ object DifferentialPredictionModel : IPredictionModel {
 
     val metaweights = mutableListOf<Double>()
 
-    override fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray) {
+    override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
+        val softenedTarget = centeredMovingAverage(target, window = 16)
+            .discreteDerivative()
+            .map{x -> x.coerceIn(-0.05, 0.05) }.toDoubleArray()
+
 
         val trainingSamples = createTrainingSamples(
             input,
-            trainTarget
+            softenedTarget
         )
 
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }

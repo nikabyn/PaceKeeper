@@ -23,6 +23,7 @@ import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.futureOffset
 import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
+import org.htwk.pacing.backend.predictor.model.evaluateModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
@@ -39,6 +40,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.junit.Test
 import java.io.File
 import kotlin.let
+import kotlin.math.pow
 import kotlin.time.Duration.Companion.days
 
 class PredictorFitbitDataTest {
@@ -363,55 +365,13 @@ class PredictorFitbitDataTest {
         )*/
     }
 
-    fun producePrediction(model: IPredictionModel, trainMTSD: MultiTimeSeriesDiscrete, trainTarget: DoubleArray, fullMTSD: MultiTimeSeriesDiscrete) : DoubleArray {
-        model.train(
-            trainMTSD,
-            trainTarget
-        )
-
-        val predictions = (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
-                i ->
-            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(fullMTSD, i, i + Predictor.TIME_SERIES_SAMPLE_COUNT)
-            model.predict(
-                testSet,
-                IPredictionModel.PredictionHorizon.NOW
-            )
-        }.toDoubleArray()
-
-        return predictions
-    }
-
     @Test
     fun differentialPredictionModelTest() {
-        val target = centeredMovingAverage(targetTimeSeries.values, window = 2)
-        val targetDerivative = target
-            .discreteDerivative()
-            .map{x -> x.coerceIn(-0.05, 0.05) }.toDoubleArray()
-
-        val splitIndex: Int = (multiTimeSeriesDiscrete.stepCount() * 0.6).toInt()
-        val trainRange = 0 until splitIndex
-        //val trainRange = splitIndex until multiTimeSeriesDiscrete.stepCount() - 1
-
-        val trainMTSD = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, trainRange.first, trainRange.last - 1)
-        val trainTargetDerivative = targetDerivative.slice(trainRange).toDoubleArray()
-
-        //train and predict
-        val predictionsDerivative = producePrediction(DifferentialPredictionModel, trainMTSD, trainTargetDerivative, multiTimeSeriesDiscrete)
-
-        val predictions1 = centeredMovingAverage(predictionsDerivative.discreteTrapezoidalIntegral(target.slice(0 until 10).average()), window = 2).map{x -> x}.toDoubleArray()
-        val predictions = DoubleArray(predictions1.size)
-        for(i in 0 until predictions1.size - futureOffset) {
-            predictions[i + futureOffset] = predictions1[i]// + futureOffset]
-        }
-        /*for(i in 10 until predictions.size) {
-            predictions[i] = 0.0//target.slice(i - 1 until i).average()
-        }*/
+        val predictions = evaluateModel(multiTimeSeriesDiscrete, targetTimeSeries)
 
         val minLength = minOf(
             predictions.size,
-            targetDerivative.size,
-            predictionsDerivative.size,
-            target.size
+            targetTimeSeries.values.size
         )
 
         plotMultiTimeSeriesEntriesWithPython(
@@ -419,9 +379,7 @@ class PredictorFitbitDataTest {
                 /*"SLEEP" to multiTimeSeriesDiscrete.getMutableRow(MultiTimeSeriesDiscrete.FeatureID(
                     TimeSeriesMetric.SLEEP_SESSION, PIDComponent.PROPORTIONAL)).toDoubleArray()
                     .slice(0 until minLength).toDoubleArray(),*/
-                "TARGET" to target.slice(0 until minLength).toDoubleArray(),
-                "TARGET_DERIVATIVE" to targetDerivative.slice(0 until minLength).toDoubleArray(),
-                "PREDICTION_DERIVATIVE" to predictionsDerivative.slice(0 until minLength).toDoubleArray(),
+                "TARGET" to targetTimeSeries.values.slice(0 until minLength).toDoubleArray(),
                 "PREDICTION" to predictions.slice(0 until minLength).toDoubleArray()
             )
         )

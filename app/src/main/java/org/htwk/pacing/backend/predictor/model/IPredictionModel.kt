@@ -25,7 +25,7 @@ interface IPredictionModel {
 
     //TODO: we shouldn't differentiate between derivative or proportional energy level at this point, because the derivative can be passed from the callee, the model implementation itself shouldn't care wether it's predicting derivative or proportional
     fun predict(input: MultiTimeSeriesDiscrete, predictionHorizon: PredictionHorizon): Double
-    fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray)
+    fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray)
 
     //predict one timepoint
     /*fun predictSingle(

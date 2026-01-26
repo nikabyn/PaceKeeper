@@ -348,11 +348,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     targetLength = stepCount
                 )
 
-                val window = 8/* when(metric) {
-                    TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> 32
-                    else -> 32
-                }*/
-
+                val window = 8
                 val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = window)
 
                 //daily standard curve
