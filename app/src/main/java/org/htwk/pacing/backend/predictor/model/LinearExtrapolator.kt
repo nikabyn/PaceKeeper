@@ -96,8 +96,9 @@ object LinearExtrapolator {
          * @property index The index of the data point to sample, relative to the most recent entry.
          *                 `0` represents the most recent data point, `1` represents the one before that, and so on.
          */
-        data class SinglePoint(val index: Int) : SamplingDescriptor {
+        data class SinglePoint(var index: Int) : SamplingDescriptor {
             init {
+                index /= 3
                 require(index in validRange) { "earliestIndex must be in $validRange, but was $index" }
             }
 
@@ -121,9 +122,11 @@ object LinearExtrapolator {
          * @property earliestIndex The starting index of the slice, relative to the end of the time series. Must be greater than or equal to `latestIndex`.
          * @property latestIndex The ending index of the slice, relative to the end of the time series. 0 represents the most recent data point.
          */
-        data class AverageOverRange(val earliestIndex: Int, val latestIndex: Int) :
+        data class AverageOverRange(var earliestIndex: Int, var latestIndex: Int) :
             SamplingDescriptor {
             init {
+                earliestIndex /= 3
+                latestIndex /= 3
                 require(earliestIndex in validRange) { "earliestIndex must be in $validRange, but was $earliestIndex" }
                 require(latestIndex in validRange) { "latestIndex must be in $validRange, but was $latestIndex" }
                 require(earliestIndex >= latestIndex) { "earliestIndex must be greater than or equal to latestIndex" }
