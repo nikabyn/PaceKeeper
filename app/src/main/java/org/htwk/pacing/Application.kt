@@ -37,6 +37,11 @@ open class ProductionApplication : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
         startInjection()
+        //Debug für Datenbankauswahl
+        val db = getKoin().get<org.htwk.pacing.backend.database.PacingDatabase>()
+        val path = db.openHelper.writableDatabase.path
+        Log.d("DB_PATH", "Aktive DB-Datei: $path")
+
         val wm = getWorkManager(this)
         enqueueForegroundWorker(wm)
         runBlocking {

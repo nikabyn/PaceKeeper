@@ -1,7 +1,6 @@
 package org.htwk.pacing.ui.components
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -87,17 +86,8 @@ fun StartEvaluationMode(
                             Log.d("Modus", "Demobetrieb")
                         }
 
-                        Toast
-                            .makeText(
-                                context,
-                                "Demo: " + mode?.demo,
-                                Toast.LENGTH_LONG
-                            )
-                            .show()
-
                         //restartApp(context)
                         hardKillApp(context)
-
 
                     }
                 ) {

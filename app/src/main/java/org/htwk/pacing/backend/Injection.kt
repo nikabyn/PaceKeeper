@@ -66,6 +66,7 @@ val appModule = module {
             val modeEntry = modeDB.modeDao().getMode()
             if (modeEntry?.demo == true) "demo.db" else "pacing.db"
         }
+        Log.d("DB_INJECTION", "PacingDatabase wird geladen mit Datei: $dbName")
         Room.databaseBuilder(androidContext(), PacingDatabase::class.java, dbName)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
