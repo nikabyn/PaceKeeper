@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Entity(tableName = "mode")
 data class ModeEntry(
     @PrimaryKey val id: Int = 0,
-    val demo: Boolean
+    val demo: Boolean = false
 )
 
 @Dao

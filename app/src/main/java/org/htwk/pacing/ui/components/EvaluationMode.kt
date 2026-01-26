@@ -22,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.work.WorkManager
 import org.htwk.pacing.R
+import org.htwk.pacing.stopForegroundWorker
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -91,9 +93,9 @@ fun StartEvaluationMode(
                                 Toast.LENGTH_LONG
                             )
                             .show()
-                        //worker stoppen
-                        //app killen
-                        // exitApp(context)
+                        stopForegroundWorker(
+                            WorkManager.getInstance(context.applicationContext)
+                        )
                     }
                 ) {
                     Text(stringResource(R.string.agree))
@@ -181,3 +183,4 @@ fun exitApp(context: Context) {
 
 
 */
+
