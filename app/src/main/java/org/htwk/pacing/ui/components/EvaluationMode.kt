@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.components
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,9 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.work.WorkManager
 import org.htwk.pacing.R
-import org.htwk.pacing.stopForegroundWorker
+import org.htwk.pacing.hardKillApp
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -79,23 +79,26 @@ fun StartEvaluationMode(
                 TextButton(
                     onClick = {
                         showDialog = false
-                        if (mode?.demo == true) (
-                                modeViewModel.setDemoMode(false)
-                                )
-                        else (
-                                modeViewModel.setDemoMode(true)
-                                )
+                        if (mode?.demo == true) {
+                            modeViewModel.setDemoMode(false)
+                            Log.d("Modus", "Normalbetrieb")
+                        } else {
+                            modeViewModel.setDemoMode(true)
+                            Log.d("Modus", "Demobetrieb")
+                        }
 
                         Toast
                             .makeText(
                                 context,
-                                "Test",
+                                "Demo: " + mode?.demo,
                                 Toast.LENGTH_LONG
                             )
                             .show()
-                        stopForegroundWorker(
-                            WorkManager.getInstance(context.applicationContext)
-                        )
+
+                        //restartApp(context)
+                        hardKillApp(context)
+
+
                     }
                 ) {
                     Text(stringResource(R.string.agree))

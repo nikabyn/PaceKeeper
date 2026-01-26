@@ -66,11 +66,14 @@ class ForegroundWorker(
 
         supervisorScope {
             val isInDemo = modeDb.modeDao().getMode()?.demo ?: false
+            Log.d("ForegroundWorker", "Demo-Modus aktiv: $isInDemo")
             if (isInDemo) {
+                Log.d("ForegroundWorker", "Starte DataGenerateJob (Demo CSV)")
                 launchRepeating(DataGenerateJob.TAG) {
                     DataGenerateJob.run(context = applicationContext, db = db)
                 }
             } else {
+                Log.d("ForegroundWorker", "Starte HealthConnectJob (Normalbetrieb)")
                 launchRepeating(HealthConnectJob.TAG) {
                     HealthConnectJob.run(context = applicationContext, db = db)
                 }
