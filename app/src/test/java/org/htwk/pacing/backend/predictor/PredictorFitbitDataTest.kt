@@ -20,6 +20,8 @@ import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
+import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.futureOffset
+import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
@@ -30,6 +32,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import org.htwk.pacing.backend.predictor.stats.normalize
+import org.htwk.pacing.ui.math.centeredMovingAverage
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
@@ -54,7 +57,7 @@ class PredictorFitbitDataTest {
                 .mapNotNull { line ->
                     val parts = line.split(",")
                     val time = Instant.parse(parts[0].trim())
-                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 5.days) return@mapNotNull null
+                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 0.days) return@mapNotNull null
                     if(time !in minTime..maxTime) return@mapNotNull null
                     try {
                         entryGenerator(parts)
@@ -360,28 +363,49 @@ class PredictorFitbitDataTest {
         )*/
     }
 
-    @Test
-    fun differentialPredictionModelTest() {
-        val target = targetTimeSeries.values
-        val targetDerivative = target.discreteDerivative().map{x ->
-            x.coerceIn(-0.1, 0.1)
-        }.toDoubleArray()
-
-        DifferentialPredictionModel.train(
-            multiTimeSeriesDiscrete,
-            targetDerivative
+    fun producePrediction(model: IPredictionModel, trainMTSD: MultiTimeSeriesDiscrete, trainTarget: DoubleArray, fullMTSD: MultiTimeSeriesDiscrete) : DoubleArray {
+        model.train(
+            trainMTSD,
+            trainTarget
         )
 
-        val predictionsDerivative = (0 until multiTimeSeriesDiscrete.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
-            i ->
-            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, i, i + Predictor.TIME_SERIES_SAMPLE_COUNT)
-            DifferentialPredictionModel.predict(
+        val predictions = (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
+                i ->
+            val testSet = MultiTimeSeriesDiscrete.fromSubSlice(fullMTSD, i, i + Predictor.TIME_SERIES_SAMPLE_COUNT)
+            model.predict(
                 testSet,
                 IPredictionModel.PredictionHorizon.NOW
             )
         }.toDoubleArray()
 
-        val predictions = predictionsDerivative.discreteTrapezoidalIntegral(target.first())
+        return predictions
+    }
+
+    @Test
+    fun differentialPredictionModelTest() {
+        val target = centeredMovingAverage(targetTimeSeries.values, window = 2)
+        val targetDerivative = target
+            .discreteDerivative()
+            .map{x -> x.coerceIn(-0.05, 0.05) }.toDoubleArray()
+
+        val splitIndex: Int = (multiTimeSeriesDiscrete.stepCount() * 0.6).toInt()
+        val trainRange = 0 until splitIndex
+        //val trainRange = splitIndex until multiTimeSeriesDiscrete.stepCount() - 1
+
+        val trainMTSD = MultiTimeSeriesDiscrete.fromSubSlice(multiTimeSeriesDiscrete, trainRange.first, trainRange.last - 1)
+        val trainTargetDerivative = targetDerivative.slice(trainRange).toDoubleArray()
+
+        //train and predict
+        val predictionsDerivative = producePrediction(DifferentialPredictionModel, trainMTSD, trainTargetDerivative, multiTimeSeriesDiscrete)
+
+        val predictions1 = centeredMovingAverage(predictionsDerivative.discreteTrapezoidalIntegral(target.slice(0 until 10).average()), window = 2).map{x -> x}.toDoubleArray()
+        val predictions = DoubleArray(predictions1.size)
+        for(i in 0 until predictions1.size - futureOffset) {
+            predictions[i + futureOffset] = predictions1[i]// + futureOffset]
+        }
+        /*for(i in 10 until predictions.size) {
+            predictions[i] = 0.0//target.slice(i - 1 until i).average()
+        }*/
 
         val minLength = minOf(
             predictions.size,
@@ -392,6 +416,9 @@ class PredictorFitbitDataTest {
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
+                /*"SLEEP" to multiTimeSeriesDiscrete.getMutableRow(MultiTimeSeriesDiscrete.FeatureID(
+                    TimeSeriesMetric.SLEEP_SESSION, PIDComponent.PROPORTIONAL)).toDoubleArray()
+                    .slice(0 until minLength).toDoubleArray(),*/
                 "TARGET" to target.slice(0 until minLength).toDoubleArray(),
                 "TARGET_DERIVATIVE" to targetDerivative.slice(0 until minLength).toDoubleArray(),
                 "PREDICTION_DERIVATIVE" to predictionsDerivative.slice(0 until minLength).toDoubleArray(),
