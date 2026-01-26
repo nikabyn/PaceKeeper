@@ -21,10 +21,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import kotlin.math.abs
-import kotlin.math.pow
-import kotlin.math.sign
-import kotlin.math.sqrt
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -39,18 +35,17 @@ object DifferentialPredictionModel : IPredictionModel {
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //
     // baseline vs current for different metrics
-    val horizons = listOf(0, 2, 4, 8, 12, 16, 24, 32, 40, 64).map{x -> x}
+    val horizons = listOf(4, 8, 12, 16, 24, 32, 40, 64)
     val futureOffset = 12 //how far to shift target
 
     //stores "learned" / regressed linear coefficients per Offset
     class Model(
         //model parameters per prediction horizon (e.g. now vs. future)
         val weights: Map<Int, List<Double>>,
-        val extrapolationDistributions: List<StochasticDistribution>
-
+        val inputDistributions: List<StochasticDistribution>
     )
 
-    var model: Model? = null //hold everything in a single state, (model weights etc.)*/
+    var model: Model? = null //hold everything in a single state, (model weights etc.)
 
     data class TrainingSample(
         val metricValues: List<Double>,
@@ -95,8 +90,6 @@ object DifferentialPredictionModel : IPredictionModel {
             coefficientsMap[offs] = coefficients
         }
 
-        val ids = input.getAllFeatureIDs().toList()
-
         model = Model(coefficientsMap, extrapolationDistributions)
     }
 
@@ -117,13 +110,10 @@ object DifferentialPredictionModel : IPredictionModel {
 
         val perHorizonModel = model!!
 
-        //drop last element, because it is the bias, normalizing it is useless anyways
-        val flattenedExtrapolations = input
-
         //normalize extrapolations, this is essential for good regression stability
-        val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations
+        val normalizedInputs: D1Array<Double> = mk.ndarray(input
             .mapIndexed {index, d ->
-            val distribution = perHorizonModel.extrapolationDistributions[index]
+            val distribution = perHorizonModel.inputDistributions[index]
             normalizeSingleValue(d, distribution)
         })
 
@@ -132,7 +122,7 @@ object DifferentialPredictionModel : IPredictionModel {
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
 
-        val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights)))
+        val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights)))
         return prediction.first()
     }
 
