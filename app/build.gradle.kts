@@ -108,6 +108,7 @@ dependencies {
     implementation(libs.transportation.consumer)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui.test.junit4)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     testImplementation(libs.androidx.room.testing)

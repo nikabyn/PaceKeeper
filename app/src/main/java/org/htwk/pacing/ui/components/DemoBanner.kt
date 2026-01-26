@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -24,7 +25,6 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.ModeDao
 import org.htwk.pacing.backend.database.ModeEntry
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.koin.androidx.compose.koinViewModel
 
 
 class ModeViewModel(
@@ -51,10 +51,9 @@ class ModeViewModel(
 
 @Composable
 fun DemoBanner(
-    modeViewModel: ModeViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel,
     minHeight: Dp = 32.dp,
 ) {
-    //modeViewModel.setDemoMode(true)
     val mode by modeViewModel.mode.collectAsState()
     if (mode?.demo != true) return
 
@@ -63,7 +62,8 @@ fun DemoBanner(
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .background(Color(0xFFFF9800))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .testTag("DemoBanner"),
         contentAlignment = Alignment.Center
     ) {
         Text(
