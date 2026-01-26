@@ -78,7 +78,7 @@ def plot_mtsd_from_csv(discrete_path, irregular_path=None):
             plt.plot(plot_x, values, marker='o', markersize=3, linestyle='-', label=series_name)
 
     # --- Plot irregular series ---
-    if irregular_timestamps is not None:
+    if irregular_timestamps is not None and False:
         plt.plot(
             irregular_timestamps,
             irregular_percentages,
