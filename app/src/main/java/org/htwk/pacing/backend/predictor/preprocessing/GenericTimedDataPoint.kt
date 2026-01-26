@@ -34,17 +34,16 @@ import kotlin.time.Duration.Companion.hours
  *         filled with random data otherwise.
  */
 fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTimedDataPointTimeSeries {
-
     if (genericTS.data.size >= 2) {
         return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
     }
 
-    val random: Random = Random(id)
+    val random = Random(id)
 
-    val steps = 2//genericTS.duration.inWholeHours.toInt()
+    val steps = genericTS.duration.inWholeHours.toInt()
     val stepDuration = 1.hours
 
-    val data = List<GenericTimedDataPoint>(steps) { index ->
+    val data: List<GenericTimedDataPoint> = List(steps) { index ->
         GenericTimedDataPoint(
             time = genericTS.timeStart + stepDuration * index,
             value = random.nextDouble(0.0, 1.0)
