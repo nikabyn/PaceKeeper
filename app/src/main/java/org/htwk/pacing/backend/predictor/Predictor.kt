@@ -56,7 +56,6 @@ object Predictor {
         val steps: List<StepsEntry>,
         val speed: List<SpeedEntry>,
         val sleepSession: List<SleepSessionEntry>,
-        val validatedEnergyLevel: List<ValidatedEnergyLevelEntry>
     ) {
         companion object {
             //use in unit tests when you only care about certain metrics
@@ -86,7 +85,6 @@ object Predictor {
                     steps = steps,
                     speed = speed,
                     sleepSession = sleepSession,
-                    validatedEnergyLevel = validatedEnergyLevel
                 )
             }
         }

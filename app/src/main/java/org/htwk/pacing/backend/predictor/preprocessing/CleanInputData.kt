@@ -148,12 +148,11 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
             steps = cleanedSteps,
             speed = cleanedSpeeds,
             sleepSession = raw.sleepSession, //don't clean sleep for now
-            validatedEnergyLevel = raw.validatedEnergyLevel
         ),
 
         QualityRatios(
-            ratiosPerMetric = TimeSeriesMetric.entries.associateWith { metric -> Percentage(1.0)
-                /*when (metric) {
+            ratiosPerMetric = TimeSeriesMetric.entries.associateWith { metric ->
+                when (metric) {
                     TimeSeriesMetric.HEART_RATE -> Percentage(correctionHeartRatio)
                     TimeSeriesMetric.DISTANCE -> Percentage(correctionDistancesRatio)
                     TimeSeriesMetric.ELEVATION_GAINED -> Percentage(correctionElevationGainsRatio)
@@ -169,8 +168,7 @@ fun cleanInputData(raw: MultiTimeSeriesEntries): Pair<MultiTimeSeriesEntries, Qu
                     TimeSeriesMetric.STEPS -> Percentage(correctionStepsRatio)
                     TimeSeriesMetric.SPEED -> Percentage(correctionSpeedsRatio)
                     TimeSeriesMetric.SLEEP_SESSION -> Percentage(1.0)
-                    TimeSeriesMetric.VALIDATED_ENERGY_LEVEL -> Percentage(1.0)
-                }*/
+                }
             }
 
         )

@@ -51,12 +51,11 @@ enum class TimeSeriesSignalClass(val components: List<PIDComponent>) {
 enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
     HEART_RATE(TimeSeriesSignalClass.CONTINUOUS),
     DISTANCE(TimeSeriesSignalClass.AGGREGATED),
-    //ELEVATION_GAINED(TimeSeriesSignalClass.AGGREGATED),
-    /*HEART_RATE_VARIABILITY(TimeSeriesSignalClass.CONTINUOUS),
-    OXYGEN_SATURATION(TimeSeriesSignalClass.CONTINUOUS),*/
+    ELEVATION_GAINED(TimeSeriesSignalClass.AGGREGATED),
+    HEART_RATE_VARIABILITY(TimeSeriesSignalClass.CONTINUOUS),
+    OXYGEN_SATURATION(TimeSeriesSignalClass.CONTINUOUS),
     SKIN_TEMPERATURE(TimeSeriesSignalClass.CONTINUOUS),
     STEPS(TimeSeriesSignalClass.AGGREGATED),
-    //SPEED(TimeSeriesSignalClass.CONTINUOUS),
+    SPEED(TimeSeriesSignalClass.CONTINUOUS),
     SLEEP_SESSION(TimeSeriesSignalClass.AGGREGATED),
-    //VALIDATED_ENERGY_LEVEL(TimeSeriesSignalClass.CONTINUOUS),
 }
