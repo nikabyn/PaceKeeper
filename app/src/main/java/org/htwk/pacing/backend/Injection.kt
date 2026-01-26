@@ -15,6 +15,7 @@ import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelModell2Dao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.SkinTemperatureDao
 import org.htwk.pacing.backend.database.SleepSessionDao
@@ -74,6 +75,7 @@ val appModule = module {
 
     single<PredictedHeartRateDao> { get<PacingDatabase>().predictedHeartRateDao() }
     single<PredictedEnergyLevelDao> { get<PacingDatabase>().predictedEnergyLevelDao() }
+    single<PredictedEnergyLevelModell2Dao> { get<PacingDatabase>().predictedEnergyLevelModell2Dao() }
 
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
@@ -82,7 +84,7 @@ val appModule = module {
     single { UserProfileRepository(get()) }
 
 
-    viewModel { HomeViewModel(get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get()) }
     viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }

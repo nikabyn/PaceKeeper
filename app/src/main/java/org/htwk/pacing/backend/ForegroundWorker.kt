@@ -66,8 +66,28 @@ class ForegroundWorker(
             launchRepeating(HealthConnectJob.TAG) {
                 HealthConnectJob.run(context = applicationContext, db = db)
             }
-            launchRepeating(EnergyPredictionJob.TAG) {
-                EnergyPredictionJob.run(db = db)
+            launch {
+                // Prediction Job Manager
+                // Reacts to changes in the Prediction Model setting and restarts the correct job.
+                var predictionJob: kotlinx.coroutines.Job? = null
+                var lastModel: String? = null
+
+                db.userProfileDao().getProfileLive().collect { profile ->
+                    val newModel = profile?.predictionModel ?: "DEFAULT"
+                    if (newModel != lastModel) {
+                        Log.i(WORK_NAME, "Switching prediction model from $lastModel to $newModel")
+                        predictionJob?.cancel()
+                        lastModel = newModel
+
+                        predictionJob = launchRepeating(EnergyPredictionJob.TAG + "_$newModel") {
+                            if (newModel == "MODEL2") {
+                                EnergyPredictionJob_modell2.run(db)
+                            } else {
+                                EnergyPredictionJob.run(db)
+                            }
+                        }
+                    }
+                }
             }
             launchRepeating(EnergyNotificationJob.TAG) {
                 EnergyNotificationJob.run(
@@ -91,13 +111,13 @@ class ForegroundWorker(
      * @param name A descriptive name used in logging to identify the job.
      * @param func Suspended closure representing the work to execute repeatedly.
      */
-    private fun CoroutineScope.launchRepeating(name: String, func: suspend () -> Unit) {
-        val backoffMin = 10.seconds
-        val backoffMax = 5.hours
-        val backoffFactor = 2.0
-        var backoff = backoffMin
-
+    private fun CoroutineScope.launchRepeating(name: String, func: suspend () -> Unit) =
         launch {
+            val backoffMin = 10.seconds
+            val backoffMax = 5.hours
+            val backoffFactor = 2.0
+            var backoff = backoffMin
+
             while (!isStopped) {
                 try {
                     func()
@@ -112,7 +132,6 @@ class ForegroundWorker(
                 }
             }
         }
-    }
 
     private fun createNotification(): Notification {
         val channel =

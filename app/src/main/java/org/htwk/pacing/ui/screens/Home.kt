@@ -3,6 +3,7 @@ package org.htwk.pacing.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -24,13 +25,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelModell2Dao
+import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
@@ -41,11 +45,20 @@ import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
+import org.htwk.pacing.backend.GlobalTime
+import java.util.Calendar
 
 data class EnergyGraphData(
     val seriesPastToNow : Series<List<Double>>,
     val futureValue : Double
 )
+
+
 
 @Composable
 fun HomeScreen(
@@ -55,22 +68,18 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val latest by viewModel.predictedEnergyLevel.collectAsState()
+    val context = LocalContext.current
 
-    // cache remembers the most recent non‑empty series to fix flickering
+    // ... existing cache logic ...
     var cached by remember {
         mutableStateOf(
             EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
         )
     }
-
     if (latest.seriesPastToNow.y.isNotEmpty()) cached = latest
-
     val energyGraphData = cached
-    // always draw the cache
-    if (energyGraphData.seriesPastToNow.y.isEmpty()) return//should never happen in runtime, but may happen during startup
-
+    if (energyGraphData.seriesPastToNow.y.isEmpty()) return
     val futureValue = energyGraphData.futureValue
-
     val currentEnergy = energyGraphData.seriesPastToNow.y.last()
     val minPrediction = futureValue - 0.1
     val maxPrediction = futureValue + 0.1
@@ -89,6 +98,35 @@ fun HomeScreen(
                 maxPrediction = maxPrediction.toFloat(),
                 modifier = Modifier.height(300.dp)
             )
+
+            // Simpler Simulation Button
+            Button(onClick = {
+                val calendar = Calendar.getInstance()
+                // Date Picker
+                DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        // Time Picker
+                        TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                calendar.set(year, month, dayOfMonth, hourOfDay, minute)
+                                val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(calendar.timeInMillis)
+                                GlobalTime.setTime(instant)
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                        ).show()
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                ).show()
+            }, modifier = Modifier.fillMaxWidth()) {
+                Text("Zeitpunkt ändern (Simulation)")
+            }
+
             LabelCard(energy = currentEnergy)
             BatteryCard(
                 energy = currentEnergy,
@@ -100,26 +138,64 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Common interface for energy entries from both models.
+ */
+private data class EnergyEntry(
+    val timeMillis: Long,
+    val percentageNow: Double,
+    val percentageFuture: Double
+)
+
 class HomeViewModel(
-    predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val predictedEnergyLevelModell2Dao: PredictedEnergyLevelModell2Dao,
     private val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
+    private val userProfileDao: UserProfileDao,
 ) : ViewModel() {
+
     @OptIn(FlowPreview::class)
-    val predictedEnergyLevel = predictedEnergyLevelDao
-        .getAllLive()
-        .filter { it.isNotEmpty() }
+    val predictedEnergyLevel = kotlinx.coroutines.flow.combine(
+        userProfileDao.getProfileLive(),
+        GlobalTime.offsetFlow
+    ) { profile, _ -> profile?.predictionModel ?: "DEFAULT" }
+        .flatMapLatest { model ->
+            // Choose the correct DAO based on the model setting
+            if (model == "MODEL2") {
+                predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
+                    entries.map { EnergyEntry(it.time.toEpochMilliseconds(), it.percentageNow.toDouble(), it.percentageFuture.toDouble()) }
+                }
+            } else {
+                predictedEnergyLevelDao.getAllLive().map { entries ->
+                    entries.map { EnergyEntry(it.time.toEpochMilliseconds(), it.percentageNow.toDouble(), it.percentageFuture.toDouble()) }
+                }
+            }
+        }
         .debounce(200)
         .map { entries ->
-            val energySeries = Series(mutableListOf(), mutableListOf())
+            val targetTime = GlobalTime.now()
+            val targetMillis = targetTime.toEpochMilliseconds()
 
-            entries.forEach { entry ->
-                energySeries.x.add(entry.time.toEpochMilliseconds().toDouble())
-                energySeries.y.add(entry.percentageNow.toDouble())
+            // Filter entries to only show data up to simulated time
+            val filteredEntries = entries.filter {
+                it.timeMillis <= targetMillis
+            }.sortedBy { it.timeMillis }
+
+            if (filteredEntries.isEmpty()) {
+                return@map EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
             }
+
+            val energySeries = Series(mutableListOf(), mutableListOf())
+            filteredEntries.forEach { entry ->
+                energySeries.x.add(entry.timeMillis.toDouble())
+                energySeries.y.add(entry.percentageNow)
+            }
+
+            val latestEntry = filteredEntries.last()
 
             EnergyGraphData(
                 Series(energySeries.x.toList(), energySeries.y.toList()),
-                entries.last().percentageFuture.toDouble()
+                latestEntry.percentageFuture
             )
         }.stateIn(
             scope = viewModelScope,

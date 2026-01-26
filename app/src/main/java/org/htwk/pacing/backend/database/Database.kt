@@ -34,6 +34,7 @@ import kotlinx.datetime.LocalTime
         // their whole table contents are overwritten and they are also at once read as a whole.
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class,
+        PredictedEnergyLevelEntryModell2::class,
 
         UserProfileEntry::class,
 
@@ -65,6 +66,7 @@ abstract class PacingDatabase : RoomDatabase() {
     contents are overwritten and they are also at once read as a whole. */
     abstract fun predictedHeartRateDao(): PredictedHeartRateDao
     abstract fun predictedEnergyLevelDao(): PredictedEnergyLevelDao
+    abstract fun predictedEnergyLevelModell2Dao(): PredictedEnergyLevelModell2Dao
 
     abstract fun readEventDao(): ReadEventDao
 }

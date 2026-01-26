@@ -192,5 +192,8 @@
     <string name="start_time_label">Startzeit (HH:mm)</string>
     <string name="end_time_label">Endzeit (HH:mm)</string>
     <string name="time_format_helper">Format: 00:00 bis 23:59</string>
+    <string name="title_settings_prediction_model">Vorhersagemodell</string>
+    <string name="model_default">Multi-Source (Standard)</string>
+    <string name="model_heart_rate_only">Herzfrequenz (Alternative)</string>
 
 </resources>

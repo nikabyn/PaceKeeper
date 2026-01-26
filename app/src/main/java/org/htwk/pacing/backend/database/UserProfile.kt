@@ -45,7 +45,8 @@ data class UserProfileEntry(
     val restingEnd: LocalTime?,
 
     val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
-    val checkedIn: Boolean
+    val checkedIn: Boolean,
+    val predictionModel: String = "DEFAULT"
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -100,6 +101,7 @@ data class UserProfileEntry(
 
                 themeMode = "AUTO",
                 checkedIn = false,
+                predictionModel = "DEFAULT",
             )
         }
     }
