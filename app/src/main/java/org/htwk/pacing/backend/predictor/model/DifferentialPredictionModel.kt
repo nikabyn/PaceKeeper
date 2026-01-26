@@ -64,7 +64,7 @@ object DifferentialPredictionModel : IPredictionModel {
         return (0 until input.stepCount() - futureOffset).map { offset ->
             TrainingSample(
                 metricValues = input
-                    .allFeaturesAt(offset).toList() + listOf(1.0),
+                    .allFeaturesAt(offset).toList(),
                 targetValue = targetTimeSeriesDiscrete[offset + futureOffset]
             )
         }
@@ -84,7 +84,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //normalize extrapolations, this is essential for good regression stability, but skip the
         //constant bias feature at the end so it doesn't get zeroed from normalization
-        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 1).map { i ->
+        val extrapolationDistributions = (0 until metricMatrix.shape[0]).map { i ->
             (metricMatrix[i] as D1Array<Double>).normalize()
         }
 
@@ -125,7 +125,7 @@ object DifferentialPredictionModel : IPredictionModel {
             .mapIndexed {index, d ->
             val distribution = perHorizonModel.extrapolationDistributions[index]
             normalizeSingleValue(d, distribution)
-        } + listOf(1.0))
+        })
 
         val weights: List<Double> = perHorizonModel.weights[offs]!!
 
