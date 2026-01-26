@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
-import android.util.Log
 import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
@@ -18,9 +17,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
-import kotlin.random.Random
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -82,7 +79,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
     // ---- general state / time queries ----
     fun stepCount(): Int = stepCount
     private fun resize(newStepCount: Int) {
-        reserveCapacity(newStepCount);
+        reserveCapacity(newStepCount)
         this.stepCount = newStepCount
     }
 
@@ -181,7 +178,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
         if (newSteps == 0) return
 
         require(newSamples.shape[0] == featureCount) {
-            "Expected ${featureCount} features, got ${newSamples.shape[0]}"
+            "Expected $featureCount features, got ${newSamples.shape[0]}"
         }
 
         reserveCapacity(stepCount + newSteps)
@@ -207,7 +204,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
      * @param minimumSteps The minimum number of time steps that must be accommodatable.
      */
     private fun reserveCapacity(minimumSteps: Int) {
-        if (minimumSteps <= capacityInSteps) return;
+        if (minimumSteps <= capacityInSteps) return
 
         //next-highest power of two relative to minimumSteps
         val newCapacity = minimumSteps.takeHighestOneBit() shl 1
@@ -252,7 +249,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          *
          * This allows for efficient, `O(1)` access to a feature's time series data row within the matrix.
          */
-        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.values()
+        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
             .map { metric ->
                 metric.signalClass.components.map { component ->
                     FeatureID(
@@ -271,67 +268,57 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          * 1.  It takes a [Predictor.MultiTimeSeriesEntries] object containing lists of raw data points
          *     (e.g., heart rate, distance) with their timestamps.
          * 2.  For each [TimeSeriesMetric] (like `HEART_RATE`, `DISTANCE`), it discretizes the raw data
-         *     into a uniformly sampled time series. This creates the proportional (P) component.
+         *     into a [GenericTimedDataPointTimeSeries]. This creates the proportional (P) component.
          * 3.  It then computes the other feature components (e.g., integral (I), derivative (D))
          *     from the discretized proportional data.
-         * 4.  Finally, it populates a new [MultiTimeSeriesDiscrete] instance, organizing all computed
+         * 4.  Populates a new [MultiTimeSeriesDiscrete] instance, organizing all computed
          *     feature components into the 2D matrix structure.
+         * 5.  Performs final adjustments for heart rate (HR) and heart rate variability (HRV) using [adjustHR]
+         *     and [adjustHRV] based on the provided [Predictor.FixedParameters].
          *
          * The resulting object is aligned, uniformly sampled, and ready for use as model input.
          * All generated time series share the same start time and step size.
          *
          * @param raw An object containing the raw, non-uniform time series data points.
+         * @param fixedParameters Data class containing human physiological variables that are (difficult to) change
          * @return A fully populated [MultiTimeSeriesDiscrete] instance.
          */
-        fun fromEntries(raw: Predictor.MultiTimeSeriesEntries): MultiTimeSeriesDiscrete {
+        fun fromEntries(raw: Predictor.MultiTimeSeriesEntries, fixedParameters: Predictor.FixedParameters): MultiTimeSeriesDiscrete {
             if (TimeSeriesMetric.entries.isEmpty()) {
                 return MultiTimeSeriesDiscrete(raw.timeStart, 0)
             }
 
             val multiTimeSeriesDiscrete = MultiTimeSeriesDiscrete(raw.timeStart)
 
-            val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt();
+            val stepCount = (raw.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
             multiTimeSeriesDiscrete.resize(stepCount)
 
             val metricCounts = mutableMapOf<TimeSeriesMetric, Int>()
 
             TimeSeriesMetric.entries.forEach { metric ->
-                //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
-                val discreteProportional = discretizeTimeSeries(
-                    ensureData(id = metric.ordinal,
-                        GenericTimedDataPointTimeSeries(
-                            timeStart = raw.timeStart,
-                            duration = raw.duration,
-                            isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
-                            data = when (metric) {
-                                TimeSeriesMetric.HEART_RATE -> raw.heartRate.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.DISTANCE -> raw.distance.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.ELEVATION_GAINED -> raw.elevationGained.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SKIN_TEMPERATURE -> raw.skinTemperature.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.HEART_RATE_VARIABILITY -> raw.heartRateVariability.map(
-                                    ::GenericTimedDataPoint
-                                )
 
-                                TimeSeriesMetric.OXYGEN_SATURATION -> raw.oxygenSaturation.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.STEPS -> raw.steps.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SPEED -> raw.speed.map(::GenericTimedDataPoint)
-                                TimeSeriesMetric.SLEEP_SESSION -> raw.sleepSession.map(::GenericTimedDataPoint)
+                val discreteProportional = discretizeTimeSeries(
+                    ensureData(
+                        id = metric.ordinal,
+                        buildGenericTimeSeries(metric, raw)
+                            .also { series ->
+                                // count how many entries we got
+                                metricCounts[metric] = series.data.size
                             }
-                        ).also {it ->
-                            //count how many entries we got
-                            metricCounts[metric] = it.data.size
-                        }
                     ),
                     targetLength = stepCount
                 )
 
-                require(discreteProportional.size == stepCount);
+                require(discreteProportional.size == stepCount)
 
                 metric.signalClass.components.forEach { component ->
                     val featureID = FeatureID(metric, component)
                     val componentData = featureID.component.compute(discreteProportional)
                     val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
-                    componentData.forEachIndexed { index, value -> featureView[index] = value }
+
+                    componentData.forEachIndexed { index, value ->
+                        featureView[index] = value
+                    }
                 }
             }
 
@@ -343,7 +330,80 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
             println("per-metric input entry counts (before ensureData): $debug")
 
+            val mutableHeartRateArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE,
+                PIDComponent.PROPORTIONAL))
+
+            val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
+                PIDComponent.PROPORTIONAL))
+
+            mutableHeartRateArray.indices.forEach { i ->
+                val hr = mutableHeartRateArray[i]
+                val hrv = mutableHRVArray[i]
+                mutableHeartRateArray[i] = adjustHR(hr, fixedParameters)
+                mutableHRVArray[i] = adjustHRV(hr, hrv, fixedParameters)
+            }
+
             return multiTimeSeriesDiscrete
         }
     }
+}
+
+/**
+ * Creates a generic time series (`GenericTimedDataPointTimeSeries`) from the raw
+ * MultiTimeSeries data of a `Predictor` object for the specified metric.
+ *
+ * The function automatically selects the appropriate data series from [raw] based on the
+ * passed [metric] and converts each entry into a [GenericTimedDataPoint].
+ * In addition, the metadata `timeStart`, `duration`, and the continuity of the metric
+ * are included in the result.
+ *
+ * @param metric The metric for which the time series is to be created. Determines which
+ *               list of `raw` is used (e.g., heart rate, steps, speed).
+ * @param raw The raw MultiTimeSeries data containing all possible time series.
+ *
+ * @return A [GenericTimedDataPointTimeSeries] object that:
+ *  - contains the mapped data points (`GenericTimedDataPoint`),
+ *  - adopts the start time (`timeStart`) and total duration (`duration`) of the time series,
+ *  - specifies whether the metric is continuous (`isContinuous`).
+ */
+internal fun buildGenericTimeSeries(
+    metric: TimeSeriesMetric,
+    raw: Predictor.MultiTimeSeriesEntries
+): GenericTimedDataPointTimeSeries {
+
+    val data = when (metric) {
+        TimeSeriesMetric.HEART_RATE ->
+            raw.heartRate.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.DISTANCE ->
+            raw.distance.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.ELEVATION_GAINED ->
+            raw.elevationGained.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.SKIN_TEMPERATURE ->
+            raw.skinTemperature.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.HEART_RATE_VARIABILITY ->
+            raw.heartRateVariability.map (::GenericTimedDataPoint)
+
+        TimeSeriesMetric.OXYGEN_SATURATION ->
+            raw.oxygenSaturation.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.STEPS ->
+            raw.steps.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.SPEED ->
+            raw.speed.map(::GenericTimedDataPoint)
+
+        TimeSeriesMetric.SLEEP_SESSION ->
+            raw.sleepSession.map(::GenericTimedDataPoint)
+    }
+
+    return GenericTimedDataPointTimeSeries(
+        timeStart = raw.timeStart,
+        duration = raw.duration,
+        isContinuous = metric.signalClass == TimeSeriesSignalClass.CONTINUOUS,
+        data = data
+    )
 }

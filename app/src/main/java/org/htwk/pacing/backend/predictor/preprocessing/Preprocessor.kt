@@ -19,6 +19,6 @@ object Preprocessor {
         input: MultiTimeSeriesEntries,
         fixedParameters: FixedParameters
     ): MultiTimeSeriesDiscrete {
-        return MultiTimeSeriesDiscrete.fromEntries(input);
+        return MultiTimeSeriesDiscrete.fromEntries(input, fixedParameters);
     }
 }
