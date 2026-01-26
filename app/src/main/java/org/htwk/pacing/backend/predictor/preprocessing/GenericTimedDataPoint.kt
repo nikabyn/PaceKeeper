@@ -89,17 +89,7 @@ data class GenericTimedDataPointTimeSeries(
          */
         constructor(src: HeartRateEntry) : this(
             time = src.time,
-            value = src.bpm.toDouble().let {
-                bpm ->
-                val limit = 78.0
-                val diff = bpm - limit
-                diff * diff * diff / 100.0
-                /*when {
-                    bpm < 60.0 -> bpm - 60.0
-                    bpm > 90.0 -> bpm - 90.0
-                    else -> 0.0
-                }*/
-            }
+            value = src.bpm.toDouble()
         )
 
         /**
