@@ -21,6 +21,10 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.sign
+import kotlin.math.sqrt
 
 /**
  * A linear regression–based prediction model that combines multiple extrapolated time series signals
@@ -68,12 +72,15 @@ object DifferentialPredictionModel : IPredictionModel {
         }
     }
 
-    val metaweights = mutableListOf<Double>()
-
+    val fac = 0.8
     override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
         val softenedTarget = centeredMovingAverage(target, window = 16)
             .discreteDerivative()
-            .map{x -> x.coerceIn(-0.05, 0.05) }.toDoubleArray()
+            .map{x ->
+            x
+            //abs(x).pow(1.0/fac) * x.sign
+            //x.coerceIn(-0.5, 0.5)
+            }.toDoubleArray()
 
 
         val trainingSamples = createTrainingSamples(
@@ -204,7 +211,9 @@ object DifferentialPredictionModel : IPredictionModel {
         predictionHorizon: PredictionHorizon
     ): Double {
         require(predictionHorizon == PredictionHorizon.NOW)
-        return predictStep(input)
+        val prediction = predictStep(input)
+        //abs(prediction).pow(fac) * prediction.sign
+        return prediction
     }
 
     private fun predictStep(
