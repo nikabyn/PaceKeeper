@@ -41,6 +41,7 @@ import org.junit.Test
 import java.io.File
 import kotlin.let
 import kotlin.math.pow
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 class PredictorFitbitDataTest {
@@ -253,19 +254,7 @@ class PredictorFitbitDataTest {
     val validatedEnergyLevelEntries = dataFromCSV.second
 
     val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
-    val targetTimeSeries = TimeSeriesDiscretizer.discretizeTimeSeries(
-        ensureData(id = 1500,
-            GenericTimedDataPointTimeSeries(
-                timeStart = multiTimeSeriesEntries.timeStart,
-                duration = multiTimeSeriesEntries.duration,
-                isContinuous = true, //discretize: interpolate and edge fill validated energy level
-                data = validatedEnergyLevelEntries.map { it ->
-                    GenericTimedDataPoint(it.time, it.percentage.toDouble())
-                }
-            )
-        ),
-        targetLength = multiTimeSeriesDiscrete.stepCount()
-    )
+    val targetTimeSeries = generateDiscreteTargetSeries(multiTimeSeriesEntries.timeStart, multiTimeSeriesEntries.duration, validatedEnergyLevelEntries, multiTimeSeriesDiscrete.stepCount())
     
     fun plotMTSD(mtsd: MultiTimeSeriesDiscrete) {
         plotMultiTimeSeriesEntriesWithPython(TimeSeriesMetric.entries

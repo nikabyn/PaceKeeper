@@ -18,10 +18,13 @@ import org.htwk.pacing.backend.predictor.Predictor.train
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
+import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -111,26 +114,14 @@ object Predictor {
      * the `predict` function can be used to generate accurate forecasts.
      * Calling `train` updates the internal state of the model.
      *
-     * @param multiTimeSeriesEntries The historical multi-source time series data (e.g., heart rate, distance).
-     * @param fixedParameters Static user-specific parameters relevant to the training data.
+     * @param multiTimeSeriesDiscrete The historical multi-source time series data (e.g., heart rate, distance).
+     * @param singleTargetTimeSeries The historical energy target values to train on
      */
     fun train(
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
         singleTargetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
-        fixedParameters: FixedParameters,
     ) {
-        //val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
-
-        //val targetFeatureID = MultiTimeSeriesDiscrete.FeatureID(TimeSeriesMetric.HEART_RATE, PIDComponent.PROPORTIONAL)
-
-        //val target = multiTimeSeriesDiscrete.getMutableRow(targetFeatureID).toDoubleArray()
-
-        /*target.forEachIndexed { index, value ->
-            println("target[$index] = $value")
-        }*/
-
         DifferentialPredictionModel.train(multiTimeSeriesDiscrete, singleTargetTimeSeries.values)
-        //ExtrapolationPredictionModel.train(multiTimeSeriesDiscrete, target)
     }
 
     /**
@@ -149,11 +140,7 @@ object Predictor {
     fun predict(
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
     ): PredictedEnergyLevelEntry {
-        // 1.) time series preprocessing
-
-        // (1.5) TODO: cache (don't need that for now)
-
-        // 2.) run model and return energy prediction
+        //run model and return energy prediction
         val predictedEnergyNow = 0.0/*DifferentialPredictionModel.predict(
             multiTimeSeriesDiscrete,
             IPredictionModel.PredictionHorizon.NOW
@@ -170,3 +157,19 @@ object Predictor {
         )
     }
 }
+
+fun generateDiscreteTargetSeries(timeStart: Instant, duration: Duration, validatedEnergyLevelEntries: List<ValidatedEnergyLevelEntry>, stepCount: Int): TimeSeriesDiscretizer.SingleDiscreteTimeSeries =
+    TimeSeriesDiscretizer.discretizeTimeSeries(
+        ensureData(
+            id = 1500,
+            GenericTimedDataPointTimeSeries(
+                timeStart = timeStart,
+                duration = duration,
+                isContinuous = true, //discretize: interpolate and edge fill validated energy level
+                data = validatedEnergyLevelEntries.map { it ->
+                    GenericTimedDataPoint(it.time, it.percentage.toDouble())
+                }
+            )
+        ),
+        targetLength = stepCount
+    )

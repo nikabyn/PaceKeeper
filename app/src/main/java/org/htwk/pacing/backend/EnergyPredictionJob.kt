@@ -18,6 +18,7 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.Predictor.predict
+import org.htwk.pacing.backend.predictor.generateDiscreteTargetSeries
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -194,7 +195,12 @@ object EnergyPredictionJob {
         )
 
         val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
+        val targetTimeSeries = generateDiscreteTargetSeries(
+            multiTimeSeriesEntries.timeStart,
+            multiTimeSeriesEntries.duration,
+            validatedEnergyLevel,
+            multiTimeSeriesDiscrete.stepCount())
 
-        //Predictor.train(multiTimeSeriesDiscrete, fixedParameters)
+        Predictor.train(multiTimeSeriesDiscrete, targetTimeSeries)
     }
 }
