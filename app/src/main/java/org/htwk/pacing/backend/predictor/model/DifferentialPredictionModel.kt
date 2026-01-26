@@ -32,8 +32,10 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
-    val horizons = setOf(0, 4, 8, 12, 16, 24, 48
-            ).toList()
+    //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
+    //
+    // baseline vs current for different metrics
+    val horizons = listOf(0, 2, 4, 8, 12, 16, 24, 32, 40, 64).map{x -> x}//(0 until 1).map{x -> x}.toList()
 
     //stores "learned" / regressed linear coefficients per Offset
     class Model(
@@ -50,18 +52,23 @@ object DifferentialPredictionModel : IPredictionModel {
         val targetValue: Double
     )
 
+    val futureOffset = 12
+
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
         targetTimeSeriesDiscrete: DoubleArray,
     ): List<TrainingSample> {
 
-        return (0 until input.stepCount()).map { offset ->
+        return (0 until input.stepCount() - futureOffset).map { offset ->
             TrainingSample(
-                metricValues = input.allFeaturesAt(offset).toList() + listOf(1.0),
-                targetValue = targetTimeSeriesDiscrete[offset]
+                metricValues = input
+                    .allFeaturesAt(offset).toList() /*+ listOf(1.0)*/,
+                targetValue = targetTimeSeriesDiscrete[offset + futureOffset]
             )
         }
     }
+
+    val metaweights = mutableListOf<Double>()
 
     override fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray) {
 
@@ -77,7 +84,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //normalize extrapolations, this is essential for good regression stability, but skip the
         //constant bias feature at the end so it doesn't get zeroed from normalization
-        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 1).map { i ->
+        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 0).map { i ->
             (metricMatrix[i] as D1Array<Double>).normalize()
         }
 
@@ -130,7 +137,7 @@ object DifferentialPredictionModel : IPredictionModel {
             .mapIndexed {index, d ->
             val distribution = perHorizonModel.extrapolationDistributions[index]
             normalizeSingleValue(d, distribution)
-        } + listOf(1.0))
+        } /*+ listOf(1.0)*/)
 
         val weights: List<Double> = perHorizonModel.weights[offs]!!
 
@@ -193,22 +200,26 @@ object DifferentialPredictionModel : IPredictionModel {
         predictionHorizon: PredictionHorizon
     ): Double {
         require(predictionHorizon == PredictionHorizon.NOW)
-        return predictStep(input, 0)
+        return predictStep(input)
     }
 
     private fun predictStep(
         inputMTSD: MultiTimeSeriesDiscrete,
-        step: Int
     ): Double {
         var sum = 0.0
         var count = 0
+
+        val lastIndex = inputMTSD.stepCount() - 1
+
+        print(lastIndex)
         for(offs in horizons) {
-            if(step - offs < 0 || step + offs >= inputMTSD.stepCount()) continue
-            val allMetricsAtStep = inputMTSD.allFeaturesAt(step - offs).toList()
+            val allMetricsAtStep = inputMTSD.allFeaturesAt(lastIndex - offs).toList()
             val energyDifference = predictStepForOffset(allMetricsAtStep, offs)
             sum += energyDifference
             count += 1
         }
+
+        if(count == 0) return 0.0
 
         return sum / count.toDouble()
     }

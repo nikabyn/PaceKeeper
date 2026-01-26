@@ -82,3 +82,35 @@ fun DoubleArray.discreteTrapezoidalIntegral(initialOffset: Double = 0.0): Double
     }
     return out
 }
+
+fun centeredMovingAverage(data: DoubleArray, window: Int): DoubleArray {
+    require(window > 0 && window % 2 == 0) {
+        "Window must be a positive even number for centered average"
+    }
+
+    val n = data.size
+    val half = window / 2
+    val result = DoubleArray(n)
+
+    // Prefix sums
+    val prefix = DoubleArray(n + 1)
+    for (i in 0 until n) prefix[i + 1] = prefix[i] + data[i]
+
+    for (i in 0 until n) {
+        val start = i - half
+        val end = start + window
+
+        if (start < 0) {
+            result[i] = data.first()
+            continue
+        }
+        else if(end > n) {
+            result[i] = data.last()
+            continue
+        }
+
+        result[i] = (prefix[end] - prefix[start]) / window
+    }
+
+    return result
+}
