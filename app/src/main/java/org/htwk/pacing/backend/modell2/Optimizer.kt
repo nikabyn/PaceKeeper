@@ -5,7 +5,7 @@ import kotlin.math.floor
 import kotlin.math.sqrt
 
 /**
- * Optimization algorithms translated from TypeScript optimizer.ts
+ * Optimization algorithms
  * Includes grid search, Nelder-Mead optimization, and auto-fit functionality.
  */
 object Optimizer {

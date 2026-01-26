@@ -10,7 +10,7 @@ import kotlinx.datetime.Instant
 
 /**
  * Predicted energy level entry for Model 2 (HR-based with HRV and anchoring).
- * Separate table to avoid conflicts with Model 1 predictions.
+ * 
  */
 @Entity(tableName = "predicted_energy_level_modell2")
 data class PredictedEnergyLevelEntryModell2(

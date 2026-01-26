@@ -5,7 +5,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Energy calculation logic translated from TypeScript optimizer.ts
+ * Energy calculation logic
  */
 object EnergyCalculation {
 

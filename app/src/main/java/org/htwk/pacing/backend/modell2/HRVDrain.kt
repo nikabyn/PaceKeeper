@@ -7,7 +7,7 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 /**
- * HRV-based energy drain calculation translated from TypeScript hrvDrain.ts
+ * HRV-based energy drain calculation
  */
 object HRVDrain {
 
