@@ -68,7 +68,6 @@ fun trainingSplit(input: MultiTimeSeriesDiscrete,
 {
     val splitIndex: Int = (input.stepCount() * splitPoint).toInt()
     val trainRange = 0 until splitIndex
-    //val trainRange = splitIndex until multiTimeSeriesDiscrete.stepCount() - 1
 
     val trainInput = MultiTimeSeriesDiscrete.fromSubSlice(input, trainRange.first, trainRange.last - 1)
     val trainTarget = target.slice(trainRange).toDoubleArray()
@@ -91,14 +90,11 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
     val startOffset = target.values.slice(0 until 10).average()
     val predictionsIntegrated = predictionsDerivative.discreteTrapezoidalIntegral(startOffset)
 
-    val predictionsSmoothed = predictionsIntegrated//centeredMovingAverage(predictionsIntegrated, window = 16)
+    val predictionsSmoothed = predictionsIntegrated
     val predictions = DoubleArray(predictionsSmoothed.size)
     for(i in 0 until predictionsSmoothed.size - futureOffset) {
-        predictions[i + futureOffset] = predictionsSmoothed[i]// + futureOffset]
+        predictions[i + futureOffset] = predictionsSmoothed[i]
     }
-    /*for(i in 10 until predictions.size) {
-        predictions[i] = 0.0//target.slice(i - 1 until i).average()
-    }*/
 
     return predictions
 }

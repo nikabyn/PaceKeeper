@@ -39,7 +39,8 @@ object DifferentialPredictionModel : IPredictionModel {
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //
     // baseline vs current for different metrics
-    val horizons = listOf(0, 2, 4, 8, 12, 16, 24, 32, 40, 64).map{x -> x}//(0 until 1).map{x -> x}.toList()
+    val horizons = listOf(0, 2, 4, 8, 12, 16, 24, 32, 40, 64).map{x -> x}
+    val futureOffset = 12 //how far to shift target
 
     //stores "learned" / regressed linear coefficients per Offset
     class Model(
@@ -55,9 +56,6 @@ object DifferentialPredictionModel : IPredictionModel {
         val metricValues: List<Double>,
         val targetValue: Double
     )
-
-    val futureOffset = 12
-
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
         targetTimeSeriesDiscrete: DoubleArray,
@@ -66,22 +64,13 @@ object DifferentialPredictionModel : IPredictionModel {
         return (0 until input.stepCount() - futureOffset).map { offset ->
             TrainingSample(
                 metricValues = input
-                    .allFeaturesAt(offset).toList() /*+ listOf(1.0)*/,
+                    .allFeaturesAt(offset).toList() + listOf(1.0),
                 targetValue = targetTimeSeriesDiscrete[offset + futureOffset]
             )
         }
     }
-
-    val fac = 0.8
     override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
-        val softenedTarget = centeredMovingAverage(target, window = 16)
-            .discreteDerivative()
-            .map{x ->
-            x
-            //abs(x).pow(1.0/fac) * x.sign
-            //x.coerceIn(-0.5, 0.5)
-            }.toDoubleArray()
-
+        val softenedTarget = centeredMovingAverage(target, window = 16).discreteDerivative()
 
         val trainingSamples = createTrainingSamples(
             input,
@@ -95,7 +84,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //normalize extrapolations, this is essential for good regression stability, but skip the
         //constant bias feature at the end so it doesn't get zeroed from normalization
-        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 0).map { i ->
+        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 1).map { i ->
             (metricMatrix[i] as D1Array<Double>).normalize()
         }
 
@@ -107,15 +96,6 @@ object DifferentialPredictionModel : IPredictionModel {
         }
 
         val ids = input.getAllFeatureIDs().toList()
-
-        /*println()
-        coefficients.dropLast(1).forEachIndexed { i, x ->
-            print("${ids[i].metric}, ${ids[i].component.toString().substring(0,4)}; ")
-            println("%.6f".format(x * 1000.0))
-        }
-        print("bias:")
-        println("%.6f".format(coefficients.last() * 1000.0))
-        println()*/
 
         model = Model(coefficientsMap, extrapolationDistributions)
     }
@@ -135,20 +115,17 @@ object DifferentialPredictionModel : IPredictionModel {
     fun predictStepForOffset(input: List<Double>, offs: Int): Double {
         require(model != null) { "No model trained, can't perform prediction." }
 
-        val perHorizonModel = model!!//.perHorizonModels[predictionHorizon]!!
+        val perHorizonModel = model!!
 
         //drop last element, because it is the bias, normalizing it is useless anyways
-        val flattenedExtrapolations = input//.dropLast(1)
-            //generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
-
-        //Log.i(LOGGING_TAG, "prediction extrapolations: " + flattenedExtrapolations.joinToString(", ") { "%.2e".format(it) })
+        val flattenedExtrapolations = input
 
         //normalize extrapolations, this is essential for good regression stability
         val extrapolationsVector: D1Array<Double> = mk.ndarray(flattenedExtrapolations
             .mapIndexed {index, d ->
             val distribution = perHorizonModel.extrapolationDistributions[index]
             normalizeSingleValue(d, distribution)
-        } /*+ listOf(1.0)*/)
+        } + listOf(1.0))
 
         val weights: List<Double> = perHorizonModel.weights[offs]!!
 
@@ -156,55 +133,8 @@ object DifferentialPredictionModel : IPredictionModel {
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
 
         val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights)))
-        //denormalize prediction out of normalized spaces
-
-        //Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
-
         return prediction.first()
     }
-
-    /*override fun predict(
-        input: MultiTimeSeriesDiscrete,
-        predictionHorizon: PredictionHorizon,
-    ): Double {
-        var currentEnergy = 0.0
-        for(i in 0 until input.stepCount()) {
-            val currentMetrics = input.allFeaturesAt(i).toList()
-            currentEnergy += predictStep(currentMetrics)
-        }
-        return currentEnergy
-    }*/
-
-   /*override fun backTestMany(
-        inputMTSD: MultiTimeSeriesDiscrete,
-        targetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries,
-        predictionHorizon: PredictionHorizon
-    ): DoubleArray {
-        val predictions = DoubleArray(inputMTSD.stepCount()) {0.0}
-
-        val entries = targetTimeSeries.buckets.entries.toList()
-        val maxK = 2
-        //val maxK = entries.size - 2
-        for(k in 0 until maxK) {
-            val entry = entries[k]
-            val nextEntry = entries[k + 1]
-
-            val nextIndex = predictions.size
-            //val nextIndex = nextEntry.key
-
-            val lastEnteredEnergy = entry.value
-            var currentEnergy = lastEnteredEnergy
-            for(i in entry.key until nextIndex)
-            {
-                //for(i in entry.first until nextEntry.first){//multiTimeSeriesDiscrete.stepCount()) {
-                val energyDifference = predictStep(inputMTSD, i)
-                currentEnergy += energyDifference
-                predictions[i] = currentEnergy
-            }
-        }
-
-        return predictions
-    }*/
 
     override fun predict(
         input: MultiTimeSeriesDiscrete,
@@ -212,7 +142,6 @@ object DifferentialPredictionModel : IPredictionModel {
     ): Double {
         require(predictionHorizon == PredictionHorizon.NOW)
         val prediction = predictStep(input)
-        //abs(prediction).pow(fac) * prediction.sign
         return prediction
     }
 
