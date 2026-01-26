@@ -70,7 +70,7 @@ class PredictorFitbitDataTest {
                 }
         }
 
-        fun readMultiCSV(path: String): Predictor.MultiTimeSeriesEntries {
+        fun readMultiCSV(path: String): Pair<Predictor.MultiTimeSeriesEntries, List<ValidatedEnergyLevelEntry>> {
             val directory = File(path)
             val csvFiles = directory
                 .listFiles { file -> file.extension == "csv" }
@@ -232,7 +232,7 @@ class PredictorFitbitDataTest {
                 .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
                 .minOrNull()
 
-            return Predictor.MultiTimeSeriesEntries(
+            return Pair(Predictor.MultiTimeSeriesEntries(
                 timeStart = earliestEntryTime!!,
                 duration = maxTime - minTime,
                 distance = distance,
@@ -244,12 +244,14 @@ class PredictorFitbitDataTest {
                 sleepSession = sleepSession,
                 speed = speed,
                 steps = steps,
-                validatedEnergyLevel = validatedEnergyEntries
-            )
+            ), validatedEnergyEntries)
         }
     }
 
-    val multiTimeSeriesEntries = CSVHelper().readMultiCSV("src/test/resources/exported/2/")
+    val dataFromCSV = CSVHelper().readMultiCSV("src/test/resources/exported/2/")
+    val multiTimeSeriesEntries = dataFromCSV.first
+    val validatedEnergyLevelEntries = dataFromCSV.second
+
     val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
     val targetTimeSeries = TimeSeriesDiscretizer.discretizeTimeSeries(
         ensureData(id = 1500,
@@ -257,7 +259,7 @@ class PredictorFitbitDataTest {
                 timeStart = multiTimeSeriesEntries.timeStart,
                 duration = multiTimeSeriesEntries.duration,
                 isContinuous = true, //discretize: interpolate and edge fill validated energy level
-                data = multiTimeSeriesEntries.validatedEnergyLevel.map { it ->
+                data = validatedEnergyLevelEntries.map { it ->
                     GenericTimedDataPoint(it.time, it.percentage.toDouble())
                 }
             )
