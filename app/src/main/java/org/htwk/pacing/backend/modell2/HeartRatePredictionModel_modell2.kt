@@ -1,9 +1,8 @@
-package org.htwk.pacing.backend.predictor.model
+package org.htwk.pacing.backend.modell2
 
 import android.util.Log
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
-import org.htwk.pacing.backend.modell2.*
 
 /**
  * Heart Rate based prediction model using the optimizer algorithm.
@@ -11,7 +10,6 @@ import org.htwk.pacing.backend.modell2.*
  *
  * Best configuration (from evaluation):
  * - Bereich=all, Methode=median, AutoFit=true, Offset=true, HRV=true, Anchor=true
- * - RMSE=15.48, MAE=11.55, Korr=0.349, Bias=2.44
  *
  * This model:
  * 1. Trains on historical HR + validated energy data using auto-fit optimization
@@ -232,31 +230,5 @@ object HeartRatePredictionModel_modell2 {
                 "anchors=${energyDataPoints.size}")
 
         return Pair(currentEnergy.coerceIn(0.0, 1.0), futureEnergy.coerceIn(0.0, 1.0))
-    }
-
-    /**
-     * Gets the current trained parameters (for debugging/display).
-     */
-    fun getTrainedParams(): OptimizationResult? = trainedParams
-
-    /**
-     * Gets training statistics.
-     */
-    fun getTrainingStats(): String {
-        return "Cycles: $lastTrainingCycles, Loss: ${"%.2f".format(lastTrainingLoss)}"
-    }
-
-    /**
-     * Updates the sleep configuration.
-     */
-    fun updateSleepConfig(config: SleepConfig) {
-        sleepConfig = config
-    }
-
-    /**
-     * Updates the energy configuration.
-     */
-    fun updateEnergyConfig(config: EnergyConfig) {
-        energyConfig = config
     }
 }

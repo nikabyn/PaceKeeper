@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.htwk.pacing.backend.predictor.Predictor_modell2
+import org.htwk.pacing.backend.modell2.Predictor_modell2
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes

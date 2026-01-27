@@ -1,11 +1,10 @@
-package org.htwk.pacing.backend.predictor
+package org.htwk.pacing.backend.modell2
 
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntryModell2
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
-import org.htwk.pacing.backend.predictor.model.HeartRatePredictionModel_modell2
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
