@@ -1,5 +1,6 @@
 package org.htwk.pacing.backend.predictor
 
+import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
@@ -19,29 +20,17 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
-import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
-import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.futureOffset
-import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel
-import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.evaluateModel
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
-import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.preprocessing.ensureData
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.ui.math.centeredMovingAverage
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import org.junit.Test
 import java.io.File
 import kotlin.let
-import kotlin.math.pow
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 class PredictorFitbitDataTest {
@@ -360,8 +349,10 @@ class PredictorFitbitDataTest {
     fun differentialPredictionModelTest() {
         val predictions = evaluateModel(multiTimeSeriesDiscrete, targetTimeSeries)
 
+        //assertEquals(predictions[0].size, multiTimeSeriesDiscrete.stepCount())
+
         val minLength = minOf(
-            predictions.size,
+            predictions[0].size,
             targetTimeSeries.values.size
         )
 
@@ -370,8 +361,10 @@ class PredictorFitbitDataTest {
                 /*"SLEEP" to multiTimeSeriesDiscrete.getMutableRow(MultiTimeSeriesDiscrete.FeatureID(
                     TimeSeriesMetric.SLEEP_SESSION, PIDComponent.PROPORTIONAL)).toDoubleArray()
                     .slice(0 until minLength).toDoubleArray(),*/
-                "TARGET" to targetTimeSeries.values.slice(0 until minLength).toDoubleArray(),
-                "PREDICTION" to predictions.slice(0 until minLength).toDoubleArray()
+                "TARGET" to centeredMovingAverage(targetTimeSeries.values, window = 64).slice(0 until minLength).toDoubleArray(),
+                "PREDICTION1" to predictions[0].slice(0 until minLength).toDoubleArray(),
+                "PREDICTION2" to predictions[1].slice(0 until minLength).toDoubleArray(),
+                "PREDICTION3" to predictions[2].slice(0 until minLength).toDoubleArray()
             )
         )
 

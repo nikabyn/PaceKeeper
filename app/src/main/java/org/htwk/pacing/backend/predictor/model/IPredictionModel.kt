@@ -9,8 +9,8 @@ import kotlin.time.Duration.Companion.minutes
 
 interface IPredictionModel {
     enum class PredictionHorizon(val howFar: Duration) {
-        NOW(10.minutes),
-        FUTURE(2.hours),
+        NOW(30.minutes),
+        FUTURE(6.hours),
     }
 
     //extension function that turns prediction horizon into discrete steps count

@@ -34,15 +34,17 @@ object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
-    //
-    // baseline vs current for different metrics
-    val horizonRange = (0 until 10).map{x -> x * 1}.toList()//, 7, 10, 15, 22, 30, 40, 55, 70)
-    val futureOffset = 0 //how far to shift target
+    //baseline vs current for different metrics
+    val lookBackOffsets = (0 until 4).map{ x -> x * 4}.toList()//, 7, 10, 15, 22, 30, 40, 55, 70)s
 
     //stores "learned" / regressed linear coefficients per Offset
-    class Model(
+    class PerHorizonModel(
         //model parameters per prediction horizon (e.g. now vs. future)
         val weights: List<Double>,
+    )
+
+    class Model(
+        val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
         val inputDistributions: List<StochasticDistribution>
     )
 
@@ -54,26 +56,26 @@ object DifferentialPredictionModel : IPredictionModel {
     )
 
     private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int) : List<Double> {
-        return horizonRange.map { horizon ->
+        return lookBackOffsets.map { horizon ->
             input.allFeaturesAt(offset - horizon).map { x -> x }.toList()
         }.flatten()
     }
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
-        targetTimeSeriesDiscrete: DoubleArray,
+        targetTimeSeriesDiscrete: DoubleArray
     ): List<TrainingSample> {
 
-        return (horizonRange.max() * 2 until input.stepCount() - futureOffset).map { offset ->
+        return (lookBackOffsets.max() * 2 until input.stepCount()).map { offset ->
             TrainingSample(
-                metricValues = createFeatures(input, offset),//input.allFeaturesAt(offset).toList(),
-                targetValue = targetTimeSeriesDiscrete[offset + futureOffset]
+                metricValues = createFeatures(input, offset),
+                targetValue = targetTimeSeriesDiscrete[offset]
             )
         }
     }
     override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
-        val softenedTarget = centeredMovingAverage(target, window = 2)/*.discreteDerivative().map{
+        val softenedTarget = centeredMovingAverage(target, window = 64).discreteDerivative().map{
             x -> x.coerceIn(-0.1, 0.1)
-        }.toDoubleArray()*/
+        }.toDoubleArray()
 
         val trainingSamples = createTrainingSamples(
             input,
@@ -91,20 +93,38 @@ object DifferentialPredictionModel : IPredictionModel {
             (metricMatrix[i] as D1Array<Double>).normalize()
         }
 
-        val coefficients = trainForOffset(metricMatrix, targetVector, 0)
+        val perHorizonModels = mutableMapOf<PredictionHorizon, PerHorizonModel>()
+        for (predictionHorizon in PredictionHorizon.entries) {
+            val coefficients = trainForHorizon(metricMatrix, targetVector, predictionHorizon)
+            perHorizonModels[predictionHorizon] = PerHorizonModel(coefficients)
+        }
 
-        model = Model(coefficients, extrapolationDistributions)
+        model = Model(perHorizonModels, extrapolationDistributions)
     }
 
     //returns coefficients for offset
-    fun trainForOffset(metricMatrix: D2Array<Double>, targetVector: D1Array<Double>, offs: Int) : List<Double>{
+    fun trainForHorizon(metricMatrix: D2Array<Double>, targetVector: D1Array<Double>, predictionHorizon: PredictionHorizon) : List<Double>{
 
-        val metricMatrixOffset = (metricMatrix[0 until metricMatrix.shape[0], offs until metricMatrix.shape[1] - offs]) as D2Array<Double>
+
+        require(metricMatrix.shape[1] == targetVector.size) {
+            "metricMatrix and targetVector must have the same length ${metricMatrix.shape[1]} != ${targetVector.size}"
+        }
+
+        val metricMatrixShifted = (metricMatrix[
+            0 until metricMatrix.shape[0],
+            0 until metricMatrix.shape[1] - predictionHorizon.howFarInSamples + 0 //trigger out of bounds for test
+        ]) as D2Array<Double>
         //same for target vector
-        val targetVectorOffset = (targetVector[offs until targetVector.size - offs]) as D1Array<Double>
+        val targetVectorShifted = (targetVector[
+            predictionHorizon.howFarInSamples until targetVector.size
+        ]) as D1Array<Double>
 
-        val coefficients = leastSquaresTikhonov(metricMatrixOffset.transpose(), targetVectorOffset,
-            regularization = 1.0
+        require(metricMatrixShifted.shape[1] == targetVectorShifted.size) {
+            "metricMatrix and targetVector must have the same length ${metricMatrixShifted.shape[0]} != ${targetVectorShifted.size}"
+        }
+
+        val coefficients = leastSquaresTikhonov(metricMatrixShifted.transpose(), targetVectorShifted,
+            regularization = 100.0
         ).toList()
 
         return coefficients
@@ -117,18 +137,19 @@ object DifferentialPredictionModel : IPredictionModel {
     ): Double {
         require(model != null) { "No model trained, can't perform prediction." }
 
-        val perHorizonModel = model!!
+        val inputDistributions = model!!.inputDistributions
+        val perHorizonModel = model!!.perHorizonModels[PredictionHorizon.FUTURE]!!
 
         val inputFeatures = createFeatures(inputMTSD, offs).dropLast(1)
 
         //normalize extrapolations, this is essential for good regression stability
         val normalizedInputs: D1Array<Double> = mk.ndarray(mk.ndarray(inputFeatures
             .mapIndexed {index, d ->
-                val distribution = perHorizonModel.inputDistributions[index]
+                val distribution = inputDistributions[index]
                 normalizeSingleValue(d, distribution)
             }).toList())
 
-        val weights: List<Double> = perHorizonModel.weights//[offs]!!
+        val weights: List<Double> = perHorizonModel.weights
 
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
