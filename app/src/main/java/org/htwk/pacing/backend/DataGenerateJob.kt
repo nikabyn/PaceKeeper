@@ -6,40 +6,37 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.DistanceEntry
-import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
-import org.htwk.pacing.backend.database.SkinTemperatureEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.StepsEntry
-import org.htwk.pacing.backend.database.Temperature
-import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
-import org.htwk.pacing.backend.database.Validation
-import java.util.zip.ZipInputStream
-import kotlin.time.Duration
+import java.io.File
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 object DataGenerateJob {
     const val TAG = "DataGenerateJob"
 
-    private val generationInterval = 60.minutes
+    private val generationInterval = 10.minutes
 
     suspend fun run(context: Context, db: PacingDatabase) = coroutineScope {
         Log.i(TAG, "DataGenerateJob gestartet")
 
-        checkAndImportDemoData(context, db)
+        // App-internen externen Speicher nutzen
+        val exportDir = context.getExternalFilesDir("pacing_export") ?: return@coroutineScope
+        val path = exportDir.absolutePath
+        importDemoData(db, path)
 
         while (true) {
             try {
                 Log.d(TAG, "Generiere neue Daten...")
                 performDataGeneration(db)
+                //latestTimePoint = zeitpunkt des letzten importierten eintrags
             } catch (e: Exception) {
                 Log.e(TAG, "Fehler: ${e.message}")
             }
@@ -48,152 +45,110 @@ object DataGenerateJob {
         }
     }
 
-    private suspend fun checkAndImportDemoData(context: Context, db: PacingDatabase) {
-        val thirtyDaysAgo = Clock.System.now() - 30.days
-        val hasRecentData = db.readEventDao().getAll().any { it.time > thirtyDaysAgo }
 
-        if (!hasRecentData) {
-            val inputStream = context.resources.openRawResource(R.raw.pacing_export)
-            storeDemoRecords(db, inputStream)
+    fun readCsv(filePath: String): List<Map<String, String>> {
+        val file = File(filePath)
+        if (!file.exists()) return emptyList()
+
+        val reader = file.bufferedReader()
+        val header = reader.readLine()?.split(",") ?: return emptyList()
+
+        return reader.lineSequence()
+            .filter { it.isNotBlank() }
+            .map { line ->
+                val values = line.split(",")
+                header.zip(values).toMap()
+            }.toList()
+    }
+
+    suspend fun importDemoData(db: PacingDatabase, path: String) {
+        val now = Clock.System.now()
+        val startTime = now - 30.days
+
+        // HeartRate.csv als Startpunkt
+        val heartRateCsv = readCsv("$path/heart_rate.csv")
+        if (heartRateCsv.isEmpty()) return
+
+        val csvStartTime = Instant.parse(heartRateCsv.first()["timestamp"]!!)
+        val offset = startTime - csvStartTime
+
+        // HeartRate-Einträge
+        val heartRates = heartRateCsv.mapNotNull { row ->
+            val time = Instant.parse(row["timestamp"]!!) + offset
+            row["bpm"]?.toIntOrNull()?.let { bpm ->
+                HeartRateEntry(time, bpm.toLong())
+            }
         }
+        db.heartRateDao().insertMany(heartRates)
+
+        // Predicted_Energy_Level
+        val predictedCsv = readCsv("$path/predicted_energy_level.csv")
+        val predictedEnergy = predictedCsv.mapNotNull { row ->
+            try {
+                val time = Instant.parse(row["timestamp"]!!) + offset
+                val percentageNow = row["percentageNow"]?.removeSuffix("%")?.toDoubleOrNull()
+                    ?: return@mapNotNull null
+                val timeFuture = Instant.parse(row["timeFuture"]!!) + offset
+                val percentageFuture = row["percentageFuture"]?.removeSuffix("%")?.toDoubleOrNull()
+                    ?: return@mapNotNull null
+
+                PredictedEnergyLevelEntry(
+                    time = time,
+                    percentageNow = Percentage.fromDouble((percentageNow) / 100),
+                    timeFuture = timeFuture,
+                    percentageFuture = Percentage.fromDouble((percentageFuture) / 100)
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+        db.predictedEnergyLevelDao().insertMany(predictedEnergy)
+
+        // steps.csv
+        val stepsCsv = readCsv("$path/steps.csv")
+        val steps = stepsCsv.mapNotNull { row ->
+            val start = Instant.parse(row["timestamp"]!!) + offset
+            val endMillis = row["end"]?.toLongOrNull() ?: return@mapNotNull null
+            val end = Instant.fromEpochMilliseconds(endMillis) + offset
+            row["count"]?.toIntOrNull()?.let { count ->
+                StepsEntry(start, end, count.toLong())
+            }
+        }
+        db.stepsDao().insertMany(steps)
+
+        // distance.csv
+        val distanceCsv = readCsv("$path/distance.csv")
+        val distances = distanceCsv.mapNotNull { row ->
+            val start = Instant.parse(row["timestamp"]!!) + offset
+            row["distanceMeters"]?.toDoubleOrNull()?.let { d ->
+                DistanceEntry(start, start, Length.meters(d))
+            }
+        }
+        db.distanceDao().insertMany(distances)
+
+        // sleep-sessions.csv
+        val sleepCsv = readCsv("$path/sleep-sessions.csv")
+        val sleeps = sleepCsv.mapNotNull { row ->
+            val start = Instant.parse(row["timestamp"]!!) + offset
+            val endMillis = row["end"]?.toLongOrNull() ?: return@mapNotNull null
+            val end = Instant.fromEpochMilliseconds(endMillis) + offset
+            val stage = row["stage"]?.let { SleepStage.fromString(it) } ?: return@mapNotNull null
+            SleepSessionEntry(start, end, stage)
+        }
+        db.sleepSessionsDao().insertMany(sleeps)
     }
 
     private fun performDataGeneration(db: PacingDatabase) {
         val now = Clock.System.now()
-        // Deine Logik: Letzte Einträge holen -> Zeit auf 'now' setzen -> insertMany()
-        // ...
+        //muss äuivalenten Zeitpunnkt von der csv speichern, damit man von dem aus 10 min weiter importieren kann
+        // fenster weiter schieben --> anfang csv datei ==> einen monat reinladen. dann ein 10 min fenster immmer weiter schieben
+        // erster eintrag aus csv vor einem monat 6 uhr am morgen
+        // von dort aus 30 tage reinladen
+        // dann alle 10 min weiter auffühlen
+        // wichtig: HearRate, Energielevel, Energielevel_validatet, symptome
+
+        //bei storeRecords sieht man wie in die datenbank geschrieben werden kann
+
     }
 
-    /**
-     * Liest eine ZIP-Datei vom InputStream ein und speichert die CSV-Daten in die Datenbank.
-     * Der Zeitstempel wird so angepasst, dass die Daten 30 Tage vor dem aktuellen Zeitpunkt liegen.
-     */
-    fun storeDemoRecords(
-        db: PacingDatabase,
-        inputStream: java.io.InputStream
-    ) {
-        ZipInputStream(inputStream).use { zis ->
-            var entry = zis.nextEntry
-
-            while (entry != null) {
-                val reader = zis.bufferedReader()
-                val rows = reader.lineSequence()
-                    .filter { it.isNotBlank() }
-                    .drop(1) // Header überspringen
-                    .map { it.split(",") }
-                    .toList()
-
-                if (rows.isNotEmpty()) {
-                    val earliestTimestamp: Instant = rows.minOf { Instant.parse(it[0]) }
-                    val now: Instant = Clock.System.now()
-                    val offset: Duration = (now - earliestTimestamp) - 30.days
-
-                    when (entry.name.lowercase().substringAfterLast("/")) {
-
-                        "steps.csv" ->
-                            db.stepsDao().insertMany(
-                                rows.map {
-                                    val startOriginal = Instant.parse(it[0])
-                                    val endOriginal = Instant.parse(it[1])
-                                    StepsEntry(
-                                        start = startOriginal + offset,
-                                        end = endOriginal + offset,
-                                        count = it[2].toLong()
-                                    )
-                                }
-                            )
-
-                        "heartrate.csv" ->
-                            db.heartRateDao().insertMany(
-                                rows.map {
-                                    HeartRateEntry(
-                                        time = Instant.parse(it[0]) + offset,
-                                        bpm = it[1].toLong()
-                                    )
-                                }
-                            )
-
-                        "distance.csv" ->
-                            db.distanceDao().insertMany(
-                                rows.map {
-                                    val ts = Instant.parse(it[0]) + offset
-                                    DistanceEntry(
-                                        start = ts,
-                                        end = ts,
-                                        length = Length.meters(it[1].toDouble())
-                                    )
-                                }
-                            )
-
-                        "elevation.csv" ->
-                            db.elevationGainedDao().insertMany(
-                                rows.map {
-                                    val ts = Instant.parse(it[0]) + offset
-                                    ElevationGainedEntry(
-                                        start = ts,
-                                        end = ts,
-                                        length = Length.meters(it[1].toDouble())
-                                    )
-                                }
-                            )
-
-                        "skintemperature.csv" ->
-                            db.skinTemperatureDao().insertMany(
-                                rows.map {
-                                    SkinTemperatureEntry(
-                                        time = Instant.parse(it[0]) + offset,
-                                        temperature = Temperature.celsius(it[1].toDouble())
-                                    )
-                                }
-                            )
-
-                        "sleep_session.csv" ->
-                            db.sleepSessionsDao().insertMany(
-                                rows.map {
-                                    SleepSessionEntry(
-                                        start = Instant.parse(it[0]) + offset,
-                                        end = Instant.fromEpochMilliseconds(it[1].toLong()) + offset,
-                                        stage = SleepStage.valueOf(it[2].uppercase())
-                                    )
-                                }
-                            )
-
-                        "predicted_energy_level.csv" ->
-                            db.predictedEnergyLevelDao().insertMany(
-                                rows.map {
-                                    PredictedEnergyLevelEntry(
-                                        time = Instant.parse(it[0]) + offset,
-                                        percentageNow = Percentage(it[1].toDouble()),
-                                        timeFuture = Instant.parse(it[2]) + offset,
-                                        percentageFuture = Percentage(it[3].toDouble())
-                                    )
-                                }
-                            )
-
-                        "validated_energy_level.csv" ->
-                            db.validatedEnergyLevelDao().insertMany(
-                                rows.map {
-                                    ValidatedEnergyLevelEntry(
-                                        time = Instant.parse(it[0]) + offset,
-                                        percentage = Percentage(
-                                            it[1].removeSuffix("%")
-                                                .toDouble()
-                                                .coerceIn(0.0, 100.0)
-                                        ),
-                                        validation = when (it[2].lowercase()) {
-                                            "correct" -> Validation.Correct
-                                            "adjusted" -> Validation.Adjusted
-                                            else -> Validation.Correct
-                                        }
-                                    )
-                                }
-                            )
-                    }
-                }
-
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
-        }
-    }
 }
