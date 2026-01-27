@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.htwk.pacing.R
-import org.htwk.pacing.hardKillApp
+import org.htwk.pacing.restartApp
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -86,8 +86,8 @@ fun StartEvaluationMode(
                             Log.d("Modus", "Demobetrieb")
                         }
 
-                        //restartApp(context)
-                        hardKillApp(context)
+                        restartApp(context)
+                        //hardKillApp(context)
 
                     }
                 ) {
