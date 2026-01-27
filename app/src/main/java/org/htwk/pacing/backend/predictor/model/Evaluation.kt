@@ -66,6 +66,8 @@ fun trainingSplit(input: MultiTimeSeriesDiscrete,
                   target: DoubleArray,
                   @FloatRange(from = 0.0, to = 1.0) splitPoint: Double): Pair<MultiTimeSeriesDiscrete, DoubleArray>
 {
+    require(input.stepCount() == target.size)
+
     val splitIndex: Int = (input.stepCount() * splitPoint).toInt()
     val trainRange = 0 until splitIndex
 

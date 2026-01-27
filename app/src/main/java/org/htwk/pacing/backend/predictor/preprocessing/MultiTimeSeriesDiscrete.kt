@@ -269,6 +269,8 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
         private val featureCount: Int = featureIndexMap.size
 
         fun fromSubSlice(input: MultiTimeSeriesDiscrete, indexStart: Int, indexEnd: Int) : MultiTimeSeriesDiscrete {
+            require(indexStart >= 0 && indexEnd < input.stepCount)
+
             val newSteps: Int = (indexEnd - indexStart)
 
             val newMTSD = MultiTimeSeriesDiscrete(timeStart = input.timeStart, initialCapacityInSteps = newSteps)
@@ -329,7 +331,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     targetLength = stepCount
                 )
 
-                val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = 8)
+                val discreteProportional = singleDiscreteTimeSeries.values//centeredMovingAverage(singleDiscreteTimeSeries.values, window = 8)
 
                 //daily standard curve
                 /*for(i in 0 until discreteProportional.size) {
