@@ -35,7 +35,7 @@ object DifferentialPredictionModel : IPredictionModel {
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //
     // baseline vs current for different metrics
-    val horizons = listOf(4, 8, 12, 16, 24, 32, 40, 64)
+    val horizons = listOf(0, 4, 8, 12, 16, 24, 32, 40, 64)
     val futureOffset = 12 //how far to shift target
 
     //stores "learned" / regressed linear coefficients per Offset

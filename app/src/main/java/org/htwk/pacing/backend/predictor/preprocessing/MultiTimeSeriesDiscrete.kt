@@ -331,7 +331,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     targetLength = stepCount
                 )
 
-                val discreteProportional = singleDiscreteTimeSeries.values//centeredMovingAverage(singleDiscreteTimeSeries.values, window = 8)
+                val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = 8)
 
                 //daily standard curve
                 /*for(i in 0 until discreteProportional.size) {
