@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.predictor.model
 
 import androidx.annotation.FloatRange
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.futureOffset
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.ui.math.centeredMovingAverage
@@ -64,13 +63,16 @@ internal fun producePredictions(model: IPredictionModel, fullMTSD: MultiTimeSeri
 
 fun trainingSplit(input: MultiTimeSeriesDiscrete,
                   target: DoubleArray,
-                  @FloatRange(from = 0.0, to = 1.0) splitPoint: Double): Pair<MultiTimeSeriesDiscrete, DoubleArray>
+                  @FloatRange(from = 0.0, to = 1.0) splitPoint1: Double,
+                  @FloatRange(from = 0.0, to = 1.0) splitPoint2: Double):
+        Pair<MultiTimeSeriesDiscrete, DoubleArray>
 {
+    require(splitPoint1 < splitPoint2)
     require(input.stepCount() == target.size)
 
-    val splitIndex: Int = (input.stepCount() * 0.0).toInt()
-    val splitIndex2: Int = (input.stepCount() * 0.6).toInt()
-    val trainRange = splitIndex until splitIndex2//splitIndex until input.stepCount()
+    val splitIndex: Int = (input.stepCount() * splitPoint1).toInt()
+    val splitIndex2: Int = (input.stepCount() * splitPoint2).toInt()
+    val trainRange = splitIndex until splitIndex2
 
     val trainInput = MultiTimeSeriesDiscrete.fromSubSlice(input, trainRange.first, trainRange.last - 1)
     val trainTarget = target.slice(trainRange).toDoubleArray()
@@ -79,7 +81,7 @@ fun trainingSplit(input: MultiTimeSeriesDiscrete,
 }
 
 fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.SingleDiscreteTimeSeries): List<DoubleArray> {
-    val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.4)
+    val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.0, 0.75)
 
     DifferentialPredictionModel.train(
         trainingInput,
@@ -91,15 +93,9 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
 
     // offset initial value
     val startOffset = target.values.slice(0 until 10).average()
-    val predictionsIntegrated = predictionsDerivative//.discreteTrapezoidalIntegral(startOffset)
+    val predictions = predictionsDerivative.discreteTrapezoidalIntegral(startOffset)
 
-    val predictionsSmoothed = predictionsIntegrated
-    val predictions = DoubleArray(predictionsSmoothed.size)
-    for(i in 0 until predictionsSmoothed.size) {
-        predictions[i] = predictionsSmoothed[i]//predictionsSmoothed[i + futureOffset]
-    }
-
-    return listOf(predictions, predictions, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
+    return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
             x -> x.coerceIn(-0.1, 0.1)
     }.toDoubleArray())
 
