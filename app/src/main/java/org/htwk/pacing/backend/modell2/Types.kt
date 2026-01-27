@@ -135,3 +135,14 @@ data class EnergyResultWithHRV(
     val energy: Double,
     val hrvMultiplier: Double
 )
+
+// ============== Decay Fallback Types ==============
+
+data class DecayRateResult(
+    val averageHourlyDecay: Double,       // Durchschnittlicher %/h Verfall (0-100 Skala), positiv = Verfall
+    val morningDecayRate: Double?,         // 06:00-12:00
+    val afternoonDecayRate: Double?,       // 12:00-18:00
+    val eveningDecayRate: Double?,         // 18:00-22:00
+    val nightRecoveryRate: Double?,        // 22:00-06:00 (kann negativ sein = Erholung)
+    val dataPointsUsed: Int
+)

@@ -203,6 +203,8 @@ object Optimizer {
 
     /**
      * Nelder-Mead optimization for fine-tuning parameters.
+     *
+     * Der Nelder-Mead-Algorithmus im Code ist ein Simplex-Verfahren. Ein Simplex ist in diesem Fall ein geometrischer Körper im 4D-Raum (da wir 4 Parameter optimieren: hrLow, hrHigh, drain, recovery), der aus 5 Punkten besteht.
      */
     fun nelderMeadCycle(
         cycle: CycleData,
@@ -230,24 +232,30 @@ object Optimizer {
         )
 
         // Initialize simplex
+        /*Das Programm nimmt das beste Ergebnis der Grid-Search als ersten Punkt und erzeugt vier weitere Punkte durch leichte Variation der Parameter, um einen "Körper" im Raum aufzuspannen.*/
         data class SimplexPoint(val point: DoubleArray, var loss: Double)
 
         val simplex = mutableListOf(
-            SimplexPoint(start.copyOf(), getLoss(start)),
-            SimplexPoint(doubleArrayOf(start[0] + 3, start[1], start[2], start[3]), 0.0),
-            SimplexPoint(doubleArrayOf(start[0], start[1] + 5, start[2], start[3]), 0.0),
-            SimplexPoint(doubleArrayOf(start[0], start[1], start[2] + 0.3, start[3]), 0.0),
-            SimplexPoint(doubleArrayOf(start[0], start[1], start[2], start[3] + 0.3), 0.0)
+            SimplexPoint(start.copyOf(), getLoss(start)), // Punkt aus Grid Search
+            SimplexPoint(doubleArrayOf(start[0] + 3, start[1], start[2], start[3]), 0.0), // Leicht verschobene Punkte
+            SimplexPoint(doubleArrayOf(start[0], start[1] + 5, start[2], start[3]), 0.0),// Leicht verschobene Punkte
+            SimplexPoint(doubleArrayOf(start[0], start[1], start[2] + 0.3, start[3]), 0.0),// Leicht verschobene Punkte
+            SimplexPoint(doubleArrayOf(start[0], start[1], start[2], start[3] + 0.3), 0.0)// Leicht verschobene Punkte
         )
 
         for (i in 1 until simplex.size) {
             simplex[i].loss = getLoss(simplex[i].point)
         }
-
-        val alpha = 1.0
-        val gamma = 2.0
-        val rho = 0.5
-        val sigma = 0.5
+        /*
+        * Höheres Alpha (> 1.0): Der Algorithmus macht größere Sprünge. Er findet Lösungen schneller, könnte aber über schmale Minima (optimale Herzfrequenz-Werte) einfach hinwegspringen.
+        * Höheres Gamma: Die Expansion wird aggressiver. Gut, wenn die Startwerte (aus der Grid Search) sehr weit vom Optimum entfernt sind.
+        * Kleineres Rho / Sigma: Der Algorithmus wird "vorsichtiger" und kleinteiliger. Das erhöht die Präzision, führt aber dazu, dass er mehr Iterationen (Rechenzeit) benötigt, um zu konvergieren.
+        * verwendet wurden Standardwerte nach Nelder und Mead (1,2,0.5,0.5)
+        */
+        val alpha = 1.0 //für Reflexion, bestimmt, wie weit der schlechteste Punkt gespiegelt wird. 1.0 bedeutet: exakt die gleiche Distanz auf die andere Seite.
+        val gamma = 2.0 // für Expansion, verdoppelt die Suchweite, wenn die Richtung gut ist. Beschleunigt die Suche in flachen Tälern.
+        val rho = 0.5 // für Kontraktion, halbiert die Distanz zum Zentrum. Hilft, sich engen Minima vorsichtig zu nähern.
+        val sigma = 0.5 // für Schrumpfung, zieht alle Punkte um 50% zum Bestwert hin. Kommt zum Einsatz, wenn der Algorithmus "umzingelt" ist.
 
         for (iter in 0 until maxIterations) {
             simplex.sortBy { it.loss }
@@ -266,6 +274,7 @@ object Optimizer {
             for (j in 0 until 4) centroid[j] /= 4.0
 
             // Reflection
+            /*Dies ist der erste Versuch, den schlechtesten Punkt (worst) loszuwerden, indem man ihn durch das Zentrum (centroid) auf die andere Seite projiziert.*/
             val reflected = DoubleArray(4) { j ->
                 centroid[j] + alpha * (centroid[j] - worst.point[j])
             }
@@ -273,6 +282,7 @@ object Optimizer {
 
             if (reflectedLoss < best.loss) {
                 // Expansion
+                /*Wenn die Reflexion einen neuen Bestwert liefert, geht der Algorithmus noch einen Schritt weiter in diese vielversprechende Richtung.*/
                 val expanded = DoubleArray(4) { j ->
                     centroid[j] + gamma * (reflected[j] - centroid[j])
                 }
@@ -287,6 +297,7 @@ object Optimizer {
                 simplex[4] = SimplexPoint(reflected, reflectedLoss)
             } else {
                 // Contraction
+                /*Wenn die Reflexion keine Verbesserung bringt, zieht sich der Algorithmus näher an das Zentrum zusammen.*/
                 val contracted = DoubleArray(4) { j ->
                     centroid[j] + rho * (worst.point[j] - centroid[j])
                 }
@@ -296,6 +307,7 @@ object Optimizer {
                     simplex[4] = SimplexPoint(contracted, contractedLoss)
                 } else {
                     // Shrink
+                    /*Wenn gar nichts mehr hilft, wird der gesamte Simplex (außer dem besten Punkt) in Richtung des besten Punktes verkleinert.*/
                     for (i in 1 until 5) {
                         for (j in 0 until 4) {
                             simplex[i].point[j] = best.point[j] + sigma * (simplex[i].point[j] - best.point[j])
@@ -306,6 +318,7 @@ object Optimizer {
             }
 
             // Check convergence
+            /*Hier wird mathematisch geprüft, ob sich die Loss-Werte der Punkte im Simplex noch nennenswert unterscheiden.*/
             val losses = simplex.map { it.loss }.filter { it.isFinite() }
             if (losses.isNotEmpty()) {
                 val mean = losses.average()

@@ -24,6 +24,7 @@ object HeartRatePredictionModel_modell2 {
 
     // Trained model parameters
     private var trainedParams: OptimizationResult? = null
+    private var decayRate: DecayRateResult? = null
     private var sleepConfig = SleepConfig()
     private var energyConfig = EnergyConfig()
 
@@ -90,6 +91,9 @@ object HeartRatePredictionModel_modell2 {
             Log.i(TAG, "Parameters: hrLow=${result.result.hrLow}, hrHigh=${result.result.hrHigh}, " +
                     "drain=${result.result.drainFactor}, recovery=${result.result.recoveryFactor}, " +
                     "offset=${result.result.energyOffset}, loss=${result.result.loss}")
+
+            // Compute personalized decay rate from validated energy history
+            decayRate = EnergyDecayFallback.computeDecayRate(energyDataPoints)
         } else {
             Log.w(TAG, "Training failed: no valid cycles found (${result.totalDays} total)")
             // Use default parameters if training fails
@@ -126,11 +130,11 @@ object HeartRatePredictionModel_modell2 {
         )
 
         if (recentHeartRate.isEmpty()) {
-            Log.d(TAG, "No HR data for prediction, returning last validated or 50%")
-            // Return last validated energy if available
+            Log.d(TAG, "No HR data for prediction, using personalized decay fallback")
             val lastValidated = validatedEnergy.maxByOrNull { it.time }
             val lastEnergy = lastValidated?.percentage?.toDouble() ?: 0.5
-            return Pair(lastEnergy, lastEnergy)
+            val lastTime = lastValidated?.time ?: kotlinx.datetime.Clock.System.now()
+            return EnergyDecayFallback.predictWithDecay(lastEnergy, lastTime, decayRate = decayRate)
         }
 
         // Convert to internal types
@@ -153,10 +157,11 @@ object HeartRatePredictionModel_modell2 {
         val hrAgg = EnergyCalculation.aggregateHR(hrDataPoints, energyConfig.aggregationMinutes)
 
         if (hrAgg.isEmpty()) {
-            Log.d(TAG, "No aggregated HR data for prediction")
+            Log.d(TAG, "No aggregated HR data for prediction, using personalized decay fallback")
             val lastValidated = validatedEnergy.maxByOrNull { it.time }
             val lastEnergy = lastValidated?.percentage?.toDouble() ?: 0.5
-            return Pair(lastEnergy, lastEnergy)
+            val lastTime = lastValidated?.time ?: kotlinx.datetime.Clock.System.now()
+            return EnergyDecayFallback.predictWithDecay(lastEnergy, lastTime, decayRate = decayRate)
         }
 
         // Calculate HRV from HR data (HRV=true)
