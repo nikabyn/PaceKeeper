@@ -39,7 +39,7 @@ import kotlinx.datetime.LocalTime
 
         ReadEvent::class,
     ],
-    version = 5,
+    version = 7,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

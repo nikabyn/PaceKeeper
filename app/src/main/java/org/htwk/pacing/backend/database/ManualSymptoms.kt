@@ -37,10 +37,16 @@ enum class Feeling(val level: Int) {
     }
 }
 
-@Entity(tableName = "symptom")
+@Entity(
+    tableName = "symptom",
+    indices = [Index(value = ["name"], unique = true)]
+)
 data class Symptom(
-    @PrimaryKey
-    val name: String
+    val name: String,
+    val strength: Int,
+
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
 )
 
 @Entity(tableName = "feeling")
