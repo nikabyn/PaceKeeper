@@ -60,7 +60,7 @@ class PredictorFitbitDataTest {
                 .mapNotNull { line ->
                     val parts = line.split(",")
                     val time = Instant.parse(parts[0].trim())
-                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 0.days) return@mapNotNull null
+                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 8.days) return@mapNotNull null
                     if(time !in minTime..maxTime) return@mapNotNull null
                     try {
                         entryGenerator(parts)
@@ -244,7 +244,7 @@ class PredictorFitbitDataTest {
                 skinTemperature = skinTemperature,
                 sleepSession = sleepSession,
                 speed = speed,
-                steps = steps,
+                steps = steps
             ), validatedEnergyEntries)
         }
     }
@@ -361,7 +361,7 @@ class PredictorFitbitDataTest {
         val predictions = evaluateModel(multiTimeSeriesDiscrete, targetTimeSeries)
 
         val minLength = minOf(
-            predictions.size,
+            predictions[0].size,
             targetTimeSeries.values.size
         )
 
@@ -371,7 +371,9 @@ class PredictorFitbitDataTest {
                     TimeSeriesMetric.SLEEP_SESSION, PIDComponent.PROPORTIONAL)).toDoubleArray()
                     .slice(0 until minLength).toDoubleArray(),*/
                 "TARGET" to targetTimeSeries.values.slice(0 until minLength).toDoubleArray(),
-                "PREDICTION" to predictions.slice(0 until minLength).toDoubleArray()
+                "PREDICTION1" to predictions[0].slice(0 until minLength).toDoubleArray(),
+                "PREDICTION2" to predictions[1].slice(0 until minLength).toDoubleArray(),
+                "PREDICTION3" to predictions[2].slice(0 until minLength).toDoubleArray()
             )
         )
 

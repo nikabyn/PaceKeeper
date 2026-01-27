@@ -68,8 +68,9 @@ fun trainingSplit(input: MultiTimeSeriesDiscrete,
 {
     require(input.stepCount() == target.size)
 
-    val splitIndex: Int = (input.stepCount() * splitPoint).toInt()
-    val trainRange = 0 until splitIndex
+    val splitIndex: Int = (input.stepCount() * 0.0).toInt()
+    val splitIndex2: Int = (input.stepCount() * 0.6).toInt()
+    val trainRange = splitIndex until splitIndex2//splitIndex until input.stepCount()
 
     val trainInput = MultiTimeSeriesDiscrete.fromSubSlice(input, trainRange.first, trainRange.last - 1)
     val trainTarget = target.slice(trainRange).toDoubleArray()
@@ -77,8 +78,8 @@ fun trainingSplit(input: MultiTimeSeriesDiscrete,
     return Pair(trainInput, trainTarget)
 }
 
-fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.SingleDiscreteTimeSeries): DoubleArray {
-    val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.6)
+fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.SingleDiscreteTimeSeries): List<DoubleArray> {
+    val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.4)
 
     DifferentialPredictionModel.train(
         trainingInput,
@@ -90,13 +91,16 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
 
     // offset initial value
     val startOffset = target.values.slice(0 until 10).average()
-    val predictionsIntegrated = predictionsDerivative.discreteTrapezoidalIntegral(startOffset)
+    val predictionsIntegrated = predictionsDerivative//.discreteTrapezoidalIntegral(startOffset)
 
     val predictionsSmoothed = predictionsIntegrated
     val predictions = DoubleArray(predictionsSmoothed.size)
-    for(i in 0 until predictionsSmoothed.size - futureOffset) {
-        predictions[i + futureOffset] = predictionsSmoothed[i]
+    for(i in 0 until predictionsSmoothed.size) {
+        predictions[i] = predictionsSmoothed[i]//predictionsSmoothed[i + futureOffset]
     }
 
-    return predictions
+    return listOf(predictions, predictions, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
+            x -> x.coerceIn(-0.1, 0.1)
+    }.toDoubleArray())
+
 }

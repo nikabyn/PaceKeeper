@@ -108,7 +108,7 @@ object ExtrapolationPredictionModel : IPredictionModel {
      * @param indexOffset The index offset into the time series for which extrapolation is performed.
      * @return A flattened list of extrapolated feature values.
      */
-    private fun generateFlattenedMultiExtrapolationResults(
+    fun generateFlattenedMultiExtrapolationResults(
         input: MultiTimeSeriesDiscrete,
         indexOffset: Int = 0,
         predictionHorizon: PredictionHorizon

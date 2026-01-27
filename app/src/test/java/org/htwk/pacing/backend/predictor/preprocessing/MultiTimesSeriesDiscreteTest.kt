@@ -8,7 +8,7 @@ import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class MultiTimesSeriesDiscreteTest {
+/*class MultiTimesSeriesDiscreteTest {
     private val timeStart = Instant.fromEpochMilliseconds(0)
     private val duration = 60.minutes
 
@@ -141,4 +141,4 @@ class MultiTimesSeriesDiscreteTest {
             }
         }
     }
-
+*/

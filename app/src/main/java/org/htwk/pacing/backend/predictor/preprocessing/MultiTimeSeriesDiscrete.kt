@@ -331,7 +331,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                     targetLength = stepCount
                 )
 
-                val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = 8)
+                val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = 2)
 
                 //daily standard curve
                 /*for(i in 0 until discreteProportional.size) {
@@ -362,14 +362,14 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             val mutableHeartRateArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE,
                 PIDComponent.PROPORTIONAL))
 
-            val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
-                PIDComponent.PROPORTIONAL))
+            /*val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
+                PIDComponent.PROPORTIONAL))*/
 
             mutableHeartRateArray.indices.forEach { i ->
                 val hr = mutableHeartRateArray[i]
-                val hrv = mutableHRVArray[i]
+                //val hrv = mutableHRVArray[i]
                 mutableHeartRateArray[i] = adjustHR(hr, fixedParameters)
-                mutableHRVArray[i] = adjustHRV(hr, hrv, fixedParameters)
+                //mutableHRVArray[i] = adjustHRV(hr, hrv, fixedParameters)
             }
 
             return multiTimeSeriesDiscrete
@@ -407,23 +407,23 @@ internal fun buildGenericTimeSeries(
         TimeSeriesMetric.DISTANCE ->
             raw.distance.map(::GenericTimedDataPoint)
 
-        TimeSeriesMetric.ELEVATION_GAINED ->
-            raw.elevationGained.map(::GenericTimedDataPoint)
+        /*TimeSeriesMetric.ELEVATION_GAINED ->
+            raw.elevationGained.map(::GenericTimedDataPoint)*/
 
         TimeSeriesMetric.SKIN_TEMPERATURE ->
             raw.skinTemperature.map(::GenericTimedDataPoint)
 
-        TimeSeriesMetric.HEART_RATE_VARIABILITY ->
-            raw.heartRateVariability.map (::GenericTimedDataPoint)
+        /*TimeSeriesMetric.HEART_RATE_VARIABILITY ->
+            raw.heartRateVariability.map (::GenericTimedDataPoint)*/
 
-        TimeSeriesMetric.OXYGEN_SATURATION ->
-            raw.oxygenSaturation.map(::GenericTimedDataPoint)
+        /*TimeSeriesMetric.OXYGEN_SATURATION ->
+            raw.oxygenSaturation.map(::GenericTimedDataPoint)*/
 
         TimeSeriesMetric.STEPS ->
             raw.steps.map(::GenericTimedDataPoint)
 
-        TimeSeriesMetric.SPEED ->
-            raw.speed.map(::GenericTimedDataPoint)
+        /*TimeSeriesMetric.SPEED ->
+            raw.speed.map(::GenericTimedDataPoint)*/
 
         TimeSeriesMetric.SLEEP_SESSION ->
             raw.sleepSession.map(::GenericTimedDataPoint)
