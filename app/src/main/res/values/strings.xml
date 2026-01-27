@@ -68,7 +68,7 @@
     <string name="dismiss">Dismiss</string>
     <string name="energy_warning_text">Your Energy level is low. Please take a rest!</string>
     <string name="warning">WARNING</string>
-    <string name="demo_data_button_text">Evaluation mode</string>
+    <string name="demo_data_button_text">Local Evaluation Mode</string>
     <string name="demo_end_button_text">End evaluation mode</string>
     <string name="demo_start_button_text">Start evaluation mode</string>
     <string name="demo_data_dialog_title">Important notice</string>
@@ -191,6 +191,6 @@
     <string name="view_licence">View Licence</string>
     <string name="predicting_energy">energy is getting predicted</string>
     <string name="demo_banner">Evaluation mode active</string>
-    <string name="hc_demo_data_button_text">Load demo data</string>
+    <string name="hc_demo_data_button_text">Load Demo Data to Health Connect</string>
 
 </resources>

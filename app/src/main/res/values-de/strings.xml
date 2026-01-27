@@ -69,7 +69,7 @@
     <string name="dismiss">Verwerfen</string>
     <string name="energy_warning_text">Dein Energielevel ist niedrig. Mach eine Pause!</string>
     <string name="warning">WARNUNG</string>
-    <string name="demo_data_button_text">Demomodus</string>
+    <string name="demo_data_button_text">Lokaler Demomodus</string>
     <string name="demo_start_button_text">Demomodus starten</string>
     <string name="demo_end_button_text">Demomodus beenden</string>
     <string name="demo_data_dialog_title">Wichtiger Hiweis</string>
@@ -193,6 +193,6 @@
     <string name="end_time_label">Endzeit (HH:mm)</string>
     <string name="time_format_helper">Format: 00:00 bis 23:59</string>
     <string name="demo_banner">Demomodus aktiv</string>
-    <string name="hc_demo_data_button_text">Demoadaten laden</string>
+    <string name="hc_demo_data_button_text">Demodatenüber Health Connect laden</string>
 
 </resources>
