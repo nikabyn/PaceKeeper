@@ -124,9 +124,9 @@ object DifferentialPredictionModel : IPredictionModel {
         //normalize extrapolations, this is essential for good regression stability
         val normalizedInputs: D1Array<Double> = mk.ndarray(mk.ndarray(inputFeatures
             .mapIndexed {index, d ->
-            val distribution = perHorizonModel.inputDistributions[index]
-            normalizeSingleValue(d, distribution)
-        }).toList())
+                val distribution = perHorizonModel.inputDistributions[index]
+                normalizeSingleValue(d, distribution)
+            }).toList())
 
         val weights: List<Double> = perHorizonModel.weights//[offs]!!
 

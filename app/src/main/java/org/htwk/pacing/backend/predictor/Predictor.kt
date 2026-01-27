@@ -34,7 +34,7 @@ object Predictor {
     private const val LOGGING_TAG = "Predictor"
 
     //time duration/length of input time series;
-    val TIME_SERIES_DURATION: Duration = 4.days
+    val TIME_SERIES_DURATION: Duration = 2.days
     val TIME_SERIES_STEP_DURATION: Duration = 30.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 

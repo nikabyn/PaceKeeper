@@ -143,10 +143,5 @@ data class GenericTimedDataPointTimeSeries(
                 else -> (src.end - src.start) / 1.hours //asleep, count hours
             }
         )
-
-        constructor(src: ValidatedEnergyLevelEntry) : this(
-            time = src.end,
-            value = src.percentage.toDouble()
-        )
     }
 }
