@@ -16,6 +16,8 @@ import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.StepsEntry
 import java.io.File
+import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
@@ -92,11 +94,27 @@ object DataGenerateJob {
                 val percentageFuture = row["percentageFuture"]?.removeSuffix("%")?.toDoubleOrNull()
                     ?: return@mapNotNull null
 
+                val percentageNowNormalized =
+                    BigDecimal(percentageNow)
+                        .divide(BigDecimal(100))
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .toDouble()
+
+
+                val percentageFutureNormalized =
+                    BigDecimal(percentageFuture)
+                        .divide(BigDecimal(100))
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .toDouble()
+
+                Log.d("DataGenertationJob", "$percentageNowNormalized")
+                Log.d("Test123", "$percentageFutureNormalized")
+
                 PredictedEnergyLevelEntry(
                     time = time,
-                    percentageNow = Percentage.fromDouble((percentageNow) / 100),
+                    percentageNow = Percentage.fromDouble(percentageNowNormalized),
                     timeFuture = timeFuture,
-                    percentageFuture = Percentage.fromDouble((percentageFuture) / 100)
+                    percentageFuture = Percentage.fromDouble(percentageFutureNormalized)
                 )
             } catch (e: Exception) {
                 null
