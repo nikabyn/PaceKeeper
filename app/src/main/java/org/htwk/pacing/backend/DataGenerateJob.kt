@@ -29,6 +29,8 @@ object DataGenerateJob {
     suspend fun run(context: Context, db: PacingDatabase) = coroutineScope {
         Log.i(TAG, "DataGenerateJob gestartet")
 
+        resetDb(db)
+
         // App-internen externen Speicher nutzen
         val exportDir = context.getExternalFilesDir("pacing_export") ?: return@coroutineScope
         val path = exportDir.absolutePath
@@ -47,6 +49,14 @@ object DataGenerateJob {
         }
     }
 
+    suspend fun resetDb(db: PacingDatabase) {
+        db.heartRateDao().deleteAll()
+        db.sleepSessionsDao().deleteAll()
+        db.stepsDao().deleteAll()
+        db.predictedEnergyLevelDao().deleteAll()
+        db.distanceDao().deleteAll()
+        Log.i(TAG, "Datenbank reset wird ausgeführt")
+    }
 
     fun readCsv(filePath: String): List<Map<String, String>> {
         val file = File(filePath)
@@ -107,8 +117,8 @@ object DataGenerateJob {
                         .setScale(2, RoundingMode.HALF_UP)
                         .toDouble()
 
-                Log.d("DataGenertationJob", "$percentageNowNormalized")
-                Log.d("Test123", "$percentageFutureNormalized")
+                Log.d(TAG, "PercentageNowNormalized $percentageNowNormalized")
+                Log.d(TAG, "PercentageFutureNormalized $percentageFutureNormalized")
 
                 PredictedEnergyLevelEntry(
                     time = time,
