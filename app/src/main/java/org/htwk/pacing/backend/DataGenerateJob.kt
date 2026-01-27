@@ -22,40 +22,48 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 object DataGenerateJob {
-    const val TAG = "DataGenerateJob"
 
-    private val generationInterval = 10.minutes
+    const val TAG = "DataGenerateJob"
+    private val firstImport = 30.days
+    private val generationInterval = 1.minutes
 
     suspend fun run(context: Context, db: PacingDatabase) = coroutineScope {
         Log.i(TAG, "DataGenerateJob gestartet")
 
         resetDb(db)
 
-        // App-internen externen Speicher nutzen
         val exportDir = context.getExternalFilesDir("pacing_export") ?: return@coroutineScope
         val path = exportDir.absolutePath
-        importDemoData(db, path)
 
+        // Initial import: 30 Tage
+        val now = Clock.System.now()
+        importDemoData(
+            db,
+            path,
+            from = now - firstImport,
+            to = now
+        )
+
+        // Sliding Window: alle 10 Minuten
         while (true) {
             try {
-                Log.d(TAG, "Generiere neue Daten...")
-                performDataGeneration(db)
-                //latestTimePoint = zeitpunkt des letzten importierten eintrags
-            } catch (e: Exception) {
-                Log.e(TAG, "Fehler: ${e.message}")
-            }
+                Log.d("Test123", "Generiere neue Daten...")
 
+                performDataGeneration(db, path)
+            } catch (e: Exception) {
+                Log.e(TAG, "Fehler bei Datengenerierung", e)
+            }
             delay(generationInterval)
         }
     }
 
-    suspend fun resetDb(db: PacingDatabase) {
+    private suspend fun resetDb(db: PacingDatabase) {
         db.heartRateDao().deleteAll()
         db.sleepSessionsDao().deleteAll()
         db.stepsDao().deleteAll()
         db.predictedEnergyLevelDao().deleteAll()
         db.distanceDao().deleteAll()
-        Log.i(TAG, "Datenbank reset wird ausgeführt")
+        Log.i(TAG, "Datenbank wurde zurückgesetzt")
     }
 
     fun readCsv(filePath: String): List<Map<String, String>> {
@@ -70,113 +78,118 @@ object DataGenerateJob {
             .map { line ->
                 val values = line.split(",")
                 header.zip(values).toMap()
-            }.toList()
+            }
+            .toList()
     }
 
-    suspend fun importDemoData(db: PacingDatabase, path: String) {
-        val now = Clock.System.now()
-        val startTime = now - 30.days
-
-        // HeartRate.csv als Startpunkt
+    fun importDemoData(
+        db: PacingDatabase,
+        path: String,
+        from: Instant,
+        to: Instant
+    ) {
         val heartRateCsv = readCsv("$path/heart_rate.csv")
         if (heartRateCsv.isEmpty()) return
 
-        val csvStartTime = Instant.parse(heartRateCsv.first()["timestamp"]!!)
-        val offset = startTime - csvStartTime
+        val predictedCsv = readCsv("$path/predicted_energy_level.csv")
+        val stepsCsv = readCsv("$path/steps.csv")
+        val distanceCsv = readCsv("$path/distance.csv")
+        val sleepCsv = readCsv("$path/sleep-sessions.csv")
 
-        // HeartRate-Einträge
+        val csvStartTime = Instant.parse(heartRateCsv.first()["timestamp"]!!)
+        val offset = from - csvStartTime
+
+        Log.d(TAG, "Importiere Daten von $from bis $to (offset=$offset)")
+
+        // HeartRate
         val heartRates = heartRateCsv.mapNotNull { row ->
-            val time = Instant.parse(row["timestamp"]!!) + offset
+            val csvTime = Instant.parse(row["timestamp"]!!)
+            val time = csvTime + offset
+            if (time !in from..<to) return@mapNotNull null
+
             row["bpm"]?.toIntOrNull()?.let { bpm ->
                 HeartRateEntry(time, bpm.toLong())
             }
         }
         db.heartRateDao().insertMany(heartRates)
 
-        // Predicted_Energy_Level
-        val predictedCsv = readCsv("$path/predicted_energy_level.csv")
+        // Predicted Energy Level
         val predictedEnergy = predictedCsv.mapNotNull { row ->
             try {
-                val time = Instant.parse(row["timestamp"]!!) + offset
-                val percentageNow = row["percentageNow"]?.removeSuffix("%")?.toDoubleOrNull()
-                    ?: return@mapNotNull null
-                val timeFuture = Instant.parse(row["timeFuture"]!!) + offset
-                val percentageFuture = row["percentageFuture"]?.removeSuffix("%")?.toDoubleOrNull()
-                    ?: return@mapNotNull null
+                val csvTime = Instant.parse(row["timestamp"]!!)
+                val time = csvTime + offset
+                if (time !in from..<to) return@mapNotNull null
 
-                val percentageNowNormalized =
-                    BigDecimal(percentageNow)
-                        .divide(BigDecimal(100))
-                        .setScale(2, RoundingMode.HALF_UP)
-                        .toDouble()
-
-
-                val percentageFutureNormalized =
-                    BigDecimal(percentageFuture)
-                        .divide(BigDecimal(100))
-                        .setScale(2, RoundingMode.HALF_UP)
-                        .toDouble()
-
-                Log.d(TAG, "PercentageNowNormalized $percentageNowNormalized")
-                Log.d(TAG, "PercentageFutureNormalized $percentageFutureNormalized")
+                val percentageNow =
+                    row["percentageNow"]!!.removeSuffix("%").toDouble() / 100.0
+                val percentageFuture =
+                    row["percentageFuture"]!!.removeSuffix("%").toDouble() / 100.0
 
                 PredictedEnergyLevelEntry(
                     time = time,
-                    percentageNow = Percentage.fromDouble(percentageNowNormalized),
-                    timeFuture = timeFuture,
-                    percentageFuture = Percentage.fromDouble(percentageFutureNormalized)
+                    percentageNow = Percentage.fromDouble(
+                        BigDecimal(percentageNow).setScale(2, RoundingMode.HALF_UP).toDouble()
+                    ),
+                    timeFuture = Instant.parse(row["timeFuture"]!!) + offset,
+                    percentageFuture = Percentage.fromDouble(
+                        BigDecimal(percentageFuture).setScale(2, RoundingMode.HALF_UP).toDouble()
+                    )
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
         db.predictedEnergyLevelDao().insertMany(predictedEnergy)
 
-        // steps.csv
-        val stepsCsv = readCsv("$path/steps.csv")
+        // Steps
         val steps = stepsCsv.mapNotNull { row ->
             val start = Instant.parse(row["timestamp"]!!) + offset
-            val endMillis = row["end"]?.toLongOrNull() ?: return@mapNotNull null
-            val end = Instant.fromEpochMilliseconds(endMillis) + offset
-            row["count"]?.toIntOrNull()?.let { count ->
-                StepsEntry(start, end, count.toLong())
-            }
+            if (start < from || start >= to) return@mapNotNull null
+
+            val end = Instant.fromEpochMilliseconds(row["end"]!!.toLong()) + offset
+            val count = row["count"]!!.toLong()
+
+            StepsEntry(start, end, count)
         }
         db.stepsDao().insertMany(steps)
 
-        // distance.csv
-        val distanceCsv = readCsv("$path/distance.csv")
+        // Distance
         val distances = distanceCsv.mapNotNull { row ->
-            val start = Instant.parse(row["timestamp"]!!) + offset
-            row["distanceMeters"]?.toDoubleOrNull()?.let { d ->
-                DistanceEntry(start, start, Length.meters(d))
-            }
+            val time = Instant.parse(row["timestamp"]!!) + offset
+            if (time !in from..<to) return@mapNotNull null
+
+            DistanceEntry(
+                start = time,
+                end = time,
+                length = Length.meters(row["distanceMeters"]!!.toDouble())
+            )
         }
         db.distanceDao().insertMany(distances)
 
-        // sleep-sessions.csv
-        val sleepCsv = readCsv("$path/sleep-sessions.csv")
+        // Sleep Sessions
         val sleeps = sleepCsv.mapNotNull { row ->
             val start = Instant.parse(row["timestamp"]!!) + offset
-            val endMillis = row["end"]?.toLongOrNull() ?: return@mapNotNull null
-            val end = Instant.fromEpochMilliseconds(endMillis) + offset
-            val stage = row["stage"]?.let { SleepStage.fromString(it) } ?: return@mapNotNull null
+            if (start !in from..<to) return@mapNotNull null
+
+            val end = Instant.fromEpochMilliseconds(row["end"]!!.toLong()) + offset
+            val stage = SleepStage.fromString(row["stage"]!!)
+
             SleepSessionEntry(start, end, stage)
         }
         db.sleepSessionsDao().insertMany(sleeps)
     }
 
-    private fun performDataGeneration(db: PacingDatabase) {
-        val now = Clock.System.now()
-        //muss äuivalenten Zeitpunnkt von der csv speichern, damit man von dem aus 10 min weiter importieren kann
-        // fenster weiter schieben --> anfang csv datei ==> einen monat reinladen. dann ein 10 min fenster immmer weiter schieben
-        // erster eintrag aus csv vor einem monat 6 uhr am morgen
-        // von dort aus 30 tage reinladen
-        // dann alle 10 min weiter auffühlen
-        // wichtig: HearRate, Energielevel, Energielevel_validatet, symptome
+    private suspend fun performDataGeneration(
+        db: PacingDatabase,
+        path: String
+    ) {
+        val latest =
+            db.heartRateDao().getLatestTimestamp() ?: return
 
-        //bei storeRecords sieht man wie in die datenbank geschrieben werden kann
+        val to = latest + generationInterval
 
+        Log.d(TAG, "Live-Import von $latest bis $to")
+
+        importDemoData(db, path, latest, to)
     }
-
 }

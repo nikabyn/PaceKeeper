@@ -33,4 +33,7 @@ interface HeartRateDao : TimedSeries<HeartRateEntry> {
 
     @Query("select null from heart_rate")
     override fun getChangeTrigger(): Flow<Int?>
+
+    @Query("SELECT MAX(time) FROM heart_rate")
+    suspend fun getLatestTimestamp(): Instant?
 }
