@@ -155,14 +155,19 @@ object Predictor {
         //start at last predicted value
         var predictedEnergy = lastValidationEnergyLevel
         //walk through time until now, predicting change in each step, to answer where energy is now
-        val predictions = (startIndex until multiTimeSeriesDiscrete.stepCount()).map { i ->
+        /*val predictions = (startIndex until multiTimeSeriesDiscrete.stepCount()).map { i ->
             DifferentialPredictionModel.predict(
                 multiTimeSeriesDiscrete,
                 i,
                 IPredictionModel.PredictionHorizon.NOW
             )
-        }.toDoubleArray()
-        if(predictions.isNotEmpty()) predictedEnergy = predictions[0]//predictions.discreteTrapezoidalIntegral(lastValidationEnergyLevel).last()
+        }.toDoubleArray()*/
+        //if(predictions.isNotEmpty()) predictedEnergy = predictions[0]//predictions.discreteTrapezoidalIntegral(lastValidationEnergyLevel).last()
+        predictedEnergy = DifferentialPredictionModel.predict(
+            multiTimeSeriesDiscrete,
+            multiTimeSeriesDiscrete.stepCount() - 1,
+            IPredictionModel.PredictionHorizon.NOW
+        )
 
         /*DifferentialPredictionModel.predict(
             multiTimeSeriesDiscrete,
