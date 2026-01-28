@@ -1,11 +1,8 @@
 package org.htwk.pacing.ui.components
 
 import androidx.annotation.FloatRange
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,16 +16,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.toPath
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.ui.screens.measurements.TimeRange
@@ -129,24 +122,10 @@ fun EnergyPredictionCard(
             )
         }
 
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            @Composable
-            fun Label(time: Instant) {
-                val localTime = time.toLocalDateTime(TimeZone.currentSystemDefault())
-                val text = "%02d:%02d".format(localTime.hour, localTime.minute)
-                Text(
-                    text,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.testTag("AxisLabel")
-                )
-            }
-
-            Label(start)
-            Label(current)
-            Label(end)
+        Axis(horizontal = true) {
+            AxisLabelHourMinutes(start)
+            AxisLabelHourMinutes(current)
+            AxisLabelHourMinutes(end)
         }
     }
 }

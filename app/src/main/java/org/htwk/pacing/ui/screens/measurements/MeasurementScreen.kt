@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -44,9 +46,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.ui.components.Axis
+import org.htwk.pacing.ui.components.AxisLabel
 import org.htwk.pacing.ui.components.Graph
 import org.htwk.pacing.ui.components.GraphCanvas
 import org.htwk.pacing.ui.components.graphToPaths
+import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.koinInject
 
@@ -116,23 +121,42 @@ fun MeasurementScreen(
 @Composable
 private fun GraphPreview(modifier: Modifier = Modifier, viewModel: MeasurementViewModel) {
     val data by viewModel.data.collectAsState()
-    val xRange = TimeRange.today().toEpochDoubleRange()
+    val xRange = TimeRange.today()
     val yRange = viewModel.measurement.yRange(data.second)
     val strokeStyle = Graph.defaultStrokeStyle()
     val strokeColor = MaterialTheme.colorScheme.onSurface
 
-    GraphCanvas(modifier.fillMaxWidth()) {
-        drawPath(
-            graphToPaths(
-                data.first,
-                data.second,
-                size,
-                xRange,
-                yRange,
-            ).line,
-            color = strokeColor,
-            style = strokeStyle,
-        )
+    Card(
+        colors = CardStyle.colors,
+        shape = CardStyle.shape,
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("GraphPreviewCard")
+    ) {
+        Column(
+            Modifier.padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
+        ) {
+            GraphCanvas(modifier.weight(1f)) {
+                drawPath(
+                    graphToPaths(
+                        data.first,
+                        data.second,
+                        size,
+                        xRange.toEpochDoubleRange(),
+                        yRange,
+                    ).line,
+                    color = strokeColor,
+                    style = strokeStyle,
+                )
+            }
+
+            Axis(horizontal = true) {
+                for (i in 0..24 step 4) {
+                    AxisLabel(i.toString())
+                }
+            }
+
+        }
     }
 }
 

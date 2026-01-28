@@ -34,6 +34,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.ui.lineTo
 import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
@@ -226,6 +229,34 @@ fun Annotation(
         }
     }
 }
+
+@Composable
+fun AxisLabelHourMinutes(time: Instant) {
+    val localTime = time.toLocalDateTime(TimeZone.currentSystemDefault())
+    val text = "%02d:%02d".format(localTime.hour, localTime.minute)
+    AxisLabel(text)
+}
+
+@Composable
+fun AxisLabel(text: String) = Text(
+    text,
+    style = MaterialTheme.typography.labelLarge,
+    modifier = Modifier.testTag("AxisLabel")
+)
+
+@Composable
+fun Axis(horizontal: Boolean, labels: @Composable () -> Unit) = if (horizontal) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth(),
+    ) { labels() }
+} else {
+    Column(
+        verticalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxHeight(),
+    ) { labels() }
+}
+
 
 private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
     val scope = this
