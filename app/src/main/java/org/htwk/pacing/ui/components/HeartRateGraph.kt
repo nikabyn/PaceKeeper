@@ -21,10 +21,9 @@ import org.htwk.pacing.ui.theme.extendedColors
  * @param yConfig Configuration for the Y-axis
  * @param modifier Modifier for styling and layout
  * @param zonesResult Contains the heart rate zone boundaries for coloring the graph background
- * @param C The type of collection containing the heart rate data (must extend Collection<Double>)
  */
 @Composable
-fun <C : Collection<Double>> HeartRateGraphCard(
+fun HeartRateGraphCard(
     title: String,
     data: List<HeartRateEntry>,
     modifier: Modifier = Modifier,
