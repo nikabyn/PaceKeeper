@@ -13,7 +13,7 @@ import kotlinx.datetime.Instant
  * 
  */
 @Entity(tableName = "predicted_energy_level_modell2")
-data class PredictedEnergyLevelEntryModell2(
+data class PredictedEnergyLevelEntryModel2(
     @PrimaryKey
     val time: Instant,
     val percentageNow: Percentage,
@@ -27,23 +27,23 @@ data class PredictedEnergyLevelEntryModell2(
 
 @Dao
 interface PredictedEnergyLevelModell2Dao :
-    TimedSeries<PredictedEnergyLevelEntryModell2> {
+    TimedSeries<PredictedEnergyLevelEntryModel2> {
     @Query("delete from predicted_energy_level_modell2")
     override suspend fun deleteAll()
 
     @Query("select * from predicted_energy_level_modell2")
-    override suspend fun getAll(): List<PredictedEnergyLevelEntryModell2>
+    override suspend fun getAll(): List<PredictedEnergyLevelEntryModel2>
 
     @Query("select * from predicted_energy_level_modell2 order by time desc limit 1")
-    override suspend fun getLatest(): PredictedEnergyLevelEntryModell2?
+    override suspend fun getLatest(): PredictedEnergyLevelEntryModel2?
 
     @Query("select * from predicted_energy_level_modell2 where time between :begin and :end")
-    override suspend fun getInRange(begin: Instant, end: Instant): List<PredictedEnergyLevelEntryModell2>
+    override suspend fun getInRange(begin: Instant, end: Instant): List<PredictedEnergyLevelEntryModel2>
 
     @Query("select null from predicted_energy_level_modell2")
     override fun getChangeTrigger(): Flow<Int?>
 
-    fun getAllLive(): Flow<List<PredictedEnergyLevelEntryModell2>> =
+    fun getAllLive(): Flow<List<PredictedEnergyLevelEntryModel2>> =
         getChangeTrigger().map {
             getAll()
         }

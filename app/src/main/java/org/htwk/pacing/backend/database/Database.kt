@@ -34,7 +34,7 @@ import kotlinx.datetime.LocalTime
         // their whole table contents are overwritten and they are also at once read as a whole.
         PredictedHeartRateEntry::class,
         PredictedEnergyLevelEntry::class,
-        PredictedEnergyLevelEntryModell2::class,
+        PredictedEnergyLevelEntryModel2::class,
 
         UserProfileEntry::class,
 

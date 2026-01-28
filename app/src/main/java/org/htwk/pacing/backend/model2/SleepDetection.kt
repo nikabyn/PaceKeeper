@@ -1,4 +1,4 @@
-package org.htwk.pacing.backend.modell2
+package org.htwk.pacing.backend.model2
 
 import kotlinx.datetime.Instant
 import kotlin.math.max

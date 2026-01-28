@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.htwk.pacing.backend.modell2.Predictor_modell2
+import org.htwk.pacing.backend.model2.PredictorModel2
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 object EnergyPredictionJob_modell2 {
     const val TAG = "EnergyPredictionJob_modell2"
 
-    private val predictionSeriesDuration = Predictor_modell2.TIME_SERIES_DURATION
+    private val predictionSeriesDuration = PredictorModel2.TIME_SERIES_DURATION
     private val trainingDuration = 60.days
     private val retrainEvery = 24.hours
     private val predictEvery = 10.minutes
@@ -59,14 +59,14 @@ object EnergyPredictionJob_modell2 {
             val now = GlobalTime.now()
             // Fetch both HR and validated energy for the prediction window
             // Use a longer window for validated energy to ensure we have anchor points
-            Predictor_modell2.PredictionInput(
+            PredictorModel2.PredictionInput(
                 timeStart = now - duration,
                 duration = duration,
                 heartRate = db.heartRateDao().getInRange(now - duration, now),
                 validatedEnergy = db.validatedEnergyLevelDao().getInRange(now - 1.days, now)
             )
         }.collect { input ->
-            val energyPrediction = Predictor_modell2.predict(input)
+            val energyPrediction = PredictorModel2.predict(input)
             Log.d(TAG, "Predicted (Model 2): now=${energyPrediction.percentageNow}, " +
                     "future=${energyPrediction.percentageFuture}, " +
                     "hrPoints=${input.heartRate.size}, anchors=${input.validatedEnergy.size}")
@@ -83,7 +83,7 @@ object EnergyPredictionJob_modell2 {
 
         Log.d(TAG, "Training with HR=${heartRate.size}, Energy=${validatedEnergy.size}")
 
-        Predictor_modell2.train(
+        PredictorModel2.train(
             heartRate = heartRate,
             energy = validatedEnergy
         )

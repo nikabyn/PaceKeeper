@@ -1,4 +1,4 @@
-package org.htwk.pacing.backend.modell2
+package org.htwk.pacing.backend.model2
 
 import kotlinx.datetime.Instant
 
@@ -61,10 +61,6 @@ data class DayFitResult(
 
 enum class FitRange {
     ALL, MONTH, WEEK
-}
-
-enum class AggregationMethod {
-    MEDIAN, IQR
 }
 
 data class AutoFitResult(

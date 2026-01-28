@@ -1,9 +1,10 @@
-package org.htwk.pacing.backend.modell2
+package org.htwk.pacing.backend.model2
 
 import kotlinx.datetime.Instant
 import kotlin.math.sqrt
 import kotlin.math.round
 import android.util.Log
+import kotlin.Double
 
 /**
  * Optimization algorithms
@@ -231,12 +232,14 @@ object Optimizer {
 
     private fun updateSimplex(
         simplex: List<SimplexPoint>,
-        getLoss: (DoubleArray) -> Double,
-        alpha: Double,
-        gamma: Double,
-        rho: Double,
-        sigma: Double
+        getLoss: (DoubleArray) -> Double
     ): List<SimplexPoint> {
+
+        val alpha = 1.0
+        val gamma = 1.0
+        val rho = 0.5
+        val sigma = 0.5
+
         val best = simplex[0]
         val secondWorst = simplex[3]
         val worst = simplex[4]
@@ -302,7 +305,7 @@ object Optimizer {
 
         for (iter in 0 until maxIterations) {
             simplex = simplex.sortedBy { it.loss }
-            simplex = updateSimplex(simplex, getLoss, 1.0, 2.0, 0.5, 0.5)
+            simplex = updateSimplex(simplex, getLoss)
             if (isConverged(simplex)) break
         }
 
@@ -342,9 +345,6 @@ object Optimizer {
         )
     }
 
-    /**
-     * Calculates the median of a list of values.
-     */
     fun median(values: List<Double>): Double {
         if (values.isEmpty()) return 0.0
         val sorted = values.sorted()
@@ -356,22 +356,7 @@ object Optimizer {
         }
     }
 
-    /**
-     * IQR-based aggregation (removes outliers).
-     */
-    fun iqrAggregate(values: List<Double>): Double {
-        if (values.size < 4) return median(values)
 
-        val sorted = values.sorted()
-        val q1 = sorted[(sorted.size * 0.25).toInt()]
-        val q3 = sorted[(sorted.size * 0.75).toInt()]
-        val iqr = q3 - q1
-        val lower = q1 - 1.5 * iqr
-        val upper = q3 + 1.5 * iqr
-
-        val filtered = values.filter { it >= lower && it <= upper }
-        return if (filtered.isEmpty()) median(values) else filtered.average()
-    }
 
     /**
      * Filters cycles by time range.
@@ -405,8 +390,7 @@ object Optimizer {
         validatedEnergy: List<EnergyDataPoint>,
         sleepConfig: SleepConfig,
         aggregationMinutes: Int,
-        fitRange: FitRange = FitRange.ALL,
-        aggregationMethod: AggregationMethod = AggregationMethod.MEDIAN
+        fitRange: FitRange = FitRange.ALL
     ): AutoFitResult {
         val allCycles = groupBySleepCycle(validatedEnergy, hrAgg, sleepConfig)
         val cycles = filterCyclesByRange(allCycles, fitRange)
@@ -451,10 +435,7 @@ object Optimizer {
             )
         }
 
-        val aggregate: (List<Double>) -> Double = when (aggregationMethod) {
-            AggregationMethod.IQR -> ::iqrAggregate
-            AggregationMethod.MEDIAN -> ::median
-        }
+        val aggregate: (List<Double>) -> Double = ::median
 
         val aggHrLow = round(aggregate(validResults.map { it.hrLow }) * 10) / 10.0
         val aggHrHigh = round(aggregate(validResults.map { it.hrHigh }) * 10) / 10.0

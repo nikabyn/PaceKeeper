@@ -1,4 +1,4 @@
-package org.htwk.pacing.backend.modell2
+package org.htwk.pacing.backend.model2
 
 import android.util.Log
 import kotlinx.datetime.Clock
@@ -75,7 +75,6 @@ object EnergyDecayFallback {
             // Energy change per hour (positive = energy increase, negative = energy decrease)
             val changePerHour = (next.percentage - current.percentage) / elapsedHours
 
-            // Hour-of-day from midpoint of the pair
             val midpointMs = (current.timestamp.toEpochMilliseconds() + next.timestamp.toEpochMilliseconds()) / 2
             val midInstant = Instant.fromEpochMilliseconds(midpointMs)
             val hourOfDay = midInstant.toLocalDateTime(TimeZone.currentSystemDefault()).hour
@@ -88,13 +87,11 @@ object EnergyDecayFallback {
             return defaultDecayRate()
         }
 
-        // Group by time-of-day
         val morning = changes.filter { it.hourOfDay in 6..11 }.map { it.changePerHour }
         val afternoon = changes.filter { it.hourOfDay in 12..17 }.map { it.changePerHour }
         val evening = changes.filter { it.hourOfDay in 18..21 }.map { it.changePerHour }
         val night = changes.filter { it.hourOfDay in 22..23 || it.hourOfDay in 0..5 }.map { it.changePerHour }
 
-        // Overall decay: negate because positive decay = energy decreasing
         val allRates = changes.map { it.changePerHour }
         val overallDecay = -Optimizer.median(allRates)
 
@@ -117,10 +114,6 @@ object EnergyDecayFallback {
         return result
     }
 
-    /**
-     * Returns the decay rate for a given hour of day.
-     * Falls back to the overall average if no time-of-day specific rate is available.
-     */
     fun getDecayForHour(rate: DecayRateResult, hour: Int): Double {
         return when (hour) {
             in 6..11 -> rate.morningDecayRate ?: rate.averageHourlyDecay
@@ -148,14 +141,11 @@ object EnergyDecayFallback {
         val rate = decayRate ?: defaultDecayRate()
         val elapsedHours = (now.toEpochMilliseconds() - lastTime.toEpochMilliseconds()) / 3_600_000.0
 
-        // Time-of-day specific rate for "now"
         val currentHour = now.toLocalDateTime(TimeZone.currentSystemDefault()).hour
         val hourlyDecay = getDecayForHour(rate, currentHour) / 100.0  // Convert from 0-100 to 0-1 scale
 
-        // Apply decay for "now" prediction
         val currentDecayed = (lastEnergy - hourlyDecay * elapsedHours).coerceIn(0.0, 1.0)
 
-        // Apply additional 2h decay for "future" prediction
         val futureHour = (currentHour + 2) % 24
         val futureDecay = getDecayForHour(rate, futureHour) / 100.0
         val futureDecayed = (currentDecayed - futureDecay * 2.0).coerceIn(0.0, 1.0)
