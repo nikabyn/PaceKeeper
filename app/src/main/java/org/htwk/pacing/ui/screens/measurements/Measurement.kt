@@ -43,7 +43,9 @@ import org.htwk.pacing.ui.screens.measurements.Measurement.Sleep
 import org.htwk.pacing.ui.screens.measurements.Measurement.Speed
 import org.htwk.pacing.ui.screens.measurements.Measurement.Steps
 import org.htwk.pacing.ui.screens.measurements.Measurement.Symptoms
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+import kotlin.math.sign
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.DurationUnit
 
@@ -89,54 +91,123 @@ enum class Measurement {
         Symptoms -> db.manualSymptomDao()
     }
 
-    fun toGraphValue(entry: TimedEntry): Pair<Double, Double> = Pair(
-        entry.end.toEpochMilliseconds().toDouble(),
-        when (this) {
-            Steps -> (entry as StepsEntry).count.toDouble()
-            Distance -> (entry as DistanceEntry).length.inKilometers()
-            ElevationGained -> (entry as ElevationGainedEntry).length.inMeters()
-            Speed -> (entry as SpeedEntry).velocity.inKilometersPerHour()
-            HeartRate -> (entry as HeartRateEntry).bpm.toDouble()
-            MenstruationPeriod -> 1.0
-            OxygenSaturation -> (entry as OxygenSaturationEntry).percentage.toDouble()
+    fun stepSize() = when (this) {
+        Steps -> 500.0
+        Distance -> 2.0
+        ElevationGained -> 50.0
+        Speed -> 2.0
+        HeartRate -> 50.0
+        SkinTemperature -> 0.25
 
-            Sleep -> (entry as SleepSessionEntry).let {
-                when (it.stage) {
-                    SleepStage.Unknown,
-                    SleepStage.AwakeInBed,
-                    SleepStage.Awake,
-                    SleepStage.OutOfBed -> 0.0
+        OxygenSaturation,
+        HeartRateVariabilityRmssd -> 20.0
 
-                    SleepStage.REM -> 1.0
+        Symptoms, MenstruationPeriod, Sleep -> null
+    }
 
-                    SleepStage.Sleeping,
-                    SleepStage.Light -> 2.0
+    fun yRange(yData: List<Double>): ClosedRange<Double> {
+        fun Double.roundAwayFromZero(stepSize: Double?): Double {
+            if (stepSize == null || stepSize.isNaN() || stepSize.isInfinite()) return this
 
-                    SleepStage.Deep -> 3.0
+            val scaled = this / stepSize
+            val rounded = kotlin.math.ceil(scaled.absoluteValue) * scaled.sign
+            return rounded * stepSize
+        }
+
+        val yMin = if (yData.isEmpty()) null else yData.min()
+        val yMax = if (yData.isEmpty()) null else yData.max()
+        val stepSize = stepSize()
+        val roundedYMin = yMin?.roundAwayFromZero(stepSize)
+        val roundedYMax = yMax?.roundAwayFromZero(stepSize)
+
+        return when (this) {
+            Steps -> 0.0..(roundedYMax ?: 1_000.0)
+            Distance -> 0.0..(roundedYMax ?: 6.0)
+            ElevationGained -> 0.0..(roundedYMax ?: 100.0)
+            Speed -> 0.0..(roundedYMax ?: 6.0)
+            HeartRate -> 0.0..(roundedYMax ?: 150.0)
+            SkinTemperature -> (roundedYMin ?: -0.5)..(roundedYMax ?: 0.5)
+
+            OxygenSaturation, HeartRateVariabilityRmssd -> 0.0..100.0
+
+            MenstruationPeriod -> 0.0..24.0
+            Sleep -> 0.0..3.0
+            Symptoms -> 0.0..3.0
+        }
+    }
+
+    @Composable
+    fun ySteps(yRange: ClosedRange<Double>): List<String> {
+        val stepSize = stepSize() ?: 0.0
+        val ySteps = when (this) {
+            Steps,
+            Distance,
+            ElevationGained,
+            Speed,
+            HeartRate,
+            SkinTemperature,
+            OxygenSaturation,
+            HeartRateVariabilityRmssd -> {
+                val start = yRange.start
+                val end = yRange.endInclusive
+
+                val stepCount =
+                    ((end - start) / stepSize).roundToInt().coerceAtLeast(0)
+
+                (0..stepCount).map { i ->
+                    val value = start + i * stepSize
+                    if (stepSize < 1.0)
+                        "%.2f".format(value)
+                    else
+                        value.toInt().toString()
                 }
             }
 
-            HeartRateVariabilityRmssd -> (entry as HeartRateVariabilityEntry).variability
-            SkinTemperature -> (entry as SkinTemperatureEntry).temperature.inCelsius()
-            Symptoms -> (entry as ManualSymptomEntry).feeling.feeling.level.toDouble()
-        }
-    )
+            MenstruationPeriod -> emptyList()
 
-    fun yRange(yData: List<Double>): ClosedRange<Double> {
-        val yMax = if (yData.isEmpty()) null else yData.max()
-        return when (this) {
-            Steps -> 0.0..(yMax ?: 1_000.0)
-            Distance -> 0.0..(yMax ?: 10.0)
-            ElevationGained -> 0.0..(yMax ?: 100.0)
-            Speed -> 0.0..(yMax ?: 10.0)
-            HeartRate -> 0.0..(yMax ?: 150.0)
-            MenstruationPeriod -> 0.0..24.0
-            OxygenSaturation -> 0.0..1.0
-            Sleep -> 0.0..3.0
-            HeartRateVariabilityRmssd -> 0.0..1.0
-            SkinTemperature -> -20.0..60.0
-            Symptoms -> 0.0..3.0
+            Sleep -> listOf("Deep", "Light", "REM", "Awake")
+
+            Symptoms -> listOf(
+                stringResource(R.string.very_bad),
+                stringResource(R.string.bad),
+                stringResource(R.string.good),
+                stringResource(R.string.very_good),
+            )
         }
+
+        return ySteps
+    }
+
+    fun entryToXValue(entry: TimedEntry) = entry.end.toEpochMilliseconds().toDouble()
+
+    fun entryToYValue(entry: TimedEntry) = when (this) {
+        Steps -> (entry as StepsEntry).count.toDouble()
+        Distance -> (entry as DistanceEntry).length.inKilometers()
+        ElevationGained -> (entry as ElevationGainedEntry).length.inMeters()
+        Speed -> (entry as SpeedEntry).velocity.inKilometersPerHour()
+        HeartRate -> (entry as HeartRateEntry).bpm.toDouble()
+        MenstruationPeriod -> 1.0
+        OxygenSaturation -> (entry as OxygenSaturationEntry).percentage.toDouble()
+
+        Sleep -> (entry as SleepSessionEntry).let {
+            when (it.stage) {
+                SleepStage.Unknown,
+                SleepStage.AwakeInBed,
+                SleepStage.Awake,
+                SleepStage.OutOfBed -> 0.0
+
+                SleepStage.REM -> 1.0
+
+                SleepStage.Sleeping,
+                SleepStage.Light -> 2.0
+
+                SleepStage.Deep -> 3.0
+            }
+        }
+
+        HeartRateVariabilityRmssd -> (entry as HeartRateVariabilityEntry).variability
+        SkinTemperature -> (entry as SkinTemperatureEntry).temperature.inCelsius()
+        Symptoms -> (entry as ManualSymptomEntry).feeling.feeling.level.toDouble()
     }
 }
 
@@ -184,7 +255,6 @@ fun DrawScope.drawMeasurementPreview(
     }
 }
 
-
 /**
  * Draws a preview graph for accumulated measurements such as steps or distance.
  *
@@ -200,10 +270,11 @@ private fun DrawScope.drawPreviewAccumulated(
     entries: List<TimedEntry>,
     strokeColor: Color,
 ) {
-    val (xData, yData) = entries
-        .fastMap { measurement.toGraphValue(it) }
-        .runningReduce { (_, acc), (x, y) -> Pair(x, acc + y) }
-        .unzip()
+    val xData = entries.fastMap { measurement.entryToXValue(it) }
+    val yData = entries
+        .fastMap { measurement.entryToYValue(it) }
+        .runningReduce { acc, y -> acc + y }
+
 
     val xRange = TimeRange.today().toEpochDoubleRange()
     val yRange = measurement.yRange(yData)
@@ -230,7 +301,8 @@ private fun DrawScope.drawPreviewLine(
     entries: List<TimedEntry>,
     strokeColor: Color,
 ) {
-    val (xData, yData) = entries.fastMap { measurement.toGraphValue(it) }.unzip()
+    val xData = entries.fastMap { measurement.entryToXValue(it) }
+    val yData = entries.fastMap { measurement.entryToYValue(it) }
     val xRange = TimeRange.today().toEpochDoubleRange()
     val yRange = measurement.yRange(yData)
 

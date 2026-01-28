@@ -21,15 +21,17 @@ import org.htwk.pacing.ui.theme.Spacing
 fun CardWithTitle(
     title: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     inner: @Composable ColumnScope.() -> Unit
-) =
-    Card(
-        colors = CardStyle.colors,
-        shape = CardStyle.shape,
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag("Card")
-    ) {
+) {
+    val colors = CardStyle.colors
+    val shape = CardStyle.shape
+    val modifier = modifier
+        .fillMaxWidth()
+        .testTag("Card")
+
+    @Composable
+    fun content() {
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -47,3 +49,10 @@ fun CardWithTitle(
             inner()
         }
     }
+
+    if (onClick == null) {
+        Card(modifier = modifier, shape = shape, colors = colors) { content() }
+    } else {
+        Card(onClick = onClick, modifier = modifier, shape = shape, colors = colors) { content() }
+    }
+}

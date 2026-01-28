@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -34,14 +35,14 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.htwk.pacing.ui.lineTo
-import org.htwk.pacing.ui.math.Float2D
 import org.htwk.pacing.ui.math.interpolate
-import org.htwk.pacing.ui.moveTo
 import org.htwk.pacing.ui.theme.Spacing
+import kotlin.math.roundToInt
 
 /**
  * Options for how the line graph should be drawn.
@@ -110,6 +111,60 @@ fun GraphCard(
             yConfig = yConfig,
             pathConfig = pathConfig,
         )
+    }
+}
+
+@Composable
+fun GraphLayout(
+    xLabels: @Composable () -> Unit,
+    yLabels: @Composable () -> Unit,
+    graph: @Composable () -> Unit,
+) = ConstraintLayout(
+    modifier = Modifier
+        .fillMaxSize()
+        .padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
+) {
+    val (yAxis, graph, xAxis) = createRefs()
+
+    Axis(
+        horizontal = false,
+        modifier = Modifier
+            .constrainAs(yAxis) {
+                start.linkTo(parent.start)
+                top.linkTo(parent.top)
+                end.linkTo(graph.start)
+                bottom.linkTo(graph.bottom)
+                height = Dimension.fillToConstraints
+            }
+    ) {
+        yLabels()
+    }
+
+    Box(
+        modifier = Modifier.constrainAs(graph) {
+            top.linkTo(parent.top)
+            bottom.linkTo(xAxis.top)
+            start.linkTo(yAxis.end)
+            end.linkTo(parent.end)
+            height = Dimension.fillToConstraints
+            width = Dimension.fillToConstraints
+        }
+    ) {
+        graph()
+    }
+
+    Axis(
+        horizontal = true,
+        modifier = Modifier
+            .constrainAs(xAxis) {
+                start.linkTo(graph.start)
+                top.linkTo(graph.bottom)
+                end.linkTo(graph.end)
+                bottom.linkTo(parent.bottom)
+                width = Dimension.fillToConstraints
+            }
+    ) {
+        xLabels()
     }
 }
 
@@ -266,26 +321,23 @@ fun Axis(
 
 
 fun Modifier.drawLines(ySteps: Int): Modifier = this.drawBehind {
-    val scope = this
+    if (ySteps < 2) return@drawBehind
 
-    val path = Path().apply {
-        for (i in 0..<ySteps) {
-            val height = i.toFloat() / (ySteps.toFloat() - 1)
-            moveTo(scope, Float2D(0f, height))
-            lineTo(scope, Float2D(1f, height))
-        }
-    }
-    drawPath(
-        path,
-        color = Color.Gray,
-        style = Stroke(
-            width = 1.0f,
-            pathEffect = PathEffect.dashPathEffect(
-                // TODO: Figure out how to scale this properly based on screen size
-                floatArrayOf(20f, 8f)
-            )
+    val strokeWidth = 2f
+
+    repeat(ySteps) { i ->
+        val y = (size.height * i / (ySteps - 1).toFloat())
+            .roundToInt()
+            .toFloat()
+
+        drawLine(
+            color = Color.Gray,
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = strokeWidth,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 8f))
         )
-    )
+    }
 }
 
 /**

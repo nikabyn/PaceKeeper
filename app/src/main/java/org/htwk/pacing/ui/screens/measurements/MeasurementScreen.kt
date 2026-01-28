@@ -1,5 +1,6 @@
 package org.htwk.pacing.ui.screens.measurements
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -39,8 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachReversed
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
+import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -49,13 +48,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
-import org.htwk.pacing.ui.components.Axis
 import org.htwk.pacing.ui.components.AxisLabel
-import org.htwk.pacing.ui.components.Graph
+import org.htwk.pacing.ui.components.CardWithTitle
 import org.htwk.pacing.ui.components.GraphCanvas
+import org.htwk.pacing.ui.components.GraphLayout
 import org.htwk.pacing.ui.components.drawLines
-import org.htwk.pacing.ui.components.graphToPaths
-import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.koinInject
 
@@ -96,15 +93,6 @@ fun MeasurementScreen(
                 },
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { expanded = true },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ) {
-                Icon(painterResource(R.drawable.rounded_expand_content), /* TODO */ "")
-            }
-        },
         floatingActionButtonPosition = FabPosition.End
     ) { innerPadding ->
         Box(
@@ -115,7 +103,11 @@ fun MeasurementScreen(
             contentAlignment = Alignment.BottomEnd
         ) {
             Column(modifier = Modifier.padding(horizontal = Spacing.large)) {
-                GraphPreview(modifier = Modifier.height(300.dp), viewModel)
+                GraphPreview(
+                    viewModel,
+                    onClick = { expanded = true },
+                    modifier = Modifier.height(350.dp)
+                )
             }
         }
     }
@@ -123,114 +115,57 @@ fun MeasurementScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GraphPreview(modifier: Modifier = Modifier, viewModel: MeasurementViewModel) {
-    val entries by viewModel.entries.collectAsState()
-    val data by viewModel.data.collectAsState()
+private fun GraphPreview(
+    viewModel: MeasurementViewModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val entriesToday by viewModel.entriesToday.collectAsState()
+    val yDataToday = entriesToday.fastMap { viewModel.measurement.entryToYValue(it) }
+    val yRange = viewModel.measurement.yRange(yDataToday)
+    val ySteps = viewModel.measurement.ySteps(yRange)
 
-    val yRange = viewModel.measurement.yRange(data.second)
-    val ySteps = when (viewModel.measurement) {
-        Measurement.Distance,
-        Measurement.ElevationGained,
-        Measurement.Speed,
-        Measurement.SkinTemperature,
-        Measurement.OxygenSaturation,
-        Measurement.HeartRateVariabilityRmssd -> listOf(
-            yRange.start.toString(),
-            yRange.endInclusive.toString()
-        )
+    Log.d("abc " + viewModel.measurement.toString(), ySteps.toString())
 
-        Measurement.Steps,
-        Measurement.HeartRate -> listOf(
-            yRange.start.toInt().toString(),
-            yRange.endInclusive.toInt().toString()
-        )
-
-        Measurement.MenstruationPeriod -> emptyList()
-
-        Measurement.Sleep -> listOf("Deep", "Light", "REM", "Awake")
-
-        Measurement.Symptoms -> listOf(
-            stringResource(R.string.very_good),
-            stringResource(R.string.good),
-            stringResource(R.string.bad),
-            stringResource(R.string.very_bad),
-        )
-    }
     val colorLine = MaterialTheme.colorScheme.primary
     val colorAwake = MaterialTheme.colorScheme.error
     val colorREM = MaterialTheme.colorScheme.tertiary
     val colorLightSleep = MaterialTheme.colorScheme.primary
     val colorDeepSleep = MaterialTheme.colorScheme.secondary
 
-    Card(
-        colors = CardStyle.colors,
-        shape = CardStyle.shape,
+    CardWithTitle(
+        title = stringResource(R.string.today),
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .testTag("GraphPreviewCard")
     ) {
-        ConstraintLayout(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
-        ) {
-            val (yAxis, graph, xAxis) = createRefs()
-
-            Axis(
-                horizontal = false,
-                modifier = Modifier
-                    .constrainAs(yAxis) {
-                        start.linkTo(parent.start)
-                        top.linkTo(parent.top)
-                        end.linkTo(graph.start)
-                        bottom.linkTo(graph.bottom)
-                        height = Dimension.fillToConstraints
-                    }
-            ) {
+        GraphLayout(
+            xLabels = {
+                for (i in 0..24 step 4) {
+                    AxisLabel(i.toString())
+                }
+            },
+            yLabels = {
                 ySteps.fastForEachReversed {
                     AxisLabel(it)
                 }
             }
-
+        ) {
             GraphCanvas(
-                modifier = Modifier
-                    .constrainAs(graph) {
-                        top.linkTo(parent.top)
-                        bottom.linkTo(xAxis.top)
-                        start.linkTo(yAxis.end)
-                        end.linkTo(parent.end)
-                        height = Dimension.fillToConstraints
-                        width = Dimension.fillToConstraints
-                    }
+                Modifier
                     .padding(Spacing.small)
                     .drawLines(ySteps.size)
             ) {
                 drawMeasurementPreview(
                     viewModel.measurement,
-                    entries.orEmpty(),
+                    entriesToday,
                     colorLine,
                     colorAwake,
                     colorREM,
                     colorLightSleep,
                     colorDeepSleep,
                 )
-            }
-
-            Axis(
-                horizontal = true,
-                modifier = Modifier
-                    .constrainAs(xAxis) {
-                        start.linkTo(graph.start)
-                        top.linkTo(graph.bottom)
-                        end.linkTo(graph.end)
-                        bottom.linkTo(parent.bottom)
-                        width = Dimension.fillToConstraints
-                    }
-
-            ) {
-                for (i in 0..24 step 4) {
-                    AxisLabel(i.toString())
-                }
             }
         }
     }
@@ -271,33 +206,49 @@ fun FullscreenGraphOverlay(
                     }
                 }
         ) {
-            val data by viewModel.data.collectAsState()
-            val xRange = TimeRange.today().toEpochDoubleRange()
-            val yRange = viewModel.measurement.yRange(data.second)
-            val strokeStyle = Graph.defaultStrokeStyle()
-            val strokeColor = MaterialTheme.colorScheme.onSurface
+            val entriesToday by viewModel.entriesToday.collectAsState()
+            val yDataToday = entriesToday.fastMap { viewModel.measurement.entryToYValue(it) }
+            val yRange = viewModel.measurement.yRange(yDataToday)
+            val ySteps = viewModel.measurement.ySteps(yRange)
 
-            GraphCanvas(Modifier.fillMaxSize()) {
-                drawPath(
-                    graphToPaths(
-                        data.first,
-                        data.second,
-                        size,
-                        xRange,
-                        yRange,
-                    ).line,
-                    color = strokeColor,
-                    style = strokeStyle,
+            val colorLine = MaterialTheme.colorScheme.primary
+            val colorAwake = MaterialTheme.colorScheme.error
+            val colorREM = MaterialTheme.colorScheme.tertiary
+            val colorLightSleep = MaterialTheme.colorScheme.primary
+            val colorDeepSleep = MaterialTheme.colorScheme.secondary
+
+            GraphCanvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawLines(ySteps.size)
+            ) {
+                drawMeasurementPreview(
+                    viewModel.measurement,
+                    entriesToday,
+                    colorLine,
+                    colorAwake,
+                    colorREM,
+                    colorLightSleep,
+                    colorDeepSleep,
                 )
-
             }
         }
     }
-
 }
 
 class MeasurementViewModel(val measurement: Measurement, val db: PacingDatabase) : ViewModel() {
     private val dao = measurement.dao(db)
+
+    val entriesToday = dao.getChangeTrigger()
+        .map {
+            val today = TimeRange.today()
+            dao.getInRange(today.start, today.end)
+        }
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val entries = dao.getChangeTrigger()
         .map { dao.getAll() }
@@ -305,13 +256,5 @@ class MeasurementViewModel(val measurement: Measurement, val db: PacingDatabase)
             viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
-        )
-
-    val data = entries
-        .map { it.map { entry -> measurement.toGraphValue(entry) }.unzip() }
-        .stateIn(
-            viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = Pair(emptyList(), emptyList())
         )
 }
