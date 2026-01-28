@@ -104,8 +104,6 @@ object DifferentialPredictionModel : IPredictionModel {
 
     //returns coefficients for offset
     fun trainForHorizon(metricMatrix: D2Array<Double>, targetVector: D1Array<Double>, predictionHorizon: PredictionHorizon) : List<Double>{
-
-
         require(metricMatrix.shape[1] == targetVector.size) {
             "metricMatrix and targetVector must have the same length ${metricMatrix.shape[1]} != ${targetVector.size}"
         }
@@ -124,26 +122,27 @@ object DifferentialPredictionModel : IPredictionModel {
         }
 
         val coefficients = leastSquaresTikhonov(metricMatrixShifted.transpose(), targetVectorShifted,
-            regularization = 100.0
+            regularization = 1000.0
         ).toList()
 
         return coefficients
     }
 
-    fun predictStepForOffset(
-        //input: List<Double>,
-        inputMTSD: MultiTimeSeriesDiscrete,
-        offs: Int
+    override fun predict(
+        input: MultiTimeSeriesDiscrete,
+        offset: Int,
+        horizon: PredictionHorizon,
     ): Double {
+        require(offset in 0 until input.stepCount())
         require(model != null) { "No model trained, can't perform prediction." }
 
         val inputDistributions = model!!.inputDistributions
-        val perHorizonModel = model!!.perHorizonModels[PredictionHorizon.FUTURE]!!
+        val perHorizonModel = model!!.perHorizonModels[horizon]!!
 
-        val inputFeatures = createFeatures(inputMTSD, offs).dropLast(1)
+        val inputFeaturesAtOffset = createFeatures(input, offset).dropLast(1)
 
         //normalize extrapolations, this is essential for good regression stability
-        val normalizedInputs: D1Array<Double> = mk.ndarray(mk.ndarray(inputFeatures
+        val normalizedInputs: D1Array<Double> = mk.ndarray(mk.ndarray(inputFeaturesAtOffset
             .mapIndexed {index, d ->
                 val distribution = inputDistributions[index]
                 normalizeSingleValue(d, distribution)
@@ -154,16 +153,8 @@ object DifferentialPredictionModel : IPredictionModel {
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
 
-        val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights)))
-        return prediction.first()
-    }
-
-    override fun predict(
-        input: MultiTimeSeriesDiscrete,
-        predictionHorizon: PredictionHorizon
-    ): Double {
-        require(predictionHorizon == PredictionHorizon.NOW)
-        val prediction = predictStepForOffset(inputMTSD = input, offs = input.stepCount() - 1).coerceIn(-0.1, 0.1)
-        return prediction
+        //TODO: remove this and maybe do normalize target
+        val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
+        return prediction.coerceIn(-0.1, 0.1)
     }
 }

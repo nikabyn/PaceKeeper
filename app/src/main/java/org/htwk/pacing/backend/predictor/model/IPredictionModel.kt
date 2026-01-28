@@ -17,6 +17,6 @@ interface IPredictionModel {
     val PredictionHorizon.howFarInSamples: Int
         get() = (howFar / Predictor.TIME_SERIES_STEP_DURATION).toInt()
 
-    fun predict(input: MultiTimeSeriesDiscrete, predictionHorizon: PredictionHorizon): Double
+    fun predict(input: MultiTimeSeriesDiscrete, offset: Int, horizon: PredictionHorizon): Double
     fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray)
 }

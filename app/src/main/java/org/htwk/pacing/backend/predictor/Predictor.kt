@@ -1,6 +1,5 @@
 package org.htwk.pacing.backend.predictor
 
-import android.text.method.SingleLineTransformationMethod
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
@@ -17,15 +16,11 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.predictor.Predictor.train
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
-import org.htwk.pacing.backend.predictor.model.ExtrapolationPredictionModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
-import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -139,9 +134,26 @@ object Predictor {
      */
     fun predict(
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
+        lastValidatedEnergy: Double,
+        timeSinceLastValidation: Duration,
     ): PredictedEnergyLevelEntry {
-        //run model and return energy prediction
-        val predictedEnergyNow = 0.0/*DifferentialPredictionModel.predict(
+        val discreteSteps =
+            minOf(
+                (timeSinceLastValidation.inWholeMilliseconds / TIME_SERIES_STEP_DURATION.inWholeMilliseconds).toInt(),
+                multiTimeSeriesDiscrete.stepCount()
+            )
+
+        var predictedEnergy = lastValidatedEnergy
+        for(i in multiTimeSeriesDiscrete.stepCount() - discreteSteps until multiTimeSeriesDiscrete.stepCount()) {
+            val deltaEnergy = DifferentialPredictionModel.predict(
+                multiTimeSeriesDiscrete,
+                multiTimeSeriesDiscrete.stepCount() - i,
+                IPredictionModel.PredictionHorizon.NOW
+            )
+            predictedEnergy += deltaEnergy
+        }
+
+        /*DifferentialPredictionModel.predict(
             multiTimeSeriesDiscrete,
             IPredictionModel.PredictionHorizon.NOW
         );*/
@@ -151,9 +163,9 @@ object Predictor {
         );*/
         return PredictedEnergyLevelEntry(
             time = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.NOW.howFar,
-            percentageNow = Percentage(predictedEnergyNow/*.coerceIn(0.0, 1.0)*/),
+            percentageNow = Percentage(predictedEnergy.coerceIn(0.0, 1.0)),
             timeFuture = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
-            percentageFuture = Percentage(0.0)//Percentage(predictedEnergyFuture/*.coerceIn(0.0, 1.0)*/)
+            percentageFuture = Percentage(0.0 + Double.NaN)
         )
     }
 }

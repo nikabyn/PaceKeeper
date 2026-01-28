@@ -8,7 +8,6 @@ import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquares
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
@@ -211,20 +210,21 @@ object ExtrapolationPredictionModel : IPredictionModel {
      *
      * @param input The [MultiTimeSeriesDiscrete] object containing the preprocessed
      *              time series data, such as heart rate.
-     * @param predictionHorizon The prediction horizon for which to make the prediction.
+     * @param horizon The prediction horizon for which to make the prediction.
      * @return A [Double] representing the predicted energy level.
      */
     override fun predict(
         input: MultiTimeSeriesDiscrete,
-        predictionHorizon: PredictionHorizon
+        offset: Int,
+        horizon: PredictionHorizon
     ): Double {
         require(model != null) { "No model trained, can't perform prediction." }
 
-        val perHorizonModel = model!!.perHorizonModels[predictionHorizon]!!
+        val perHorizonModel = model!!.perHorizonModels[horizon]!!
 
         //drop last element, because it is the bias, normalizing it is useless anyways
         val flattenedExtrapolations =
-            generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
+            generateFlattenedMultiExtrapolationResults(input, 0, horizon).dropLast(1)
 
         Log.i(LOGGING_TAG, "prediction extrapolations: " + flattenedExtrapolations.joinToString(", ") { "%.2e".format(it) })
 
