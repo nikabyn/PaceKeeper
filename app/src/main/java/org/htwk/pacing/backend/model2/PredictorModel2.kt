@@ -63,7 +63,7 @@ object PredictorModel2 {
             EnergyDataPoint(it.time, it.percentage.toDouble() * 100.0, it.validation.name)
         }
 
-        val hrAgg = EnergyCalculation.aggregateHR(hrDataPoints, energyConfig.aggregationMinutes)
+        val hrAgg = aggregateHR(hrDataPoints, energyConfig.aggregationMinutes)
         if (hrAgg.size < 10) {
             Log.w(TAG, "Not enough aggregated HR data: ${hrAgg.size}")
             return
@@ -111,7 +111,7 @@ object PredictorModel2 {
             EnergyDataPoint(it.time, it.percentage.toDouble() * 100.0, it.validation.name)
         }
 
-        val hrAgg = EnergyCalculation.aggregateHR(hrDataPoints, energyConfig.aggregationMinutes)
+        val hrAgg = aggregateHR(hrDataPoints, energyConfig.aggregationMinutes)
         if (hrAgg.isEmpty()) {
             val (energyNow, energyFuture) = fallbackEnergy(input.validatedEnergy)
             return PredictedEnergyLevelEntryModel2(
@@ -125,7 +125,7 @@ object PredictorModel2 {
         val hrvData = HRVDrain.calculateHRVFromHR(hrDataPoints, windowMinutes = 5)
         val lastValidatedEnergy = energyDataPoints.maxByOrNull { it.timestamp }?.percentage ?: 50.0
 
-        val curve = HRVDrain.calculateEnergyWithHRVDrainAnchored(
+        val curve = EnergyCalculation.calculateEnergyWithHRVDrainAnchored(
             hrAgg = hrAgg,
             hrvData = hrvData,
             hrLow = params.hrLow,
@@ -167,5 +167,31 @@ object PredictorModel2 {
         val lastEnergy = last?.percentage?.toDouble() ?: 0.5
         val lastTime = last?.time ?: Clock.System.now()
         return EnergyDecayFallback.predictWithDecay(lastEnergy, lastTime, decayRate = decayRate)
+    }
+    /**
+     * Aggregates heart rate data into time buckets.
+     */
+    fun aggregateHR(
+        data: List<HRDataPoint>,
+        minutes: Int
+    ): List<HRDataPoint> {
+        if (data.isEmpty()) return emptyList()
+
+        val buckets = mutableMapOf<Long, MutableList<Double>>()
+        val ms = minutes * 60 * 1000L
+
+        for (d in data) {
+            val key = (d.timestamp.toEpochMilliseconds() / ms) * ms
+            buckets.getOrPut(key) { mutableListOf() }.add(d.bpm)
+        }
+
+        return buckets.entries
+            .map { (ts, vals) ->
+                HRDataPoint(
+                    timestamp = Instant.fromEpochMilliseconds(ts),
+                    bpm = vals.average()
+                )
+            }
+            .sortedBy { it.timestamp }
     }
 }

@@ -5,6 +5,8 @@ import kotlin.math.sqrt
 import kotlin.math.round
 import android.util.Log
 import kotlin.Double
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Optimization algorithms
@@ -82,7 +84,7 @@ object Optimizer {
         if (hrLow >= hrHigh) return Double.POSITIVE_INFINITY
         if (drainFactor <= 0 || recoveryFactor <= 0) return Double.POSITIVE_INFINITY
 
-        val energyMap = EnergyCalculation.simulateEnergy(
+        val energyMap = simulateEnergy(
             hrData = cycle.hrData,
             startEnergy = cycle.startEnergy,
             hrLow = hrLow,
@@ -96,7 +98,7 @@ object Optimizer {
         var n = 0
 
         for (validated in cycle.validatedPoints) {
-            val predicted = EnergyCalculation.findClosestEnergy(
+            val predicted = findClosestEnergy(
                 energyMap,
                 validated.timestamp.toEpochMilliseconds()
             )
@@ -122,7 +124,7 @@ object Optimizer {
         recoveryFactor: Double,
         aggregationMinutes: Int
     ): Double {
-        val energyMap = EnergyCalculation.simulateEnergy(
+        val energyMap = simulateEnergy(
             hrData = cycle.hrData,
             startEnergy = cycle.startEnergy,
             hrLow = hrLow,
@@ -135,7 +137,7 @@ object Optimizer {
         val diffs = mutableListOf<Double>()
 
         for (validated in cycle.validatedPoints) {
-            val predicted = EnergyCalculation.findClosestEnergy(
+            val predicted = findClosestEnergy(
                 energyMap,
                 validated.timestamp.toEpochMilliseconds()
             )
@@ -394,7 +396,7 @@ object Optimizer {
     ): AutoFitResult {
         val allCycles = groupBySleepCycle(validatedEnergy, hrAgg, sleepConfig)
         val cycles = filterCyclesByRange(allCycles, fitRange)
-        val logTag = "Optimizer Autofit";
+        val logTag = "Optimizer Autofit"
         Log.d(logTag, "Total cycles: ${allCycles.size}, Filtered cycles: ${cycles.size}, HR points: ${hrAgg.size}, Validated points: ${validatedEnergy.size}")
 
         if (cycles.isEmpty()) {
@@ -472,5 +474,68 @@ object Optimizer {
             usedDays = validResults.size,
             totalDays = allCycles.size
         )
+    }
+
+
+    /**
+     * Simulates energy without time offset (used for optimization).
+     * Returns a map of timestamp (with HR_DELAY) to energy value.
+     */
+    fun simulateEnergy(
+        hrData: List<HRDataPoint>,
+        startEnergy: Double,
+        hrLow: Double,
+        hrHigh: Double,
+        drainFactor: Double,
+        recoveryFactor: Double,
+        aggregationMinutes: Int
+    ): Map<Long, Double> {
+        val result = mutableMapOf<Long, Double>()
+        var energy = startEnergy
+
+        for (i in hrData.indices) {
+            val hr = hrData[i].bpm
+            val ts = hrData[i].timestamp.toEpochMilliseconds()
+
+            val deltaMinutes = if (i > 0) {
+                (ts - hrData[i - 1].timestamp.toEpochMilliseconds()) / 60000.0
+            } else {
+                aggregationMinutes.toDouble()
+            }
+
+            if (hr < hrLow) {
+                energy += (hrLow - hr) * 0.1 * recoveryFactor * (deltaMinutes / 15.0)
+            } else if (hr > hrHigh) {
+                energy -= (hr - hrHigh) * 0.15 * drainFactor * (deltaMinutes / 15.0)
+            }
+            energy = max(0.0, min(100.0, energy))
+            val hrDelay = 2 * 60 * 60 * 1000L //2h
+            result[ts + hrDelay] = energy
+        }
+
+        return result
+    }
+
+    /**
+     * Finds the closest energy value for a given time.
+     * Returns null if no value within 30 minutes.
+     */
+    fun findClosestEnergy(
+        energyMap: Map<Long, Double>,
+        targetTime: Long
+    ): Double? {
+        var closest: Double? = null
+        var minDiff = Long.MAX_VALUE
+
+        for ((ts, energy) in energyMap) {
+            val diff = kotlin.math.abs(ts - targetTime)
+            if (diff < minDiff) {
+                minDiff = diff
+                closest = energy
+            }
+        }
+
+        // If more than 30 minutes away, return null
+        return if (minDiff > 30 * 60 * 1000) null else closest
     }
 }
