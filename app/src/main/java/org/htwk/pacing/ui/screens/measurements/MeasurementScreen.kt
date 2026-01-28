@@ -198,7 +198,15 @@ fun FullscreenGraphOverlay(
 
 class MeasurementViewModel(val measurement: Measurement, val db: PacingDatabase) : ViewModel() {
     private val dao = measurement.dao(db)
-    private val entries = dao.getChangeTrigger().map { dao.getAll() }
+
+    val entries = dao.getChangeTrigger()
+        .map { dao.getAll() }
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     val data = entries
         .map { it.map { entry -> measurement.toGraphValue(entry) }.unzip() }
         .stateIn(

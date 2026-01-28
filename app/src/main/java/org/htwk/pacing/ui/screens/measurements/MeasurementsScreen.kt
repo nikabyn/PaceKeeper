@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,13 +24,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.htwk.pacing.backend.database.SleepSessionEntry
+import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.Graph
@@ -187,27 +197,140 @@ private fun TitleAndStats(
     )
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GraphPreview(
     measurement: Measurement,
     measurements: Map<Measurement, List<TimedEntry>>,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val entries = measurements[measurement]
-    if (entries.isNullOrEmpty()) return
 
-    val (xData, yData) = entries.map { measurement.toGraphValue(it) }.unzip()
+    val strokeColor = MaterialTheme.colorScheme.primary
+    val colorAwake = MaterialTheme.colorScheme.error
+    val colorREM = MaterialTheme.colorScheme.tertiary
+    val colorLightSleep = MaterialTheme.colorScheme.primary
+    val colorDeepSleep = MaterialTheme.colorScheme.secondary
+
+    GraphCanvas(modifier.fillMaxWidth()) {
+        if (entries.isNullOrEmpty()) return@GraphCanvas
+
+        when (measurement) {
+            Steps, Distance, ElevationGained -> drawPreviewAccumulated(
+                measurement,
+                entries,
+                strokeColor
+            )
+
+            Speed,
+            HeartRate -> drawPreviewLine(
+                measurement,
+                entries,
+                strokeColor
+            )
+
+            Sleep -> drawPreviewSleep(
+                // Safety: We just checked that the measurement is Sleep
+                @Suppress("UNCHECKED_CAST") (entries as List<SleepSessionEntry>),
+                colorAwake,
+                colorREM,
+                colorLightSleep,
+                colorDeepSleep,
+            )
+
+            // We don't have enough data to draw sensible graphs for these
+            Symptoms,
+            MenstruationPeriod,
+            OxygenSaturation,
+            HeartRateVariabilityRmssd,
+            SkinTemperature -> {
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawPreviewAccumulated(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    strokeColor: Color,
+) {
+    val (xData, yData) = entries
+        .fastMap { measurement.toGraphValue(it) }
+        .runningReduce { (_, acc), (x, y) -> Pair(x, acc + y) }
+        .unzip()
 
     val xRange = TimeRange.today().toEpochDoubleRange()
     val yRange = measurement.yRange(yData)
-    val strokeStyle = Graph.defaultStrokeStyle()
-    val strokeColor = MaterialTheme.colorScheme.onSurface
 
-    GraphCanvas(modifier) {
+    drawPath(
+        graphToPaths(xData, yData, size, xRange, yRange).line,
+        color = strokeColor,
+        style = Graph.defaultStrokeStyle(),
+    )
+}
+
+private fun DrawScope.drawPreviewLine(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    strokeColor: Color,
+) {
+    val (xData, yData) = entries.fastMap { measurement.toGraphValue(it) }.unzip()
+    val xRange = TimeRange.today().toEpochDoubleRange()
+    val yRange = measurement.yRange(yData)
+
+    drawPath(
+        graphToPaths(xData, yData, size, xRange, yRange).line,
+        color = strokeColor,
+        style = Graph.defaultStrokeStyle(),
+    )
+}
+
+private fun DrawScope.drawPreviewSleep(
+    entries: List<SleepSessionEntry>,
+    colorAwake: Color,
+    colorREM: Color,
+    colorLightSleep: Color,
+    colorDeepSleep: Color,
+) {
+    val xRange = TimeRange.today().toEpochDoubleRange()
+    val xRangeWidth = xRange.endInclusive - xRange.start
+
+    for (entry in entries) {
+        val (color, stage) = when (entry.stage) {
+            SleepStage.Unknown -> continue
+
+            SleepStage.Awake,
+            SleepStage.OutOfBed,
+            SleepStage.AwakeInBed -> Pair(colorAwake, 0)
+
+            SleepStage.REM -> Pair(colorREM, 1)
+
+            SleepStage.Sleeping,
+            SleepStage.Light -> Pair(colorLightSleep, 2)
+
+            SleepStage.Deep -> Pair(colorDeepSleep, 3)
+        }
+
+        val start = (entry.start.toEpochMilliseconds().toDouble() - xRange.start) / xRangeWidth
+        val end = (entry.end.toEpochMilliseconds().toDouble() - xRange.start) / xRangeWidth
+
+        val strokeWidth = 4f
+        val yPadding = strokeWidth / 2f
+        val availableHeight = size.height - strokeWidth
+
+        val y = stage.toFloat() / 3f
+        val yPx = yPadding + y * availableHeight
+
+        val path = Path().apply {
+            moveTo(start.toFloat() * size.width, yPx)
+            lineTo(end.toFloat() * size.width, yPx)
+        }
+
         drawPath(
-            graphToPaths(xData, yData, size, xRange, yRange).line,
-            color = strokeColor,
-            style = strokeStyle,
+            path,
+            color = color,
+            style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
     }
 }
