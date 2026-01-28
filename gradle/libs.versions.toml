@@ -18,11 +18,9 @@ googleGuava = "33.5.0-jre"
 healthConnectClient = "1.1.0-rc02"
 kotlinCsvJvm = "1.10.0"
 coreSplashScreen = "1.0.1"
-litert = "1.4.0"
 material = "1.12.0"
 multik = "0.2.3"
 kotlinx-serialization = "1.7.3"
-transportationConsumer = "4.0.0"
 graphicsShapes = "1.1.0"
 ktor = "3.3.3"
 
@@ -55,10 +53,6 @@ google-guava = { module = "com.google.guava:guava", version.ref = "googleGuava" 
 androidx-health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnectClient" }
 kotlin-csv-jvm = { module = "com.github.doyaaaaaken:kotlin-csv-jvm", version.ref = "kotlinCsvJvm" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashScreen" }
-litert = { module = "com.google.ai.edge.litert:litert", version.ref = "litert" }
-litert-gpu = { module = "com.google.ai.edge.litert:litert-gpu", version.ref = "litert" }
-litert-gpu-api = { module = "com.google.ai.edge.litert:litert-gpu-api", version.ref = "litert" }
-litert-support = { module = "com.google.ai.edge.litert:litert-support", version.ref = "litert" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 multik-kotlin = { module = "org.jetbrains.kotlinx:multik-kotlin", version.ref = "multik" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
@@ -67,7 +61,6 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
-transportation-consumer = { group = "com.google.android.libraries.mapsplatform.transportation", name = "transportation-consumer", version.ref = "transportationConsumer" }
 androidx-graphics-shapes = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "graphicsShapes" }
 
 [plugins]

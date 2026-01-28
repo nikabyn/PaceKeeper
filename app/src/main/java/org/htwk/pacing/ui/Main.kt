@@ -64,7 +64,6 @@ import org.htwk.pacing.ui.screens.DataScreen
 import org.htwk.pacing.ui.screens.FeedbackScreen
 import org.htwk.pacing.ui.screens.HomeScreen
 import org.htwk.pacing.ui.screens.InformationScreen
-import org.htwk.pacing.ui.screens.MeasurementsScreen
 import org.htwk.pacing.ui.screens.NotificationScreen
 import org.htwk.pacing.ui.screens.SettingsScreen
 import org.htwk.pacing.ui.screens.SymptomScreen
@@ -72,6 +71,9 @@ import org.htwk.pacing.ui.screens.UserProfileScreen
 import org.htwk.pacing.ui.screens.UserProfileViewModel
 import org.htwk.pacing.ui.screens.WelcomeScreen
 import org.htwk.pacing.ui.screens.WelcomeViewModel
+import org.htwk.pacing.ui.screens.measurements.Measurement
+import org.htwk.pacing.ui.screens.measurements.MeasurementScreen
+import org.htwk.pacing.ui.screens.measurements.MeasurementsScreen
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesScreen
 import org.htwk.pacing.ui.screens.settings.FitbitScreen
 import org.htwk.pacing.ui.theme.PacingTheme
@@ -96,6 +98,7 @@ fun Main() {
                 Route.MEASUREMENTS,
                 Route.SETTINGS,
                 null -> true
+
                 else -> false
             }
         }
@@ -109,7 +112,10 @@ fun Main() {
         else -> isSystemInDarkTheme()
     }
 
-    val startDestination = if (checkedIn) Route.MAIN_NAV else Route.WELCOME
+    val startDestination = when (checkedIn) {
+        true -> Route.WELCOME
+        else -> Route.MAIN_NAV
+    }
 
     PacingTheme(darkTheme = darkTheme) {
         Scaffold(
@@ -206,6 +212,7 @@ object Route {
     fun symptoms(feeling: Feeling) = "symptoms/${feeling.level}"
 
     const val MEASUREMENTS = "measurements"
+    fun measurement(measurement: Measurement) = "measurements/${measurement.ordinal}"
 
     const val SETTINGS = "settings"
     const val USERPROFILE = "settings/userprofile"
@@ -269,10 +276,7 @@ fun AppNavHost(
 
         navigation(route = Route.MAIN_NAV, startDestination = Route.HOME) {
 
-            composable(Route.HOME) {
-                HomeScreen(navController, snackbarHostState)
-            }
-
+            composable(Route.HOME) { HomeScreen(navController, snackbarHostState) }
             composable(
                 route = "symptoms/{feeling}",
                 arguments = listOf(navArgument("feeling") { type = NavType.IntType })
@@ -282,7 +286,15 @@ fun AppNavHost(
                 SymptomScreen(navController, feeling)
             }
 
-            composable(Route.MEASUREMENTS) { MeasurementsScreen() }
+            composable(Route.MEASUREMENTS) { MeasurementsScreen(navController) }
+            composable(
+                route = "measurements/{measurement}",
+                arguments = listOf(navArgument("measurement") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val measurementOrdinal = backStackEntry.arguments!!.getInt("measurement")
+                val measurement = Measurement.entries.first { it.ordinal == measurementOrdinal }
+                MeasurementScreen(navController, measurement)
+            }
 
             composable(Route.SETTINGS) { SettingsScreen(navController) }
 

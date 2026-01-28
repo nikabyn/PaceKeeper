@@ -1,6 +1,9 @@
 package org.htwk.pacing.ui.components
 
 import androidx.annotation.FloatRange
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,10 +30,11 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.ui.screens.measurements.TimeRange
 import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.hours
-
 
 /**
  * Shows a graph of the last 6 hours of the users energy level
@@ -38,8 +42,8 @@ import kotlin.time.Duration.Companion.hours
  * The last value in the series is used as the current time.
  */
 @Composable
-fun <C : Collection<Double>> EnergyPredictionCard(
-    series: Series<C>,
+fun EnergyPredictionCard(
+    data: List<PredictedEnergyLevelEntry>,
     @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
@@ -47,28 +51,15 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
-        if (series.x.isEmpty()) {
-            Text(
-                stringResource(R.string.currently_no_data_available),
-                modifier = Modifier.testTag("EnergyPredictionErrorText")
-            )
-            return@CardWithTitle
-        }
-
         val current = Clock.System.now()
-        val start = (current - 6.hours).toEpochMilliseconds().toDouble()
-        val end = (current + 6.hours).toEpochMilliseconds().toDouble()
+        val start = current - 6.hours
+        val end = current + 6.hours
 
-        val xConfig = AxisConfig(
-            range = start..end,
-            formatFunction = {
-                val localTime =
-                    Instant.fromEpochMilliseconds(it.toLong())
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                "%02d:%02d".format(localTime.hour, localTime.minute)
-            }
-        )
-        val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
+        val xRange = TimeRange(start, end).toEpochDoubleRange()
+        val yRange = 0.0..1.0
+        val (xData, yData) = data
+            .map { Pair(it.time.toEpochMilliseconds().toDouble(), it.percentageNow.toDouble()) }
+            .unzip()
 
         val graphLineColor = MaterialTheme.colorScheme.onSurface
         val centerLineColor = MaterialTheme.colorScheme.outline
@@ -76,60 +67,86 @@ fun <C : Collection<Double>> EnergyPredictionCard(
         val predictionConstantColor = MaterialTheme.extendedColors.yellow
         val predictionNegativeColor = MaterialTheme.extendedColors.red
 
-        Annotation(
-            series = series,
-            xConfig = xConfig,
-            yConfig = yConfig,
-        ) { _, yRange ->
-            val xRange = start..current.toEpochMilliseconds().toDouble()
-
-            GraphCanvas {
-                val graphStrokeStyle = Stroke(
-                    width = 2.dp.toPx(),
-                    cap = StrokeCap.Round,
+        GraphCanvas(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            val graphStrokeStyle = Stroke(
+                width = 2.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+            val dashedStrokeStyle = Stroke(
+                width = 2.dp.toPx(),
+                cap = StrokeCap.Round,
+                pathEffect = PathEffect.dashPathEffect(
+                    intervals = floatArrayOf(
+                        10.dp.toPx(),
+                        10.dp.toPx()
+                    ),
+                    phase = 5.dp.toPx()
                 )
-                val dashedStrokeStyle = Stroke(
-                    width = 2.dp.toPx(),
-                    cap = StrokeCap.Round,
-                    pathEffect = PathEffect.dashPathEffect(
-                        intervals = floatArrayOf(
-                            10.dp.toPx(),
-                            10.dp.toPx()
-                        ),
-                        phase = 5.dp.toPx()
-                    )
-                )
+            )
 
-                val paths = graphToPaths(series, size.copy(width = size.width / 2f), xRange, yRange)
-                clipRect(right = size.width / 2f) {
-                    drawPath(paths.line, graphLineColor, style = graphStrokeStyle)
-                }
-
-                val predictionColor = when {
-                    avgPrediction < 0.4f -> predictionNegativeColor
-                    avgPrediction < 0.6f -> predictionConstantColor
-                    else -> predictionPositiveColor
-                }
-
-                drawPredictionArea(
-                    currentEnergy,
-                    minPrediction,
-                    maxPrediction,
-                    predictionColor,
-                )
-
-                drawPredictionLine(
-                    currentEnergy,
-                    avgPrediction,
-                    predictionColor,
-                    dashedStrokeStyle,
-                )
-
-                drawCenterLine(
-                    centerLineColor,
-                    dashedStrokeStyle,
+            val paths = graphToPaths(
+                xData = xData,
+                yData = yData,
+                size = size.copy(width = size.width),
+                xRange = xRange,
+                yRange = yRange,
+            )
+            clipRect(right = size.width / 2f) {
+                drawPath(
+                    paths.line,
+                    graphLineColor,
+                    style = graphStrokeStyle
                 )
             }
+
+            val predictionColor = when {
+                avgPrediction < 0.4f -> predictionNegativeColor
+                avgPrediction < 0.6f -> predictionConstantColor
+                else -> predictionPositiveColor
+            }
+
+            drawPredictionArea(
+                currentEnergy,
+                minPrediction,
+                maxPrediction,
+                predictionColor,
+            )
+
+            drawPredictionLine(
+                currentEnergy,
+                avgPrediction,
+                predictionColor,
+                dashedStrokeStyle,
+            )
+
+            drawCenterLine(
+                centerLineColor,
+                dashedStrokeStyle,
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            @Composable
+            fun Label(time: Instant) {
+                val localTime = time.toLocalDateTime(TimeZone.currentSystemDefault())
+                val text = "%02d:%02d".format(localTime.hour, localTime.minute)
+                Text(
+                    text,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.testTag("AxisLabel")
+                )
+            }
+
+            Label(start)
+            Label(current)
+            Label(end)
         }
     }
 }

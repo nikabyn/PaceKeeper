@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipPath
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.ui.theme.extendedColors
 
 /**
@@ -38,14 +39,22 @@ import org.htwk.pacing.ui.theme.extendedColors
  * ```
  */
 @Composable
-fun <C : Collection<Double>> HistogramCard(
+fun HistogramCard(
     title: String,
-    series: Series<C>,
+    data: List<HeartRateEntry>,
     zones: Array<OpenEndRange<Double>>,
     modifier: Modifier = Modifier,
 ) = CardWithTitle(title, modifier) {
+    val (xData, yData) = data.map {
+        Pair(
+            it.time.toEpochMilliseconds().toDouble(),
+            it.bpm.toDouble()
+        )
+    }.unzip()
+
     Annotation(
-        series = series,
+        xData,
+        yData,
         yConfig = AxisConfig(steps = 5u, formatFunction = { "" }),
     ) { xRange, yRange ->
         val heartRateSpan = xRange.endInclusive - xRange.start
@@ -60,7 +69,7 @@ fun <C : Collection<Double>> HistogramCard(
         )
 
         GraphCanvas {
-            val paths = graphToPaths(series, size, xRange, yRange)
+            val paths = graphToPaths(xData, yData, size, xRange, yRange)
 
             clipPath(paths.fill) {
                 for ((zone, color) in zonesToColors) {

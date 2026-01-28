@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.theme.extendedColors
 
@@ -15,7 +16,7 @@ import org.htwk.pacing.ui.theme.extendedColors
  * A composable that displays a heart rate graph with colored zones indicating different intensity levels.
  *
  * @param title The title to display in the card header
- * @param series The data series containing heart rate values to plot
+ * @param data The data series containing heart rate values to plot
  * @param xConfig Configuration for the X-axis
  * @param yConfig Configuration for the Y-axis
  * @param modifier Modifier for styling and layout
@@ -25,7 +26,7 @@ import org.htwk.pacing.ui.theme.extendedColors
 @Composable
 fun <C : Collection<Double>> HeartRateGraphCard(
     title: String,
-    series: Series<C>,
+    data: List<HeartRateEntry>,
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
@@ -43,8 +44,16 @@ fun <C : Collection<Double>> HeartRateGraphCard(
     val strokeColor =
         if (isSystemInDarkTheme()) Color.hsv(0f, 0f, 0.9f) else Color.hsv(0f, 0f, 0.1f)
 
+    val (xData, yData) = data.map {
+        Pair(
+            it.time.toEpochMilliseconds().toDouble(),
+            it.bpm.toDouble()
+        )
+    }.unzip()
+
     Annotation(
-        series = series,
+        xData,
+        yData,
         xConfig = xConfig,
         yConfig = yConfig,
     ) { xRange, yRange ->
@@ -86,7 +95,7 @@ fun <C : Collection<Double>> HeartRateGraphCard(
                 )
             }
 
-            val paths = graphToPaths(series, size, xRange, yRange)
+            val paths = graphToPaths(xData, yData, size, xRange, yRange)
             drawPath(
                 paths.line,
                 color = strokeColor,
