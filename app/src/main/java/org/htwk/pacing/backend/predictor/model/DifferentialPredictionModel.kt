@@ -35,20 +35,16 @@ object DifferentialPredictionModel : IPredictionModel {
 
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
-    val lookBackOffsets = (0 until 1).map{ x -> x * 4}.toList()
+    private val BIAS_FEATURE = listOf(1.0)
+    val lookBackOffsets = (0 until 1).map { x -> x * 4 }.toList()
 
-    //stores "learned" / regressed linear coefficients per Offset
-    class PerHorizonModel(
-        //model parameters per prediction horizon (e.g. now vs. future)
-        val weights: List<Double>,
-    )
-
+    class PerHorizonModel(val weights: List<Double>)
     class Model(
         val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
         val inputDistributions: List<StochasticDistribution>
     )
 
-    var model: Model? = null //hold everything in a single state, (model weights etc.)
+    var model: Model? = null
 
     data class TrainingSample(
         val metricValues: List<Double>,
@@ -58,7 +54,7 @@ object DifferentialPredictionModel : IPredictionModel {
     private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int) : List<Double> {
         return lookBackOffsets.map { horizon ->
             val index = (offset - horizon).coerceAtLeast(0)
-            input.allFeaturesAt(index).map { x -> x }.toList()
+            input.allFeaturesAt(index).toList()
         }.flatten()
     }
     private fun createTrainingSamples(
@@ -68,17 +64,14 @@ object DifferentialPredictionModel : IPredictionModel {
 
         return (lookBackOffsets.max() until input.stepCount()).map { offset ->
             TrainingSample(
-                metricValues = createFeatures(input, offset) + listOf(1.0),
+                metricValues = createFeatures(input, offset) + BIAS_FEATURE,
                 targetValue = targetTimeSeriesDiscrete[offset]
             )
         }
     }
     override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
         val softenedTarget = centeredMovingAverage(target, window = 64).discreteDerivative().map{
-            x ->
-            var x1 = x.coerceIn(-0.1, 0.1)
-            if(x1 < 0.0) x1*= 1.0 //TODO move to DB parameter (negative energy bias)
-            x1
+            x -> x.coerceIn(-0.1, 0.1)
         }.toDoubleArray()
 
         val trainingSamples = createTrainingSamples(
@@ -93,7 +86,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //normalize extrapolations, this is essential for good regression stability, but skip the
         //constant bias feature at the end so it doesn't get zeroed from normalization
-        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 1).map { i ->
+        val extrapolationDistributions = (0 until metricMatrix.shape[0] - BIAS_FEATURE.size).map { i ->
             (metricMatrix[i] as D1Array<Double>).normalize()
         }
 
@@ -151,7 +144,7 @@ object DifferentialPredictionModel : IPredictionModel {
             .mapIndexed {index, d ->
                 val distribution = inputDistributions[index]
                 normalizeSingleValue(d, distribution)
-            }).toList() + listOf(1.0))
+            }).toList() + BIAS_FEATURE)
 
         val weights: List<Double> = perHorizonModel.weights
 
