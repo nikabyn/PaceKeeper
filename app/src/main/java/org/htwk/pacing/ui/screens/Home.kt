@@ -3,7 +3,6 @@ package org.htwk.pacing.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -26,7 +25,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -45,13 +43,8 @@ import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.ui.platform.LocalContext
-import org.htwk.pacing.backend.GlobalTime
-import java.util.Calendar
+
+import kotlin.time.Duration.Companion.hours
 
 data class EnergyGraphData(
     val seriesPastToNow : Series<List<Double>>,
@@ -68,7 +61,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val latest by viewModel.predictedEnergyLevel.collectAsState()
-    val context = LocalContext.current
 
     // ... existing cache logic ...
     var cached by remember {
@@ -99,34 +91,6 @@ fun HomeScreen(
                 modifier = Modifier.height(300.dp)
             )
 
-            // Simpler Simulation Button
-            Button(onClick = {
-                val calendar = Calendar.getInstance()
-                // Date Picker
-                DatePickerDialog(
-                    context,
-                    { _, year, month, dayOfMonth ->
-                        // Time Picker
-                        TimePickerDialog(
-                            context,
-                            { _, hourOfDay, minute ->
-                                calendar.set(year, month, dayOfMonth, hourOfDay, minute)
-                                val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(calendar.timeInMillis)
-                                GlobalTime.setTime(instant)
-                            },
-                            calendar.get(Calendar.HOUR_OF_DAY),
-                            calendar.get(Calendar.MINUTE),
-                            true
-                        ).show()
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-                ).show()
-            }, modifier = Modifier.fillMaxWidth()) {
-                Text("Zeitpunkt ändern (Simulation)")
-            }
-
             LabelCard(energy = currentEnergy)
             BatteryCard(
                 energy = currentEnergy,
@@ -155,10 +119,8 @@ class HomeViewModel(
 ) : ViewModel() {
 
     @OptIn(FlowPreview::class)
-    val predictedEnergyLevel = kotlinx.coroutines.flow.combine(
-        userProfileDao.getProfileLive(),
-        GlobalTime.offsetFlow
-    ) { profile, _ -> profile?.predictionModel ?: "DEFAULT" }
+    val predictedEnergyLevel = userProfileDao.getProfileLive()
+        .map { profile -> profile?.predictionModel ?: "DEFAULT" }
         .flatMapLatest { model ->
             // Choose the correct DAO based on the model setting
             if (model == "MODEL2") {
@@ -173,12 +135,13 @@ class HomeViewModel(
         }
         .debounce(200)
         .map { entries ->
-            val targetTime = GlobalTime.now()
-            val targetMillis = targetTime.toEpochMilliseconds()
+            val now = Clock.System.now()
+            val windowStart = (now - 24.hours).toEpochMilliseconds()
+            val windowEnd = now.toEpochMilliseconds()
 
-            // Filter entries to only show data up to simulated time
+            // Filter entries to show last 24 hours
             val filteredEntries = entries.filter {
-                it.timeMillis <= targetMillis
+                it.timeMillis in windowStart..windowEnd
             }.sortedBy { it.timeMillis }
 
             if (filteredEntries.isEmpty()) {

@@ -54,9 +54,8 @@ object EnergyPredictionJobModel2 {
             heartRate,
             validatedEnergy,
             ticker,
-            GlobalTime.offsetFlow, // Trigger when simulation time changes
-        ) { _, _, _, _ ->
-            val now = GlobalTime.now()
+        ) { _, _, _ ->
+            val now = Clock.System.now()
             // Fetch both HR and validated energy for the prediction window
             // Use a longer window for validated energy to ensure we have anchor points
             PredictorModel2.PredictionInput(
