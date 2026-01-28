@@ -210,7 +210,7 @@ fun Annotation(
                         bottom = Spacing.small,
                     )
                     .weight(1f)
-                    .drawLines(ySteps)
+                    .drawLines(ySteps.toInt())
             ) {
                 slot(xRange, yRange)
             }
@@ -245,24 +245,31 @@ fun AxisLabel(text: String) = Text(
 )
 
 @Composable
-fun Axis(horizontal: Boolean, labels: @Composable () -> Unit) = if (horizontal) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth(),
-    ) { labels() }
-} else {
-    Column(
-        verticalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxHeight(),
-    ) { labels() }
-}
+fun Axis(
+    horizontal: Boolean,
+    modifier: Modifier = Modifier,
+    labels: @Composable () -> Unit,
+) =
+    if (horizontal) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+            modifier = modifier.fillMaxWidth(),
+        ) { labels() }
+    } else {
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End,
+            modifier = modifier.fillMaxHeight(),
+        ) { labels() }
+    }
 
 
-private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
+fun Modifier.drawLines(ySteps: Int): Modifier = this.drawBehind {
     val scope = this
 
     val path = Path().apply {
-        for (i in 0u..<ySteps) {
+        for (i in 0..<ySteps) {
             val height = i.toFloat() / (ySteps.toFloat() - 1)
             moveTo(scope, Float2D(0f, height))
             lineTo(scope, Float2D(1f, height))

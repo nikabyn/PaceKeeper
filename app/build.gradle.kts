@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.google.guava)
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
 
     // Koin (dependency injection)
     implementation(libs.koin.android)

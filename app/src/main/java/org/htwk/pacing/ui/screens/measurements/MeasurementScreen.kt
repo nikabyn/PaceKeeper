@@ -38,6 +38,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEachReversed
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -50,6 +53,7 @@ import org.htwk.pacing.ui.components.Axis
 import org.htwk.pacing.ui.components.AxisLabel
 import org.htwk.pacing.ui.components.Graph
 import org.htwk.pacing.ui.components.GraphCanvas
+import org.htwk.pacing.ui.components.drawLines
 import org.htwk.pacing.ui.components.graphToPaths
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
@@ -120,11 +124,43 @@ fun MeasurementScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GraphPreview(modifier: Modifier = Modifier, viewModel: MeasurementViewModel) {
+    val entries by viewModel.entries.collectAsState()
     val data by viewModel.data.collectAsState()
-    val xRange = TimeRange.today()
+
     val yRange = viewModel.measurement.yRange(data.second)
-    val strokeStyle = Graph.defaultStrokeStyle()
-    val strokeColor = MaterialTheme.colorScheme.onSurface
+    val ySteps = when (viewModel.measurement) {
+        Measurement.Distance,
+        Measurement.ElevationGained,
+        Measurement.Speed,
+        Measurement.SkinTemperature,
+        Measurement.OxygenSaturation,
+        Measurement.HeartRateVariabilityRmssd -> listOf(
+            yRange.start.toString(),
+            yRange.endInclusive.toString()
+        )
+
+        Measurement.Steps,
+        Measurement.HeartRate -> listOf(
+            yRange.start.toInt().toString(),
+            yRange.endInclusive.toInt().toString()
+        )
+
+        Measurement.MenstruationPeriod -> emptyList()
+
+        Measurement.Sleep -> listOf("Deep", "Light", "REM", "Awake")
+
+        Measurement.Symptoms -> listOf(
+            stringResource(R.string.very_good),
+            stringResource(R.string.good),
+            stringResource(R.string.bad),
+            stringResource(R.string.very_bad),
+        )
+    }
+    val colorLine = MaterialTheme.colorScheme.primary
+    val colorAwake = MaterialTheme.colorScheme.error
+    val colorREM = MaterialTheme.colorScheme.tertiary
+    val colorLightSleep = MaterialTheme.colorScheme.primary
+    val colorDeepSleep = MaterialTheme.colorScheme.secondary
 
     Card(
         colors = CardStyle.colors,
@@ -133,29 +169,69 @@ private fun GraphPreview(modifier: Modifier = Modifier, viewModel: MeasurementVi
             .fillMaxWidth()
             .testTag("GraphPreviewCard")
     ) {
-        Column(
-            Modifier.padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
         ) {
-            GraphCanvas(modifier.weight(1f)) {
-                drawPath(
-                    graphToPaths(
-                        data.first,
-                        data.second,
-                        size,
-                        xRange.toEpochDoubleRange(),
-                        yRange,
-                    ).line,
-                    color = strokeColor,
-                    style = strokeStyle,
+            val (yAxis, graph, xAxis) = createRefs()
+
+            Axis(
+                horizontal = false,
+                modifier = Modifier
+                    .constrainAs(yAxis) {
+                        start.linkTo(parent.start)
+                        top.linkTo(parent.top)
+                        end.linkTo(graph.start)
+                        bottom.linkTo(graph.bottom)
+                        height = Dimension.fillToConstraints
+                    }
+            ) {
+                ySteps.fastForEachReversed {
+                    AxisLabel(it)
+                }
+            }
+
+            GraphCanvas(
+                modifier = Modifier
+                    .constrainAs(graph) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(xAxis.top)
+                        start.linkTo(yAxis.end)
+                        end.linkTo(parent.end)
+                        height = Dimension.fillToConstraints
+                        width = Dimension.fillToConstraints
+                    }
+                    .padding(Spacing.small)
+                    .drawLines(ySteps.size)
+            ) {
+                drawMeasurementPreview(
+                    viewModel.measurement,
+                    entries.orEmpty(),
+                    colorLine,
+                    colorAwake,
+                    colorREM,
+                    colorLightSleep,
+                    colorDeepSleep,
                 )
             }
 
-            Axis(horizontal = true) {
+            Axis(
+                horizontal = true,
+                modifier = Modifier
+                    .constrainAs(xAxis) {
+                        start.linkTo(graph.start)
+                        top.linkTo(graph.bottom)
+                        end.linkTo(graph.end)
+                        bottom.linkTo(parent.bottom)
+                        width = Dimension.fillToConstraints
+                    }
+
+            ) {
                 for (i in 0..24 step 4) {
                     AxisLabel(i.toString())
                 }
             }
-
         }
     }
 }

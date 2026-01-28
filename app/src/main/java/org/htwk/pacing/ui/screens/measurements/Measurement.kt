@@ -1,7 +1,14 @@
 package org.htwk.pacing.ui.screens.measurements
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.util.fastMap
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -23,6 +30,8 @@ import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.TimedEntry
+import org.htwk.pacing.ui.components.Graph
+import org.htwk.pacing.ui.components.graphToPaths
 import org.htwk.pacing.ui.screens.measurements.Measurement.Distance
 import org.htwk.pacing.ui.screens.measurements.Measurement.ElevationGained
 import org.htwk.pacing.ui.screens.measurements.Measurement.HeartRate
@@ -130,6 +139,169 @@ enum class Measurement {
         }
     }
 }
+
+fun DrawScope.drawMeasurementPreview(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    colorLine: Color,
+    colorAwake: Color,
+    colorREM: Color,
+    colorLightSleep: Color,
+    colorDeepSleep: Color,
+) {
+    if (entries.isEmpty()) return
+
+    when (measurement) {
+        Steps, Distance, ElevationGained -> drawPreviewAccumulated(
+            measurement,
+            entries,
+            colorLine,
+        )
+
+        Speed,
+        HeartRate -> drawPreviewLine(
+            measurement,
+            entries,
+            colorLine,
+        )
+
+        Sleep -> drawPreviewSleep(
+            // Safety: We just checked that the measurement is Sleep
+            @Suppress("UNCHECKED_CAST") (entries as List<SleepSessionEntry>),
+            colorAwake,
+            colorREM,
+            colorLightSleep,
+            colorDeepSleep,
+        )
+
+        // We don't have enough data to draw sensible graphs for these
+        Symptoms,
+        MenstruationPeriod,
+        OxygenSaturation,
+        HeartRateVariabilityRmssd,
+        SkinTemperature -> {
+        }
+    }
+}
+
+
+/**
+ * Draws a preview graph for accumulated measurements such as steps or distance.
+ *
+ * Individual entries are converted to graph values and accumulated over time
+ * before being rendered as a continuous line.
+ *
+ * @param measurement The measurement being drawn.
+ * @param entries Timed entries for the measurement.
+ * @param strokeColor Color used for the graph line.
+ */
+private fun DrawScope.drawPreviewAccumulated(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    strokeColor: Color,
+) {
+    val (xData, yData) = entries
+        .fastMap { measurement.toGraphValue(it) }
+        .runningReduce { (_, acc), (x, y) -> Pair(x, acc + y) }
+        .unzip()
+
+    val xRange = TimeRange.today().toEpochDoubleRange()
+    val yRange = measurement.yRange(yData)
+
+    drawPath(
+        graphToPaths(xData, yData, size, xRange, yRange).line,
+        color = strokeColor,
+        style = Graph.defaultStrokeStyle(),
+    )
+}
+
+/**
+ * Draws a preview line graph for non-accumulated measurements.
+ *
+ * Entries are plotted directly over time without accumulation, producing
+ * a standard time-series line graph.
+ *
+ * @param measurement The measurement being drawn.
+ * @param entries Timed entries for the measurement.
+ * @param strokeColor Color used for the graph line.
+ */
+private fun DrawScope.drawPreviewLine(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    strokeColor: Color,
+) {
+    val (xData, yData) = entries.fastMap { measurement.toGraphValue(it) }.unzip()
+    val xRange = TimeRange.today().toEpochDoubleRange()
+    val yRange = measurement.yRange(yData)
+
+    drawPath(
+        graphToPaths(xData, yData, size, xRange, yRange).line,
+        color = strokeColor,
+        style = Graph.defaultStrokeStyle(),
+    )
+}
+
+/**
+ * Draws a preview visualization for sleep sessions.
+ *
+ * Each sleep stage is rendered as a horizontal segment positioned vertically
+ * according to its stage and colored by stage type. Unknown stages are skipped.
+ *
+ * @param entries Sleep session entries for today.
+ * @param colorAwake Color used for awake-related stages.
+ * @param colorREM Color used for REM sleep.
+ * @param colorLightSleep Color used for light sleep.
+ * @param colorDeepSleep Color used for deep sleep.
+ */
+private fun DrawScope.drawPreviewSleep(
+    entries: List<SleepSessionEntry>,
+    colorAwake: Color,
+    colorREM: Color,
+    colorLightSleep: Color,
+    colorDeepSleep: Color,
+) {
+    val xRange = TimeRange.today().toEpochDoubleRange()
+    val xRangeWidth = xRange.endInclusive - xRange.start
+
+    for (entry in entries) {
+        val (color, stage) = when (entry.stage) {
+            SleepStage.Unknown -> continue
+
+            SleepStage.Awake,
+            SleepStage.OutOfBed,
+            SleepStage.AwakeInBed -> Pair(colorAwake, 0)
+
+            SleepStage.REM -> Pair(colorREM, 1)
+
+            SleepStage.Sleeping,
+            SleepStage.Light -> Pair(colorLightSleep, 2)
+
+            SleepStage.Deep -> Pair(colorDeepSleep, 3)
+        }
+
+        val start = (entry.start.toEpochMilliseconds().toDouble() - xRange.start) / xRangeWidth
+        val end = (entry.end.toEpochMilliseconds().toDouble() - xRange.start) / xRangeWidth
+
+        val strokeWidth = 4f
+        val yPadding = strokeWidth / 2f
+        val availableHeight = size.height - strokeWidth
+
+        val y = stage.toFloat() / 3f
+        val yPx = yPadding + y * availableHeight
+
+        val path = Path().apply {
+            moveTo(start.toFloat() * size.width, yPx)
+            lineTo(end.toFloat() * size.width, yPx)
+        }
+
+        drawPath(
+            path,
+            color = color,
+            style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+    }
+}
+
 
 data class MeasurementStatistic(val measurement: Measurement, val value: String?) {
     fun unit(): String? = when (this.measurement) {
