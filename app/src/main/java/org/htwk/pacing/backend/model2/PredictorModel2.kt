@@ -54,7 +54,7 @@ object PredictorModel2 {
         energy: List<ValidatedEnergyLevelEntry>
     ) {
         if (heartRate.isEmpty() || energy.isEmpty()) {
-            Log.w(TAG, "Insufficient data: HR=${heartRate.size}, Energy=${energy.size}")
+            //Log.w(TAG, "Insufficient data: HR=${heartRate.size}, Energy=${energy.size}")
             return
         }
 
@@ -65,7 +65,7 @@ object PredictorModel2 {
 
         val hrAgg = aggregateHR(hrDataPoints, energyConfig.aggregationMinutes)
         if (hrAgg.size < 10) {
-            Log.w(TAG, "Not enough aggregated HR data: ${hrAgg.size}")
+            //Log.w(TAG, "Not enough aggregated HR data: ${hrAgg.size}")
             return
         }
 
@@ -80,9 +80,9 @@ object PredictorModel2 {
         if (result.usedDays > 0) {
             trainedParams = result.result
             decayRate = EnergyDecayFallback.computeDecayRate(energyDataPoints)
-            Log.i(TAG, "Training complete: ${result.usedDays}/${result.totalDays} cycles")
+            //Log.i(TAG, "Training complete: ${result.usedDays}/${result.totalDays} cycles")
         } else {
-            Log.w(TAG, "Training failed, using defaults")
+            //Log.w(TAG, "Training failed, using defaults")
             trainedParams = defaultParams()
         }
     }

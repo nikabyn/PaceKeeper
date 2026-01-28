@@ -81,7 +81,7 @@ class ForegroundWorker(
 
                         predictionJob = launchRepeating(EnergyPredictionJob.TAG + "_$newModel") {
                             if (newModel == "MODEL2") {
-                                EnergyPredictionJob_modell2.run(db)
+                                EnergyPredictionJobModel2.run(db)
                             } else {
                                 EnergyPredictionJob.run(db)
                             }

@@ -57,7 +57,7 @@ object EnergyDecayFallback {
     fun computeDecayRate(energyData: List<EnergyDataPoint>): DecayRateResult {
         val sorted = energyData.sortedBy { it.timestamp }
         if (sorted.size < 2) {
-            Log.d(TAG, "Not enough data points for decay rate: ${sorted.size}")
+            //Log.d(TAG, "Not enough data points for decay rate: ${sorted.size}")
             return defaultDecayRate()
         }
 
@@ -83,7 +83,7 @@ object EnergyDecayFallback {
         }
 
         if (changes.size < MIN_PAIRS_TOTAL) {
-            Log.d(TAG, "Not enough valid pairs for decay rate: ${changes.size} (need $MIN_PAIRS_TOTAL)")
+            //Log.d(TAG, "Not enough valid pairs for decay rate: ${changes.size} (need $MIN_PAIRS_TOTAL)")
             return defaultDecayRate()
         }
 
@@ -104,12 +104,7 @@ object EnergyDecayFallback {
             dataPointsUsed = changes.size
         )
 
-        Log.i(TAG, "Computed decay rate: avg=${"%.2f".format(result.averageHourlyDecay)}%/h " +
-                "morning=${result.morningDecayRate?.let { "%.2f".format(it) } ?: "n/a"}, " +
-                "afternoon=${result.afternoonDecayRate?.let { "%.2f".format(it) } ?: "n/a"}, " +
-                "evening=${result.eveningDecayRate?.let { "%.2f".format(it) } ?: "n/a"}, " +
-                "night=${result.nightRecoveryRate?.let { "%.2f".format(it) } ?: "n/a"} " +
-                "from ${changes.size} pairs")
+        //Log.i(TAG, "Computed decay rate: avg=${"%.2f".format(result.averageHourlyDecay)}%/h " + "morning=${result.morningDecayRate?.let { "%.2f".format(it) } ?: "n/a"}, " + "afternoon=${result.afternoonDecayRate?.let { "%.2f".format(it) } ?: "n/a"}, " + "evening=${result.eveningDecayRate?.let { "%.2f".format(it) } ?: "n/a"}, " + "night=${result.nightRecoveryRate?.let { "%.2f".format(it) } ?: "n/a"} " + "from ${changes.size} pairs")
 
         return result
     }
@@ -150,10 +145,7 @@ object EnergyDecayFallback {
         val futureDecay = getDecayForHour(rate, futureHour) / 100.0
         val futureDecayed = (currentDecayed - futureDecay * 2.0).coerceIn(0.0, 1.0)
 
-        Log.d(TAG, "Decay fallback: lastEnergy=${"%.2f".format(lastEnergy)}, " +
-                "elapsed=${"%.1f".format(elapsedHours)}h, " +
-                "rate=${"%.2f".format(hourlyDecay * 100)}%/h, " +
-                "now=${"%.2f".format(currentDecayed)}, future=${"%.2f".format(futureDecayed)}")
+        //Log.d(TAG, "Decay fallback: lastEnergy=${"%.2f".format(lastEnergy)}, " + "elapsed=${"%.1f".format(elapsedHours)}h, " + "rate=${"%.2f".format(hourlyDecay * 100)}%/h, " + "now=${"%.2f".format(currentDecayed)}, future=${"%.2f".format(futureDecayed)}")
 
         return Pair(currentDecayed, futureDecayed)
     }

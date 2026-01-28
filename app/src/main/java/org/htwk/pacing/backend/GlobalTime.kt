@@ -29,10 +29,6 @@ object GlobalTime {
         _offsetFlow.value = diff // Trigger observers
     }
 
-    fun reset() {
-        offsetMillis.set(0)
-        _offsetFlow.value = 0L
-    }
     
     private fun Long.toMillisDuration(): kotlin.time.Duration = this.toDuration(DurationUnit.MILLISECONDS)
 }

@@ -20,8 +20,8 @@ import kotlin.time.Duration.Companion.minutes
  * Best configuration:
  * - Bereich=all, Methode=median, AutoFit=true, Offset=true, HRV=true, Anchor=true
  */
-object EnergyPredictionJob_modell2 {
-    const val TAG = "EnergyPredictionJob_modell2"
+object EnergyPredictionJobModel2 {
+    const val TAG = "EnergyPredictionJobModel2"
 
     private val predictionSeriesDuration = PredictorModel2.TIME_SERIES_DURATION
     private val trainingDuration = 60.days

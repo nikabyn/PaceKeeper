@@ -330,9 +330,9 @@ object Optimizer {
         cycle: CycleData,
         aggregationMinutes: Int
     ): DayFitResult {
-        Log.d("Optimizer fitSingleCycle", "Cycle ${cycle.label}: startEnergy=${cycle.startEnergy}, hrPoints=${cycle.hrData.size}, validatedPoints=${cycle.validatedPoints.size}")
+        //Log.d("Optimizer fitSingleCycle", "Cycle ${cycle.label}: startEnergy=${cycle.startEnergy}, hrPoints=${cycle.hrData.size}, validatedPoints=${cycle.validatedPoints.size}")
         val gridResult = gridSearchCycle(cycle, aggregationMinutes)
-        Log.d("Optimizer gridSearch", "Grid result: hrLow=${gridResult.hrLow}, hrHigh=${gridResult.hrHigh}, drain=${gridResult.drainFactor}, recovery=${gridResult.recoveryFactor}, loss=${gridResult.loss}")
+        //Log.d("Optimizer gridSearch", "Grid result: hrLow=${gridResult.hrLow}, hrHigh=${gridResult.hrHigh}, drain=${gridResult.drainFactor}, recovery=${gridResult.recoveryFactor}, loss=${gridResult.loss}")
         val finalResult = nelderMeadCycle(cycle, gridResult, aggregationMinutes)
 
         return DayFitResult(
@@ -397,7 +397,7 @@ object Optimizer {
         val allCycles = groupBySleepCycle(validatedEnergy, hrAgg, sleepConfig)
         val cycles = filterCyclesByRange(allCycles, fitRange)
         val logTag = "Optimizer Autofit"
-        Log.d(logTag, "Total cycles: ${allCycles.size}, Filtered cycles: ${cycles.size}, HR points: ${hrAgg.size}, Validated points: ${validatedEnergy.size}")
+        //Log.d(logTag, "Total cycles: ${allCycles.size}, Filtered cycles: ${cycles.size}, HR points: ${hrAgg.size}, Validated points: ${validatedEnergy.size}")
 
         if (cycles.isEmpty()) {
             return AutoFitResult(
@@ -465,8 +465,8 @@ object Optimizer {
             energyOffset = round(median(offsets) * 10) / 10.0
         )
         
-        Log.d(logTag, "Final aggregated result: hrLow=${result.hrLow}, hrHigh=${result.hrHigh}, drain=${result.drainFactor}, recovery=${result.recoveryFactor}, offset=${result.energyOffset}, loss=${result.loss}")
-        Log.d(logTag, "Valid results: ${validResults.size}, Day losses: ${validResults.map { it.loss }}")
+        //(logTag, "Final aggregated result: hrLow=${result.hrLow}, hrHigh=${result.hrHigh}, drain=${result.drainFactor}, recovery=${result.recoveryFactor}, offset=${result.energyOffset}, loss=${result.loss}")
+        //Log.d(logTag, "Valid results: ${validResults.size}, Day losses: ${validResults.map { it.loss }}")
 
         return AutoFitResult(
             result = result,

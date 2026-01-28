@@ -2,38 +2,6 @@ package org.htwk.pacing.backend.model2
 
 import kotlinx.datetime.Instant
 
-/**
- * HRV-basierte Energieberechnung mit Anchoring.
- *
- * ARCHITEKTUR:
- * ============
- *
- * HAUPT-ENTRY-POINT:
- *   calculateEnergyWithHRVDrainAnchored()
- *     - Segmentiert HR-Daten anhand von Anchor-Punkten (validierte Energie-Eingaben)
- *     - Ruft für jedes Segment calculateEnergyWithHRVDrain() auf
- *     - Springt bei jedem Anchor zum validierten Wert
- *
- * ENERGIE-FORMEL (pro Zeitschritt):
- *   wenn HR < hrLow:  energy += (hrLow - HR) * 0.1 * recoveryFactor * (deltaMin/15)
- *   wenn HR > hrHigh: energy -= (HR - hrHigh) * 0.15 * drainFactor * hrvMultiplier * (deltaMin/15)
- *
- * HRV-MULTIPLIER:
- *   - Niedriger HRV (Stress) → höherer Drain (1.3x)
- *   - Normaler HRV → normaler Drain (1.0x)
- *   - Hoher HRV (Entspannung) → niedrigerer Drain (0.8x)
- *
- * ANCHORING:
- *   - Nutzer-validierte Energiewerte überschreiben berechnete Werte
- *   - Berechnung startet vom letzten Anchor neu
- *   - Verhindert Drift über lange Zeiträume
- *
- * CALL-FLOW:
- *   Predictor_modell2.predict()
- *     → HeartRatePredictionModel_modell2.predict()
- *       → calculateEnergyWithHRVDrainAnchored()  ← ENTRY POINT
- *         → calculateEnergyWithHRVDrain()        ← pro Segment
- */
 object EnergyCalculation {
     val DEFAULT_HRV_DRAIN_CONFIG = HRVDrainConfig()
 
