@@ -31,12 +31,14 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
@@ -61,6 +63,17 @@ import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Duration.Companion.minutes
 
+/**
+ * Top-level screen composable that displays today’s measurements grouped by category.
+ *
+ * It periodically refreshes today’s measurements from the [MeasurementsViewModel]
+ * and renders a scrollable list of measurement cards. Each card shows a summary
+ * statistic and a small graph preview, and navigates to a detailed screen when tapped.
+ *
+ * @param navController Used to navigate to individual measurement detail screens.
+ * @param modifier Optional [Modifier] for styling and layout.
+ * @param viewModel Provides access to measurement data for today.
+ */
 @Composable
 fun MeasurementsScreen(
     navController: NavController,
@@ -85,14 +98,14 @@ fun MeasurementsScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
         ) {
-            MeasurementsCategory("Activity")
+            MeasurementsCategory(stringResource(R.string.activity))
             MeasurementsCard(navController, Steps, measurements)
             MeasurementsCard(navController, Distance, measurements)
             MeasurementsCard(navController, ElevationGained, measurements)
             MeasurementsCard(navController, Speed, measurements)
 
             Spacer(Modifier.height(Spacing.medium))
-            MeasurementsCategory("Health")
+            MeasurementsCategory(stringResource(R.string.health))
             MeasurementsCard(navController, HeartRate, measurements)
             MeasurementsCard(navController, Sleep, measurements)
             MeasurementsCard(navController, Symptoms, measurements)
@@ -104,6 +117,14 @@ fun MeasurementsScreen(
     }
 }
 
+/**
+ * Displays a category header for a group of measurements.
+ *
+ * Used to visually separate measurement cards into logical sections
+ * such as "Activity" or "Health".
+ *
+ * @param name The display name of the category.
+ */
 @Composable
 private fun MeasurementsCategory(name: String) =
     Text(
@@ -113,7 +134,17 @@ private fun MeasurementsCategory(name: String) =
         modifier = Modifier.padding(start = Spacing.medium),
     )
 
-
+/**
+ * A clickable card that summarizes a single measurement.
+ *
+ * The card shows the measurement title, aggregated statistics for today,
+ * and a compact graph preview. Clicking the card navigates to the
+ * detailed measurement screen.
+ *
+ * @param navController Used to navigate to the measurement detail screen.
+ * @param measurement The measurement type represented by this card.
+ * @param measurements A map of all measurements and their timed entries for today.
+ */
 @Composable
 private fun MeasurementsCard(
     navController: NavController,
@@ -161,6 +192,16 @@ private fun MeasurementsCard(
     }
 }
 
+/**
+ * Displays the primary statistic and supplementary note for a measurement.
+ *
+ * This composable computes aggregated statistics for the given measurement
+ * and renders the value, unit, and an explanatory note.
+ *
+ * @param measurement The measurement whose statistics are shown.
+ * @param measurements A map of all measurements and their timed entries.
+ * @param modifier Optional [Modifier] for styling and layout.
+ */
 @Composable
 private fun TitleAndStats(
     measurement: Measurement,
@@ -197,7 +238,17 @@ private fun TitleAndStats(
     )
 }
 
-
+/**
+ * Renders a small, graph preview for a measurement.
+ *
+ * The graph type and drawing strategy depend on the measurement:
+ * accumulated values, line graphs, or sleep stage segments. Measurements
+ * without meaningful preview data are intentionally left blank.
+ *
+ * @param measurement The measurement to visualize.
+ * @param measurements A map of all measurements and their timed entries.
+ * @param modifier Optional [Modifier] for styling and layout.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GraphPreview(
@@ -250,6 +301,16 @@ private fun GraphPreview(
     }
 }
 
+/**
+ * Draws a preview graph for accumulated measurements such as steps or distance.
+ *
+ * Individual entries are converted to graph values and accumulated over time
+ * before being rendered as a continuous line.
+ *
+ * @param measurement The measurement being drawn.
+ * @param entries Timed entries for the measurement.
+ * @param strokeColor Color used for the graph line.
+ */
 private fun DrawScope.drawPreviewAccumulated(
     measurement: Measurement,
     entries: List<TimedEntry>,
@@ -270,6 +331,16 @@ private fun DrawScope.drawPreviewAccumulated(
     )
 }
 
+/**
+ * Draws a preview line graph for non-accumulated measurements.
+ *
+ * Entries are plotted directly over time without accumulation, producing
+ * a standard time-series line graph.
+ *
+ * @param measurement The measurement being drawn.
+ * @param entries Timed entries for the measurement.
+ * @param strokeColor Color used for the graph line.
+ */
 private fun DrawScope.drawPreviewLine(
     measurement: Measurement,
     entries: List<TimedEntry>,
@@ -286,6 +357,18 @@ private fun DrawScope.drawPreviewLine(
     )
 }
 
+/**
+ * Draws a preview visualization for sleep sessions.
+ *
+ * Each sleep stage is rendered as a horizontal segment positioned vertically
+ * according to its stage and colored by stage type. Unknown stages are skipped.
+ *
+ * @param entries Sleep session entries for today.
+ * @param colorAwake Color used for awake-related stages.
+ * @param colorREM Color used for REM sleep.
+ * @param colorLightSleep Color used for light sleep.
+ * @param colorDeepSleep Color used for deep sleep.
+ */
 private fun DrawScope.drawPreviewSleep(
     entries: List<SleepSessionEntry>,
     colorAwake: Color,

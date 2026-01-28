@@ -205,4 +205,6 @@
     <string name="start_time_label">Start time (HH:mm)</string>
     <string name="end_time_label">End time (HH:mm)</string>
     <string name="time_format_helper">Format: 00:00 to 23:59</string>
+    <string name="health">Health</string>
+    <string name="activity">Activity</string>
 </resources>

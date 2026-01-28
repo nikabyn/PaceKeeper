@@ -200,5 +200,7 @@
     <string name="very_bad">Sehr schlecht</string>
     <string name="bad">Schlecht</string>
     <string name="good">Gut</string>
+    <string name="health">Gesundheit</string>
+    <string name="activity">Aktivität</string>
 
 </resources>
