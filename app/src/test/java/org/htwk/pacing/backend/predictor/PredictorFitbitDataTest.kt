@@ -359,6 +359,8 @@ class PredictorFitbitDataTest {
 
         fun toGenericTimedDataPointList(data: DoubleArray) = data.mapIndexed{index, value -> GenericTimedDataPoint(time = Instant.fromEpochSeconds(index.toLong()), value = value)}
 
+        assertEquals(636291779, predictions[0].contentHashCode())
+
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
                 /*"SLEEP" to multiTimeSeriesDiscrete.getMutableRow(MultiTimeSeriesDiscrete.FeatureID(
@@ -494,6 +496,7 @@ class PredictorFitbitDataTest {
 
         val diffs = predictions.map{it -> it.percentageNow.toDouble()}.toDoubleArray().discreteTrapezoidalIntegral(0.5)
 
+        assertEquals(1082783510, diffs.contentHashCode())
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
