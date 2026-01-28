@@ -153,7 +153,7 @@ object ExtrapolationPredictionModel : IPredictionModel {
             (allExtrapolationsMatrix[i] as D1Array<Double>).normalize()
         }
 
-        val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector).toList()
+        val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector, lastIsBias = true).toList()
 
         val bias = coefficients.last()
 

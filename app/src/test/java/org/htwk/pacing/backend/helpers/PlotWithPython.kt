@@ -2,12 +2,12 @@ package org.htwk.pacing.backend.helpers
 
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
+import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, DoubleArray>) {
-    if (seriesData.isEmpty()) {
-        println("No data to plot.")
+fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, List<GenericTimedDataPointTimeSeries.GenericTimedDataPoint>>) {
+    if (seriesData.isEmpty()) {println("No data to plot.")
         return
     }
 
@@ -20,8 +20,6 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, DoubleArray>) {
             return
         }
 
-        val validatedEnergyLevelCSV = {}.javaClass.classLoader?.getResource("exported/2/validated_energy_level.csv")!!
-
         scriptFile = File.createTempFile("plot_script_", ".py")
         scriptFile.outputStream().use { fileOut ->
             scriptUrl.openStream().use { resourceIn ->
@@ -31,20 +29,18 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, DoubleArray>) {
 
         dataFile = File.createTempFile("mtsd_data_", ".csv")
         dataFile.printWriter().use { out ->
-            val headers = "index," + seriesData.keys.joinToString(",")
-            out.println(headers)
-
-            val maxLength = seriesData.values.firstOrNull()?.size ?: 0
-            for (i in 0 until maxLength) {
-                val rowItems = seriesData.values.map { doubleArray ->
-                    doubleArray[i].toString()
+            // Use a long format: series_name,time,value
+            out.println("series_name,time,value")
+            seriesData.forEach { (seriesName, dataPoints) ->
+                dataPoints.forEach { point ->
+                    // Write each point on its own line with its series name and timestamp
+                    out.println("$seriesName,${point.time},${point.value}")
                 }
-                out.println("$i,${rowItems.joinToString(",")}")
             }
         }
         println("Data dumped to temporary file: ${dataFile.absolutePath}")
 
-        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath, validatedEnergyLevelCSV.path)
+        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath)
 
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)

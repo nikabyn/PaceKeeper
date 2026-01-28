@@ -35,7 +35,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
-    val lookBackOffsets = (0 until 4).map{ x -> x * 4}.toList()//, 7, 10, 15, 22, 30, 40, 55, 70)s
+    val lookBackOffsets = (0 until 1).map{ x -> x * 4}.toList()
 
     //stores "learned" / regressed linear coefficients per Offset
     class PerHorizonModel(
@@ -57,7 +57,8 @@ object DifferentialPredictionModel : IPredictionModel {
 
     private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int) : List<Double> {
         return lookBackOffsets.map { horizon ->
-            input.allFeaturesAt(offset - horizon).map { x -> x }.toList()
+            val index = (offset - horizon).coerceAtLeast(0)
+            input.allFeaturesAt(index).map { x -> x }.toList()
         }.flatten()
     }
     private fun createTrainingSamples(
@@ -65,16 +66,19 @@ object DifferentialPredictionModel : IPredictionModel {
         targetTimeSeriesDiscrete: DoubleArray
     ): List<TrainingSample> {
 
-        return (lookBackOffsets.max() * 2 until input.stepCount()).map { offset ->
+        return (lookBackOffsets.max() until input.stepCount()).map { offset ->
             TrainingSample(
-                metricValues = createFeatures(input, offset),
+                metricValues = createFeatures(input, offset) + listOf(1.0),
                 targetValue = targetTimeSeriesDiscrete[offset]
             )
         }
     }
     override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
         val softenedTarget = centeredMovingAverage(target, window = 64).discreteDerivative().map{
-            x -> x.coerceIn(-0.1, 0.1)
+            x ->
+            var x1 = x.coerceIn(-0.1, 0.1)
+            if(x1 < 0.0) x1*= 1.0 //TODO move to DB parameter (negative energy bias)
+            x1
         }.toDoubleArray()
 
         val trainingSamples = createTrainingSamples(
@@ -89,7 +93,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //normalize extrapolations, this is essential for good regression stability, but skip the
         //constant bias feature at the end so it doesn't get zeroed from normalization
-        val extrapolationDistributions = (0 until metricMatrix.shape[0]).map { i ->
+        val extrapolationDistributions = (0 until metricMatrix.shape[0] - 1).map { i ->
             (metricMatrix[i] as D1Array<Double>).normalize()
         }
 
@@ -110,7 +114,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         val metricMatrixShifted = (metricMatrix[
             0 until metricMatrix.shape[0],
-            0 until metricMatrix.shape[1] - predictionHorizon.howFarInSamples + 0 //trigger out of bounds for test
+            0 until metricMatrix.shape[1] - predictionHorizon.howFarInSamples
         ]) as D2Array<Double>
         //same for target vector
         val targetVectorShifted = (targetVector[
@@ -122,7 +126,8 @@ object DifferentialPredictionModel : IPredictionModel {
         }
 
         val coefficients = leastSquaresTikhonov(metricMatrixShifted.transpose(), targetVectorShifted,
-            regularization = 1000.0
+            regularization = 1000.0,
+            lastIsBias = true
         ).toList()
 
         return coefficients
@@ -139,14 +144,14 @@ object DifferentialPredictionModel : IPredictionModel {
         val inputDistributions = model!!.inputDistributions
         val perHorizonModel = model!!.perHorizonModels[horizon]!!
 
-        val inputFeaturesAtOffset = createFeatures(input, offset).dropLast(1)
+        val inputFeaturesAtOffset = createFeatures(input, offset)
 
         //normalize extrapolations, this is essential for good regression stability
         val normalizedInputs: D1Array<Double> = mk.ndarray(mk.ndarray(inputFeaturesAtOffset
             .mapIndexed {index, d ->
                 val distribution = inputDistributions[index]
                 normalizeSingleValue(d, distribution)
-            }).toList())
+            }).toList() + listOf(1.0))
 
         val weights: List<Double> = perHorizonModel.weights
 
@@ -155,6 +160,6 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //TODO: remove this and maybe do normalize target
         val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
-        return prediction.coerceIn(-0.1, 0.1)
+        return prediction//.coerceIn(-0.1, 0.1)
     }
 }

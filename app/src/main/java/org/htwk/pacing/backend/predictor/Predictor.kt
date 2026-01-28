@@ -21,6 +21,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTime
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
+import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -29,7 +30,7 @@ object Predictor {
     private const val LOGGING_TAG = "Predictor"
 
     //time duration/length of input time series;
-    val TIME_SERIES_DURATION: Duration = 2.days
+    val TIME_SERIES_DURATION: Duration = 8.days
     val TIME_SERIES_STEP_DURATION: Duration = 30.minutes
     val TIME_SERIES_SAMPLE_COUNT: Int = (TIME_SERIES_DURATION / TIME_SERIES_STEP_DURATION).toInt()
 
@@ -134,24 +135,34 @@ object Predictor {
      */
     fun predict(
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
-        lastValidatedEnergy: Double,
-        timeSinceLastValidation: Duration,
+        lastValidatedEnergyLevelEntry: ValidatedEnergyLevelEntry?,
+        timeNow: Instant
     ): PredictedEnergyLevelEntry {
-        val discreteSteps =
-            minOf(
-                (timeSinceLastValidation.inWholeMilliseconds / TIME_SERIES_STEP_DURATION.inWholeMilliseconds).toInt(),
-                multiTimeSeriesDiscrete.stepCount()
-            )
+        val lastValidationTime =
+            lastValidatedEnergyLevelEntry?.time ?: (timeNow - TIME_SERIES_DURATION)
+        val lastValidationEnergyLevel = lastValidatedEnergyLevelEntry?.percentage?.toDouble() ?: -0.5
+        //TODO: what if last validation is longer ago than TIME_SERIES_DURATION?
+        //TODO: grab input data from a bit longer than 2 days
 
-        var predictedEnergy = lastValidatedEnergy
-        for(i in multiTimeSeriesDiscrete.stepCount() - discreteSteps until multiTimeSeriesDiscrete.stepCount()) {
-            val deltaEnergy = DifferentialPredictionModel.predict(
+        val timeSinceLastValidation = timeNow - lastValidationTime
+
+        val stepsSinceLastValidation = (timeSinceLastValidation.inWholeMilliseconds / TIME_SERIES_STEP_DURATION.inWholeMilliseconds).toInt()
+        val minIndex = DifferentialPredictionModel.lookBackOffsets.max()
+
+        var startIndex = multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation
+        if(startIndex < minIndex) startIndex = minIndex
+
+        //start at last predicted value
+        var predictedEnergy = lastValidationEnergyLevel
+        //walk through time until now, predicting change in each step, to answer where energy is now
+        val predictions = (startIndex until multiTimeSeriesDiscrete.stepCount()).map { i ->
+            DifferentialPredictionModel.predict(
                 multiTimeSeriesDiscrete,
-                multiTimeSeriesDiscrete.stepCount() - i,
+                i,
                 IPredictionModel.PredictionHorizon.NOW
             )
-            predictedEnergy += deltaEnergy
-        }
+        }.toDoubleArray()
+        if(predictions.isNotEmpty()) predictedEnergy = predictions[0]//predictions.discreteTrapezoidalIntegral(lastValidationEnergyLevel).last()
 
         /*DifferentialPredictionModel.predict(
             multiTimeSeriesDiscrete,
@@ -163,7 +174,7 @@ object Predictor {
         );*/
         return PredictedEnergyLevelEntry(
             time = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.NOW.howFar,
-            percentageNow = Percentage(predictedEnergy.coerceIn(0.0, 1.0)),
+            percentageNow = Percentage(predictedEnergy.coerceIn(-1.0, 1.0)),
             timeFuture = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
             percentageFuture = Percentage(0.0 + Double.NaN)
         )

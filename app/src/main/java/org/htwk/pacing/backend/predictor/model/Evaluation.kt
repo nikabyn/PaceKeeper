@@ -89,13 +89,12 @@ internal fun testShiftEquality(
 
 internal fun producePredictions(
     model: IPredictionModel,
-    fullMTSD: MultiTimeSeriesDiscrete,
-    singleTargetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries) : DoubleArray {
-    val predictions = (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
+    fullMTSD: MultiTimeSeriesDiscrete) : DoubleArray {
+    val predictions = (0 until fullMTSD.stepCount()).map {
             i ->
         val prediction = model.predict(
             fullMTSD,
-            i + Predictor.TIME_SERIES_SAMPLE_COUNT - 1,
+            i,
             IPredictionModel.PredictionHorizon.NOW,
         )
         prediction
@@ -132,14 +131,14 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
     )
 
     // retrieve step-wise predictions
-    val predictionsDerivative = producePredictions(DifferentialPredictionModel, input, target)
+    val predictionsDerivative = producePredictions(DifferentialPredictionModel, input)
 
     // offset initial value
     val startOffset = target.values.slice(0 until 10).average()
     val predictions = predictionsDerivative.discreteTrapezoidalIntegral(startOffset)
 
-    //println("MSE: ${meanSquaredError(predictions, target.values)}")
-    //println("R2:  ${r2Score(predictions, target.values)}")
+    println("MSE: ${meanSquaredError(predictions, target.values)}")
+    println("R2:  ${r2Score(predictions, target.values)}")
 
     return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
             x -> x.coerceIn(-0.1, 0.1)

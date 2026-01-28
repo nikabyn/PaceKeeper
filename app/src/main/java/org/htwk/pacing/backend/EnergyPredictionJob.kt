@@ -130,9 +130,9 @@ object EnergyPredictionJob {
             )
         }.collect { (multiSeries, fixedParams) ->
             val multiTimeSeriesDiscrete = Preprocessor.run(multiSeries, fixedParams)
-            val energyPrediction = predict(multiTimeSeriesDiscrete)
+            val energyPrediction = 0.0//predict(multiTimeSeriesDiscrete) TODO
             Log.d(TAG, "Predicted: $energyPrediction")
-            db.predictedEnergyLevelDao().insert(energyPrediction)
+            //db.predictedEnergyLevelDao().insert(energyPrediction) TODO
         }
     }
 
