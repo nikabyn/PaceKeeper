@@ -2,7 +2,6 @@ package org.htwk.pacing.backend.modell2
 
 import kotlinx.datetime.Instant
 import kotlin.math.max
-import kotlin.math.min
 
 /**
  * Sleep detection logic translated from TypeScript optimizer.ts
@@ -19,42 +18,36 @@ object SleepDetection {
     ): List<SleepPhase> {
         if (hrAgg.size < 2) return emptyList()
 
-        val phases = mutableListOf<SleepPhase>()
-        var inSleep = false
-        var sleepStart: Instant? = null
+        data class State(
+            val inSleep: Boolean = false,
+            val sleepStart: Instant? = null,
+            val phases: List<SleepPhase> = emptyList()
+        )
 
-        for (i in hrAgg.indices) {
-            val hr = hrAgg[i].bpm
-            val ts = hrAgg[i].timestamp
-
-            if (!inSleep && hr < sleepCfg.sleepHRThreshold) {
-                // Look back: when did HR start to drop?
-                var peakIdx = i
-                for (j in (max(0, i - 20) until i).reversed()) {
-                    if (hrAgg[j].bpm > hrAgg[peakIdx].bpm) {
-                        peakIdx = j
-                    }
+        return hrAgg.foldIndexed(State()) { i, state, point ->
+            when {
+                !state.inSleep && point.bpm < sleepCfg.sleepHRThreshold -> {
+                    state.copy(inSleep = true, sleepStart = findPeakTimestamp(hrAgg, i))
                 }
-                inSleep = true
-                sleepStart = hrAgg[peakIdx].timestamp
-            }
-
-            if (inSleep && hr >= sleepCfg.wakeHRThreshold) {
-                val sleepDuration = sleepStart?.let { start ->
-                    (ts.toEpochMilliseconds() - start.toEpochMilliseconds()) / 60000.0
-                } ?: 0.0
-
-                if (sleepDuration >= sleepCfg.minSleepMinutes) {
-                    sleepStart?.let { start ->
-                        phases.add(SleepPhase(start = start, end = ts))
-                    }
+                state.inSleep && point.bpm >= sleepCfg.wakeHRThreshold -> {
+                    val newPhases = state.sleepStart?.let { start ->
+                        val duration = (point.timestamp.toEpochMilliseconds() - start.toEpochMilliseconds()) / 60000.0
+                        if (duration >= sleepCfg.minSleepMinutes) state.phases + SleepPhase(start, point.timestamp)
+                        else state.phases
+                    } ?: state.phases
+                    State(inSleep = false, sleepStart = null, phases = newPhases)
                 }
-                inSleep = false
-                sleepStart = null
+                else -> state
             }
+        }.phases
+    }
+
+    private fun findPeakTimestamp(hrAgg: List<HRDataPoint>, currentIdx: Int): Instant {
+        var peakIdx = currentIdx
+        for (j in (max(0, currentIdx - 20) until currentIdx).reversed()) {
+            if (hrAgg[j].bpm > hrAgg[peakIdx].bpm) peakIdx = j
         }
-
-        return phases
+        return hrAgg[peakIdx].timestamp
     }
 
     /**

@@ -9,7 +9,7 @@ import kotlin.math.min
  */
 object EnergyCalculation {
 
-    // 2 hours delay in milliseconds (as in TypeScript: HR_DELAY_MS)
+    // 2 hours delay in milliseconds
     const val HR_DELAY_MS = 2 * 60 * 60 * 1000L
 
     /**
@@ -22,8 +22,6 @@ object EnergyCalculation {
      * @param recoveryFactor Factor for energy recovery when HR < hrLow
      * @param timeOffsetMinutes Time offset to apply to timestamps (in minutes)
      * @param aggregationMinutes Time bucket size for aggregation (in minutes)
-     * @param wakeEvents Wake events for potential reset
-     * @param resetOnWake Whether to reset energy to 100% on wake
      * @param startEnergy Starting energy level
      * @param energyOffset Offset to subtract from final energy
      */
@@ -35,8 +33,6 @@ object EnergyCalculation {
         recoveryFactor: Double,
         timeOffsetMinutes: Int,
         aggregationMinutes: Int,
-        wakeEvents: List<WakeEvent>,
-        resetOnWake: Boolean,
         startEnergy: Double,
         energyOffset: Double = 0.0
     ): List<EnergyResult> {
@@ -45,8 +41,6 @@ object EnergyCalculation {
         val result = mutableListOf<EnergyResult>()
         var energy = startEnergy
         val offsetMs = timeOffsetMinutes * 60 * 1000L
-
-        val wakeTimestamps = wakeEvents.map { it.timestamp.toEpochMilliseconds() }.toSet()
 
         for (i in hrAgg.indices) {
             val hr = hrAgg[i].bpm
@@ -59,16 +53,14 @@ object EnergyCalculation {
                 aggregationMinutes.toDouble()
             }
 
-            if (resetOnWake && wakeTimestamps.contains(tsMs)) {
-                energy = 100.0
-            } else {
-                if (hr < hrLow) {
-                    energy += (hrLow - hr) * 0.1 * recoveryFactor * (deltaMinutes / 15.0)
-                } else if (hr > hrHigh) {
-                    energy -= (hr - hrHigh) * 0.15 * drainFactor * (deltaMinutes / 15.0)
-                }
-                energy = max(0.0, min(100.0, energy))
+
+            if (hr < hrLow) {
+                energy += (hrLow - hr) * 0.1 * recoveryFactor * (deltaMinutes / 15.0)
+            } else if (hr > hrHigh) {
+                energy -= (hr - hrHigh) * 0.15 * drainFactor * (deltaMinutes / 15.0)
             }
+            energy = max(0.0, min(100.0, energy))
+
 
             result.add(
                 EnergyResult(

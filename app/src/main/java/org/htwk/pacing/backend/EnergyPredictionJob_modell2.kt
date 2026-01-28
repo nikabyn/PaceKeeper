@@ -24,8 +24,8 @@ object EnergyPredictionJob_modell2 {
     const val TAG = "EnergyPredictionJob_modell2"
 
     private val predictionSeriesDuration = Predictor_modell2.TIME_SERIES_DURATION
-    private val trainingDuration = 7.days // Train on last week
-    private val retrainEvery = 2.hours
+    private val trainingDuration = 60.days
+    private val retrainEvery = 24.hours
     private val predictEvery = 10.minutes
 
     suspend fun run(db: PacingDatabase) = coroutineScope {

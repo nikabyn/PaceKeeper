@@ -4,25 +4,18 @@ import kotlinx.datetime.Instant
 
 /**
  * Data types for Model 2 energy prediction.
- * Translated from TypeScript optimizer.ts and hrvDrain.ts
  */
-
-// ============== Basic HR Data Point ==============
 
 data class HRDataPoint(
     val timestamp: Instant,
     val bpm: Double
 )
 
-// ============== Energy Data Point ==============
-
 data class EnergyDataPoint(
     val timestamp: Instant,
     val percentage: Double,
     val validation: String? = null
 )
-
-// ============== Sleep Detection Types ==============
 
 data class SleepPhase(
     val start: Instant,
@@ -45,8 +38,6 @@ data class SleepCycle(
     val cycleEnd: Instant,
     val label: String
 )
-
-// ============== Optimization Types ==============
 
 data class OptimizationResult(
     val hrLow: Double,
@@ -83,19 +74,15 @@ data class AutoFitResult(
     val totalDays: Int
 )
 
-// ============== Energy Configuration ==============
-
 data class EnergyConfig(
-    val hrLow: Double = 60.0,
-    val hrHigh: Double = 75.0,
+    val hrLow: Double = 59.5,
+    val hrHigh: Double = 83.2,
     val timeOffsetMinutes: Int = 120,
-    val recoveryFactor: Double = 8.6,
-    val drainFactor: Double = 0.4,
+    val recoveryFactor: Double = 0.8,
+    val drainFactor: Double = 1.79,
     val aggregationMinutes: Int = 15,
-    val energyOffset: Double = 0.0
+    val energyOffset: Double = -6.9
 )
-
-// ============== HRV Types ==============
 
 data class HRVPoint(
     val timestamp: Instant,
@@ -112,8 +99,6 @@ data class HRVDrainConfig(
     val highThreshold: Double = 1.3
 )
 
-// ============== Cycle Data for Optimization ==============
-
 data class CycleData(
     val label: String,
     val cycleStart: Instant,
@@ -122,8 +107,6 @@ data class CycleData(
     val hrData: List<HRDataPoint>,
     val startEnergy: Double
 )
-
-// ============== Energy Result ==============
 
 data class EnergyResult(
     val timestamp: Instant,
@@ -136,13 +119,11 @@ data class EnergyResultWithHRV(
     val hrvMultiplier: Double
 )
 
-// ============== Decay Fallback Types ==============
-
 data class DecayRateResult(
-    val averageHourlyDecay: Double,       // Durchschnittlicher %/h Verfall (0-100 Skala), positiv = Verfall
+    val averageHourlyDecay: Double,       // median %/h drain (if positive = drain)
     val morningDecayRate: Double?,         // 06:00-12:00
     val afternoonDecayRate: Double?,       // 12:00-18:00
     val eveningDecayRate: Double?,         // 18:00-22:00
-    val nightRecoveryRate: Double?,        // 22:00-06:00 (kann negativ sein = Erholung)
+    val nightRecoveryRate: Double?,        // 22:00-06:00 (if negative = recovery)
     val dataPointsUsed: Int
 )

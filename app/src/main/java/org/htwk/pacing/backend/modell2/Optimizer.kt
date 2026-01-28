@@ -1,8 +1,9 @@
 package org.htwk.pacing.backend.modell2
 
 import kotlinx.datetime.Instant
-import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.math.round
+import android.util.Log
 
 /**
  * Optimization algorithms
@@ -153,75 +154,131 @@ object Optimizer {
         cycle: CycleData,
         aggregationMinutes: Int
     ): OptimizationResult {
-        val hrLowRange = listOf(50.0, 55.0, 60.0, 65.0, 70.0, 75.0)
-        val hrHighRange = listOf(80.0, 90.0, 100.0, 110.0, 120.0, 130.0)
+        val hrLowRange = listOf(50.0, 55.0, 60.0, 65.0, 70.0)
+        val hrHighRange = listOf(75.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0)
         val drainRange = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
         val recoveryRange = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
 
-        var bestLoss = Double.POSITIVE_INFINITY
-        var bestParams = OptimizationResult(
-            hrLow = 60.0,
-            hrHigh = 100.0,
-            drainFactor = 1.0,
-            recoveryFactor = 1.0,
-            loss = Double.POSITIVE_INFINITY,
-            energyOffset = 0.0
-        )
-
-        for (hrLow in hrLowRange) {
-            for (hrHigh in hrHighRange) {
-                if (hrLow >= hrHigh) continue
-                for (drainFactor in drainRange) {
-                    for (recoveryFactor in recoveryRange) {
-                        val loss = calculateCycleLoss(
-                            cycle,
-                            hrLow,
-                            hrHigh,
-                            drainFactor,
-                            recoveryFactor,
-                            aggregationMinutes
+        return hrLowRange.flatMap { hrLow ->
+            hrHighRange.flatMap { hrHigh ->
+                drainRange.flatMap { drain ->
+                    recoveryRange.map { recovery ->
+                        OptimizationResult(
+                            hrLow = hrLow,
+                            hrHigh = hrHigh,
+                            drainFactor = drain,
+                            recoveryFactor = recovery,
+                            loss = calculateCycleLoss(cycle, hrLow, hrHigh, drain, recovery, aggregationMinutes),
+                            energyOffset = 0.0
                         )
-
-                        if (loss < bestLoss) {
-                            bestLoss = loss
-                            bestParams = OptimizationResult(
-                                hrLow = hrLow,
-                                hrHigh = hrHigh,
-                                drainFactor = drainFactor,
-                                recoveryFactor = recoveryFactor,
-                                loss = loss,
-                                energyOffset = 0.0
-                            )
-                        }
                     }
                 }
             }
         }
-
-        return bestParams
+            .filter { it.hrLow < it.hrHigh }
+            .minByOrNull { it.loss }
+            ?: OptimizationResult(60.0, 100.0, 1.0, 1.0, Double.POSITIVE_INFINITY, 0.0)
     }
 
     /**
      * Nelder-Mead optimization for fine-tuning parameters.
      *
-     * Der Nelder-Mead-Algorithmus im Code ist ein Simplex-Verfahren. Ein Simplex ist in diesem Fall ein geometrischer Körper im 4D-Raum (da wir 4 Parameter optimieren: hrLow, hrHigh, drain, recovery), der aus 5 Punkten besteht.
      */
+    private data class SimplexPoint(val point: DoubleArray, val loss: Double)
+
+    private fun calculateCentroid(simplex: List<SimplexPoint>): DoubleArray {
+        val n = simplex[0].point.size
+        val centroid = DoubleArray(n)
+        for (i in 0 until simplex.lastIndex) {
+            for (j in 0 until n) {
+                centroid[j] += simplex[i].point[j]
+            }
+        }
+        for (j in 0 until n) centroid[j] /= (simplex.size - 1).toDouble()
+        return centroid
+    }
+
+    private fun reflect(centroid: DoubleArray, worst: DoubleArray, alpha: Double): DoubleArray =
+        DoubleArray(centroid.size) { j -> centroid[j] + alpha * (centroid[j] - worst[j]) }
+
+    private fun expand(centroid: DoubleArray, reflected: DoubleArray, gamma: Double): DoubleArray =
+        DoubleArray(centroid.size) { j -> centroid[j] + gamma * (reflected[j] - centroid[j]) }
+
+    private fun contract(centroid: DoubleArray, worst: DoubleArray, rho: Double): DoubleArray =
+        DoubleArray(centroid.size) { j -> centroid[j] + rho * (worst[j] - centroid[j]) }
+
+    private fun shrink(
+        simplex: List<SimplexPoint>,
+        best: DoubleArray,
+        sigma: Double,
+        getLoss: (DoubleArray) -> Double
+    ): List<SimplexPoint> {
+        return listOf(simplex[0]) + simplex.drop(1).map { sp ->
+            val newPoint = DoubleArray(sp.point.size) { j ->
+                best[j] + sigma * (sp.point[j] - best[j])
+            }
+            SimplexPoint(newPoint, getLoss(newPoint))
+        }
+    }
+
+    private fun isConverged(simplex: List<SimplexPoint>, threshold: Double = 0.01): Boolean {
+        val losses = simplex.mapNotNull { it.loss.takeIf { l -> l.isFinite() } }
+        if (losses.isEmpty()) return false
+        val mean = losses.average()
+        val variance = losses.map { (it - mean) * (it - mean) }.average()
+        return sqrt(variance) < threshold
+    }
+
+    private fun updateSimplex(
+        simplex: List<SimplexPoint>,
+        getLoss: (DoubleArray) -> Double,
+        alpha: Double,
+        gamma: Double,
+        rho: Double,
+        sigma: Double
+    ): List<SimplexPoint> {
+        val best = simplex[0]
+        val secondWorst = simplex[3]
+        val worst = simplex[4]
+
+        val centroid = calculateCentroid(simplex)
+        val reflected = reflect(centroid, worst.point, alpha)
+        val reflectedLoss = getLoss(reflected)
+
+        return when {
+            reflectedLoss < best.loss -> {
+                val expanded = expand(centroid, reflected, gamma)
+                val expandedLoss = getLoss(expanded)
+                val replacement = if (expandedLoss < reflectedLoss)
+                    SimplexPoint(expanded, expandedLoss)
+                else
+                    SimplexPoint(reflected, reflectedLoss)
+                simplex.dropLast(1) + replacement
+            }
+            reflectedLoss < secondWorst.loss -> {
+                simplex.dropLast(1) + SimplexPoint(reflected, reflectedLoss)
+            }
+            else -> {
+                val contracted = contract(centroid, worst.point, rho)
+                val contractedLoss = getLoss(contracted)
+                if (contractedLoss < worst.loss) {
+                    simplex.dropLast(1) + SimplexPoint(contracted, contractedLoss)
+                } else {
+                    shrink(simplex, best.point, sigma, getLoss)
+                }
+            }
+        }
+    }
+
     fun nelderMeadCycle(
         cycle: CycleData,
         startParams: OptimizationResult,
         aggregationMinutes: Int,
         maxIterations: Int = 50
     ): OptimizationResult {
-        // Point is [hrLow, hrHigh, drainFactor, recoveryFactor]
-        fun getLoss(p: DoubleArray): Double {
-            return calculateCycleLoss(
-                cycle,
-                p[0],
-                p[1],
-                p[2],
-                p[3],
-                aggregationMinutes
-            )
+
+        val getLoss: (DoubleArray) -> Double = { p ->
+            calculateCycleLoss(cycle, p[0], p[1], p[2], p[3], aggregationMinutes)
         }
 
         val start = doubleArrayOf(
@@ -231,112 +288,33 @@ object Optimizer {
             startParams.recoveryFactor
         )
 
-        // Initialize simplex
-        /*Das Programm nimmt das beste Ergebnis der Grid-Search als ersten Punkt und erzeugt vier weitere Punkte durch leichte Variation der Parameter, um einen "Körper" im Raum aufzuspannen.*/
-        data class SimplexPoint(val point: DoubleArray, var loss: Double)
-
-        val simplex = mutableListOf(
-            SimplexPoint(start.copyOf(), getLoss(start)), // Punkt aus Grid Search
-            SimplexPoint(doubleArrayOf(start[0] + 3, start[1], start[2], start[3]), 0.0), // Leicht verschobene Punkte
-            SimplexPoint(doubleArrayOf(start[0], start[1] + 5, start[2], start[3]), 0.0),// Leicht verschobene Punkte
-            SimplexPoint(doubleArrayOf(start[0], start[1], start[2] + 0.3, start[3]), 0.0),// Leicht verschobene Punkte
-            SimplexPoint(doubleArrayOf(start[0], start[1], start[2], start[3] + 0.3), 0.0)// Leicht verschobene Punkte
-        )
-
-        for (i in 1 until simplex.size) {
-            simplex[i].loss = getLoss(simplex[i].point)
+        val initialSimplex = listOf(
+            SimplexPoint(start.copyOf(), getLoss(start)),
+            SimplexPoint(doubleArrayOf(start[0] + 3, start[1], start[2], start[3]), 0.0),
+            SimplexPoint(doubleArrayOf(start[0], start[1] + 5, start[2], start[3]), 0.0),
+            SimplexPoint(doubleArrayOf(start[0], start[1], start[2] + 0.3, start[3]), 0.0),
+            SimplexPoint(doubleArrayOf(start[0], start[1], start[2], start[3] + 0.3), 0.0)
+        ).mapIndexed { i, sp ->
+            if (i == 0) sp else SimplexPoint(sp.point, getLoss(sp.point))
         }
-        /*
-        * Höheres Alpha (> 1.0): Der Algorithmus macht größere Sprünge. Er findet Lösungen schneller, könnte aber über schmale Minima (optimale Herzfrequenz-Werte) einfach hinwegspringen.
-        * Höheres Gamma: Die Expansion wird aggressiver. Gut, wenn die Startwerte (aus der Grid Search) sehr weit vom Optimum entfernt sind.
-        * Kleineres Rho / Sigma: Der Algorithmus wird "vorsichtiger" und kleinteiliger. Das erhöht die Präzision, führt aber dazu, dass er mehr Iterationen (Rechenzeit) benötigt, um zu konvergieren.
-        * verwendet wurden Standardwerte nach Nelder und Mead (1,2,0.5,0.5)
-        */
-        val alpha = 1.0 //für Reflexion, bestimmt, wie weit der schlechteste Punkt gespiegelt wird. 1.0 bedeutet: exakt die gleiche Distanz auf die andere Seite.
-        val gamma = 2.0 // für Expansion, verdoppelt die Suchweite, wenn die Richtung gut ist. Beschleunigt die Suche in flachen Tälern.
-        val rho = 0.5 // für Kontraktion, halbiert die Distanz zum Zentrum. Hilft, sich engen Minima vorsichtig zu nähern.
-        val sigma = 0.5 // für Schrumpfung, zieht alle Punkte um 50% zum Bestwert hin. Kommt zum Einsatz, wenn der Algorithmus "umzingelt" ist.
+
+        var simplex = initialSimplex
 
         for (iter in 0 until maxIterations) {
-            simplex.sortBy { it.loss }
-
-            val best = simplex[0]
-            val secondWorst = simplex[3]
-            val worst = simplex[4]
-
-            // Calculate centroid (excluding worst point)
-            val centroid = DoubleArray(4)
-            for (i in 0 until 4) {
-                for (j in 0 until 4) {
-                    centroid[j] += simplex[i].point[j]
-                }
-            }
-            for (j in 0 until 4) centroid[j] /= 4.0
-
-            // Reflection
-            /*Dies ist der erste Versuch, den schlechtesten Punkt (worst) loszuwerden, indem man ihn durch das Zentrum (centroid) auf die andere Seite projiziert.*/
-            val reflected = DoubleArray(4) { j ->
-                centroid[j] + alpha * (centroid[j] - worst.point[j])
-            }
-            val reflectedLoss = getLoss(reflected)
-
-            if (reflectedLoss < best.loss) {
-                // Expansion
-                /*Wenn die Reflexion einen neuen Bestwert liefert, geht der Algorithmus noch einen Schritt weiter in diese vielversprechende Richtung.*/
-                val expanded = DoubleArray(4) { j ->
-                    centroid[j] + gamma * (reflected[j] - centroid[j])
-                }
-                val expandedLoss = getLoss(expanded)
-
-                if (expandedLoss < reflectedLoss) {
-                    simplex[4] = SimplexPoint(expanded, expandedLoss)
-                } else {
-                    simplex[4] = SimplexPoint(reflected, reflectedLoss)
-                }
-            } else if (reflectedLoss < secondWorst.loss) {
-                simplex[4] = SimplexPoint(reflected, reflectedLoss)
-            } else {
-                // Contraction
-                /*Wenn die Reflexion keine Verbesserung bringt, zieht sich der Algorithmus näher an das Zentrum zusammen.*/
-                val contracted = DoubleArray(4) { j ->
-                    centroid[j] + rho * (worst.point[j] - centroid[j])
-                }
-                val contractedLoss = getLoss(contracted)
-
-                if (contractedLoss < worst.loss) {
-                    simplex[4] = SimplexPoint(contracted, contractedLoss)
-                } else {
-                    // Shrink
-                    /*Wenn gar nichts mehr hilft, wird der gesamte Simplex (außer dem besten Punkt) in Richtung des besten Punktes verkleinert.*/
-                    for (i in 1 until 5) {
-                        for (j in 0 until 4) {
-                            simplex[i].point[j] = best.point[j] + sigma * (simplex[i].point[j] - best.point[j])
-                        }
-                        simplex[i].loss = getLoss(simplex[i].point)
-                    }
-                }
-            }
-
-            // Check convergence
-            /*Hier wird mathematisch geprüft, ob sich die Loss-Werte der Punkte im Simplex noch nennenswert unterscheiden.*/
-            val losses = simplex.map { it.loss }.filter { it.isFinite() }
-            if (losses.isNotEmpty()) {
-                val mean = losses.average()
-                val variance = losses.map { (it - mean) * (it - mean) }.average()
-                if (sqrt(variance) < 0.01) break
-            }
+            simplex = simplex.sortedBy { it.loss }
+            simplex = updateSimplex(simplex, getLoss, 1.0, 2.0, 0.5, 0.5)
+            if (isConverged(simplex)) break
         }
 
-        simplex.sortBy { it.loss }
-        val best = simplex[0]
+        val best = simplex.minBy { it.loss }
 
         return OptimizationResult(
-            hrLow = (best.point[0] * 10).toLong() / 10.0,
-            hrHigh = (best.point[1] * 10).toLong() / 10.0,
-            drainFactor = (best.point[2] * 100).toLong() / 100.0,
-            recoveryFactor = (best.point[3] * 100).toLong() / 100.0,
-            loss = best.loss,
-            energyOffset = 0.0
+            hrLow          = round(best.point[0] * 10) / 10.0,
+            hrHigh         = round(best.point[1] * 10) / 10.0,
+            drainFactor    = round(best.point[2] * 100) / 100.0,
+            recoveryFactor = round(best.point[3] * 100) / 100.0,
+            loss           = best.loss,
+            energyOffset   = 0.0
         )
     }
 
@@ -347,7 +325,9 @@ object Optimizer {
         cycle: CycleData,
         aggregationMinutes: Int
     ): DayFitResult {
+        Log.d("Optimizer fitSingleCycle", "Cycle ${cycle.label}: startEnergy=${cycle.startEnergy}, hrPoints=${cycle.hrData.size}, validatedPoints=${cycle.validatedPoints.size}")
         val gridResult = gridSearchCycle(cycle, aggregationMinutes)
+        Log.d("Optimizer gridSearch", "Grid result: hrLow=${gridResult.hrLow}, hrHigh=${gridResult.hrHigh}, drain=${gridResult.drainFactor}, recovery=${gridResult.recoveryFactor}, loss=${gridResult.loss}")
         val finalResult = nelderMeadCycle(cycle, gridResult, aggregationMinutes)
 
         return DayFitResult(
@@ -430,6 +410,8 @@ object Optimizer {
     ): AutoFitResult {
         val allCycles = groupBySleepCycle(validatedEnergy, hrAgg, sleepConfig)
         val cycles = filterCyclesByRange(allCycles, fitRange)
+        val logTag = "Optimizer Autofit";
+        Log.d(logTag, "Total cycles: ${allCycles.size}, Filtered cycles: ${cycles.size}, HR points: ${hrAgg.size}, Validated points: ${validatedEnergy.size}")
 
         if (cycles.isEmpty()) {
             return AutoFitResult(
@@ -474,10 +456,10 @@ object Optimizer {
             AggregationMethod.MEDIAN -> ::median
         }
 
-        val aggHrLow = (aggregate(validResults.map { it.hrLow }) * 10).toLong() / 10.0
-        val aggHrHigh = (aggregate(validResults.map { it.hrHigh }) * 10).toLong() / 10.0
-        val aggDrainFactor = (aggregate(validResults.map { it.drainFactor }) * 100).toLong() / 100.0
-        val aggRecoveryFactor = (aggregate(validResults.map { it.recoveryFactor }) * 100).toLong() / 100.0
+        val aggHrLow = round(aggregate(validResults.map { it.hrLow }) * 10) / 10.0
+        val aggHrHigh = round(aggregate(validResults.map { it.hrHigh }) * 10) / 10.0
+        val aggDrainFactor = round(aggregate(validResults.map { it.drainFactor }) * 100) / 100.0
+        val aggRecoveryFactor = round(aggregate(validResults.map { it.recoveryFactor }) * 100) / 100.0
 
         // Calculate energy offset
         val offsets = cycles.map { cycle ->
@@ -497,8 +479,11 @@ object Optimizer {
             drainFactor = aggDrainFactor,
             recoveryFactor = aggRecoveryFactor,
             loss = aggregate(validResults.map { it.loss }),
-            energyOffset = (median(offsets) * 10).toLong() / 10.0
+            energyOffset = round(median(offsets) * 10) / 10.0
         )
+        
+        Log.d(logTag, "Final aggregated result: hrLow=${result.hrLow}, hrHigh=${result.hrHigh}, drain=${result.drainFactor}, recovery=${result.recoveryFactor}, offset=${result.energyOffset}, loss=${result.loss}")
+        Log.d(logTag, "Valid results: ${validResults.size}, Day losses: ${validResults.map { it.loss }}")
 
         return AutoFitResult(
             result = result,
