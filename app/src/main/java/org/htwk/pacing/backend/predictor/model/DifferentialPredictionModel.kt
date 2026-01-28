@@ -36,7 +36,7 @@ object DifferentialPredictionModel : IPredictionModel {
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
     private val BIAS_FEATURE = listOf(1.0)
-    val lookBackOffsets = (0 until 1).map { x -> x * 4 }.toList()
+    val lookBackOffsets = (0 until 4).map { x -> x * 4 }.toList()
 
     class PerHorizonModel(val weights: List<Double>)
     class Model(
