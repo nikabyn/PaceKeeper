@@ -1,11 +1,11 @@
 package org.htwk.pacing.ui.screens.measurements
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -61,53 +58,39 @@ import org.koin.compose.koinInject
 fun MeasurementScreen(
     navController: NavController,
     measurement: Measurement,
-    modifier: Modifier = Modifier,
     viewModel: MeasurementViewModel = MeasurementViewModel(measurement, koinInject()),
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    if (expanded) {
-        FullscreenGraphOverlay(
-            viewModel = viewModel,
-            onDismiss = { expanded = false }
-        )
-        return
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            painterResource(R.drawable.rounded_arrow_back),
-                            contentDescription = stringResource(R.string.back)
+    AnimatedContent(
+        targetState = expanded,
+        label = "GraphTransition"
+    ) { isExpanded ->
+        if (isExpanded) {
+            FullscreenGraphOverlay(
+                viewModel = viewModel,
+                onDismiss = { expanded = false }
+            )
+        } else {
+            SubScreen(
+                title = measurement.title(),
+                onBack = { navController.popBackStack() }
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .consumeWindowInsets(innerPadding)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = Spacing.large)) {
+                        GraphPreview(
+                            viewModel,
+                            onClick = { expanded = true },
+                            modifier = Modifier.height(350.dp)
                         )
                     }
-                },
-                title = {
-                    Text(
-                        text = measurement.title(),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                },
-            )
-        },
-        floatingActionButtonPosition = FabPosition.End
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .verticalScroll(rememberScrollState()),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            Column(modifier = Modifier.padding(horizontal = Spacing.large)) {
-                GraphPreview(
-                    viewModel,
-                    onClick = { expanded = true },
-                    modifier = Modifier.height(350.dp)
-                )
+                }
+
             }
         }
     }
@@ -124,8 +107,6 @@ private fun GraphPreview(
     val yDataToday = entriesToday.fastMap { viewModel.measurement.entryToYValue(it) }
     val yRange = viewModel.measurement.yRange(yDataToday)
     val ySteps = viewModel.measurement.ySteps(yRange)
-
-    Log.d("abc " + viewModel.measurement.toString(), ySteps.toString())
 
     val colorLine = MaterialTheme.colorScheme.primary
     val colorAwake = MaterialTheme.colorScheme.error
@@ -180,25 +161,15 @@ fun FullscreenGraphOverlay(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    BackHandler(onBack = onDismiss)
-
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onDismiss,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ) {
-                Icon(painterResource(R.drawable.rounded_expand_content), /* TODO */ "")
-            }
-        }
-    ) { padding ->
-
+    SubScreen(
+        title = viewModel.measurement.title(),
+        onBack = onDismiss
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 5f)
@@ -234,6 +205,38 @@ fun FullscreenGraphOverlay(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SubScreen(
+    title: String,
+    onBack: () -> Unit,
+    content: @Composable (PaddingValues) -> Unit
+) {
+    BackHandler(onBack = onBack)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painterResource(R.drawable.rounded_arrow_back),
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                },
+                title = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            )
+        },
+        content = content
+    )
 }
 
 class MeasurementViewModel(val measurement: Measurement, val db: PacingDatabase) : ViewModel() {
