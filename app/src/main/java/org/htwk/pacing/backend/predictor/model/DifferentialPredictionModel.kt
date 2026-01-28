@@ -126,7 +126,7 @@ object DifferentialPredictionModel : IPredictionModel {
         }
 
         val coefficients = leastSquaresTikhonov(metricMatrixShifted.transpose(), targetVectorShifted,
-            regularization = 1000.0,
+            regularization = 1e-6,
             lastIsBias = true
         ).toList()
 
