@@ -29,6 +29,7 @@
     <string name="sad">traurig</string>
     <string name="happy">glücklich</string>
     <string name="very_happy">sehr glücklich</string>
+    <string name="very_good">Sehr gut</string>
     <string name="bpm_at_given_time">" - %1$s: %2$s bpm"</string>
     <string name="select_csv_file">Bitte eine .csv-Datei auswählen!</string>
     <string name="import_heart_rate_data_csv">Herzfrequenzdaten importieren (.csv)</string>
@@ -196,5 +197,8 @@
     <string name="heart_rate_variability">Hauttemperaturschwankung</string>
     <string name="distance">Distanz</string>
     <string name="today">Heute</string>
+    <string name="very_bad">Sehr schlecht</string>
+    <string name="bad">Schlecht</string>
+    <string name="good">Gut</string>
 
 </resources>

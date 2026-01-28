@@ -10,6 +10,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
+import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
 import org.htwk.pacing.backend.database.ManualSymptomEntry
@@ -161,6 +162,7 @@ data class MeasurementStatistic(val measurement: Measurement, val value: String?
     }
 }
 
+@Composable
 fun accumulateStatistics(
     measurement: Measurement,
     measurements: Map<Measurement, List<TimedEntry>>
@@ -224,19 +226,24 @@ fun accumulateStatistics(
         HeartRateVariabilityRmssd -> (entries as List<HeartRateVariabilityEntry>)
             .map { it.variability }
             .average()
-            .let { "%.1f".format(it) }
+            .let { "%+.1f".format(it) }
 
         SkinTemperature -> (entries as List<SkinTemperatureEntry>)
             .map { it.temperature.inCelsius() }
             .average()
             .let { "%.1f".format(it) }
 
-        // TODO Should turn into an icon
         Symptoms -> (entries as List<ManualSymptomEntry>)
             .map { it.feeling.feeling.level }
             .average()
-            .roundToInt()
-            .toString()
+            .let {
+                when (Feeling.fromInt(it.toInt())) {
+                    Feeling.VeryBad -> stringResource(R.string.very_bad)
+                    Feeling.Bad -> stringResource(R.string.bad)
+                    Feeling.Good -> stringResource(R.string.good)
+                    Feeling.VeryGood -> stringResource(R.string.very_good)
+                }
+            }
     }
 
     return MeasurementStatistic(measurement, accumulated)

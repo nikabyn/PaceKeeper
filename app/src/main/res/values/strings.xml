@@ -41,6 +41,12 @@
     <string name="sad">sad</string>
     <string name="happy">happy</string>
     <string name="very_happy">very happy</string>
+
+    <string name="very_bad">Very bad</string>
+    <string name="bad">Bad</string>
+    <string name="good">Good</string>
+    <string name="very_good">Very good</string>
+
     <string name="bpm_at_given_time">" - %1$s: %2$s bpm"</string>
     <string name="select_csv_file">Please select a .csv file!</string>
     <string name="import_heart_rate_data_csv">Import Heart Rate Data (.csv)</string>
