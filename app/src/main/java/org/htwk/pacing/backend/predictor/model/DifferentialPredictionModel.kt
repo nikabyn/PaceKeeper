@@ -33,14 +33,14 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
-    private const val USE_BIAS = false
-    private const val TARGET_SMOOTHING_WINDOW: Int = 128
-    private const val MAX_CHANGE_PER_STEP: Double = 0.01
+    private const val USE_BIAS = true
+    private const val TARGET_SMOOTHING_WINDOW: Int = 32
+    private const val MAX_CHANGE_PER_STEP: Double = 0.05
 
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
     private val BIAS_FEATURE = if(USE_BIAS) listOf<Double>(1.0) else listOf<Double>() //QUICKFIX disable bias
-    val lookBackOffsets = (0 until 4).map { x -> x * 4 }.toList()
+    val lookBackOffsets = listOf(0,1,2,3,4,6,8,10,12,16,20,24,32,40,48)//(0 until 4).map { x -> x * 4 }.toList()
 
     class PerHorizonModel(val weights: List<Double>)
     class Model(
