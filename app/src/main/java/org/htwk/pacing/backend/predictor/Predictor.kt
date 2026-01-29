@@ -199,5 +199,7 @@ fun generateDiscreteTargetSeries(timeStart: Instant, duration: Duration, validat
                 }
             )
         ),
-        targetLength = stepCount
+        targetLength = stepCount,
+        //linear interpolation is ok, since we want linear behaviour on target metric
+        interpolationMode = TimeSeriesDiscretizer.InterpolationMode.LINEAR
     )

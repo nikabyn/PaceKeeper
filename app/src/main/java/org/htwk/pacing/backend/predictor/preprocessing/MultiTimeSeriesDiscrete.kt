@@ -328,10 +328,13 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                                 metricCounts[metric] = series.data.size
                             }
                     ),
-                    targetLength = stepCount
+                    targetLength = stepCount,
+                    //we have to use constant interpolation to prevent data leakage
+                    //see comment in InterpolationMode definition
+                    interpolationMode = TimeSeriesDiscretizer.InterpolationMode.CONSTANT
                 )
 
-                val discreteProportional = centeredMovingAverage(singleDiscreteTimeSeries.values, window = 8)
+                val discreteProportional = singleDiscreteTimeSeries.values
 
                 //daily standard curve
                 /*for(i in 0 until discreteProportional.size) {
