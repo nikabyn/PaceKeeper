@@ -29,6 +29,17 @@ import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
+/**
+ * A component that provides a user interface to toggle the application's evaluation (demo) mode.
+ *
+ * This composable displays a card containing a button that changes its label depending on
+ * whether the demo mode is currently active. When the user interacts with the button,
+ * a confirmation dialog is presented. Upon confirmation, the application's mode is
+ * updated in the database, and the app is restarted to apply the changes.
+ *
+ * @param modeViewModel The [ModeViewModel] used to manage the evaluation mode state.
+ *                      Defaults to a Koin-injected instance.
+ */
 @Composable
 fun StartEvaluationMode(
     modeViewModel: ModeViewModel = koinViewModel()
@@ -37,6 +48,7 @@ fun StartEvaluationMode(
     val scope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
     val mode by modeViewModel.mode.collectAsState()
+    
     Card(
         colors = CardStyle.colors,
         shape = CardStyle.shape,
@@ -54,15 +66,17 @@ fun StartEvaluationMode(
             )
 
             Spacer(Modifier.height(12.dp))
+            
             Button(
                 onClick = { showDialog = true },
                 style = PrimaryButtonStyle,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (mode?.demo == true) (
-                        Text(stringResource(R.string.demo_end_button_text)))
-                else
-                    (Text(stringResource(R.string.demo_start_button_text)))
+                if (mode?.demo == true) {
+                    Text(stringResource(R.string.demo_end_button_text))
+                } else {
+                    Text(stringResource(R.string.demo_start_button_text))
+                }
             }
         }
     }
@@ -86,9 +100,8 @@ fun StartEvaluationMode(
                             Log.d("Modus", "Demobetrieb")
                         }
 
+                        // Restart the app to ensure all components react to the mode change
                         restartApp(context)
-                        //hardKillApp(context)
-
                     }
                 ) {
                     Text(stringResource(R.string.agree))
@@ -102,5 +115,3 @@ fun StartEvaluationMode(
         )
     }
 }
-
-

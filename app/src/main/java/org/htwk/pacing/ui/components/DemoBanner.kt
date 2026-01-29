@@ -26,17 +26,34 @@ import org.htwk.pacing.backend.database.ModeEntry
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.koin.androidx.compose.koinViewModel
 
-
+/**
+ * ViewModel for managing the application's operational mode (e.g., demo mode).
+ *
+ * It provides a [mode] state flow that observes changes in the database and a
+ * [setDemoMode] function to toggle the demo mode state.
+ *
+ * @param db The [PacingDatabase] instance.
+ * @param modeDao The [ModeDao] for accessing mode-related data.
+ */
 open class ModeViewModel(
     private val db: PacingDatabase,
     private val modeDao: ModeDao
 ) : ViewModel() {
+    /**
+     * A state flow representing the current [ModeEntry] from the database.
+     * Defaults to `null` initially and maintains state while there are subscribers.
+     */
     open val mode = modeDao.getModeLive().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
     )
 
+    /**
+     * Updates the demo mode status in the database.
+     *
+     * @param enabled `true` to enable demo mode, `false` to disable it.
+     */
     fun setDemoMode(enabled: Boolean) {
         viewModelScope.launch {
             modeDao.setMode(
@@ -49,12 +66,25 @@ open class ModeViewModel(
     }
 }
 
+/**
+ * A banner component that is displayed at the top of the screen when the application
+ * is in demo mode.
+ *
+ * The banner uses the theme's primary color as background and displays a text message
+ * indicating that the demo mode is active. If the demo mode is disabled, this
+ * component renders nothing.
+ *
+ * @param modeViewModel The [ModeViewModel] providing the demo mode state. Defaults to a Koin-injected instance.
+ * @param minHeight The minimum height for the banner. Defaults to 32.dp.
+ */
 @Composable
 fun DemoBanner(
     modeViewModel: ModeViewModel = koinViewModel(),
     minHeight: Dp = 32.dp,
 ) {
     val mode by modeViewModel.mode.collectAsState()
+    
+    // Only show the banner if demo mode is explicitly enabled
     if (mode?.demo != true) return
 
     Box(
