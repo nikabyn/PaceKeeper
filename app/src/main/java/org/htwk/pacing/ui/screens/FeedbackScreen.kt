@@ -18,50 +18,58 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.DomainRoutes
+import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.ExportAndSendDataCard
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
-import org.koin.compose.viewmodel.koinViewModel
+import org.koin.androidx.compose.koinViewModel
+
 
 @Composable
 fun FeedbackScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel = koinViewModel()
+    viewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_feedback),
         navController = navController,
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.large)
-        ) {
-            ExportAndSendDataCard(userProfileViewModel = viewModel)
+        Column {
+            DemoBanner(modeViewModel = modeViewModel)
 
-            Column {
-                Text(
-                    stringResource(R.string.title_survey),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    stringResource(R.string.description_survey),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Button(
-                onClick = {
-                    val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
-                    val intent = Intent(Intent.ACTION_VIEW, linkUri)
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.large)
             ) {
-                Text(text = stringResource(R.string.join_survey))
+                ExportAndSendDataCard(userProfileViewModel = viewModel)
+
+                Column {
+                    Text(
+                        stringResource(R.string.title_survey),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        stringResource(R.string.description_survey),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        val linkUri = Uri.parse(DomainRoutes.SURVEY_PACEKEEPER_URL)
+                        val intent = Intent(Intent.ACTION_VIEW, linkUri)
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.join_survey))
+                }
             }
         }
     }
