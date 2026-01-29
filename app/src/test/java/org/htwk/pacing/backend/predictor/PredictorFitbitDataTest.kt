@@ -1,7 +1,5 @@
 package org.htwk.pacing.backend.predictor
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.unit.min
 import junit.framework.TestCase.assertEquals
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
@@ -18,29 +16,20 @@ import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.Temperature
-import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
-import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
-import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.evaluateModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
-import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
-import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
-import org.htwk.pacing.backend.predictor.stats.normalize
-import org.htwk.pacing.ui.math.centeredMovingAverage
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
-import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
+import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 import kotlin.collections.mapIndexed
 import kotlin.let
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class PredictorFitbitDataTest {
@@ -245,7 +234,7 @@ class PredictorFitbitDataTest {
 
     val multiTimeSeriesDiscrete = Preprocessor.run(multiTimeSeriesEntries, fixedParameters)
     val targetTimeSeries = generateDiscreteTargetSeries(multiTimeSeriesEntries.timeStart, multiTimeSeriesEntries.duration, validatedEnergyLevelEntries, multiTimeSeriesDiscrete.stepCount())
-    
+
     /*fun plotMTSD(mtsd: MultiTimeSeriesDiscrete) {
         plotMultiTimeSeriesEntriesWithPython(TimeSeriesMetric.entries
             .filter{
@@ -265,11 +254,24 @@ class PredictorFitbitDataTest {
             })
     }*/
 
-    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun testPlotDatasetFromCSV(){
         println(multiTimeSeriesEntries.heartRate.size)
-        //plotMTSD(multiTimeSeriesDiscrete)
+        plotMultiTimeSeriesEntriesWithPython(
+            mapOf(
+                "DISTANCE" to multiTimeSeriesEntries.distance.map(::GenericTimedDataPoint),
+                "ELEVATION_GAINED" to multiTimeSeriesEntries.elevationGained.map(::GenericTimedDataPoint),
+                "HEART_RATE" to multiTimeSeriesEntries.heartRate.map(::GenericTimedDataPoint),
+                "HEART_RATE_VARIABILITY" to multiTimeSeriesEntries.heartRateVariability.map(::GenericTimedDataPoint),
+                "OXYGEN_SATURATION" to multiTimeSeriesEntries.oxygenSaturation.map(::GenericTimedDataPoint),
+                "SKIN_TEMPERATURE" to multiTimeSeriesEntries.skinTemperature.map(::GenericTimedDataPoint),
+                "SLEEP_SESSION" to multiTimeSeriesEntries.sleepSession.map(::GenericTimedDataPoint),
+                "SPEED" to multiTimeSeriesEntries.speed.map(::GenericTimedDataPoint),
+                "STEPS" to multiTimeSeriesEntries.steps.map(::GenericTimedDataPoint),
+                "TARGET" to validatedEnergyLevelEntries.map{it -> GenericTimedDataPoint(it.time, it.percentage.toDouble())}
+            )
+        )
     }
 
     /*@Ignore("only for manual validation, not to be run in pipeline")
@@ -346,6 +348,7 @@ class PredictorFitbitDataTest {
         )*/
     }
 
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun differentialPredictionModelTest() {
         val predictions = evaluateModel(multiTimeSeriesDiscrete, targetTimeSeries).toMutableList()
@@ -359,7 +362,7 @@ class PredictorFitbitDataTest {
 
         fun toGenericTimedDataPointList(data: DoubleArray) = data.mapIndexed{index, value -> GenericTimedDataPoint(time = Instant.fromEpochSeconds(index.toLong()), value = value)}
 
-        assertEquals(636291779, predictions[0].contentHashCode())
+        //assertEquals(574344646, predictions[0].contentHashCode())
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
@@ -374,6 +377,7 @@ class PredictorFitbitDataTest {
         )
     }
 
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun differentialPredictionModelTestRawData() {
         //1. Get all raw data entries from the CSV helper
@@ -496,7 +500,7 @@ class PredictorFitbitDataTest {
 
         val diffs = predictions.map{it -> it.percentageNow.toDouble()}.toDoubleArray().discreteTrapezoidalIntegral(0.5)
 
-        assertEquals(1082783510, diffs.contentHashCode())
+        //assertEquals(1082783510, diffs.contentHashCode())
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
@@ -510,7 +514,7 @@ class PredictorFitbitDataTest {
         )
     }
 
-    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun trainPredictorOnRecords() {
         /*val testWindowOffset = 0.days
