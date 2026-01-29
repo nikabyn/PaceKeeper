@@ -58,7 +58,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
     private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int) : List<Double> {
         return lookBackOffsets.map { horizon ->
-            val index = (offset - horizon).coerceAtLeast(0)
+            val index = (offset - horizon)
             input.allFeaturesAt(index).toList()
         }.flatten()
     }
@@ -165,6 +165,6 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //TODO: remove this and maybe do normalize target
         val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
-        return prediction.coerceIn(-0.01, 0.01)
+        return prediction//.coerceIn(-0.01, 0.01)
     }
 }

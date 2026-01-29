@@ -20,16 +20,23 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
+import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.evaluateModel
+import org.htwk.pacing.backend.predictor.preprocessing.FeatureComponent
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
+import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.junit.Ignore
 import org.junit.Test
 import java.io.File
+import kotlin.collections.filter
 import kotlin.collections.mapIndexed
 import kotlin.let
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class PredictorFitbitDataTest {
@@ -48,7 +55,7 @@ class PredictorFitbitDataTest {
                 .mapNotNull { line ->
                     val parts = line.split(",")
                     val time = Instant.parse(parts[0].trim())
-                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 0.days) return@mapNotNull null
+                    if(time < Instant.parse("2025-12-19T10:28:18.059Z") + 4.days) return@mapNotNull null
                     if(time !in minTime..maxTime) return@mapNotNull null
                     try {
                         entryGenerator(parts)
@@ -348,7 +355,7 @@ class PredictorFitbitDataTest {
         )*/
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+   // @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun differentialPredictionModelTest() {
         val predictions = evaluateModel(multiTimeSeriesDiscrete, targetTimeSeries).toMutableList()
@@ -366,9 +373,6 @@ class PredictorFitbitDataTest {
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
-                /*"SLEEP" to multiTimeSeriesDiscrete.getMutableRow(MultiTimeSeriesDiscrete.FeatureID(
-                    TimeSeriesMetric.SLEEP_SESSION, PIDComponent.PROPORTIONAL)).toDoubleArray()
-                    .slice(0 until minLength).toDoubleArray(),*/
                 "TARGET" to toGenericTimedDataPointList(targ),
                 "PREDICTION1" to toGenericTimedDataPointList(predictions[0]),
                 "PREDICTION2" to toGenericTimedDataPointList(predictions[1]),
@@ -377,63 +381,39 @@ class PredictorFitbitDataTest {
         )
     }
 
-    @Ignore("only for manual validation, not to be run in pipeline")
+    //@Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun differentialPredictionModelTestRawData() {
         //1. Get all raw data entries from the CSV helper
         val allEntries = dataFromCSV.first
         val allValidatedEnergy = dataFromCSV.second
+        val windowDuration = Predictor.TIME_SERIES_DURATION * 1.0
+        val stepDuration = Predictor.TIME_SERIES_STEP_DURATION
 
-        // 2. Define the sliding window parameters
-        val windowDuration = Predictor.TIME_SERIES_DURATION // e.g., 2.days
-        val stepDuration = 30.minutes
 
-        // Determine the overall time range of the data
         val overallStartTime = allEntries.timeStart
-        val overallEndTime = overallStartTime + allEntries.duration
-
-        // 3. Train the model once on a large initial chunk of the data (e.g., the first 60%)
-        // This simulates the real-world scenario where a model is trained periodically.
-        /*val trainingEndTime = overallStartTime + (allEntries.duration * 0.6)
-        val trainingEntries = Predictor.MultiTimeSeriesEntries(
-            timeStart = overallStartTime,
-            duration = trainingEndTime - overallStartTime,
-            distance = allEntries.distance.filter { it.end < trainingEndTime },
-            elevationGained = allEntries.elevationGained.filter { it.end < trainingEndTime },
-            heartRate = allEntries.heartRate.filter { it.time < trainingEndTime },
-            heartRateVariability = allEntries.heartRateVariability.filter { it.time < trainingEndTime },
-            oxygenSaturation = allEntries.oxygenSaturation.filter { it.time < trainingEndTime },
-            skinTemperature = allEntries.skinTemperature.filter { it.time < trainingEndTime },
-            sleepSession = allEntries.sleepSession.filter { it.end < trainingEndTime },
-            speed = allEntries.speed.filter { it.time < trainingEndTime },
-            steps = allEntries.steps.filter { it.end < trainingEndTime },
-        )
-        val trainingTargetEntries = allValidatedEnergy.filter { it.time < trainingEndTime }
-        val trainingMTSD = Preprocessor.run(trainingEntries, fixedParameters)
-        val trainingTarget = generateDiscreteTargetSeries(
-            trainingEntries.timeStart,
-            trainingEntries.duration,
-            trainingTargetEntries,
-            trainingMTSD.stepCount()
-        )*/
+        val overallEndTime = overallStartTime + allEntries.duration - 1.hours
 
         Predictor.train(multiTimeSeriesDiscrete, targetTimeSeries)
 
-        // 4. Iterate with a sliding window to generate predictions
+        println(multiTimeSeriesDiscrete.timeStart)
+        println(allEntries.timeStart)
+        //iterate with a sliding window to generate predictions
         val predictions = mutableListOf<PredictedEnergyLevelEntry>()
-        var currentWindowStart = multiTimeSeriesDiscrete.timeStart - windowDuration // Start predicting from the end of the training set
+        var currentWindowEnd = overallStartTime+ 1.hours
 
-        var i = 0
+        var i = 1
 
-        var lastVar = 0.5
+        var predictionResult1 = 0.3
+        var predictionResult2 = 0.3
 
-        while (currentWindowStart <= overallEndTime) {
-            val currentWindowEnd = currentWindowStart + windowDuration
+        while (currentWindowEnd <= overallEndTime) {
+            val currentWindowStart = overallStartTime
 
             // a. Create MultiTimeSeriesEntries for the current 2-day window
             val windowEntries = Predictor.MultiTimeSeriesEntries(
                 timeStart = currentWindowStart,
-                duration = windowDuration,
+                duration = currentWindowEnd - currentWindowStart,
                 distance = allEntries.distance.filter { it.end in currentWindowStart..currentWindowEnd },
                 elevationGained = allEntries.elevationGained.filter { it.end in currentWindowStart..currentWindowEnd },
                 heartRate = allEntries.heartRate.filter { it.time in currentWindowStart..currentWindowEnd },
@@ -445,71 +425,66 @@ class PredictorFitbitDataTest {
                 steps = allEntries.steps.filter { it.end in currentWindowStart..currentWindowEnd }
             )
 
-            // b. Preprocess this specific window's data
+            println("$overallStartTime and $currentWindowEnd duration: ${currentWindowEnd - currentWindowStart}")
+
+            //preprocess this specific window's data
             val windowMTSD = Preprocessor.run(windowEntries, fixedParameters)
 
-            // c. Find the last known validated energy level *before* the end of the current window.
-            // This simulates the real-world scenario where the predictor only has past data.
-            val lastValidatedEnergyInWindow = allValidatedEnergy
-                .filter { it.time in currentWindowStart..currentWindowEnd }
+            println(i)
+
+            val lastValidatedEnergyLevelEntryInWindow = validatedEnergyLevelEntries.
+                filter{it.time in currentWindowStart..currentWindowEnd}
                 .maxByOrNull { it.time }
 
-            val dummyEntry = ValidatedEnergyLevelEntry(
-                time = currentWindowEnd - Predictor.TIME_SERIES_STEP_DURATION,
-                percentage = Percentage(lastVar),
-                validation = Validation.Correct
+
+            val lastTime = lastValidatedEnergyLevelEntryInWindow?.time ?: currentWindowStart
+            val lastEnergy = lastValidatedEnergyLevelEntryInWindow?.percentage?.toDouble() ?: -1.0
+
+            predictionResult1 += DifferentialPredictionModel.predict(
+                input = multiTimeSeriesDiscrete,
+                offset = ((currentWindowEnd - overallStartTime) / stepDuration).toInt(),
+                horizon = IPredictionModel.PredictionHorizon.NOW
             )
 
-            // d. Make a prediction using the correct Predictor.predict signature.
-            // This function will internally handle the integration from the last known point.
-            val predictionResult =
-                //DifferentialPredictionModel.predict(windowMTSD, windowMTSD.stepCount() - 1, IPredictionModel.PredictionHorizon.NOW)
-            Predictor.predict(
-                multiTimeSeriesDiscrete = windowMTSD,
-                lastValidatedEnergyLevelEntry = dummyEntry,
-                timeNow = currentWindowEnd // The prediction is for the 'now' at the end of the window
+            predictionResult2 += DifferentialPredictionModel.predict(
+                input = windowMTSD,
+                offset = windowMTSD.stepCount() - 1,
+                horizon = IPredictionModel.PredictionHorizon.NOW
             )
 
-            lastVar = predictionResult.percentageNow.toDouble()
-            //    lastValidatedEnergyInWindow!!.percentage.toDouble()
-
-
-            // e. We are interested in the final predicted value at the end of the window.
-
-            print(i)
-            predictions.add(
+            val entry=
                 PredictedEnergyLevelEntry(
                     time = currentWindowEnd,
-                    percentageNow = Percentage(lastVar),
-                    timeFuture = lastValidatedEnergyInWindow!!.time,
-                    percentageFuture = Percentage(0.0)
+                    percentageNow = Percentage(predictionResult1),
+                    timeFuture = currentWindowEnd,
+                    percentageFuture = Percentage(predictionResult2)
                 )
-                //lastValidatedEnergyInWindow?.bpm?.toDouble() ?: -1.0
-                //targetTimeSeries.values[i.coerceAtMost(targetTimeSeries.values.size - 1)]
-            )
+            predictions.add(entry)
 
+            print("percentage future: ${entry.percentageFuture.toDouble()}")
+
+            print(entry.time)
             i++
-            // f. Slide the window forward
-            currentWindowStart += stepDuration
-        }
 
-        // 5. Plot the results for manual validation
-        // The predictions are already integrated absolute values, no need to integrate again.
+            //slide the window forward one step
+            currentWindowEnd += stepDuration
+        }
 
         //assertEquals(i, targetTimeSeries.values.size)
 
-        val diffs = predictions.map{it -> it.percentageNow.toDouble()}.toDoubleArray().discreteTrapezoidalIntegral(0.5)
+        val pred1 = predictions.map{it -> it.percentageNow.toDouble()}.toDoubleArray()//.discreteTrapezoidalIntegral(0.3)
+        val pred2 = predictions.map{it -> it.percentageFuture.toDouble()}.toDoubleArray()//.discreteTrapezoidalIntegral(0.3)
 
         //assertEquals(1082783510, diffs.contentHashCode())
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
+                //"SLEEP1" to allEntries.sleepSession.map(::GenericTimedDataPoint),
                 "VALIDATED" to allValidatedEnergy.map{it -> GenericTimedDataPoint(it.time, it.percentage.toDouble())},
-                "PREDICTED" to predictions.mapIndexed {index, value -> GenericTimedDataPoint(value.time,
-                    /*it.percentageNow.toDouble())*/
-                    diffs[index]
-                )
-                }
+                //"SLEEP_LAST" to predictions.map{it -> GenericTimedDataPoint(it.time, it.percentageNow.toDouble()) },
+                "PREDICTED1" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred1[index.coerceAtMost(pred1.size - 1)]) },
+                "PREDICTED2" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred2[index.coerceAtMost(pred2.size - 1)]) }
+
             )
         )
     }
