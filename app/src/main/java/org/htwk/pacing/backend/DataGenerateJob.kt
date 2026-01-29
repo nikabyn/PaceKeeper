@@ -15,7 +15,6 @@ import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.StepsEntry
-import java.io.File
 import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.time.Duration.Companion.days
@@ -35,14 +34,13 @@ object DataGenerateJob {
 
         resetDb(db)
 
-        val exportDir = context.getExternalFilesDir("pacing_export") ?: return@coroutineScope
-        val path = exportDir.absolutePath
+        val basePath = "pacing_export"
 
-        val predictedCsv = readCsv("$path/predicted_energy_level.csv")
-        val stepsCsv = readCsv("$path/steps.csv")
-        val distanceCsv = readCsv("$path/distance.csv")
-        val sleepCsv = readCsv("$path/sleep-sessions.csv")
-        val heartRateCsv = readCsv("$path/heart_rate.csv")
+        val predictedCsv = readCsv(context, "$basePath/predicted_energy_level.csv")
+        val stepsCsv = readCsv(context, "$basePath/steps.csv")
+        val distanceCsv = readCsv(context, "$basePath/distance.csv")
+        val sleepCsv = readCsv(context, "$basePath/sleep-sessions.csv")
+        val heartRateCsv = readCsv(context, "$basePath/heart_rate.csv")
 
         val csvFiles = mapOf(
             "heartRate" to heartRateCsv,
@@ -79,7 +77,7 @@ object DataGenerateJob {
 
         while (true) {
             try {
-                Log.d("PerformDataGenration", "Generiere neue Daten...")
+                Log.d(TAG, "Generiere neue Daten...")
 
                 performDataGeneration(db, csvFiles)
             } catch (e: Exception) {
@@ -99,21 +97,25 @@ object DataGenerateJob {
         Log.i(TAG, "Datenbank wurde zurückgesetzt")
     }
 
-    fun readCsv(filePath: String): List<Map<String, String>> {
-        val file = File(filePath)
-        if (!file.exists()) return emptyList()
+    fun readCsv(context: Context, assetPath: String): List<Map<String, String>> {
+        return try {
+            context.assets.open(assetPath).bufferedReader().use { reader ->
+                val header = reader.readLine()?.split(",") ?: return emptyList()
 
-        val reader = file.bufferedReader()
-        val header = reader.readLine()?.split(",") ?: return emptyList()
-
-        return reader.lineSequence()
-            .filter { it.isNotBlank() }
-            .map { line ->
-                val values = line.split(",")
-                header.zip(values).toMap()
+                reader.lineSequence()
+                    .filter { it.isNotBlank() }
+                    .map { line ->
+                        val values = line.split(",")
+                        header.zip(values).toMap()
+                    }
+                    .toList()
             }
-            .toList()
+        } catch (e: Exception) {
+            Log.e(TAG, "CSV konnte nicht gelesen werden: $assetPath", e)
+            emptyList()
+        }
     }
+
 
     fun importDemoData(
         db: PacingDatabase,
@@ -142,7 +144,7 @@ object DataGenerateJob {
         }
 
         heartRates.forEach {
-            Log.d("Eintrag", "HeartRate importiert: time=${it.time}, bpm=${it.bpm}")
+            Log.d(TAG, "HeartRate importiert: time=${it.time}, bpm=${it.bpm}")
         }
 
         db.heartRateDao().insertMany(heartRates)
