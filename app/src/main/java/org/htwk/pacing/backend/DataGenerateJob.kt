@@ -38,32 +38,41 @@ object DataGenerateJob {
         val exportDir = context.getExternalFilesDir("pacing_export") ?: return@coroutineScope
         val path = exportDir.absolutePath
 
+        val predictedCsv = readCsv("$path/predicted_energy_level.csv")
+        val stepsCsv = readCsv("$path/steps.csv")
+        val distanceCsv = readCsv("$path/distance.csv")
+        val sleepCsv = readCsv("$path/sleep-sessions.csv")
         val heartRateCsv = readCsv("$path/heart_rate.csv")
-        if (heartRateCsv.isEmpty()) return@coroutineScope
 
-        val csvStartTime = Instant.parse(heartRateCsv.first()["timestamp"]!!)
+        val csvFiles = mapOf(
+            "heartRate" to heartRateCsv,
+            "predicted" to predictedCsv,
+            "steps" to stepsCsv,
+            "distance" to distanceCsv,
+            "sleep" to sleepCsv
+        )
+
+        if (csvFiles.values.all { it.isEmpty() }) return@coroutineScope
+
         val now = Clock.System.now()
-        csvCursorTime = csvStartTime
+        val csvStartTime = Instant.parse(csvFiles["heartRate"]?.first()["timestamp"]!!)
+
+        val csvFrom = csvStartTime
+        val csvTo = csvStartTime + firstImport
         csvOffset = (now - firstImport) - csvStartTime
 
-        // Initialer Import (z. B. 30 Tage auf einmal)
-        val initialTo = csvStartTime + firstImport
-
-        Log.i(
-            TAG,
-            "Initial-Import: csvFrom=$csvStartTime csvTo=$initialTo"
-        )
+        Log.i(TAG, "Initial-Import: csvFrom=$csvFrom csvTo=$csvTo Offset=$csvOffset")
 
         importDemoData(
             db = db,
-            path = path,
-            csvFrom = csvStartTime,
-            csvTo = initialTo,
+            csvFrom = csvFrom,
+            csvTo = csvTo,
             offset = csvOffset!!,
-            importPredictedEnergy = true
+            importPredictedEnergy = true,
+            csvFiles = csvFiles
         )
 
-        csvCursorTime = initialTo
+        csvCursorTime = csvTo
 
 
         Log.i(TAG, "CSV-Start=$csvStartTime  Offset=$csvOffset")
@@ -72,7 +81,7 @@ object DataGenerateJob {
             try {
                 Log.d("PerformDataGenration", "Generiere neue Daten...")
 
-                performDataGeneration(db, path)
+                performDataGeneration(db, csvFiles)
             } catch (e: Exception) {
                 Log.e(TAG, "Fehler bei Datengenerierung", e)
             }
@@ -108,23 +117,19 @@ object DataGenerateJob {
 
     fun importDemoData(
         db: PacingDatabase,
-        path: String,
         csvFrom: Instant,
         csvTo: Instant,
         offset: kotlin.time.Duration,
-        importPredictedEnergy: Boolean
+        importPredictedEnergy: Boolean,
+        csvFiles: Map<String, List<Map<String, String>>>
     ) {
-        Log.d(
-            TAG,
-            "CSV-Import: csvFrom=$csvFrom csvTo=$csvTo offset=$offset"
-        )
+        Log.d(TAG, "CSV-Import: csvFrom=$csvFrom csvTo=$csvTo offset=$offset")
 
-        val heartRateCsv = readCsv("$path/heart_rate.csv")
-        val predictedCsv = readCsv("$path/predicted_energy_level.csv")
-        val stepsCsv = readCsv("$path/steps.csv")
-        val distanceCsv = readCsv("$path/distance.csv")
-        val sleepCsv = readCsv("$path/sleep-sessions.csv")
-
+        val heartRateCsv = csvFiles["heartRate"] ?: emptyList()
+        val predictedCsv = csvFiles["predicted"] ?: emptyList()
+        val stepsCsv = csvFiles["steps"] ?: emptyList()
+        val distanceCsv = csvFiles["distance"] ?: emptyList()
+        val sleepCsv = csvFiles["sleep"] ?: emptyList()
 
         val heartRates = heartRateCsv.mapNotNull { row ->
             val csvTime = Instant.parse(row["timestamp"]!!)
@@ -228,9 +233,9 @@ object DataGenerateJob {
         db.sleepSessionsDao().insertMany(sleeps)
     }
 
-    private suspend fun performDataGeneration(
+    private fun performDataGeneration(
         db: PacingDatabase,
-        path: String
+        csvFiles: Map<String, List<Map<String, String>>>
     ) {
         val cursor = csvCursorTime ?: return
         val offset = csvOffset ?: return
@@ -244,11 +249,11 @@ object DataGenerateJob {
 
         importDemoData(
             db = db,
-            path = path,
             csvFrom = cursor,
             csvTo = nextCursor,
             offset = offset,
-            importPredictedEnergy = false
+            importPredictedEnergy = false,
+            csvFiles = csvFiles
 
         )
 
