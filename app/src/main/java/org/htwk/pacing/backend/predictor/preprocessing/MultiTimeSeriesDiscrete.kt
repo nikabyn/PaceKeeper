@@ -4,26 +4,19 @@ import androidx.annotation.IntRange
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
-import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.featureCount
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete.Companion.stepDuration
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer.discretizeTimeSeries
-import org.htwk.pacing.ui.math.centeredMovingAverage
-import org.htwk.pacing.backend.predictor.stats.normalize
-import org.htwk.pacing.ui.math.centeredMovingAverage
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
-import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.data.slice
-import org.jetbrains.kotlinx.multik.ndarray.operations.toDoubleArray
-import kotlin.random.Random
 import kotlin.time.Duration
 
 
@@ -70,13 +63,13 @@ import kotlin.time.Duration
  * This allows efficient appending without constantly reallocating memory.
  *
  * Each feature is identified by a [FeatureID], which is a combination of
- * a [TimeSeriesMetric] and a [PIDComponent].
+ * a [TimeSeriesMetric] and a [FeatureComponent].
  *
  * @param timeStart The timestamp of timestep 0 for all contained time series.
  * @param initialCapacityInSteps Initial internal storage capacity (column count) before reallocation is needed.
  */
 class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: Int = 512) {
-    data class FeatureID(val metric: TimeSeriesMetric, val component: PIDComponent)
+    data class FeatureID(val metric: TimeSeriesMetric, val component: FeatureComponent)
 
     // ---- internal state tracking ----
     private var stepCount: Int = 0
@@ -245,7 +238,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          * This map is a critical lookup table for quickly finding the correct row for a given
          * metric (e.g., `HEART_RATE`) and component (e.g., `P`). It is initialized once by
          * iterating through all defined [TimeSeriesMetric] entries and their associated
-         * [PIDComponent]s, assigning a unique, sequential integer index to each combination.
+         * [FeatureComponent]s, assigning a unique, sequential integer index to each combination.
          *
          * For example:
          * - `FeatureID(HEART_RATE, P)` -> `0`
@@ -363,10 +356,10 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             println("per-metric input entry counts (before ensureData): $debug")
 
             val mutableHeartRateArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE,
-                PIDComponent.PROPORTIONAL))
+                FeatureComponent.PROPORTIONAL))
 
             val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
-                PIDComponent.PROPORTIONAL))
+                FeatureComponent.PROPORTIONAL))
 
             mutableHeartRateArray.indices.forEach { i ->
                 val hr = mutableHeartRateArray[i]

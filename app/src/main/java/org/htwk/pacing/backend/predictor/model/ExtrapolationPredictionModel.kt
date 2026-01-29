@@ -7,7 +7,7 @@ import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.preprocessing.FeatureComponent
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
@@ -124,7 +124,7 @@ object ExtrapolationPredictionModel : IPredictionModel {
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
+                if (featureID.component == FeatureComponent.INTEGRAL) result - timeSeries.first() else result
             }
         }
 

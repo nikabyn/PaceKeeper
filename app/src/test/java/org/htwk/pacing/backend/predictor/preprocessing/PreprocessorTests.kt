@@ -115,7 +115,7 @@ class PreprocessorTests {
             val actual = result[
                 MultiTimeSeriesDiscrete.FeatureID(
                     TimeSeriesMetric.HEART_RATE,
-                    PIDComponent.PROPORTIONAL
+                    FeatureComponent.PROPORTIONAL
                 ),
                 i
             ]

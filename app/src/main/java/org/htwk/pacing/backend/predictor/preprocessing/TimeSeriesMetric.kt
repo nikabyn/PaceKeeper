@@ -4,7 +4,7 @@ import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 
 /**
- * Represents the derived Proportional-Integral-Derivative of a discrete time series.
+ * Represents the derived feature component of a discrete time series.
  *
  * Each component defines a specific mathematical operation to be applied to a `DoubleArray`
  * representing a time series.
@@ -12,7 +12,7 @@ import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
  * @property compute A lambda function that takes a `DoubleArray` and calculates the respective
  * PID component as a new `DoubleArray`
  */
-enum class PIDComponent(val compute: (DoubleArray) -> DoubleArray) {
+enum class FeatureComponent(val compute: (DoubleArray) -> DoubleArray) {
     PROPORTIONAL({ it }), //proportional: return the array itself, without changing it
     INTEGRAL(DoubleArray::discreteTrapezoidalIntegral), //compute integral of input
     DERIVATIVE(DoubleArray::discreteDerivative), //compute derivative of input
@@ -25,26 +25,26 @@ enum class PIDComponent(val compute: (DoubleArray) -> DoubleArray) {
  * See [UI issue #38](https://gitlab.dit.htwk-leipzig.de/pacing-app/ui/-/issues/38#note_248963)
  * for a detailed explanation of signal "classes".
  *
- * @property components The [PIDComponent]s applicable to this signal class.
+ * @property components The [FeatureComponent]s applicable to this signal class.
  */
-enum class TimeSeriesSignalClass(val components: List<PIDComponent>) {
+enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
     /** For values that change continuously over time, like heart rate. */
     CONTINUOUS(listOf(
-        PIDComponent.PROPORTIONAL,
-        PIDComponent.DERIVATIVE,
+        FeatureComponent.PROPORTIONAL,
+        FeatureComponent.DERIVATIVE,
         //PIDComponent.INTEGRAL,
         //we don't need integral, because extrapolation averages encode same summation behaviour
     )),
 
     /** For values that accumulate over time, like total steps or distance. */
-    AGGREGATED(listOf(PIDComponent.PROPORTIONAL/*, PIDComponent.INTEGRAL*/)),
+    AGGREGATED(listOf(FeatureComponent.PROPORTIONAL/*, PIDComponent.INTEGRAL*/)),
 }
 
 /**
  * Defines specific metrics for time series data, such as heart rate or distance.
  *
  * Each metric is categorized by a [TimeSeriesSignalClass] to determine its applicable
- * processing components (e.g., [PIDComponent]s).
+ * processing components (e.g., [FeatureComponent]s).
  *
  * @property signalClass The signal classification for this metric, determines which PID components will be derived
  */
