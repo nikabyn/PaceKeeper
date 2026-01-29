@@ -3,7 +3,6 @@ package org.htwk.pacing.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -39,7 +38,6 @@ import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.components.ModeViewModel
-import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
@@ -65,25 +63,32 @@ fun HomeScreen(
     val avgPrediction = energyGraphData.futureValue
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
-        ) {
-            EnergyPredictionCard(
-                data = energyGraphData.entries,
-                currentEnergy = currentEnergy.toFloat(),
-                minPrediction = minPrediction.toFloat(),
-                avgPrediction = avgPrediction.toFloat(),
-                maxPrediction = maxPrediction.toFloat(),
-                modifier = Modifier.height(300.dp)
-            )
-            LabelCard(energy = currentEnergy)
-            BatteryCard(
-                energy = currentEnergy,
-                viewModel = viewModel,
-                snackbarHostState = snackbarHostState,
-            )
-            FeelingSelectionCard(navController)
+        Column {
+
+            DemoBanner(modeViewModel = modeViewModel)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
+                modifier = Modifier.padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.extraLarge
+                )
+            ) {
+                EnergyPredictionCard(
+                    data = energyGraphData.entries,
+                    currentEnergy = currentEnergy.toFloat(),
+                    minPrediction = minPrediction.toFloat(),
+                    avgPrediction = avgPrediction.toFloat(),
+                    maxPrediction = maxPrediction.toFloat(),
+                    modifier = Modifier.height(300.dp)
+                )
+                LabelCard(energy = currentEnergy)
+                BatteryCard(
+                    energy = currentEnergy,
+                    viewModel = viewModel,
+                    snackbarHostState = snackbarHostState,
+                )
+                FeelingSelectionCard(navController)
+            }
         }
     }
 }
