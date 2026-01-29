@@ -1,25 +1,18 @@
 package org.htwk.pacing.ui.screens
 
-import android.util.Log
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -30,17 +23,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -61,6 +55,8 @@ import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
 import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.ModeViewModel
+import org.htwk.pacing.ui.components.SymptomSelectionCard
+import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -76,13 +72,23 @@ fun SymptomScreen(
 ) {
     var openDialog by remember { mutableStateOf(false) }
     val symptoms by viewModel.symptoms.collectAsState()
-    val selected = remember { mutableStateListOf<String>() }
+
+    LaunchedEffect(symptoms) {
+        viewModel.defaultSymptoms(symptoms)
+    }
+
+    val symptomWithStrength = remember { mutableStateMapOf<String, Int>() }
 
     Scaffold(
         modifier = Modifier.testTag("SymptomsScreen"),
         topBar = {
-            TopBar(navController, feeling, onApply = {
-                viewModel.storeEntry(feeling, selected.map { Symptom(it) }.toList())
+            TopBar(navController, onApply = {
+                viewModel.storeEntry(
+                    feeling,
+                    symptomWithStrength.map {
+                        Symptom(it.key, it.value)
+                    }.toList()
+                )
             })
         },
         floatingActionButton = {
@@ -96,99 +102,88 @@ fun SymptomScreen(
         Column {
             DemoBanner(modeViewModel = modeViewModel)
 
-            Column(
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .testTag("SymptomsScreenCheckboxes")
-            ) {
-                symptoms.forEach {
-                    SymptomCheckBox(
-                        it.name,
-                        onChange = { checked, name ->
-                            if (checked && !selected.contains(name)) {
-                                selected.add(name)
-                                return@SymptomCheckBox
-                            }
-                            selected.remove(name)
-                        })
-                }
+        Column(
+            modifier = Modifier
+                .padding(
+                    horizontal = Spacing.large,
+                    vertical = contentPadding.calculateTopPadding()
+                )
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .testTag("SymptomsScreenCheckboxes")
+        ) {
+            symptoms?.forEach { s ->
+                SymptomSelectionCard(
+                    name = s.name,
+                    strength = symptomWithStrength[s.name] ?: s.strength,
+                    onStrengthChange = { newStrength ->
+                        symptomWithStrength[s.name] = newStrength
+                    }
+                )
             }
+        }
 
-            if (openDialog) {
-                AddSymptomDialog(
-                    onCancel = {
-                        openDialog = false
-                    },
-                    onConfirm = { newSymptom ->
-                        openDialog = false
-                        viewModel.storeSymptom(newSymptom)
-                    })
-            }
+        if (openDialog) {
+            AddSymptomDialog(
+                onCancel = {
+                    openDialog = false
+                },
+                onConfirm = { newSymptom ->
+                    openDialog = false
+                    viewModel.storeSymptom(newSymptom)
+                },
+                symptoms,
+            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) {
-    val questionBasedOnFeeling = when (feeling) {
-        Feeling.VeryBad -> stringResource(R.string.feeling_really_bad)
-        Feeling.Bad -> stringResource(R.string.feeling_bad)
-        Feeling.Good -> stringResource(R.string.feeling_good)
-        Feeling.VeryGood -> stringResource(R.string.feeling_really_good)
-    }
-
+fun TopBar(navController: NavController, onApply: () -> Unit) {
     TopAppBar(
-        // TODO For much later: Maybe change the color based on the selected feeling?
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-        title = {
-            Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text(
-                        stringResource(R.string.select_symptoms),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        questionBasedOnFeeling,
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                }
-            }
-        },
         navigationIcon = {
             IconButton(
-                onClick = { navController.navigateUp() },
+                onClick = { navController.popBackStack() },
                 modifier = Modifier.testTag("SymptomsScreenBackButton")
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
+                    painterResource(R.drawable.rounded_arrow_back),
+                    contentDescription = stringResource(R.string.back)
                 )
             }
         },
+        title = {
+            Text(
+                text = stringResource(R.string.select_symptoms),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
         actions = {
-            Button(
+            org.htwk.pacing.ui.components.Button(
                 onClick = {
                     onApply()
                     navController.navigate(Route.HOME)
                 },
-                modifier = Modifier.testTag("SymptomsScreenApplyButton"),
-                contentPadding = PaddingValues(all = 0.dp)
+                style = org.htwk.pacing.ui.theme.PrimaryButtonStyle,
+                modifier = Modifier.testTag("SymptomsScreenApplyButton")
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(R.string.apply)
+                Image(
+                    painter = painterResource(R.drawable.settings_save_icon),
+                    contentDescription = stringResource(R.string.save),
+                    colorFilter = ColorFilter.tint(
+                        MaterialTheme.colorScheme.onPrimary
+                    )
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.save))
+
             }
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(Modifier.width(8.dp))
         }
     )
 }
+
 
 /**
  * Dialog for creating a new symptom.
@@ -198,9 +193,11 @@ fun TopBar(navController: NavController, feeling: Feeling, onApply: () -> Unit) 
 fun AddSymptomDialog(
     onCancel: () -> Unit,
     onConfirm: (newSymptom: String) -> Unit,
+    symptoms: List<Symptom>?,
 ) {
     var newSymptom by remember { mutableStateOf("") }
     var isEmpty by remember { mutableStateOf(true) }
+    var symptomAlreadyExists by remember { mutableStateOf(false) }
 
     AlertDialog(
         modifier = Modifier.testTag("AddSymptomDialog"),
@@ -213,6 +210,9 @@ fun AddSymptomDialog(
                     value = newSymptom,
                     onValueChange = {
                         if (it.endsWith("\n")) return@TextField
+                        symptomAlreadyExists = symptoms.orEmpty().any { s ->
+                            s.name.equals(newSymptom.trim(), ignoreCase = true)
+                        }
                         newSymptom = it
                         isEmpty = newSymptom.trim().isEmpty()
                     }
@@ -223,14 +223,19 @@ fun AddSymptomDialog(
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+                if (symptomAlreadyExists) {
+                    Text(
+                        stringResource(R.string.symptom_already_exists),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    if (isEmpty) return@Button
+                    if (isEmpty || symptomAlreadyExists) return@Button
                     onConfirm(newSymptom.trim())
-                    newSymptom = ""
                 },
                 modifier = Modifier.testTag("AddSymptomConfirmButton")
             ) {
@@ -238,51 +243,30 @@ fun AddSymptomDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) {
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.testTag("AddSymptomDismissButton")
+            ) {
                 Text(stringResource(R.string.dismiss))
             }
         }
     )
 }
 
-@Composable
-fun SymptomCheckBox(name: String, onChange: (state: Boolean, name: String) -> Unit) {
-    var checked by remember { mutableStateOf(false) }
-
-    fun update(newChecked: Boolean) {
-        checked = newChecked
-        onChange(checked, name)
-        Log.d("SymptomCheckBox", "$checked")
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clickable(onClick = { update(!checked) })
-            .fillMaxWidth()
-    ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = { update(it) }
-        )
-        Text(name)
-    }
-}
-
 class SymptomsViewModel(
-    private val manualSymptomDao: ManualSymptomDao
+    private val manualSymptomDao: ManualSymptomDao,
 ) : ViewModel() {
     val symptoms = manualSymptomDao
         .getAllSymptomsLive()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            initialValue = null
         )
 
     fun storeSymptom(name: String) {
         CoroutineScope(Dispatchers.IO).launch {
-            manualSymptomDao.insertSymptom(Symptom(name))
+            manualSymptomDao.insertSymptom(Symptom(name = name, strength = 0))
         }
     }
 
@@ -292,5 +276,12 @@ class SymptomsViewModel(
             val entry = ManualSymptomEntry(feeling = FeelingEntry(now, feeling), symptoms)
             manualSymptomDao.insert(entry)
         }
+    }
+
+    fun defaultSymptoms(symptoms: List<Symptom>?) {
+        if (!symptoms.isNullOrEmpty()) return
+
+        val defaults = listOf("fatigue", "headache", "brain_fog")
+        defaults.forEach { storeSymptom(it) }
     }
 }

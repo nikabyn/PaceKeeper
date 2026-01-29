@@ -2,6 +2,7 @@ package org.htwk.pacing.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,14 +18,20 @@ import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 
 @Composable
-fun CardWithTitle(title: String, modifier: Modifier = Modifier, inner: @Composable (() -> Unit)) =
-    Card(
-        colors = CardStyle.colors,
-        shape = CardStyle.shape,
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag("Card")
-    ) {
+fun CardWithTitle(
+    title: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    inner: @Composable ColumnScope.() -> Unit
+) {
+    val colors = CardStyle.colors
+    val shape = CardStyle.shape
+    val modifier = modifier
+        .fillMaxWidth()
+        .testTag("Card")
+
+    @Composable
+    fun content() {
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -42,3 +49,10 @@ fun CardWithTitle(title: String, modifier: Modifier = Modifier, inner: @Composab
             inner()
         }
     }
+
+    if (onClick == null) {
+        Card(modifier = modifier, shape = shape, colors = colors) { content() }
+    } else {
+        Card(onClick = onClick, modifier = modifier, shape = shape, colors = colors) { content() }
+    }
+}

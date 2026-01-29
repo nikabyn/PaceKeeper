@@ -39,7 +39,7 @@ import org.htwk.pacing.backend.OAuth2Result
 
         ReadEvent::class,
     ],
-    version = 5,
+    version = 7,
     exportSchema = false,
 )
 
