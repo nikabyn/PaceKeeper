@@ -251,11 +251,8 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          */
         private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
             .map { metric ->
-                metric.signalClass.components.map { component ->
-                    FeatureID(
-                        metric,
-                        component
-                    )
+                metric.allComponents.map { component ->
+                    FeatureID(metric, component)
                 }
             }.flatten().mapIndexed { index, featureID -> featureID to index }.toMap()
 

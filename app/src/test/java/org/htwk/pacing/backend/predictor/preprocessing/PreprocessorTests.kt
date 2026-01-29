@@ -82,7 +82,7 @@ class PreprocessorTests {
 
         // The placeholder implementation of discretizeTimeSeries fills the array with the first value.
         // The size should be TIME_SERIES_DURATION / 10.minutes
-        val expectedLength = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / 10).toInt()
+        val expectedLength = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / Predictor.TIME_SERIES_STEP_DURATION.inWholeMinutes).toInt()
 
         assertEquals(
             expectedLength,
@@ -96,16 +96,18 @@ class PreprocessorTests {
             75.0,
             75.0,
             75.0,
-            76.0,
-            77.0,
-            78.0,
-            79.0,
+            75.0,
+            75.0,
+            75.0,
+            75.0,
             80.0,
             160.0,
-            109.8874,
-            80.0,
-            70.0,
-            60.0,
+            160.0,
+            160.0,
+            160.0,
+            160.0,
+            50.0,
+            50.0,
             50.0,
             50.0,
             50.0

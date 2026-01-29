@@ -1,7 +1,25 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
+import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
+
+/**
+ * Computes the decaying load of a time series. (EWMA Filter)
+ *
+ * @param alpha The decay factor.
+ *
+ */
+fun DoubleArray.decayingLoad(alpha: Double = 0.1): DoubleArray {
+    val out = DoubleArray(size)
+    var load = 0.0
+    for (i in indices) {
+        load = load * (1 - alpha) + this[i]
+        out[i] = load
+    }
+    return out
+}
 
 /**
  * Represents the derived feature component of a discrete time series.
@@ -16,6 +34,11 @@ enum class FeatureComponent(val compute: (DoubleArray) -> DoubleArray) {
     PROPORTIONAL({ it }), //proportional: return the array itself, without changing it
     INTEGRAL(DoubleArray::discreteTrapezoidalIntegral), //compute integral of input
     DERIVATIVE(DoubleArray::discreteDerivative), //compute derivative of input
+
+    EWMA(DoubleArray::decayingLoad), //compute decaying load of input
+
+    //square input value, can be used to penalize large values, e.g. heavy heart rate load
+    SQUARED({ arr -> arr.map { it * it }.toDoubleArray() })
 }
 
 /**
@@ -48,8 +71,10 @@ enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
  *
  * @property signalClass The signal classification for this metric, determines which PID components will be derived
  */
-enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
-    HEART_RATE(TimeSeriesSignalClass.CONTINUOUS),
+enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass, val auxiliaryFeatures: List<FeatureComponent> = listOf()) {
+    HEART_RATE(TimeSeriesSignalClass.CONTINUOUS,
+        auxiliaryFeatures = listOf(FeatureComponent.EWMA, FeatureComponent.SQUARED)
+    ),
     DISTANCE(TimeSeriesSignalClass.AGGREGATED),
     ELEVATION_GAINED(TimeSeriesSignalClass.AGGREGATED),
     HEART_RATE_VARIABILITY(TimeSeriesSignalClass.CONTINUOUS),
@@ -57,5 +82,8 @@ enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass) {
     SKIN_TEMPERATURE(TimeSeriesSignalClass.CONTINUOUS),
     STEPS(TimeSeriesSignalClass.AGGREGATED),
     SPEED(TimeSeriesSignalClass.CONTINUOUS),
-    SLEEP_SESSION(TimeSeriesSignalClass.AGGREGATED),
+    SLEEP_SESSION(TimeSeriesSignalClass.AGGREGATED)
 }
+
+val TimeSeriesMetric.allComponents: List<FeatureComponent>
+    get() = signalClass.components + auxiliaryFeatures
