@@ -207,4 +207,5 @@
     <string name="time_format_helper">Format: 00:00 to 23:59</string>
     <string name="health">Health</string>
     <string name="activity">Activity</string>
+    <string name="average">Average</string>
 </resources>

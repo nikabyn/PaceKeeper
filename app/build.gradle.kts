@@ -100,6 +100,8 @@ dependencies {
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.google.guava)
     implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
+    implementation("androidx.paging:paging-runtime:3.2.0")
+    implementation("androidx.paging:paging-compose:1.0.0")
 
     // Koin (dependency injection)
     implementation(libs.koin.android)

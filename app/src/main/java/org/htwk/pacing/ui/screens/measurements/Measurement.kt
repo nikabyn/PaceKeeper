@@ -1,25 +1,41 @@
 package org.htwk.pacing.ui.screens.measurements
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.util.fastMap
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.Feeling
 import org.htwk.pacing.backend.database.HeartRateEntry
 import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
+import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.database.ManualSymptomEntry
 import org.htwk.pacing.backend.database.MenstruationPeriodEntry
 import org.htwk.pacing.backend.database.OxygenSaturationEntry
@@ -31,6 +47,7 @@ import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.ui.components.Graph
+import org.htwk.pacing.ui.components.GraphCanvas
 import org.htwk.pacing.ui.components.graphToPaths
 import org.htwk.pacing.ui.screens.measurements.Measurement.Distance
 import org.htwk.pacing.ui.screens.measurements.Measurement.ElevationGained
@@ -43,11 +60,98 @@ import org.htwk.pacing.ui.screens.measurements.Measurement.Sleep
 import org.htwk.pacing.ui.screens.measurements.Measurement.Speed
 import org.htwk.pacing.ui.screens.measurements.Measurement.Steps
 import org.htwk.pacing.ui.screens.measurements.Measurement.Symptoms
+import org.htwk.pacing.ui.theme.Spacing
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.DurationUnit
+
+/**
+ * Displays the primary statistic and supplementary note for a measurement.
+ *
+ * This composable computes aggregated statistics for the given measurement
+ * and renders the value, unit, and an explanatory note.
+ *
+ * @param measurement The measurement whose statistics are shown.
+ * @param measurements A map of all measurements and their timed entries.
+ * @param modifier Optional [Modifier] for styling and layout.
+ */
+@Composable
+fun TitleAndStats(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    range: TimeRange,
+    modifier: Modifier = Modifier,
+) = Column(modifier) {
+    val stats = accumulateStatistics(measurement, entries)
+
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
+    ) {
+        Text(
+            text = stats.value ?: "–",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier.testTag("MeasurementsStatsValue"),
+        )
+
+        Text(
+            text = stats.unit() ?: "",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier.testTag("MeasurementsStatsUnit"),
+        )
+    }
+
+    Text(
+        text = stats.note(range.start),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Normal,
+        modifier = Modifier.testTag("MeasurementsStatsNote"),
+    )
+}
+
+/**
+ * Renders a small, graph preview for a measurement.
+ *
+ * The graph type and drawing strategy depend on the measurement:
+ * accumulated values, line graphs, or sleep stage segments. Measurements
+ * without meaningful preview data are intentionally left blank.
+ *
+ * @param measurement The measurement to visualize.
+ * @param measurements A map of all measurements and their timed entries.
+ * @param modifier Optional [Modifier] for styling and layout.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TinyGraphPreview(
+    measurement: Measurement,
+    entries: List<TimedEntry>,
+    range: TimeRange,
+    modifier: Modifier = Modifier
+) {
+    val colorLine = MaterialTheme.colorScheme.primary
+    val colorAwake = MaterialTheme.colorScheme.error
+    val colorREM = MaterialTheme.colorScheme.tertiary
+    val colorLightSleep = MaterialTheme.colorScheme.primary
+    val colorDeepSleep = MaterialTheme.colorScheme.secondary
+
+    GraphCanvas(modifier.fillMaxWidth()) {
+        drawMeasurement(
+            measurement,
+            entries,
+            range,
+            colorLine,
+            colorAwake,
+            colorREM,
+            colorLightSleep,
+            colorDeepSleep,
+        )
+    }
+}
 
 enum class Measurement {
     Steps,
@@ -178,6 +282,16 @@ enum class Measurement {
         return ySteps
     }
 
+    fun processPreview(entries: List<TimedEntry>): List<TimedEntry> =
+        entries.runningReduce { acc, entry ->
+            when (entry) {
+                is StepsEntry -> entry.copy(count = (acc as StepsEntry).count + entry.count)
+                is DistanceEntry -> entry.copy(length = Length.meters((acc as DistanceEntry).length.inMeters() + entry.length.inMeters()))
+                is ElevationGainedEntry -> entry.copy(length = Length.meters((acc as ElevationGainedEntry).length.inMeters() + entry.length.inMeters()))
+                else -> entry
+            }
+        }
+
     fun entryToXValue(entry: TimedEntry) = entry.end.toEpochMilliseconds().toDouble()
 
     fun entryToYValue(entry: TimedEntry) = when (this) {
@@ -211,9 +325,10 @@ enum class Measurement {
     }
 }
 
-fun DrawScope.drawMeasurementPreview(
+fun DrawScope.drawMeasurement(
     measurement: Measurement,
     entries: List<TimedEntry>,
+    range: TimeRange,
     colorLine: Color,
     colorAwake: Color,
     colorREM: Color,
@@ -223,22 +338,21 @@ fun DrawScope.drawMeasurementPreview(
     if (entries.isEmpty()) return
 
     when (measurement) {
-        Steps, Distance, ElevationGained -> drawPreviewAccumulated(
-            measurement,
-            entries,
-            colorLine,
-        )
-
+        Steps,
+        Distance,
+        ElevationGained,
         Speed,
-        HeartRate -> drawPreviewLine(
+        HeartRate -> drawMeasurementLine(
             measurement,
             entries,
+            range,
             colorLine,
         )
 
-        Sleep -> drawPreviewSleep(
+        Sleep -> drawMeasurementSleep(
             // Safety: We just checked that the measurement is Sleep
             @Suppress("UNCHECKED_CAST") (entries as List<SleepSessionEntry>),
+            range,
             colorAwake,
             colorREM,
             colorLightSleep,
@@ -256,37 +370,6 @@ fun DrawScope.drawMeasurementPreview(
 }
 
 /**
- * Draws a preview graph for accumulated measurements such as steps or distance.
- *
- * Individual entries are converted to graph values and accumulated over time
- * before being rendered as a continuous line.
- *
- * @param measurement The measurement being drawn.
- * @param entries Timed entries for the measurement.
- * @param strokeColor Color used for the graph line.
- */
-private fun DrawScope.drawPreviewAccumulated(
-    measurement: Measurement,
-    entries: List<TimedEntry>,
-    strokeColor: Color,
-) {
-    val xData = entries.fastMap { measurement.entryToXValue(it) }
-    val yData = entries
-        .fastMap { measurement.entryToYValue(it) }
-        .runningReduce { acc, y -> acc + y }
-
-
-    val xRange = TimeRange.today().toEpochDoubleRange()
-    val yRange = measurement.yRange(yData)
-
-    drawPath(
-        graphToPaths(xData, yData, size, xRange, yRange).line,
-        color = strokeColor,
-        style = Graph.defaultStrokeStyle(),
-    )
-}
-
-/**
  * Draws a preview line graph for non-accumulated measurements.
  *
  * Entries are plotted directly over time without accumulation, producing
@@ -296,14 +379,15 @@ private fun DrawScope.drawPreviewAccumulated(
  * @param entries Timed entries for the measurement.
  * @param strokeColor Color used for the graph line.
  */
-private fun DrawScope.drawPreviewLine(
+private fun DrawScope.drawMeasurementLine(
     measurement: Measurement,
     entries: List<TimedEntry>,
+    range: TimeRange,
     strokeColor: Color,
 ) {
     val xData = entries.fastMap { measurement.entryToXValue(it) }
     val yData = entries.fastMap { measurement.entryToYValue(it) }
-    val xRange = TimeRange.today().toEpochDoubleRange()
+    val xRange = range.toEpochDoubleRange()
     val yRange = measurement.yRange(yData)
 
     drawPath(
@@ -325,14 +409,15 @@ private fun DrawScope.drawPreviewLine(
  * @param colorLightSleep Color used for light sleep.
  * @param colorDeepSleep Color used for deep sleep.
  */
-private fun DrawScope.drawPreviewSleep(
+private fun DrawScope.drawMeasurementSleep(
     entries: List<SleepSessionEntry>,
+    xRange: TimeRange,
     colorAwake: Color,
     colorREM: Color,
     colorLightSleep: Color,
     colorDeepSleep: Color,
 ) {
-    val xRange = TimeRange.today().toEpochDoubleRange()
+    val xRange = xRange.toEpochDoubleRange()
     val xRangeWidth = xRange.endInclusive - xRange.start
 
     for (entry in entries) {
@@ -375,7 +460,10 @@ private fun DrawScope.drawPreviewSleep(
 }
 
 
-data class MeasurementStatistic(val measurement: Measurement, val value: String?) {
+data class MeasurementStatistic(
+    val measurement: Measurement,
+    val value: String?
+) {
     fun unit(): String? = when (this.measurement) {
         Steps -> null
         Distance -> "km"
@@ -391,44 +479,64 @@ data class MeasurementStatistic(val measurement: Measurement, val value: String?
     }
 
     @Composable
-    fun note(): String = when (this.measurement) {
-        Steps -> stringResource(R.string.today)
-        Distance -> stringResource(R.string.today)
-        ElevationGained -> stringResource(R.string.today)
-        Speed -> stringResource(R.string.average_today)
-        HeartRate -> stringResource(R.string.average_today)
-        MenstruationPeriod -> stringResource(R.string.today)
-        OxygenSaturation -> stringResource(R.string.average_today)
-        Sleep -> stringResource(R.string.today)
-        HeartRateVariabilityRmssd -> stringResource(R.string.today)
-        SkinTemperature -> stringResource(R.string.average_today)
-        Symptoms -> stringResource(R.string.average_today)
+    fun note(start: Instant): String {
+        val context = LocalContext.current
+        val timeZone = remember { TimeZone.currentSystemDefault() }
+        val today = remember { Clock.System.todayIn(timeZone) }
+
+        val date = start.toLocalDateTime(timeZone)
+        val isToday = date.date == today
+
+        val formattedDate = remember(start) {
+            android.text.format.DateFormat
+                .getMediumDateFormat(context)
+                .format(date.toInstant(timeZone).toEpochMilliseconds())
+        }
+        val day =
+            if (isToday) stringResource(R.string.today)
+            else formattedDate
+        val averageDay =
+            if (isToday) stringResource(R.string.average_today)
+            else "${stringResource(R.string.average)} $formattedDate"
+
+        return when (this.measurement) {
+            Steps -> day
+            Distance -> day
+            ElevationGained -> day
+            Speed -> averageDay
+            HeartRate -> averageDay
+            MenstruationPeriod -> day
+            OxygenSaturation -> averageDay
+            Sleep -> day
+            HeartRateVariabilityRmssd -> day
+            SkinTemperature -> averageDay
+            Symptoms -> averageDay
+        }
     }
 }
 
 @Composable
 fun accumulateStatistics(
     measurement: Measurement,
-    measurements: Map<Measurement, List<TimedEntry>>
+    entries: List<TimedEntry>,
 ): MeasurementStatistic {
-    val entries = measurements[measurement]
-    if (entries.isNullOrEmpty()) {
+    if (entries.isEmpty()) {
         return MeasurementStatistic(measurement, null)
     }
 
     // Safety: Entries in measurements are always the correct TimedEntry for the corresponding key
     @Suppress("UNCHECKED_CAST")
     val accumulated = when (measurement) {
-        Measurement.Steps -> (entries as List<StepsEntry>)
-            .sumOf { it.count }
+        Steps -> (entries as List<StepsEntry>)
+            .maxOf { it.count }
             .toString()
 
-        Measurement.Distance -> (entries as List<DistanceEntry>)
-            .sumOf { it.length.inKilometers() }
+        Distance -> (entries as List<DistanceEntry>)
+            .maxOf { it.length.inKilometers() }
             .let { "%.1f".format(it) }
 
         ElevationGained -> (entries as List<ElevationGainedEntry>)
-            .sumOf { it.length.inMeters() }
+            .maxOf { it.length.inMeters() }
             .let { "%.1f".format(it) }
 
         Speed -> (entries as List<SpeedEntry>)

@@ -202,5 +202,6 @@
     <string name="good">Gut</string>
     <string name="health">Gesundheit</string>
     <string name="activity">Aktivität</string>
+    <string name="average">Durchschnitt</string>
 
 </resources>

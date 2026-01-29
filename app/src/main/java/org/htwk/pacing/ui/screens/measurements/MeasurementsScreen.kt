@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -35,7 +33,6 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.ui.Route
-import org.htwk.pacing.ui.components.GraphCanvas
 import org.htwk.pacing.ui.screens.measurements.Measurement.Distance
 import org.htwk.pacing.ui.screens.measurements.Measurement.ElevationGained
 import org.htwk.pacing.ui.screens.measurements.Measurement.HeartRate
@@ -140,6 +137,9 @@ private fun MeasurementsCard(
     measurement: Measurement,
     measurements: Map<Measurement, List<TimedEntry>>,
 ) {
+    val entries = measurements[measurement].orEmpty()
+    val range = remember { TimeRange.today() }
+
     Card(
         colors = CardStyle.colors,
         shape = CardStyle.shape,
@@ -165,13 +165,15 @@ private fun MeasurementsCard(
             Row {
                 TitleAndStats(
                     measurement,
-                    measurements,
+                    entries,
+                    range,
                     modifier = Modifier
                         .weight(1f)
                 )
-                GraphPreview(
+                TinyGraphPreview(
                     measurement,
-                    measurements,
+                    entries,
+                    range,
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp)
@@ -181,100 +183,15 @@ private fun MeasurementsCard(
     }
 }
 
-/**
- * Displays the primary statistic and supplementary note for a measurement.
- *
- * This composable computes aggregated statistics for the given measurement
- * and renders the value, unit, and an explanatory note.
- *
- * @param measurement The measurement whose statistics are shown.
- * @param measurements A map of all measurements and their timed entries.
- * @param modifier Optional [Modifier] for styling and layout.
- */
-@Composable
-private fun TitleAndStats(
-    measurement: Measurement,
-    measurements: Map<Measurement, List<TimedEntry>>,
-    modifier: Modifier = Modifier,
-) = Column(modifier) {
-    val stats = accumulateStatistics(measurement, measurements)
-
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
-    ) {
-        Text(
-            text = stats.value ?: "–",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier.testTag("MeasurementsStatsValue"),
-        )
-
-        Text(
-            text = stats.unit() ?: "",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier.testTag("MeasurementsStatsUnit"),
-        )
-    }
-
-    Text(
-        text = stats.note(),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontWeight = FontWeight.Normal,
-        modifier = Modifier.testTag("MeasurementsStatsNote"),
-    )
-}
-
-/**
- * Renders a small, graph preview for a measurement.
- *
- * The graph type and drawing strategy depend on the measurement:
- * accumulated values, line graphs, or sleep stage segments. Measurements
- * without meaningful preview data are intentionally left blank.
- *
- * @param measurement The measurement to visualize.
- * @param measurements A map of all measurements and their timed entries.
- * @param modifier Optional [Modifier] for styling and layout.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun GraphPreview(
-    measurement: Measurement,
-    measurements: Map<Measurement, List<TimedEntry>>,
-    modifier: Modifier = Modifier
-) {
-    val entries = measurements[measurement]
-
-    val colorLine = MaterialTheme.colorScheme.primary
-    val colorAwake = MaterialTheme.colorScheme.error
-    val colorREM = MaterialTheme.colorScheme.tertiary
-    val colorLightSleep = MaterialTheme.colorScheme.primary
-    val colorDeepSleep = MaterialTheme.colorScheme.secondary
-
-    GraphCanvas(modifier.fillMaxWidth()) {
-        drawMeasurementPreview(
-            measurement,
-            entries.orEmpty(),
-            colorLine,
-            colorAwake,
-            colorREM,
-            colorLightSleep,
-            colorDeepSleep,
-        )
-    }
-}
-
 class MeasurementsViewModel(private val db: PacingDatabase) : ViewModel() {
     fun initialMeasurementsToday() = Measurement.entries.associateWith {
         emptyList<TimedEntry>()
     }
 
-    suspend fun measurementsToday() = Measurement.entries.associateWith {
-        it.dao(db).getInRange(
-            TimeRange.today().start,
-            TimeRange.today().end
-        )
+    suspend fun measurementsToday() = Measurement.entries.associateWith { measurement ->
+        measurement
+            .dao(db)
+            .getInRange(TimeRange.today().start, TimeRange.today().end)
+            .let { measurement.processPreview(it) }
     }
 }
