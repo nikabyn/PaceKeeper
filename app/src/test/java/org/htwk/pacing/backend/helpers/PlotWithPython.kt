@@ -4,15 +4,17 @@ import org.htwk.pacing.backend.predictor.model.LinearExtrapolator
 import org.htwk.pacing.backend.predictor.model.LinearExtrapolator.EXTRAPOLATION_STRATEGY
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries
 import java.io.File
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
 fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, List<GenericTimedDataPointTimeSeries.GenericTimedDataPoint>>) {
-    if (seriesData.isEmpty()) {println("No data to plot.")
+    if (seriesData.isEmpty()) {
+        println("No data to plot.")
         return
     }
 
     var scriptFile: File? = null
-    var dataFile: File? = null
+    var dataDir: File? = null
     try {
         val scriptUrl = {}.javaClass.classLoader?.getResource("plot_mtse.py")
         if (scriptUrl == null) {
@@ -20,6 +22,7 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, List<GenericTim
             return
         }
 
+        // 1. Create temporary script file
         scriptFile = File.createTempFile("plot_script_", ".py")
         scriptFile.outputStream().use { fileOut ->
             scriptUrl.openStream().use { resourceIn ->
@@ -27,20 +30,26 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, List<GenericTim
             }
         }
 
-        dataFile = File.createTempFile("mtsd_data_", ".csv")
-        dataFile.printWriter().use { out ->
-            // Use a long format: series_name,time,value
-            out.println("series_name,time,value")
-            seriesData.forEach { (seriesName, dataPoints) ->
+        // 2. Create temporary DIRECTORY for data
+        dataDir = Files.createTempDirectory("pacing_plot_data_").toFile()
+        println("Data directory created: ${dataDir.absolutePath}")
+
+        // 3. Write each metric to its own CSV file inside the directory
+        seriesData.forEach { (seriesName, dataPoints) ->
+            // Sanitize filename
+            val safeName = seriesName.replace("[^a-zA-Z0-9._-]".toRegex(), "_")
+            val file = File(dataDir, "$safeName.csv")
+
+            file.printWriter().use { out ->
+                out.println("time,value")
                 dataPoints.forEach { point ->
-                    // Write each point on its own line with its series name and timestamp
-                    out.println("$seriesName,${point.time},${point.value}")
+                    out.println("${point.time},${point.value}")
                 }
             }
         }
-        println("Data dumped to temporary file: ${dataFile.absolutePath}")
 
-        val command = mutableListOf("python", scriptFile.absolutePath, dataFile.absolutePath)
+        // 4. Pass the DIRECTORY path to Python
+        val command = mutableListOf("python", scriptFile.absolutePath, dataDir.absolutePath)
 
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)
@@ -58,14 +67,14 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, List<GenericTim
         println("Error: ${e.message}")
         e.printStackTrace()
     } finally {
-        dataFile?.delete()
+        // Cleanup: delete files inside dir, then dir itself, then script
+        dataDir?.listFiles()?.forEach { it.delete() }
+        dataDir?.delete()
         scriptFile?.delete()
     }
 }
 
-fun
-
-plotTimeSeriesExtrapolationsWithPython(
+fun plotTimeSeriesExtrapolationsWithPython(
     series: DoubleArray,
     extrapolations: Map<EXTRAPOLATION_STRATEGY, LinearExtrapolator.ExtrapolationLine> = emptyMap()
 ) {
