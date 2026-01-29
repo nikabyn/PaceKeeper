@@ -107,11 +107,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.transportation.consumer)
     implementation(libs.androidx.graphics.shapes)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.test.junit4)
-    implementation(libs.androidx.compose.ui)
-    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.androidx.room.testing)
 
     // Datetime
@@ -153,9 +150,7 @@ dependencies {
     implementation(libs.multik.kotlin)
     testImplementation(libs.kotlinx.serialization.json)
 
-    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-
-    implementation("androidx.compose.material3:material3")
+    // Icons
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
 }
@@ -233,4 +228,3 @@ tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
             include("**/*.ec")
         })
 }
-

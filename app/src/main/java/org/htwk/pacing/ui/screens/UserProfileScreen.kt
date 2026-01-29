@@ -73,7 +73,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun UserProfileScreen(
     navController: NavController,
     viewModel: UserProfileViewModel = koinViewModel(),
-    modeViewModel: ModeViewModel = org.koin.androidx.compose.koinViewModel()
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     val profileState by viewModel.profile.collectAsState()
     val profile = profileState ?: return

@@ -1,73 +1,57 @@
-package org.htwk.pacing.ui.components
+package org.htwk.pacing
 
-/*
-class DemoBannerTest {
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
+import kotlinx.coroutines.runBlocking
+import org.htwk.pacing.backend.database.ModeDao
+import org.htwk.pacing.backend.database.ModeEntry
+import org.htwk.pacing.ui.components.DemoBanner
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
+class DemoBannerTest : KoinComponent {
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val composeTestRule = createComposeRule()
 
-    @Test
-    @ignore
-    fun demoBanner_isVisible_whenDemoModeIsTrue() {
-        val viewModel = TestModeViewModel(
-            initialMode = ModeEntry(id = 0, demo = true)
-        )
+    private val modeDao: ModeDao by inject()
 
-        composeTestRule.setContent {
-            TestDemoBanner(viewModel)
+    @Before
+    fun setup() {
+        runBlocking {
+            modeDao.setMode(ModeEntry(id = 0, demo = false))
         }
-
-        composeTestRule
-            .onNodeWithTag("DemoBanner")
-            .assertIsDisplayed()
     }
 
     @Test
-    fun demoBanner_isNotVisible_whenDemoModeIsFalse() {
-        val viewModel = TestModeViewModel(
-            initialMode = ModeEntry(id = 0, demo = false)
-        )
-
+    fun testBannerNotVisibleWhenDemoDisabled() {
         composeTestRule.setContent {
-            TestDemoBanner(viewModel)
+            DemoBanner(koinViewModel())
         }
 
-        composeTestRule
-            .onNodeWithTag("DemoBanner")
-            .assertDoesNotExist()
+        composeTestRule.onNodeWithTag("DemoBanner").assertDoesNotExist()
+    }
+
+    @Test
+    fun testBannerVisibleWhenDemoEnabled() {
+        runBlocking {
+            modeDao.setMode(ModeEntry(id = 0, demo = true))
+        }
+
+        composeTestRule.setContent {
+            DemoBanner(koinViewModel())
+        }
+
+        // Warten, bis der Banner erscheint (wegen asynchronem Flow-Update)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithTag("DemoBanner").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithTag("DemoBanner").assertIsDisplayed()
     }
 }
-
-class TestModeViewModel(
-    initialMode: ModeEntry?
-) : ViewModel() {
-
-
-    private val _mode = MutableStateFlow(initialMode)
-    val mode: StateFlow<ModeEntry?> = _mode
-}
-
-@Composable
-fun TestDemoBanner(viewModel: TestModeViewModel) {
-    val mode by viewModel.mode.collectAsState()
-
-
-    if (mode?.demo != true) return
-
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFFF9800))
-            .padding(8.dp)
-            .testTag("DemoBanner"),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = stringResource(R.string.demo_banner),
-            color = Color.White
-        )
-    }
-}
-
-*/

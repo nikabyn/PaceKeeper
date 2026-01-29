@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,13 +24,14 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.ModeDao
 import org.htwk.pacing.backend.database.ModeEntry
 import org.htwk.pacing.backend.database.PacingDatabase
+import org.koin.androidx.compose.koinViewModel
 
 
-class ModeViewModel(
+open class ModeViewModel(
     private val db: PacingDatabase,
     private val modeDao: ModeDao
 ) : ViewModel() {
-    val mode = modeDao.getModeLive().stateIn(
+    open val mode = modeDao.getModeLive().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
@@ -51,7 +51,7 @@ class ModeViewModel(
 
 @Composable
 fun DemoBanner(
-    modeViewModel: ModeViewModel,
+    modeViewModel: ModeViewModel = koinViewModel(),
     minHeight: Dp = 32.dp,
 ) {
     val mode by modeViewModel.mode.collectAsState()
@@ -61,14 +61,13 @@ fun DemoBanner(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .background(Color(0xFFFF9800))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .background(Color.Blue)
             .testTag("DemoBanner"),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = stringResource(R.string.demo_banner),
-            color = Color.White
+            color = Color.Black,
         )
     }
 }
