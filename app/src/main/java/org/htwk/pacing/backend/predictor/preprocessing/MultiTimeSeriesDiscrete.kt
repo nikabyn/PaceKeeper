@@ -333,7 +333,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
                 require(discreteProportional.size == stepCount);
 
-                metric.signalClass.components.forEach { component ->
+                metric.allComponents.forEach { component ->
                     val featureID = FeatureID(metric, component)
                     val componentData = featureID.component.compute(discreteProportional, fixedParameters)
                     val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
@@ -351,19 +351,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 }
 
             println("per-metric input entry counts (before ensureData): $debug")
-
-            val mutableHeartRateArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE,
-                FeatureComponent.PROPORTIONAL))
-
-            val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
-                FeatureComponent.PROPORTIONAL))
-
-            mutableHeartRateArray.indices.forEach { i ->
-                val hr = mutableHeartRateArray[i]
-                val hrv = mutableHRVArray[i]
-                mutableHeartRateArray[i] = adjustHR(hr, fixedParameters)
-                mutableHRVArray[i] = adjustHRV(hr, hrv, fixedParameters)
-            }
 
             return multiTimeSeriesDiscrete
         }

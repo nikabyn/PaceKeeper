@@ -1,7 +1,6 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 
@@ -40,7 +39,9 @@ enum class FeatureComponent(val compute: FeatureFunction) {
     EWMA({ data, _ -> data.decayingLoad() }), //compute decaying load of input
 
     //square input value, can be used to penalize large values, e.g. heavy heart rate load
-    SQUARED({ data, _ -> data.map { it * it }.toDoubleArray() })
+    SQUARED({ data, _ -> data.map { it * it }.toDoubleArray() }),
+
+    ADJUST_HR({data, fixedParameters -> data.map{hrBPM -> adjustHR(hrBPM, fixedParameters)}.toDoubleArray()} )
 }
 
 /**
@@ -74,7 +75,11 @@ enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
  */
 enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass, val auxiliaryFeatures: List<FeatureComponent> = listOf()) {
     HEART_RATE(TimeSeriesSignalClass.CONTINUOUS,
-        auxiliaryFeatures = listOf(FeatureComponent.EWMA, FeatureComponent.SQUARED)
+        auxiliaryFeatures = listOf(
+            FeatureComponent.EWMA,
+            FeatureComponent.SQUARED,
+            FeatureComponent.ADJUST_HR
+        )
     ),
     DISTANCE(TimeSeriesSignalClass.AGGREGATED),
     ELEVATION_GAINED(TimeSeriesSignalClass.AGGREGATED),
