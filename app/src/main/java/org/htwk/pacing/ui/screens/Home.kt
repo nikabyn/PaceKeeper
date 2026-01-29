@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.PredictedEnergyLevelModell2Dao
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
@@ -51,6 +52,12 @@ data class EnergyGraphData(
     val futureValue : Double
 )
 
+/*data class EnergyGraphData(
+    val entries: List<PredictedEnergyLevelEntry>,
+    val currentValue: Double,
+    val futureValue: Double
+)
+*/
 
 
 @Composable
@@ -60,22 +67,11 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
-    val latest by viewModel.predictedEnergyLevel.collectAsState()
-
-    // ... existing cache logic ...
-    var cached by remember {
-        mutableStateOf(
-            EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
-        )
-    }
-    if (latest.seriesPastToNow.y.isNotEmpty()) cached = latest
-    val energyGraphData = cached
-    if (energyGraphData.seriesPastToNow.y.isEmpty()) return
-    val futureValue = energyGraphData.futureValue
-    val currentEnergy = energyGraphData.seriesPastToNow.y.last()
-    val minPrediction = futureValue - 0.1
-    val maxPrediction = futureValue + 0.1
-    val avgPrediction = futureValue
+    val energyGraphData by viewModel.predictedEnergyLevel.collectAsState()
+    val currentEnergy = energyGraphData.
+    val minPrediction = energyGraphData.futureValue - 0.1
+    val maxPrediction = energyGraphData.futureValue + 0.1
+    val avgPrediction = energyGraphData.futureValue
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
@@ -83,14 +79,13 @@ fun HomeScreen(
             modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
         ) {
             EnergyPredictionCard(
-                series = energyGraphData.seriesPastToNow,
+                data = energyGraphData.entries,
                 currentEnergy = currentEnergy.toFloat(),
                 minPrediction = minPrediction.toFloat(),
                 avgPrediction = avgPrediction.toFloat(),
                 maxPrediction = maxPrediction.toFloat(),
                 modifier = Modifier.height(300.dp)
             )
-
             LabelCard(energy = currentEnergy)
             BatteryCard(
                 energy = currentEnergy,
@@ -117,7 +112,6 @@ class HomeViewModel(
     private val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
     private val userProfileDao: UserProfileDao,
 ) : ViewModel() {
-
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = userProfileDao.getProfileLive()
         .map { profile -> profile?.predictionModel ?: "DEFAULT" }
@@ -156,6 +150,13 @@ class HomeViewModel(
 
             val latestEntry = filteredEntries.last()
 
+            /*
+            EnergyGraphData(
+                entries,
+                entries.last().percentageNow.toDouble(),
+                entries.last().percentageFuture.toDouble(),
+            )
+             */
             EnergyGraphData(
                 Series(energySeries.x.toList(), energySeries.y.toList()),
                 latestEntry.percentageFuture
@@ -163,7 +164,7 @@ class HomeViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
+            initialValue = EnergyGraphData(emptyList(), 0.5, 0.5)
         )
 
     fun storeValidatedEnergyLevel(validation: Validation, energy: Double) {

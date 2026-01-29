@@ -1,8 +1,8 @@
 package org.htwk.pacing.ui.components
 
 import androidx.annotation.FloatRange
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -16,21 +16,18 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.toPath
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.ui.screens.measurements.TimeRange
 import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.hours
-
 
 /**
  * Shows a graph of the last 6 hours of the users energy level
@@ -38,8 +35,8 @@ import kotlin.time.Duration.Companion.hours
  * The last value in the series is used as the current time.
  */
 @Composable
-fun <C : Collection<Double>> EnergyPredictionCard(
-    series: Series<C>,
+fun EnergyPredictionCard(
+    data: List<PredictedEnergyLevelEntry>,
     @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
@@ -47,28 +44,15 @@ fun <C : Collection<Double>> EnergyPredictionCard(
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
-        if (series.x.isEmpty()) {
-            Text(
-                stringResource(R.string.currently_no_data_available),
-                modifier = Modifier.testTag("EnergyPredictionErrorText")
-            )
-            return@CardWithTitle
-        }
-
         val current = Clock.System.now()
-        val start = (current - 6.hours).toEpochMilliseconds().toDouble()
-        val end = (current + 6.hours).toEpochMilliseconds().toDouble()
+        val start = current - 6.hours
+        val end = current + 6.hours
 
-        val xConfig = AxisConfig(
-            range = start..end,
-            formatFunction = {
-                val localTime =
-                    Instant.fromEpochMilliseconds(it.toLong())
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                "%02d:%02d".format(localTime.hour, localTime.minute)
-            }
-        )
-        val yConfig = AxisConfig(range = 0.0..1.0, steps = 0u)
+        val xRange = TimeRange(start, end).toEpochDoubleRange()
+        val yRange = 0.0..1.0
+        val (xData, yData) = data
+            .map { Pair(it.time.toEpochMilliseconds().toDouble(), it.percentageNow.toDouble()) }
+            .unzip()
 
         val graphLineColor = MaterialTheme.colorScheme.onSurface
         val centerLineColor = MaterialTheme.colorScheme.outline
@@ -76,33 +60,42 @@ fun <C : Collection<Double>> EnergyPredictionCard(
         val predictionConstantColor = MaterialTheme.extendedColors.yellow
         val predictionNegativeColor = MaterialTheme.extendedColors.red
 
-        Annotation(
-            series = series,
-            xConfig = xConfig,
-            yConfig = yConfig,
-        ) { _, yRange ->
-            val xRange = start..current.toEpochMilliseconds().toDouble()
-
-            GraphCanvas {
-                val graphStrokeStyle = Stroke(
-                    width = 2.dp.toPx(),
-                    cap = StrokeCap.Round,
+        GraphCanvas(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            val graphStrokeStyle = Stroke(
+                width = 2.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+            val dashedStrokeStyle = Stroke(
+                width = 2.dp.toPx(),
+                cap = StrokeCap.Round,
+                pathEffect = PathEffect.dashPathEffect(
+                    intervals = floatArrayOf(
+                        10.dp.toPx(),
+                        10.dp.toPx()
+                    ),
+                    phase = 5.dp.toPx()
                 )
-                val dashedStrokeStyle = Stroke(
-                    width = 2.dp.toPx(),
-                    cap = StrokeCap.Round,
-                    pathEffect = PathEffect.dashPathEffect(
-                        intervals = floatArrayOf(
-                            10.dp.toPx(),
-                            10.dp.toPx()
-                        ),
-                        phase = 5.dp.toPx()
-                    )
-                )
+            )
 
-                val paths = graphToPaths(series, size.copy(width = size.width / 2f), xRange, yRange)
+            val paths = graphToPaths(
+                xData = xData,
+                yData = yData,
+                size = size.copy(width = size.width),
+                xRange = xRange,
+                yRange = yRange,
+            )
+
+            onDrawBehind {
                 clipRect(right = size.width / 2f) {
-                    drawPath(paths.line, graphLineColor, style = graphStrokeStyle)
+                    drawPath(
+                        paths.line,
+                        graphLineColor,
+                        style = graphStrokeStyle
+                    )
                 }
 
                 val predictionColor = when {
@@ -130,6 +123,12 @@ fun <C : Collection<Double>> EnergyPredictionCard(
                     dashedStrokeStyle,
                 )
             }
+        }
+
+        Axis(horizontal = true) {
+            AxisLabelHourMinutes(start)
+            AxisLabelHourMinutes(current)
+            AxisLabelHourMinutes(end)
         }
     }
 }

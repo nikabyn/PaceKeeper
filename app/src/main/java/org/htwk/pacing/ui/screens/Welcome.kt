@@ -68,14 +68,17 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.ui.components.EnergyPredictionCard
-import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 
 /**
  * Welcome and introduction to the most important components of the app.
@@ -251,20 +254,26 @@ private fun WelcomePage() {
 @Composable
 private fun PredictionPage() {
     Box(contentAlignment = Alignment.Center) {
-        val exSeries: Series<List<Double>> =
-            Series(
-                x = List(10) { Random.nextDouble(0.0, 1.0) },
-                y = List(10) { Random.nextDouble(0.0, 1.0) }
+        val current = Clock.System.now()
+        val start = current - 6.hours
+        val data = List(10) {
+            val progress = it.toDouble() / 10.0
+            val time = start + (current - start) * progress
+            PredictedEnergyLevelEntry(
+                time,
+                percentageNow = Percentage.fromDouble(Random.nextDouble(0.0, 1.0)),
+                timeFuture = time + 6.hours,
+                percentageFuture = Percentage.fromDouble(Random.nextDouble(0.0, 1.0))
             )
+        }
 
         EnergyPredictionCard(
-            series = exSeries,
+            data = data,
             currentEnergy = 0.5f,
             minPrediction = 0.0f,
             avgPrediction = 0.6f,
             maxPrediction = 1.0f,
             modifier = Modifier.height(300.dp)
-
         )
     }
 
@@ -523,7 +532,7 @@ open class WelcomeViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
+            initialValue = true
         )
 
     fun completeOnboarding() {

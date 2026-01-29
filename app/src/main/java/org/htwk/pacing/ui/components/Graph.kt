@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +17,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
+import androidx.compose.ui.draw.DrawResult
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -34,18 +37,14 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import org.htwk.pacing.ui.lineTo
-import org.htwk.pacing.ui.math.Float2D
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.ui.math.interpolate
-import org.htwk.pacing.ui.moveTo
 import org.htwk.pacing.ui.theme.Spacing
-
-/**
- * A series of values to be displayed by a graph component.
- *
- * User should ensure that values are sorted!
- */
-data class Series<C : Collection<Double>>(val x: C, val y: C)
+import kotlin.math.roundToInt
 
 /**
  * Options for how the line graph should be drawn.
@@ -92,9 +91,10 @@ data class AxisConfig(
  * A Card with a title that displays a line graph with two labelled axes.
  */
 @Composable
-fun <C : Collection<Double>> GraphCard(
+fun GraphCard(
     title: String,
-    series: Series<C>,
+    xData: List<Double>,
+    yData: List<Double>,
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
@@ -107,11 +107,66 @@ fun <C : Collection<Double>> GraphCard(
             .testTag("GraphCard")
     ) {
         AnnotatedGraph(
-            series = series,
+            xData = xData,
+            yData = yData,
             xConfig = xConfig,
             yConfig = yConfig,
             pathConfig = pathConfig,
         )
+    }
+}
+
+@Composable
+fun GraphLayout(
+    xLabels: @Composable () -> Unit,
+    yLabels: @Composable () -> Unit,
+    graph: @Composable () -> Unit,
+) = ConstraintLayout(
+    modifier = Modifier
+        .fillMaxSize()
+        .padding(horizontal = Spacing.large, vertical = Spacing.largeIncreased)
+) {
+    val (yAxis, graph, xAxis) = createRefs()
+
+    Axis(
+        horizontal = false,
+        modifier = Modifier
+            .constrainAs(yAxis) {
+                start.linkTo(parent.start)
+                top.linkTo(parent.top)
+                end.linkTo(graph.start)
+                bottom.linkTo(graph.bottom)
+                height = Dimension.fillToConstraints
+            }
+    ) {
+        yLabels()
+    }
+
+    Box(
+        modifier = Modifier.constrainAs(graph) {
+            top.linkTo(parent.top)
+            bottom.linkTo(xAxis.top)
+            start.linkTo(yAxis.end)
+            end.linkTo(parent.end)
+            height = Dimension.fillToConstraints
+            width = Dimension.fillToConstraints
+        }
+    ) {
+        graph()
+    }
+
+    Axis(
+        horizontal = true,
+        modifier = Modifier
+            .constrainAs(xAxis) {
+                start.linkTo(graph.start)
+                top.linkTo(graph.bottom)
+                end.linkTo(graph.end)
+                bottom.linkTo(parent.bottom)
+                width = Dimension.fillToConstraints
+            }
+    ) {
+        xLabels()
     }
 }
 
@@ -121,16 +176,18 @@ fun <C : Collection<Double>> GraphCard(
  * User must set Modifier.height(...)!
  */
 @Composable
-fun <C : Collection<Double>> AnnotatedGraph(
-    series: Series<C>,
+fun AnnotatedGraph(
+    xData: List<Double>,
+    yData: List<Double>,
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
-    Annotation(series, modifier, xConfig, yConfig) { xRange, yRange ->
+    Annotation(xData, yData, modifier, xConfig, yConfig) { xRange, yRange ->
         Graph(
-            series = series,
+            xData = xData,
+            yData = yData,
             yRange = yRange,
             xRange = xRange,
             pathConfig = pathConfig,
@@ -142,15 +199,16 @@ fun <C : Collection<Double>> AnnotatedGraph(
  * Axis annotations, has a slot for a Graph or some other component.
  */
 @Composable
-fun <C : Collection<Double>> Annotation(
-    series: Series<C>,
+fun Annotation(
+    xData: List<Double>,
+    yData: List<Double>,
     modifier: Modifier = Modifier,
     xConfig: AxisConfig = AxisConfig(),
     yConfig: AxisConfig = AxisConfig(),
     slot: @Composable ((yRange: ClosedRange<Double>, xRange: ClosedRange<Double>) -> Unit) =
         { _, _ -> Box(modifier = Modifier.fillMaxSize()) { } },
 ) {
-    val xRange = xConfig.range ?: Graph.defaultRange(series.x)
+    val xRange = xConfig.range ?: Graph.defaultRange(xData)
     val xSteps = xConfig.steps ?: 3u;
     val xLabels: List<String> = when (xSteps) {
         0u -> emptyList()
@@ -162,7 +220,7 @@ fun <C : Collection<Double>> Annotation(
         }
     }
 
-    val yRange = yConfig.range ?: Graph.defaultRange(series.y)
+    val yRange = yConfig.range ?: Graph.defaultRange(yData)
     val ySteps = yConfig.steps ?: 3u;
     val yLabels: List<String> = when (ySteps) {
         0u -> emptyList()
@@ -209,7 +267,7 @@ fun <C : Collection<Double>> Annotation(
                         bottom = Spacing.small,
                     )
                     .weight(1f)
-                    .drawLines(ySteps)
+                    .drawLines(ySteps.toInt())
             ) {
                 slot(xRange, yRange)
             }
@@ -229,27 +287,59 @@ fun <C : Collection<Double>> Annotation(
     }
 }
 
-private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
-    val scope = this
+@Composable
+fun AxisLabelHourMinutes(time: Instant) {
+    val localTime = time.toLocalDateTime(TimeZone.currentSystemDefault())
+    val text = "%02d:%02d".format(localTime.hour, localTime.minute)
+    AxisLabel(text)
+}
 
-    val path = Path().apply {
-        for (i in 0u..<ySteps) {
-            val height = i.toFloat() / (ySteps.toFloat() - 1)
-            moveTo(scope, Float2D(0f, height))
-            lineTo(scope, Float2D(1f, height))
-        }
+@Composable
+fun AxisLabel(text: String) = Text(
+    text,
+    style = MaterialTheme.typography.labelLarge,
+    modifier = Modifier.testTag("AxisLabel")
+)
+
+@Composable
+fun Axis(
+    horizontal: Boolean,
+    modifier: Modifier = Modifier,
+    labels: @Composable () -> Unit,
+) =
+    if (horizontal) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+            modifier = modifier.fillMaxWidth(),
+        ) { labels() }
+    } else {
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End,
+            modifier = modifier.fillMaxHeight(),
+        ) { labels() }
     }
-    drawPath(
-        path,
-        color = Color.Gray,
-        style = Stroke(
-            width = 1.0f,
-            pathEffect = PathEffect.dashPathEffect(
-                // TODO: Figure out how to scale this properly based on screen size
-                floatArrayOf(20f, 8f)
-            )
+
+
+fun Modifier.drawLines(ySteps: Int): Modifier = this.drawBehind {
+    if (ySteps < 2) return@drawBehind
+
+    val strokeWidth = 2f
+
+    repeat(ySteps) { i ->
+        val y = (size.height * i / (ySteps - 1).toFloat())
+            .roundToInt()
+            .toFloat()
+
+        drawLine(
+            color = Color.Gray,
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = strokeWidth,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 8f))
         )
-    )
+    }
 }
 
 /**
@@ -258,19 +348,20 @@ private fun Modifier.drawLines(ySteps: UInt): Modifier = this.drawBehind {
  * The graph supports both stroke and fill rendering through [pathConfig].
  * A height must be set with `Modifier.height(...)`.
  *
- * @param C The type of collection containing numeric data points.
- * @param series The data series to render.
+ * @param xData The data for the x axis.
+ * @param yData The data for the y axis.
  * @param modifier Modifier for layout and styling.
- * @param xRange Range of X-axis values to display. Defaults to the min–max of [series.x].
- * @param yRange Range of Y-axis values to display. Defaults to the min–max of [series.y].
+ * @param xRange Range of X-axis values to display. Defaults to the min–max of [xData].
+ * @param yRange Range of Y-axis values to display. Defaults to the min–max of [yData].
  * @param pathConfig Configuration for stroke and fill styles.
  */
 @Composable
-fun <C : Collection<Double>> Graph(
-    series: Series<C>,
+fun Graph(
+    xData: List<Double>,
+    yData: List<Double>,
     modifier: Modifier = Modifier,
-    xRange: ClosedRange<Double> = Graph.defaultRange(series.x),
-    yRange: ClosedRange<Double> = Graph.defaultRange(series.y),
+    xRange: ClosedRange<Double> = Graph.defaultRange(xData),
+    yRange: ClosedRange<Double> = Graph.defaultRange(yData),
     pathConfig: PathConfig = PathConfig.withStroke(),
 ) {
     val fillColor = pathConfig.fill ?: Graph.defaultFillColor()
@@ -278,14 +369,16 @@ fun <C : Collection<Double>> Graph(
     val strokeStyle = pathConfig.style ?: Graph.defaultStrokeStyle()
 
     GraphCanvas(modifier) {
-        val paths = graphToPaths(series, size, xRange, yRange)
+        val paths = graphToPaths(xData, yData, size, xRange, yRange)
 
-        if (pathConfig.hasFill) {
-            drawPath(paths.fill, fillColor)
-        }
+        onDrawBehind {
+            if (pathConfig.hasFill) {
+                drawPath(paths.fill, fillColor)
+            }
 
-        if (pathConfig.hasStroke) {
-            drawPath(paths.line, strokeColor, style = strokeStyle)
+            if (pathConfig.hasStroke) {
+                drawPath(paths.line, strokeColor, style = strokeStyle)
+            }
         }
     }
 }
@@ -316,15 +409,18 @@ object Graph {
  * Applies GPU offscreen compositing for efficient redrawing.
  *
  * @param modifier Modifier for layout and styling.
- * @param onDraw Drawing logic executed inside the [DrawScope].
+ * @param onCachedDraw Drawing logic executed inside the [DrawScope].
  */
 @Composable
 fun GraphCanvas(
     modifier: Modifier = Modifier,
-    onDraw: DrawScope.() -> Unit = { drawRect(color = Color.Magenta) }
+    onCachedDraw: CacheDrawScope.() -> DrawResult = {
+        onDrawBehind { drawRect(color = Color.Magenta) }
+    }
 ) {
-    Canvas(
+    Box(
         modifier = modifier
+            .drawWithCache(onCachedDraw)
             .fillMaxSize()
             .graphicsLayer() {
                 // Cache the drawing as a GPU texture
@@ -332,7 +428,6 @@ fun GraphCanvas(
                 clip = true
             }
             .testTag("GraphCanvas"),
-        onDraw = onDraw,
     )
 }
 
@@ -345,32 +440,33 @@ fun GraphCanvas(
 data class GraphPaths(val line: Path, val fill: Path)
 
 /**
- * Converts a numeric [series] into drawable [Path] objects representing
+ * Converts numeric data into drawable [Path] objects representing
  * the line and filled area of a graph.
  *
- * @param C The type of numeric collection.
- * @param series The data series to convert into paths.
+ * @param xData The data for the x axis.
+ * @param yData The data for the y axis.
  * @param size The canvas size for coordinate mapping.
  * @param xRange The visible X-axis range.
  * @param yRange The visible Y-axis range.
  * @return A [GraphPaths] object containing line and fill paths.
  */
-fun <C : Collection<Double>> graphToPaths(
-    series: Series<C>,
+fun graphToPaths(
+    xData: List<Double>,
+    yData: List<Double>,
     size: Size,
-    xRange: ClosedRange<Double> = Graph.defaultRange(series.x),
-    yRange: ClosedRange<Double> = Graph.defaultRange(series.y),
+    xRange: ClosedRange<Double> = Graph.defaultRange(xData),
+    yRange: ClosedRange<Double> = Graph.defaultRange(yData),
 ): GraphPaths {
     val linePath = Path()
 
-    if (series.x.isEmpty() || series.y.isEmpty()) {
+    if (xData.isEmpty() || yData.isEmpty()) {
         return GraphPaths(linePath, Path())
     }
 
-    val posX = series.x.map { xValue ->
+    val posX = xData.map { xValue ->
         (((xValue - xRange.start) / (xRange.endInclusive - xRange.start)).toFloat() * size.width)
     }
-    val posY = series.y.map { yValue ->
+    val posY = yData.map { yValue ->
         ((1f - ((yValue - yRange.start) / (yRange.endInclusive - yRange.start))).toFloat() * size.height)
     }
 

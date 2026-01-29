@@ -97,7 +97,11 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.graphics.shapes)
     implementation(libs.google.guava)
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
+    implementation("androidx.paging:paging-runtime:3.2.0")
+    implementation("androidx.paging:paging-compose:1.0.0")
 
     // Koin (dependency injection)
     implementation(libs.koin.android)
@@ -105,8 +109,6 @@ dependencies {
 
     // Room (database)
     implementation(libs.androidx.room.runtime)
-    implementation(libs.transportation.consumer)
-    implementation(libs.androidx.graphics.shapes)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     testImplementation(libs.androidx.room.testing)
@@ -133,20 +135,14 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Tensorflow
-    implementation(libs.litert)
-    implementation(libs.litert.gpu)
-    implementation(libs.litert.gpu.api)
-    implementation(libs.litert.support)
-
-    //CSV Parsing
+    // CSV Parsing
     implementation(libs.kotlin.csv.jvm)
 
-    //Splash Screen
+    // Splash Screen
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.material)
 
-    //Multik for Matrix Math
+    // Multik for Matrix Math
     implementation(libs.multik.kotlin)
     testImplementation(libs.kotlinx.serialization.json)
 }
