@@ -33,9 +33,13 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
 
+    private const val USE_BIAS = false
+    private const val TARGET_SMOOTHING_WINDOW: Int = 128
+    private const val MAX_CHANGE_PER_STEP: Double = 0.01
+
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
-    private val BIAS_FEATURE = listOf(1.0)
+    private val BIAS_FEATURE = if(USE_BIAS) listOf<Double>(1.0) else listOf<Double>() //QUICKFIX disable bias
     val lookBackOffsets = (0 until 4).map { x -> x * 4 }.toList()
 
     class PerHorizonModel(val weights: List<Double>)
@@ -69,10 +73,15 @@ object DifferentialPredictionModel : IPredictionModel {
             )
         }
     }
-    override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
-        val softenedTarget = centeredMovingAverage(target, window = 64).discreteDerivative().map{
-            x -> x.coerceIn(-0.1, 0.1)
+
+    fun prepareTargetFeature(target: DoubleArray) : DoubleArray{
+        return centeredMovingAverage(target, window = TARGET_SMOOTHING_WINDOW).discreteDerivative().map{
+                x -> x.coerceIn(-MAX_CHANGE_PER_STEP, MAX_CHANGE_PER_STEP)
         }.toDoubleArray()
+    }
+
+    override fun train(input: MultiTimeSeriesDiscrete, target: DoubleArray) {
+        val softenedTarget = prepareTargetFeature(target)
 
         val trainingSamples = createTrainingSamples(
             input,
@@ -120,7 +129,7 @@ object DifferentialPredictionModel : IPredictionModel {
 
         val coefficients = leastSquaresTikhonov(metricMatrixShifted.transpose(), targetVectorShifted,
             regularization = 1e-6,
-            lastIsBias = true
+            lastIsBias = USE_BIAS
         ).toList()
 
         return coefficients
@@ -131,6 +140,8 @@ object DifferentialPredictionModel : IPredictionModel {
         offset: Int,
         horizon: PredictionHorizon,
     ): Double {
+        if(offset < lookBackOffsets.max()) return 0.0 //QUICKFIX
+
         require(offset in 0 until input.stepCount())
         require(model != null) { "No model trained, can't perform prediction." }
 
@@ -153,6 +164,6 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //TODO: remove this and maybe do normalize target
         val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
-        return prediction//.coerceIn(-0.1, 0.1)
+        return prediction.coerceIn(-0.01, 0.01)
     }
 }
