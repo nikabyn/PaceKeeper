@@ -30,15 +30,17 @@ fun DoubleArray.decayingLoad(alpha: Double = 0.1): DoubleArray {
  * @property compute A lambda function that takes a `DoubleArray` and calculates the respective
  * PID component as a new `DoubleArray`
  */
-enum class FeatureComponent(val compute: (DoubleArray) -> DoubleArray) {
-    PROPORTIONAL({ it }), //proportional: return the array itself, without changing it
-    INTEGRAL(DoubleArray::discreteTrapezoidalIntegral), //compute integral of input
-    DERIVATIVE(DoubleArray::discreteDerivative), //compute derivative of input
 
-    EWMA(DoubleArray::decayingLoad), //compute decaying load of input
+typealias FeatureFunction = (DoubleArray, Predictor.FixedParameters) -> DoubleArray
+enum class FeatureComponent(val compute: FeatureFunction) {
+    PROPORTIONAL({ data, _ -> data }), //proportional: return the array itself, without changing it
+    INTEGRAL({ data, _ -> data.discreteTrapezoidalIntegral() }), //compute integral of input
+    DERIVATIVE({ data, _ -> data.discreteDerivative() }), //compute derivative of input
+
+    EWMA({ data, _ -> data.decayingLoad() }), //compute decaying load of input
 
     //square input value, can be used to penalize large values, e.g. heavy heart rate load
-    SQUARED({ arr -> arr.map { it * it }.toDoubleArray() })
+    SQUARED({ data, _ -> data.map { it * it }.toDoubleArray() })
 }
 
 /**

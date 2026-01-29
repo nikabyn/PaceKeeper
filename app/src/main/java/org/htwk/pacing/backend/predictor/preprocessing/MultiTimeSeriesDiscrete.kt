@@ -335,7 +335,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
 
                 metric.signalClass.components.forEach { component ->
                     val featureID = FeatureID(metric, component)
-                    val componentData = featureID.component.compute(discreteProportional)
+                    val componentData = featureID.component.compute(discreteProportional, fixedParameters)
                     val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
 
                     componentData.forEachIndexed { index, value ->
