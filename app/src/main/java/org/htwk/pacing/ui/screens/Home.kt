@@ -41,24 +41,16 @@ import org.htwk.pacing.ui.components.BatteryCard
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
-import org.htwk.pacing.ui.components.Series
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
 import kotlin.time.Duration.Companion.hours
 
 data class EnergyGraphData(
-    val seriesPastToNow : Series<List<Double>>,
-    val futureValue : Double
-)
-
-/*data class EnergyGraphData(
     val entries: List<PredictedEnergyLevelEntry>,
     val currentValue: Double,
     val futureValue: Double
 )
-*/
-
 
 @Composable
 fun HomeScreen(
@@ -68,7 +60,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val energyGraphData by viewModel.predictedEnergyLevel.collectAsState()
-    val currentEnergy = energyGraphData.
+    val currentEnergy = energyGraphData.currentValue
     val minPrediction = energyGraphData.futureValue - 0.1
     val maxPrediction = energyGraphData.futureValue + 0.1
     val avgPrediction = energyGraphData.futureValue
@@ -97,15 +89,6 @@ fun HomeScreen(
     }
 }
 
-/**
- * Common interface for energy entries from both models.
- */
-private data class EnergyEntry(
-    val timeMillis: Long,
-    val percentageNow: Double,
-    val percentageFuture: Double
-)
-
 class HomeViewModel(
     private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
     private val predictedEnergyLevelModell2Dao: PredictedEnergyLevelModell2Dao,
@@ -119,12 +102,14 @@ class HomeViewModel(
             // Choose the correct DAO based on the model setting
             if (model == "MODEL2") {
                 predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
-                    entries.map { EnergyEntry(it.time.toEpochMilliseconds(), it.percentageNow.toDouble(), it.percentageFuture.toDouble()) }
+                    entries.map { PredictedEnergyLevelEntry(
+                        time = it.time,
+                        percentageNow = it.percentageNow,
+                        timeFuture = it.timeFuture,
+                        percentageFuture = it.percentageFuture) }
                 }
             } else {
-                predictedEnergyLevelDao.getAllLive().map { entries ->
-                    entries.map { EnergyEntry(it.time.toEpochMilliseconds(), it.percentageNow.toDouble(), it.percentageFuture.toDouble()) }
-                }
+                predictedEnergyLevelDao.getAllLive()
             }
         }
         .debounce(200)
@@ -135,31 +120,19 @@ class HomeViewModel(
 
             // Filter entries to show last 24 hours
             val filteredEntries = entries.filter {
-                it.timeMillis in windowStart..windowEnd
-            }.sortedBy { it.timeMillis }
+                it.time.toEpochMilliseconds() in windowStart..windowEnd
+            }.sortedBy { it.time }
 
             if (filteredEntries.isEmpty()) {
-                return@map EnergyGraphData(Series(listOf(0.0, 0.5), listOf(0.5, 0.5)), 0.5)
-            }
-
-            val energySeries = Series(mutableListOf(), mutableListOf())
-            filteredEntries.forEach { entry ->
-                energySeries.x.add(entry.timeMillis.toDouble())
-                energySeries.y.add(entry.percentageNow)
+                return@map EnergyGraphData(emptyList(), 0.5, 0.5)
             }
 
             val latestEntry = filteredEntries.last()
 
-            /*
             EnergyGraphData(
-                entries,
-                entries.last().percentageNow.toDouble(),
-                entries.last().percentageFuture.toDouble(),
-            )
-             */
-            EnergyGraphData(
-                Series(energySeries.x.toList(), energySeries.y.toList()),
-                latestEntry.percentageFuture
+                    filteredEntries,
+                latestEntry.percentageNow.toDouble(),
+                latestEntry.percentageFuture.toDouble()
             )
         }.stateIn(
             scope = viewModelScope,
