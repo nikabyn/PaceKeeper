@@ -5,29 +5,25 @@ import kotlinx.datetime.Instant
 object EnergyCalculation {
     val DEFAULT_HRV_DRAIN_CONFIG = HRVDrainConfig()
 
-    // ========================================================================
-    // HAUPT-ENTRY-POINT
-    // ========================================================================
 
     /**
      * calculates energy with HRV-Drain and Anchoring from validated user inputs
      *
-     * ZENTRAL METHOD for energy prediction
+     * CENTRAL METHOD for energy prediction
      *
-     * @param hrAgg Aggregierte HR-Daten (Optimizer.aggregateHR)
-     * @param hrvData HRV-Daten (calculateHRVFromHR)
+     * @param hrAgg
+     * @param hrvData
      * @param hrLow
      * @param hrHigh
      * @param drainFactor
      * @param recoveryFactor
      * @param timeOffsetMinutes
      * @param aggregationMinutes
-     * @param validatedPoints Nutzer-validierte Energie-Eingaben (ANCHOR POINTS)
-     * @param fallbackStartEnergy Startwert wenn kein Anchor vor HR-Start existiert
-     * @param energyOffset Trainierter Offset (wird von Energie subtrahiert)
-     * @param hrvConfig Konfiguration für HRV-Multiplier-Schwellen
+     * @param validatedPoints
+     * @param fallbackStartEnergy
+     * @param energyOffset
+     * @param hrvConfig
      *
-     * @return Liste von Energie-Ergebnissen mit Zeitstempel und HRV-Multiplier
      */
     fun calculateEnergyWithHRVDrainAnchored(
         hrAgg: List<HRDataPoint>,
@@ -50,7 +46,6 @@ object EnergyCalculation {
         val hrStart = hrAgg.first().timestamp.toEpochMilliseconds()
         val hrEnd = hrAgg.last().timestamp.toEpochMilliseconds()
 
-        // Anchor-Punkte aufbauen
         val anchors = buildAnchorPoints(
             sortedValidated = sortedValidated,
             hrStart = hrStart,

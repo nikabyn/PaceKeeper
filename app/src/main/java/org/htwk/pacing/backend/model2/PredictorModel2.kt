@@ -12,7 +12,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
 /**
- * Energie-Vorhersage basierend auf Herzrate.
  *
  * TRAINING:
  *   train() calculates (hrLow, hrHigh, drainFactor, recoveryFactor, energyOffset)
@@ -24,7 +23,7 @@ import kotlin.time.Duration.Companion.hours
  */
 object PredictorModel2 {
 
-    private const val TAG = "PredictorModel2"
+    //private const val TAG = "PredictorModel2"
 
     private fun defaultParams() = OptimizationResult(
         hrLow = 60.0,
