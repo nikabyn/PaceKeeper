@@ -18,7 +18,6 @@ import org.htwk.pacing.ui.components.AnnotatedGraph
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.Graph
 import org.htwk.pacing.ui.components.GraphCard
-import org.htwk.pacing.ui.components.Series
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,10 +30,11 @@ class GraphTest {
     @Test
     fun graphCard_displaysTitleAndGraph() {
         val title = "Test Title"
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
+        val xData = listOf(1.0, 2.0, 3.0)
+        val yData = listOf(1.0, 2.0, 3.0)
 
         composeTestRule.setContent {
-            GraphCard(title, series, modifier = Modifier.height(300.dp))
+            GraphCard(title, xData, yData, modifier = Modifier.height(300.dp))
         }
 
         composeTestRule.onNodeWithTag("CardTitle")
@@ -48,11 +48,12 @@ class GraphTest {
 
     @Test
     fun annotatedGraph_displaysAxisAndGraph() {
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
+        val xData = listOf(1.0, 2.0, 3.0)
+        val yData = listOf(1.0, 2.0, 3.0)
 
         composeTestRule.setContent {
             AnnotatedGraph(
-                series,
+                xData, yData,
                 modifier = Modifier.height(300.dp),
                 xConfig = AxisConfig(steps = 3u),
                 yConfig = AxisConfig(steps = 4u)
@@ -84,12 +85,13 @@ class GraphTest {
 
     @Test
     fun graph_displays() {
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
+        val xData = listOf(1.0, 2.0, 3.0)
+        val yData = listOf(1.0, 2.0, 3.0)
         val height = 300.dp
 
         composeTestRule.setContent {
             Graph(
-                series,
+                xData, yData,
                 modifier = Modifier.height(height),
             )
         }
