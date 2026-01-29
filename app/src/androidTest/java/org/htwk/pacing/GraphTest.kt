@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.htwk.pacing.ui.components.AnnotatedGraph
 import org.htwk.pacing.ui.components.AxisConfig
-import org.htwk.pacing.ui.components.Graph
 import org.htwk.pacing.ui.components.GraphCard
+import org.htwk.pacing.ui.components.graph.Graph
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

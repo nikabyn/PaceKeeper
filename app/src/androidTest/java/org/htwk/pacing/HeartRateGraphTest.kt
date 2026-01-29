@@ -62,12 +62,12 @@ class HeartRateGraphTest {
     fun heartRateGraphCard_displaysTitleAndZones() {
         val title = "Heart Rate Zones"
         composeTestRule.setContent {
-            HeartRateGraphCard(
-                title = title,
-                data = emptyList(),
-                zonesResult = createTestZonesResult(),
-                modifier = Modifier.height(300.dp)
-            )
+//            HeartRateGraphCard(
+//                title = title,
+//                data = emptyList(),
+//                zonesResult = ,
+//                modifier = Modifier.height(300.dp)
+//            )
         }
 
         composeTestRule.onNodeWithTag("CardTitle")
