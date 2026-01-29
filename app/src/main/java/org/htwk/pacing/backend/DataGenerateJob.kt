@@ -23,6 +23,9 @@ import kotlin.time.Duration.Companion.minutes
 
 object DataGenerateJob {
 
+    private var csvCursorTime: Instant? = null
+    private var csvOffset: kotlin.time.Duration? = null
+
     const val TAG = "DataGenerateJob"
     private val firstImport = 30.days
     private val generationInterval = 1.minutes
@@ -35,19 +38,39 @@ object DataGenerateJob {
         val exportDir = context.getExternalFilesDir("pacing_export") ?: return@coroutineScope
         val path = exportDir.absolutePath
 
-        // Initial import: 30 Tage
+        val heartRateCsv = readCsv("$path/heart_rate.csv")
+        if (heartRateCsv.isEmpty()) return@coroutineScope
+
+        val csvStartTime = Instant.parse(heartRateCsv.first()["timestamp"]!!)
         val now = Clock.System.now()
-        importDemoData(
-            db,
-            path,
-            from = now - firstImport,
-            to = now
+        csvCursorTime = csvStartTime
+        csvOffset = (now - firstImport) - csvStartTime
+
+        // Initialer Import (z. B. 30 Tage auf einmal)
+        val initialTo = csvStartTime + firstImport
+
+        Log.i(
+            TAG,
+            "Initial-Import: csvFrom=$csvStartTime csvTo=$initialTo"
         )
 
-        // Sliding Window: alle 10 Minuten
+        importDemoData(
+            db = db,
+            path = path,
+            csvFrom = csvStartTime,
+            csvTo = initialTo,
+            offset = csvOffset!!,
+            importPredictedEnergy = true
+        )
+
+        csvCursorTime = initialTo
+
+
+        Log.i(TAG, "CSV-Start=$csvStartTime  Offset=$csvOffset")
+
         while (true) {
             try {
-                Log.d("Test123", "Generiere neue Daten...")
+                Log.d("PerformDataGenration", "Generiere neue Daten...")
 
                 performDataGeneration(db, path)
             } catch (e: Exception) {
@@ -63,6 +86,7 @@ object DataGenerateJob {
         db.stepsDao().deleteAll()
         db.predictedEnergyLevelDao().deleteAll()
         db.distanceDao().deleteAll()
+        db.predictedEnergyLevelDao().deleteAll()
         Log.i(TAG, "Datenbank wurde zurückgesetzt")
     }
 
@@ -85,78 +109,96 @@ object DataGenerateJob {
     fun importDemoData(
         db: PacingDatabase,
         path: String,
-        from: Instant,
-        to: Instant
+        csvFrom: Instant,
+        csvTo: Instant,
+        offset: kotlin.time.Duration,
+        importPredictedEnergy: Boolean
     ) {
-        val heartRateCsv = readCsv("$path/heart_rate.csv")
-        if (heartRateCsv.isEmpty()) return
+        Log.d(
+            TAG,
+            "CSV-Import: csvFrom=$csvFrom csvTo=$csvTo offset=$offset"
+        )
 
+        val heartRateCsv = readCsv("$path/heart_rate.csv")
         val predictedCsv = readCsv("$path/predicted_energy_level.csv")
         val stepsCsv = readCsv("$path/steps.csv")
         val distanceCsv = readCsv("$path/distance.csv")
         val sleepCsv = readCsv("$path/sleep-sessions.csv")
 
-        val csvStartTime = Instant.parse(heartRateCsv.first()["timestamp"]!!)
-        val offset = from - csvStartTime
 
-        Log.d(TAG, "Importiere Daten von $from bis $to (offset=$offset)")
-
-        // HeartRate
         val heartRates = heartRateCsv.mapNotNull { row ->
             val csvTime = Instant.parse(row["timestamp"]!!)
-            val time = csvTime + offset
-            if (time !in from..<to) return@mapNotNull null
+            if (csvTime !in csvFrom..<csvTo) return@mapNotNull null
 
-            row["bpm"]?.toIntOrNull()?.let { bpm ->
-                HeartRateEntry(time, bpm.toLong())
-            }
+            HeartRateEntry(
+                time = csvTime + offset,
+                bpm = row["bpm"]!!.toLong()
+            )
         }
+
+        heartRates.forEach {
+            Log.d("Eintrag", "HeartRate importiert: time=${it.time}, bpm=${it.bpm}")
+        }
+
         db.heartRateDao().insertMany(heartRates)
 
-        // Predicted Energy Level
-        val predictedEnergy = predictedCsv.mapNotNull { row ->
-            try {
-                val csvTime = Instant.parse(row["timestamp"]!!)
-                val time = csvTime + offset
-                if (time !in from..<to) return@mapNotNull null
 
-                val percentageNow =
-                    row["percentageNow"]!!.removeSuffix("%").toDouble() / 100.0
-                val percentageFuture =
-                    row["percentageFuture"]!!.removeSuffix("%").toDouble() / 100.0
+        if (importPredictedEnergy) {
+            val predictedEnergy = predictedCsv.mapNotNull { row ->
+                try {
+                    val csvTime = Instant.parse(row["timestamp"]!!)
+                    if (csvTime !in csvFrom..<csvTo) return@mapNotNull null
 
-                PredictedEnergyLevelEntry(
-                    time = time,
-                    percentageNow = Percentage.fromDouble(
-                        BigDecimal(percentageNow).setScale(2, RoundingMode.HALF_UP).toDouble()
-                    ),
-                    timeFuture = Instant.parse(row["timeFuture"]!!) + offset,
-                    percentageFuture = Percentage.fromDouble(
-                        BigDecimal(percentageFuture).setScale(2, RoundingMode.HALF_UP).toDouble()
+                    val percentageNow =
+                        row["percentageNow"]!!.removeSuffix("%").toDouble() / 100.0
+                    val percentageFuture =
+                        row["percentageFuture"]!!.removeSuffix("%").toDouble() / 100.0
+
+                    PredictedEnergyLevelEntry(
+                        time = csvTime + offset,
+                        percentageNow = Percentage.fromDouble(
+                            BigDecimal(percentageNow)
+                                .setScale(2, RoundingMode.HALF_UP)
+                                .toDouble()
+                        ),
+                        timeFuture = Instant.parse(row["timeFuture"]!!) + offset,
+                        percentageFuture = Percentage.fromDouble(
+                            BigDecimal(percentageFuture)
+                                .setScale(2, RoundingMode.HALF_UP)
+                                .toDouble()
+                        )
                     )
-                )
-            } catch (_: Exception) {
-                null
+                } catch (_: Exception) {
+                    null
+                }
             }
-        }
-        db.predictedEnergyLevelDao().insertMany(predictedEnergy)
 
-        // Steps
+            db.predictedEnergyLevelDao().insertMany(predictedEnergy)
+        }
+
+
         val steps = stepsCsv.mapNotNull { row ->
-            val start = Instant.parse(row["timestamp"]!!) + offset
-            if (start < from || start >= to) return@mapNotNull null
+            val csvStart = Instant.parse(row["timestamp"]!!)
+            if (csvStart !in csvFrom..<csvTo) return@mapNotNull null
 
+            val start = csvStart + offset
             val end = Instant.fromEpochMilliseconds(row["end"]!!.toLong()) + offset
-            val count = row["count"]!!.toLong()
 
-            StepsEntry(start, end, count)
+            StepsEntry(
+                start = start,
+                end = end,
+                count = row["count"]!!.toLong()
+            )
         }
+
         db.stepsDao().insertMany(steps)
 
-        // Distance
+
         val distances = distanceCsv.mapNotNull { row ->
-            val time = Instant.parse(row["timestamp"]!!) + offset
-            if (time !in from..<to) return@mapNotNull null
+            val csvTime = Instant.parse(row["timestamp"]!!)
+            if (csvTime !in csvFrom..<csvTo) return@mapNotNull null
+
+            val time = csvTime + offset
 
             DistanceEntry(
                 start = time,
@@ -164,18 +206,25 @@ object DataGenerateJob {
                 length = Length.meters(row["distanceMeters"]!!.toDouble())
             )
         }
+
         db.distanceDao().insertMany(distances)
 
-        // Sleep Sessions
-        val sleeps = sleepCsv.mapNotNull { row ->
-            val start = Instant.parse(row["timestamp"]!!) + offset
-            if (start !in from..<to) return@mapNotNull null
 
+        val sleeps = sleepCsv.mapNotNull { row ->
+            val csvStart = Instant.parse(row["timestamp"]!!)
+            if (csvStart !in csvFrom..<csvTo) return@mapNotNull null
+
+            val start = csvStart + offset
             val end = Instant.fromEpochMilliseconds(row["end"]!!.toLong()) + offset
             val stage = SleepStage.fromString(row["stage"]!!)
 
-            SleepSessionEntry(start, end, stage)
+            SleepSessionEntry(
+                start = start,
+                end = end,
+                stage = stage
+            )
         }
+
         db.sleepSessionsDao().insertMany(sleeps)
     }
 
@@ -183,13 +232,26 @@ object DataGenerateJob {
         db: PacingDatabase,
         path: String
     ) {
-        val latest =
-            db.heartRateDao().getLatestTimestamp() ?: return
+        val cursor = csvCursorTime ?: return
+        val offset = csvOffset ?: return
 
-        val to = latest + generationInterval
+        val nextCursor = cursor + generationInterval
 
-        Log.d(TAG, "Live-Import von $latest bis $to")
+        Log.d(
+            TAG,
+            "CSV-Window: csvFrom=$cursor csvTo=$nextCursor"
+        )
 
-        importDemoData(db, path, latest, to)
+        importDemoData(
+            db = db,
+            path = path,
+            csvFrom = cursor,
+            csvTo = nextCursor,
+            offset = offset,
+            importPredictedEnergy = false
+
+        )
+
+        csvCursorTime = nextCursor
     }
 }
