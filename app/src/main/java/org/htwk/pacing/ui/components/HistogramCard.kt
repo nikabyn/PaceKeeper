@@ -71,26 +71,28 @@ fun HistogramCard(
         GraphCanvas {
             val paths = graphToPaths(xData, yData, size, xRange, yRange)
 
-            clipPath(paths.fill) {
-                for ((zone, color) in zonesToColors) {
+            onDrawBehind {
+                clipPath(paths.fill) {
+                    for ((zone, color) in zonesToColors) {
 
-                    val startEdge =
-                        ((zone.start - xRange.start) / heartRateSpan)
-                            .coerceIn(0.0, 1.0)
-                            .toFloat()
-                    val endEdge =
-                        ((zone.endExclusive - xRange.start) / heartRateSpan)
-                            .coerceIn(0.0, 1.0)
-                            .toFloat()
+                        val startEdge =
+                            ((zone.start - xRange.start) / heartRateSpan)
+                                .coerceIn(0.0, 1.0)
+                                .toFloat()
+                        val endEdge =
+                            ((zone.endExclusive - xRange.start) / heartRateSpan)
+                                .coerceIn(0.0, 1.0)
+                                .toFloat()
 
-                    drawRect(
-                        color = color,
-                        topLeft = Offset(startEdge * size.width, 0f),
-                        size = Size(
-                            width = (endEdge * size.width) - (startEdge * size.width),
-                            height = size.height
+                        drawRect(
+                            color = color,
+                            topLeft = Offset(startEdge * size.width, 0f),
+                            size = Size(
+                                width = (endEdge * size.width) - (startEdge * size.width),
+                                height = size.height
+                            )
                         )
-                    )
+                    }
                 }
             }
         }

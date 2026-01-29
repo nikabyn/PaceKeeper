@@ -69,38 +69,41 @@ fun HeartRateGraphCard(
                 yRange.endInclusive
             )
 
-            // Draw colored rectangles for each heart rate zone
-            // Pair each boundary with the next one to create zones, then draw them
-            boundaries.zip(boundaries.drop(1)).forEachIndexed { index, (start, end) ->
-                // Calculate canvas position for upper border
-                // Note: Canvas Y=0 is at top, so we invert the calculation
-                val canvasTop =
-                    size.height * (1f - ((end - yRange.start) / totalRange).toFloat())
-                // Calculate canvas position for lower border
-                val canvasBottom =
-                    size.height * (1f - ((start - yRange.start) / totalRange).toFloat())
+            val paths = graphToPaths(xData, yData, size, xRange, yRange)
 
-                // Calculate height of zone in pixels
-                val height = canvasBottom - canvasTop
+            onDrawBehind {
+                // Draw colored rectangles for each heart rate zone
+                // Pair each boundary with the next one to create zones, then draw them
+                boundaries.zip(boundaries.drop(1)).forEachIndexed { index, (start, end) ->
+                    // Calculate canvas position for upper border
+                    // Note: Canvas Y=0 is at top, so we invert the calculation
+                    val canvasTop =
+                        size.height * (1f - ((end - yRange.start) / totalRange).toFloat())
+                    // Calculate canvas position for lower border
+                    val canvasBottom =
+                        size.height * (1f - ((start - yRange.start) / totalRange).toFloat())
 
-                // Only draw if zone has positive height (avoids rendering errors)
-                if (height <= 0f) return@forEachIndexed
+                    // Calculate height of zone in pixels
+                    val height = canvasBottom - canvasTop
 
-                drawRect(
-                    color = zoneColors[index],
-                    alpha = 0.25f,
-                    topLeft = Offset(0f, canvasTop),
-                    size = Size(size.width, height),
+                    // Only draw if zone has positive height (avoids rendering errors)
+                    if (height <= 0f) return@forEachIndexed
+
+                    drawRect(
+                        color = zoneColors[index],
+                        alpha = 0.25f,
+                        topLeft = Offset(0f, canvasTop),
+                        size = Size(size.width, height),
+                    )
+                }
+
+                drawPath(
+                    paths.line,
+                    color = strokeColor,
+                    style = strokeStyle,
+                    blendMode = BlendMode.Overlay
                 )
             }
-
-            val paths = graphToPaths(xData, yData, size, xRange, yRange)
-            drawPath(
-                paths.line,
-                color = strokeColor,
-                style = strokeStyle,
-                blendMode = BlendMode.Overlay
-            )
         }
     }
 }

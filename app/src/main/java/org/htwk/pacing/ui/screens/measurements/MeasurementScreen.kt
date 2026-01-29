@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -145,43 +144,41 @@ private fun DefaultScreen(
                     listItems.itemCount,
                     key = listItems.itemKey { it.key }
                 ) { index ->
-                    val item = listItems[index]
-                    if (item == null) {
-                        CircularProgressIndicator()
-                        return@items
-                    }
-
-                    Card(
-                        colors = CardStyle.colors,
-                        shape = CardStyle.shape,
-                        onClick = { },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            Modifier.padding(
-                                horizontal = Spacing.large,
-                                vertical = Spacing.largeIncreased
-                            )
-                        ) {
-                            TitleAndStats(
-                                measurement,
-                                item.entries,
-                                item.range,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TinyGraphPreview(
-                                measurement,
-                                item.entries,
-                                item.range,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(50.dp)
-                            )
-                        }
-                    }
+                    val item = listItems[index] ?: return@items
+                    PreviewCard(measurement, item, onClick = {})
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PreviewCard(measurement: Measurement, item: ListItem, onClick: () -> Unit) = Card(
+    colors = CardStyle.colors,
+    shape = CardStyle.shape,
+    onClick = onClick,
+    modifier = Modifier.fillMaxWidth()
+) {
+    Row(
+        Modifier.padding(
+            horizontal = Spacing.large,
+            vertical = Spacing.largeIncreased
+        )
+    ) {
+        TitleAndStats(
+            measurement,
+            item.entries,
+            item.range,
+            modifier = Modifier.weight(1f)
+        )
+        TinyGraphPreview(
+            measurement,
+            item.entries,
+            item.range,
+            modifier = Modifier
+                .weight(1f)
+                .height(50.dp)
+        )
     }
 }
 
@@ -193,8 +190,12 @@ private fun LargeGraphPreview(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val entriesPreview = remember { measurement.processPreview(entries) }
-    val yDataToday = remember { entriesPreview.fastMap { measurement.entryToYValue(it) } }
+    val entriesPreview = remember(entries) {
+        measurement.processPreview(entries)
+    }
+    val yDataToday = remember(entriesPreview) {
+        entriesPreview.fastMap { measurement.entryToYValue(it) }
+    }
     val yRange = measurement.yRange(yDataToday)
     val ySteps = measurement.ySteps(yRange)
     val xRange = TimeRange.today()
@@ -360,7 +361,6 @@ class TimedEntryPagingSource(
     PagingSource<Int, ListItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ListItem> {
         return try {
-            // Page key (start from 0 or 1)
             val page = params.key ?: 0
 
             // Load a page of data
@@ -375,7 +375,6 @@ class TimedEntryPagingSource(
                 ListItem(currentKey++, range, entries)
             }
 
-            // Compute next and previous keys
             val nextKey = if (response.isEmpty()) null else page + 1
             val prevKey = if (page == 0) null else page - 1
 
@@ -389,7 +388,6 @@ class TimedEntryPagingSource(
         }
     }
 
-    // Optional: helps Paging know where to restart after invalidation
     override fun getRefreshKey(state: PagingState<Int, ListItem>): Int? {
         // Try to anchor around the currently visible items
         return state.anchorPosition?.let { anchorPos ->

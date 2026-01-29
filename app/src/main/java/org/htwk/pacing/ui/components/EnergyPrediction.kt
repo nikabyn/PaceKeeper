@@ -88,38 +88,41 @@ fun EnergyPredictionCard(
                 xRange = xRange,
                 yRange = yRange,
             )
-            clipRect(right = size.width / 2f) {
-                drawPath(
-                    paths.line,
-                    graphLineColor,
-                    style = graphStrokeStyle
+
+            onDrawBehind {
+                clipRect(right = size.width / 2f) {
+                    drawPath(
+                        paths.line,
+                        graphLineColor,
+                        style = graphStrokeStyle
+                    )
+                }
+
+                val predictionColor = when {
+                    avgPrediction < 0.4f -> predictionNegativeColor
+                    avgPrediction < 0.6f -> predictionConstantColor
+                    else -> predictionPositiveColor
+                }
+
+                drawPredictionArea(
+                    currentEnergy,
+                    minPrediction,
+                    maxPrediction,
+                    predictionColor,
+                )
+
+                drawPredictionLine(
+                    currentEnergy,
+                    avgPrediction,
+                    predictionColor,
+                    dashedStrokeStyle,
+                )
+
+                drawCenterLine(
+                    centerLineColor,
+                    dashedStrokeStyle,
                 )
             }
-
-            val predictionColor = when {
-                avgPrediction < 0.4f -> predictionNegativeColor
-                avgPrediction < 0.6f -> predictionConstantColor
-                else -> predictionPositiveColor
-            }
-
-            drawPredictionArea(
-                currentEnergy,
-                minPrediction,
-                maxPrediction,
-                predictionColor,
-            )
-
-            drawPredictionLine(
-                currentEnergy,
-                avgPrediction,
-                predictionColor,
-                dashedStrokeStyle,
-            )
-
-            drawCenterLine(
-                centerLineColor,
-                dashedStrokeStyle,
-            )
         }
 
         Axis(horizontal = true) {

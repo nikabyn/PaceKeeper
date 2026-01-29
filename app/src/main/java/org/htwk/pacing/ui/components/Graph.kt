@@ -1,6 +1,5 @@
 package org.htwk.pacing.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +17,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
+import androidx.compose.ui.draw.DrawResult
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -369,12 +371,14 @@ fun Graph(
     GraphCanvas(modifier) {
         val paths = graphToPaths(xData, yData, size, xRange, yRange)
 
-        if (pathConfig.hasFill) {
-            drawPath(paths.fill, fillColor)
-        }
+        onDrawBehind {
+            if (pathConfig.hasFill) {
+                drawPath(paths.fill, fillColor)
+            }
 
-        if (pathConfig.hasStroke) {
-            drawPath(paths.line, strokeColor, style = strokeStyle)
+            if (pathConfig.hasStroke) {
+                drawPath(paths.line, strokeColor, style = strokeStyle)
+            }
         }
     }
 }
@@ -405,15 +409,18 @@ object Graph {
  * Applies GPU offscreen compositing for efficient redrawing.
  *
  * @param modifier Modifier for layout and styling.
- * @param onDraw Drawing logic executed inside the [DrawScope].
+ * @param onCachedDraw Drawing logic executed inside the [DrawScope].
  */
 @Composable
 fun GraphCanvas(
     modifier: Modifier = Modifier,
-    onDraw: DrawScope.() -> Unit = { drawRect(color = Color.Magenta) }
+    onCachedDraw: CacheDrawScope.() -> DrawResult = {
+        onDrawBehind { drawRect(color = Color.Magenta) }
+    }
 ) {
-    Canvas(
+    Box(
         modifier = modifier
+            .drawWithCache(onCachedDraw)
             .fillMaxSize()
             .graphicsLayer() {
                 // Cache the drawing as a GPU texture
@@ -421,7 +428,6 @@ fun GraphCanvas(
                 clip = true
             }
             .testTag("GraphCanvas"),
-        onDraw = onDraw,
     )
 }
 

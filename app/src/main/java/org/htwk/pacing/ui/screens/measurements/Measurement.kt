@@ -11,11 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
+import androidx.compose.ui.draw.DrawResult
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -325,7 +326,7 @@ enum class Measurement {
     }
 }
 
-fun DrawScope.drawMeasurement(
+fun CacheDrawScope.drawMeasurement(
     measurement: Measurement,
     entries: List<TimedEntry>,
     range: TimeRange,
@@ -334,10 +335,10 @@ fun DrawScope.drawMeasurement(
     colorREM: Color,
     colorLightSleep: Color,
     colorDeepSleep: Color,
-) {
-    if (entries.isEmpty()) return
+): DrawResult {
+    if (entries.isEmpty()) return onDrawBehind { }
 
-    when (measurement) {
+    return when (measurement) {
         Steps,
         Distance,
         ElevationGained,
@@ -364,8 +365,7 @@ fun DrawScope.drawMeasurement(
         MenstruationPeriod,
         OxygenSaturation,
         HeartRateVariabilityRmssd,
-        SkinTemperature -> {
-        }
+        SkinTemperature -> onDrawBehind { }
     }
 }
 
@@ -379,22 +379,26 @@ fun DrawScope.drawMeasurement(
  * @param entries Timed entries for the measurement.
  * @param strokeColor Color used for the graph line.
  */
-private fun DrawScope.drawMeasurementLine(
+private fun CacheDrawScope.drawMeasurementLine(
     measurement: Measurement,
     entries: List<TimedEntry>,
     range: TimeRange,
     strokeColor: Color,
-) {
+): DrawResult {
     val xData = entries.fastMap { measurement.entryToXValue(it) }
     val yData = entries.fastMap { measurement.entryToYValue(it) }
     val xRange = range.toEpochDoubleRange()
     val yRange = measurement.yRange(yData)
 
-    drawPath(
-        graphToPaths(xData, yData, size, xRange, yRange).line,
-        color = strokeColor,
-        style = Graph.defaultStrokeStyle(),
-    )
+    val path = graphToPaths(xData, yData, size, xRange, yRange).line
+
+    return onDrawBehind {
+        drawPath(
+            path,
+            color = strokeColor,
+            style = Graph.defaultStrokeStyle(),
+        )
+    }
 }
 
 /**
@@ -409,20 +413,20 @@ private fun DrawScope.drawMeasurementLine(
  * @param colorLightSleep Color used for light sleep.
  * @param colorDeepSleep Color used for deep sleep.
  */
-private fun DrawScope.drawMeasurementSleep(
+private fun CacheDrawScope.drawMeasurementSleep(
     entries: List<SleepSessionEntry>,
     xRange: TimeRange,
     colorAwake: Color,
     colorREM: Color,
     colorLightSleep: Color,
     colorDeepSleep: Color,
-) {
+): DrawResult {
     val xRange = xRange.toEpochDoubleRange()
     val xRangeWidth = xRange.endInclusive - xRange.start
 
-    for (entry in entries) {
+    val paths = entries.fastMap { entry ->
         val (color, stage) = when (entry.stage) {
-            SleepStage.Unknown -> continue
+            SleepStage.Unknown -> return@fastMap null
 
             SleepStage.Awake,
             SleepStage.OutOfBed,
@@ -446,16 +450,23 @@ private fun DrawScope.drawMeasurementSleep(
         val y = stage.toFloat() / 3f
         val yPx = yPadding + y * availableHeight
 
-        val path = Path().apply {
-            moveTo(start.toFloat() * size.width, yPx)
-            lineTo(end.toFloat() * size.width, yPx)
-        }
-
-        drawPath(
-            path,
-            color = color,
-            style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        Pair(
+            color,
+            Path().apply {
+                moveTo(start.toFloat() * size.width, yPx)
+                lineTo(end.toFloat() * size.width, yPx)
+            }
         )
+    }
+
+    return onDrawBehind {
+        for ((color, path) in paths.filterNotNull()) {
+            drawPath(
+                path,
+                color = color,
+                style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            )
+        }
     }
 }
 
