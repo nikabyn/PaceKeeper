@@ -11,6 +11,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -21,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -29,6 +32,8 @@ import kotlinx.datetime.Clock
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.backend.database.PredictedEnergyLevelModell2Dao
+import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
@@ -39,12 +44,13 @@ import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
+import kotlin.time.Duration.Companion.hours
+
 data class EnergyGraphData(
     val entries: List<PredictedEnergyLevelEntry>,
     val currentValue: Double,
     val futureValue: Double
 )
-
 
 @Composable
 fun HomeScreen(
@@ -84,19 +90,49 @@ fun HomeScreen(
 }
 
 class HomeViewModel(
-    predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    private val predictedEnergyLevelModell2Dao: PredictedEnergyLevelModell2Dao,
     private val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
+    private val userProfileDao: UserProfileDao,
 ) : ViewModel() {
     @OptIn(FlowPreview::class)
-    val predictedEnergyLevel = predictedEnergyLevelDao
-        .getAllLive()
-        .filter { it.isNotEmpty() }
+    val predictedEnergyLevel = userProfileDao.getProfileLive()
+        .map { profile -> profile?.predictionModel ?: "DEFAULT" }
+        .flatMapLatest { model ->
+            // Choose the correct DAO based on the model setting
+            if (model == "MODEL2") {
+                predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
+                    entries.map { PredictedEnergyLevelEntry(
+                        time = it.time,
+                        percentageNow = it.percentageNow,
+                        timeFuture = it.timeFuture,
+                        percentageFuture = it.percentageFuture) }
+                }
+            } else {
+                predictedEnergyLevelDao.getAllLive()
+            }
+        }
         .debounce(200)
         .map { entries ->
+            val now = Clock.System.now()
+            val windowStart = (now - 24.hours).toEpochMilliseconds()
+            val windowEnd = now.toEpochMilliseconds()
+
+            // Filter entries to show last 24 hours
+            val filteredEntries = entries.filter {
+                it.time.toEpochMilliseconds() in windowStart..windowEnd
+            }.sortedBy { it.time }
+
+            if (filteredEntries.isEmpty()) {
+                return@map EnergyGraphData(emptyList(), 0.5, 0.5)
+            }
+
+            val latestEntry = filteredEntries.last()
+
             EnergyGraphData(
-                entries,
-                entries.last().percentageNow.toDouble(),
-                entries.last().percentageFuture.toDouble(),
+                    filteredEntries,
+                latestEntry.percentageNow.toDouble(),
+                latestEntry.percentageFuture.toDouble()
             )
         }.stateIn(
             scope = viewModelScope,

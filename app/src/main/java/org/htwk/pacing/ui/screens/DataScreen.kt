@@ -65,6 +65,11 @@ fun DataScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.large)
         ) {
             ImportDataHealthConnect()
+            
+            org.htwk.pacing.ui.components.ZipDataImport_import_temp(
+                heartRateDao = settingsViewModel.db.heartRateDao(),
+                validatedEnergyLevelDao = settingsViewModel.db.validatedEnergyLevelDao()
+            )
 
 
             ImportDemoDataHealthConnect()
