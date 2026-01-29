@@ -140,7 +140,10 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
     println("MSE: ${meanSquaredError(predictions, target.values)}")
     println("R2:  ${r2Score(predictions, target.values)}")
 
-    return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
+    println("Derivative MSE: ${meanSquaredError(predictionsDerivative, target.values.discreteDerivative())}")
+    println("Derivative R2:  ${r2Score(predictionsDerivative, target.values.discreteDerivative())}")
+
+    return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 2).discreteDerivative().map{
             x -> x.coerceIn(-0.1, 0.1)
     }.toDoubleArray())
 
