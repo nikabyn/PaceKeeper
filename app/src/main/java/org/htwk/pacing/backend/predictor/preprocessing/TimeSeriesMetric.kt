@@ -55,12 +55,11 @@ enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
     CONTINUOUS(listOf(
         FeatureComponent.PROPORTIONAL,
         FeatureComponent.DERIVATIVE,
-        //PIDComponent.INTEGRAL,
-        //we don't need integral, because extrapolation averages encode same summation behaviour
     )),
 
     /** For values that accumulate over time, like total steps or distance. */
-    AGGREGATED(listOf(FeatureComponent.PROPORTIONAL/*, PIDComponent.INTEGRAL*/)),
+    //we don't need integral, because EWNA averages encodes wanted behaviour better
+    AGGREGATED(listOf(FeatureComponent.PROPORTIONAL, FeatureComponent.EWMA)),
 }
 
 /**
