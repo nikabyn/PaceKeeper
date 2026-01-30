@@ -25,7 +25,6 @@ import org.htwk.pacing.backend.predictor.generateDiscreteTargetSeries
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 
@@ -43,14 +42,13 @@ object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
 
     //whether or not to run dummy simulation mode
-    private var simulationEnabled = false
+    const val SIMULATION_ENABLED = true
 
-    private var count = 0
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION * 2
     private val maximumTrainingSeriesDuration = 60.days
     private val minimumTrainingSeriesDuration = 3.days
     private val retrainEvery = 1.hours
-    private val predictEvery = 30.minutes
+    private val predictEvery = Predictor.TIME_SERIES_DURATION//30.minutes
 
     /**
      * Core prediction logic to be used by both
@@ -119,7 +117,7 @@ object EnergyPredictionJob {
         db.predictedEnergyLevelDao().deleteAll()
 
         trainOnce(db)
-        if (simulationEnabled) {
+        if (SIMULATION_ENABLED) {
             launch { runSimulation(db) }
         } else {
             launch { predictContinuous(db) }
@@ -199,10 +197,13 @@ object EnergyPredictionJob {
     }
 
     suspend fun runSimulation(db: PacingDatabase) {
-        db.predictedEnergyLevelDao().deleteAll() // Clear old data for a fresh start [cite: 10]
-        val earliestEntryTime = db.validatedEnergyLevelDao().getAll().minBy { it.time }.time
+        db.predictedEnergyLevelDao().deleteAll() // Clear old data for a fresh start
 
-        val latestEntryTime = earliestEntryTime + 10.days
+        val allValidations = db.validatedEnergyLevelDao().getAll()
+        if (allValidations.isEmpty()) return
+
+        val earliestEntryTime = allValidations.minBy { it.time }.time
+        val latestEntryTime = allValidations.maxBy { it.time }.time
 
         var simCount = 0
 
@@ -210,7 +211,7 @@ object EnergyPredictionJob {
             //increment time in 30-minute steps, matching desired simulation speed
             val now = earliestEntryTime + Predictor.TIME_SERIES_STEP_DURATION * simCount + 2.days
 
-            // Stop the simulation if it reaches the current real-world time
+            //stop the simulation if it reaches the last validated entry
             if (now > latestEntryTime) break
 
             val prediction = calculatePredictionAt(db, now)
@@ -219,7 +220,7 @@ object EnergyPredictionJob {
                 db.predictedEnergyLevelDao().insert(prediction)
             }
             simCount++
-            delay(2000) //small delay to allow the UI to animate the "timelapse"
+            delay(1000) //small delay to allow the UI to animate the "timelapse"
         }
     }
 

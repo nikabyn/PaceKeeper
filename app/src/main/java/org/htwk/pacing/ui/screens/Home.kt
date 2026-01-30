@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.htwk.pacing.backend.EnergyPredictionJob
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
@@ -40,6 +41,7 @@ import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Duration.Companion.hours
 
 data class EnergyGraphData(
     val entries: List<PredictedEnergyLevelEntry>,
@@ -60,6 +62,13 @@ fun HomeScreen(
     val maxPrediction = energyGraphData.futureValue + 0.1
     val avgPrediction = energyGraphData.futureValue
 
+    val currentTime =
+        if (EnergyPredictionJob.SIMULATION_ENABLED and energyGraphData.entries.isNotEmpty()) {
+            energyGraphData.entries.last().time
+        } else {
+            Clock.System.now()
+        }
+
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
@@ -71,7 +80,8 @@ fun HomeScreen(
                 minPrediction = minPrediction.toFloat(),
                 avgPrediction = avgPrediction.toFloat(),
                 maxPrediction = maxPrediction.toFloat(),
-                modifier = Modifier.height(300.dp)
+                modifier = Modifier.height(300.dp),
+                currentTime = currentTime
             )
             LabelCard(energy = currentEnergy)
             BatteryCard(
@@ -90,6 +100,7 @@ class HomeViewModel(
     private val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
     private val userProfileDao: UserProfileDao,
 ) : ViewModel() {
+
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = userProfileDao.getProfileLive()
         .map { profile -> profile?.predictionModel ?: "DEFAULT" }
@@ -112,14 +123,18 @@ class HomeViewModel(
         }
         .debounce(200)
         .map { entries ->
-            /*val now = Clock.System.now()
-            val windowStart = (now - 24.hours).toEpochMilliseconds()
-            val windowEnd = now.toEpochMilliseconds()*/
-
-            // Filter entries to show last 24 hours
-            val filteredEntries = entries.filter {
-                true//it.time.toEpochMilliseconds() in windowStart..windowEnd
-            }.sortedBy { it.time }
+            //unless in simulation mode, filter entries to show last 24 hours
+            val filteredEntries =
+                if (EnergyPredictionJob.SIMULATION_ENABLED) {
+                    entries
+                } else {
+                    val now = Clock.System.now()
+                    val windowStart = (now - 24.hours).toEpochMilliseconds()
+                    val windowEnd = now.toEpochMilliseconds()
+                    entries.filter { it ->
+                        it.time.toEpochMilliseconds() in windowStart..windowEnd
+                    }.sortedBy { it.time }
+                }
 
             if (filteredEntries.isEmpty()) {
                 return@map EnergyGraphData(emptyList(), 0.5, 0.5)

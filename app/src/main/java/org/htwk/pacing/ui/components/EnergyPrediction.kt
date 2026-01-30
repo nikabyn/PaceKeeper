@@ -22,6 +22,7 @@ import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.toPath
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
 import org.htwk.pacing.ui.screens.measurements.TimeRange
@@ -37,6 +38,7 @@ import kotlin.time.Duration.Companion.hours
 @Composable
 fun EnergyPredictionCard(
     data: List<PredictedEnergyLevelEntry>,
+    currentTime: Instant = Clock.System.now(),
     @FloatRange(from = 0.0, to = 1.0) minPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) avgPrediction: Float,
     @FloatRange(from = 0.0, to = 1.0) maxPrediction: Float,
@@ -44,9 +46,8 @@ fun EnergyPredictionCard(
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
-        val current = data.maxByOrNull { it.time }?.time ?: Clock.System.now()
-        val start = current - 6.hours
-        val end = current + 6.hours
+        val start = currentTime - 6.hours
+        val end = currentTime + 6.hours
 
         val xRange = TimeRange(start, end).toEpochDoubleRange()
         val yRange = 0.0..1.0
@@ -127,7 +128,7 @@ fun EnergyPredictionCard(
 
         Axis(horizontal = true) {
             AxisLabelHourMinutes(start)
-            AxisLabelHourMinutes(current)
+            AxisLabelHourMinutes(currentTime)
             AxisLabelHourMinutes(end)
         }
     }
