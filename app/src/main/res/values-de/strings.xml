@@ -135,7 +135,7 @@
     <string name="label_diagnosis">Diagnose</string>
     <string name="label_fatigue_sensitivity">Müdigkeitsempfindlichkeit</string>
     <string name="label_activity_baseline">Aktivitäts-Baseline</string>
-    <string name="label_anaerobic_threshold">Anaerobische Schwelle</string>
+    <string name="label_anaerobic_threshold">Anaerobe Schwelle</string>
     <string name="label_bell_scale">Bell-Skala</string>
     <string name="label_fitness_tracker">Fitness-Tracker</string>
     <string name="option_none">Keine</string>
