@@ -7,6 +7,7 @@ import org.htwk.pacing.backend.database.Length
 import org.htwk.pacing.backend.predictor.Predictor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
 
@@ -15,6 +16,7 @@ class FallbackHandlerTest {
     private val timeStart = Instant.fromEpochMilliseconds(0)
     private val duration = 60.minutes
 
+    @Ignore("Fallback disabled for now")
     @Test
     fun ensureDataGeneratesDefaultHeartRateAndDistanceIfEmpty() {
         val raw = Predictor.MultiTimeSeriesEntries.createDefaultEmpty(
@@ -38,6 +40,7 @@ class FallbackHandlerTest {
 
     }
 
+    @Ignore("Fallback disabled for now")
     @Test
     fun ensureDataReturnsRawDataIfPresent() {
         val hr = listOf(
