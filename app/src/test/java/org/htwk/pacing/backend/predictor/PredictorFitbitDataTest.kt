@@ -20,8 +20,6 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
-import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
-import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.evaluateModel
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
@@ -375,8 +373,6 @@ class PredictorFitbitDataTest {
         val predictions = mutableListOf<PredictedEnergyLevelEntry>()
         var currentWindowEnd = overallStartTime + 1.hours
 
-        var i = 1
-
         val pred_predictor = mutableListOf<PredictedEnergyLevelEntry>()
 
         val featureHistory = mutableMapOf<String, MutableList<GenericTimedDataPoint>>()
@@ -409,39 +405,16 @@ class PredictorFitbitDataTest {
                     .filter { it.end in currentWindowStart..currentWindowEnd }
                     .maxByOrNull { it.time }
 
-            println(lastValidatedEnergyLevelEntryInWindow)
-
             val lastTime = lastValidatedEnergyLevelEntryInWindow?.time ?: currentWindowStart
             val lastEnergy = lastValidatedEnergyLevelEntryInWindow?.percentage?.toDouble() ?: 0.5
 
-            val predictionResult1 = DifferentialPredictionModel.predict(
-                input = multiTimeSeriesDiscrete,
-                offset = ((currentWindowEnd - overallStartTime) / stepDuration).toInt(),
-                horizon = IPredictionModel.PredictionHorizon.NOW
-            )
-
-            val predictionResult2 = DifferentialPredictionModel.predict(
-                input = windowMTSD,
-                offset = windowMTSD.stepCount() - 1,
-                horizon = IPredictionModel.PredictionHorizon.NOW
-            )
-
-            val entry =
-                PredictedEnergyLevelEntry(
-                    time = currentWindowEnd,
-                    percentageNow = Percentage(predictionResult1),
-                    timeFuture = currentWindowEnd,
-                    percentageFuture = Percentage(predictionResult2)
-                )
-            predictions.add(entry)
-
-            val pred3 = Predictor.predict(
+            val pred = Predictor.predict(
                 multiTimeSeriesDiscrete = windowMTSD,
                 lastValidatedEnergy = lastEnergy,
                 lastValidatedTime = lastTime,
                 timeNow = currentWindowEnd
             )
-            pred_predictor.add(pred3)
+            pred_predictor.add(pred)
 
             windowMTSD.getAllFeatureIDs().forEach { featureID ->
                 // Create a readable name like "HEART_RATE_SQUARED"
@@ -455,18 +428,9 @@ class PredictorFitbitDataTest {
                     .add(GenericTimedDataPoint(currentWindowEnd, value))
             }
 
-            i++
-
             //slide the window forward one step
             currentWindowEnd += stepDuration
         }
-
-        //assertEquals(i, targetTimeSeries.values.size)
-
-        val pred1 = predictions.map { it -> it.percentageNow.toDouble() }
-            .toDoubleArray()//.discreteTrapezoidalIntegral(0.3)
-        val pred2 = predictions.map { it -> it.percentageFuture.toDouble() }
-            .toDoubleArray()//.discreteTrapezoidalIntegral(0.3)
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
