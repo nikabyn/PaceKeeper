@@ -48,37 +48,42 @@ fun r2Score(predictions: DoubleArray, actual: DoubleArray): Double {
     return 1 - (ssRes / ssTot)
 }
 
-internal fun testShiftEquality(
+fun testShiftEquality(
     model: IPredictionModel,
     fullMTSD: MultiTimeSeriesDiscrete,
-    singleTargetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries) : DoubleArray {
+    singleTargetTimeSeries: TimeSeriesDiscretizer.SingleDiscreteTimeSeries
+): DoubleArray {
 
     val start1 = System.currentTimeMillis()
 
-    val predictions1 = (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
-            i ->
-        var testSet = MultiTimeSeriesDiscrete.fromSubSlice(fullMTSD, i, i + Predictor.TIME_SERIES_SAMPLE_COUNT)
-        val prediction = model.predict(
-            testSet,
-            testSet.stepCount() - 1,
-            IPredictionModel.PredictionHorizon.NOW,
-        )
-        prediction
-    }.toDoubleArray()
+    val predictions1 =
+        (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map { i ->
+            var testSet = MultiTimeSeriesDiscrete.fromSubSlice(
+                fullMTSD,
+                i,
+                i + Predictor.TIME_SERIES_SAMPLE_COUNT
+            )
+            val prediction = model.predict(
+                testSet,
+                testSet.stepCount() - 1,
+                IPredictionModel.PredictionHorizon.NOW,
+            )
+            prediction
+        }.toDoubleArray()
 
 
     println("Producing predictions took ${System.currentTimeMillis() - start1} ms")
     val start2 = System.currentTimeMillis()
 
-    val predictions2 = (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map {
-            i ->
-        val prediction = model.predict(
-            fullMTSD,
-            i + Predictor.TIME_SERIES_SAMPLE_COUNT - 1,
-            IPredictionModel.PredictionHorizon.NOW,
-        )
-        prediction
-    }.toDoubleArray()
+    val predictions2 =
+        (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map { i ->
+            val prediction = model.predict(
+                fullMTSD,
+                i + Predictor.TIME_SERIES_SAMPLE_COUNT - 1,
+                IPredictionModel.PredictionHorizon.NOW,
+            )
+            prediction
+        }.toDoubleArray()
 
     require(predictions1.contentEquals(predictions2))
 
@@ -89,9 +94,9 @@ internal fun testShiftEquality(
 
 internal fun producePredictions(
     model: IPredictionModel,
-    fullMTSD: MultiTimeSeriesDiscrete) : DoubleArray {
-    val predictions = (0 until fullMTSD.stepCount()).map {
-            i ->
+    fullMTSD: MultiTimeSeriesDiscrete
+): DoubleArray {
+    val predictions = (0 until fullMTSD.stepCount()).map { i ->
         val prediction = model.predict(
             fullMTSD,
             i,
@@ -103,12 +108,13 @@ internal fun producePredictions(
     return predictions
 }
 
-fun trainingSplit(input: MultiTimeSeriesDiscrete,
-                  target: DoubleArray,
-                  @FloatRange(from = 0.0, to = 1.0) splitPoint1: Double,
-                  @FloatRange(from = 0.0, to = 1.0) splitPoint2: Double):
-        Pair<MultiTimeSeriesDiscrete, DoubleArray>
-{
+fun trainingSplit(
+    input: MultiTimeSeriesDiscrete,
+    target: DoubleArray,
+    @FloatRange(from = 0.0, to = 1.0) splitPoint1: Double,
+    @FloatRange(from = 0.0, to = 1.0) splitPoint2: Double
+):
+        Pair<MultiTimeSeriesDiscrete, DoubleArray> {
     require(splitPoint1 < splitPoint2)
     require(input.stepCount() == target.size)
 
@@ -116,13 +122,17 @@ fun trainingSplit(input: MultiTimeSeriesDiscrete,
     val splitIndex2: Int = (input.stepCount() * splitPoint2).toInt()
     val trainRange = splitIndex until splitIndex2
 
-    val trainInput = MultiTimeSeriesDiscrete.fromSubSlice(input, trainRange.first, trainRange.last - 1)
+    val trainInput =
+        MultiTimeSeriesDiscrete.fromSubSlice(input, trainRange.first, trainRange.last - 1)
     val trainTarget = target.slice(trainRange).toDoubleArray()
 
     return Pair(trainInput, trainTarget)
 }
 
-fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.SingleDiscreteTimeSeries): List<DoubleArray> {
+fun evaluateModel(
+    input: MultiTimeSeriesDiscrete,
+    target: TimeSeriesDiscretizer.SingleDiscreteTimeSeries
+): List<DoubleArray> {
     val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.0, 0.99)
 
     DifferentialPredictionModel.train(
@@ -135,16 +145,30 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
 
     // offset initial value
     val startOffset = target.values.slice(0 until 10).average()
-    val predictions = centeredMovingAverage(predictionsDerivative.discreteTrapezoidalIntegral(startOffset), window = 64)
+    val predictions = centeredMovingAverage(
+        predictionsDerivative.discreteTrapezoidalIntegral(startOffset),
+        window = 64
+    )
 
     println("MSE: ${meanSquaredError(predictions, target.values)}")
     println("R2:  ${r2Score(predictions, target.values)}")
 
-    println("Derivative MSE: ${meanSquaredError(predictionsDerivative, target.values.discreteDerivative())}")
+    println(
+        "Derivative MSE: ${
+            meanSquaredError(
+                predictionsDerivative,
+                target.values.discreteDerivative()
+            )
+        }"
+    )
     println("Derivative R2:  ${r2Score(predictionsDerivative, target.values.discreteDerivative())}")
 
-    return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
-            x -> x.coerceIn(-0.1, 0.1)
-    }.toDoubleArray())
+    return listOf(
+        predictions,
+        predictionsDerivative,
+        centeredMovingAverage(target.values, window = 64).discreteDerivative().map { x ->
+            x.coerceIn(-0.1, 0.1)
+        }.toDoubleArray()
+    )
 
 }
