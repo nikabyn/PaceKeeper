@@ -1,4 +1,3 @@
-
 package org.htwk.pacing.backend.predictor.model
 
 //import android.util.Log
@@ -8,7 +7,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
-import org.htwk.pacing.ui.math.centeredMovingAverage
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.mk
@@ -20,7 +18,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.first
-import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 
 /**
@@ -38,10 +35,8 @@ object DifferentialPredictionModel : IPredictionModel {
 
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
-    private val BIAS_FEATURE = if(USE_BIAS) listOf<Double>(1.0) else listOf<Double>() //QUICKFIX disable bias
-    val lookBackOffsets = listOf(0,1,2,4,8,12,24,36,48)
-        //listOf(0,1,2,3,4,6,8,10,12,16,20,24,32,40,48)
-    //(0 until 4).map { x -> x * 4 }.toList()
+    private val BIAS_FEATURE = if (USE_BIAS) listOf<Double>(1.0) else listOf<Double>()
+    val lookBackOffsets = listOf(0, 1, 2, 4, 8, 12, 24, 36, 48)
 
     class PerHorizonModel(val weights: List<Double>)
     class Model(
@@ -56,12 +51,13 @@ object DifferentialPredictionModel : IPredictionModel {
         val targetValue: Double
     )
 
-    private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int) : List<Double> {
+    private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int): List<Double> {
         return lookBackOffsets.map { horizon ->
             val index = (offset - horizon)
             input.allFeaturesAt(index).toList()
         }.flatten()
     }
+
     private fun createTrainingSamples(
         input: MultiTimeSeriesDiscrete,
         targetTimeSeriesDiscrete: DoubleArray
@@ -75,9 +71,9 @@ object DifferentialPredictionModel : IPredictionModel {
         }
     }
 
-    fun prepareTargetFeature(target: DoubleArray) : DoubleArray{
-        return target.discreteDerivative().map{
-                x -> x.coerceIn(-MAX_CHANGE_PER_STEP, MAX_CHANGE_PER_STEP)
+    fun prepareTargetFeature(target: DoubleArray): DoubleArray {
+        return target.discreteDerivative().map { x ->
+            x.coerceIn(-MAX_CHANGE_PER_STEP, MAX_CHANGE_PER_STEP)
         }.toDoubleArray()
     }
 
@@ -91,14 +87,16 @@ object DifferentialPredictionModel : IPredictionModel {
 
         require(trainingSamples.isNotEmpty()) { "No training samples available, can't perform regression." }
 
-        val metricMatrix: NDArray<Double, D2> = mk.ndarray(trainingSamples.map { it.metricValues }).transpose()
+        val metricMatrix: NDArray<Double, D2> =
+            mk.ndarray(trainingSamples.map { it.metricValues }).transpose()
         val targetVector: NDArray<Double, D1> = mk.ndarray(trainingSamples.map { it.targetValue })
 
         //normalize extrapolations, this is essential for good regression stability, but skip the
         //constant bias feature at the end so it doesn't get zeroed from normalization
-        val extrapolationDistributions = (0 until metricMatrix.shape[0] - BIAS_FEATURE.size).map { i ->
-            (metricMatrix[i] as D1Array<Double>).normalize()
-        }
+        val extrapolationDistributions =
+            (0 until metricMatrix.shape[0] - BIAS_FEATURE.size).map { i ->
+                (metricMatrix[i] as D1Array<Double>).normalize()
+            }
 
         val perHorizonModels = mutableMapOf<PredictionHorizon, PerHorizonModel>()
         for (predictionHorizon in PredictionHorizon.entries) {
@@ -110,7 +108,11 @@ object DifferentialPredictionModel : IPredictionModel {
     }
 
     //returns coefficients for offset
-    fun trainForHorizon(metricMatrix: D2Array<Double>, targetVector: D1Array<Double>, predictionHorizon: PredictionHorizon) : List<Double>{
+    fun trainForHorizon(
+        metricMatrix: D2Array<Double>,
+        targetVector: D1Array<Double>,
+        predictionHorizon: PredictionHorizon
+    ): List<Double> {
         require(metricMatrix.shape[1] == targetVector.size) {
             "metricMatrix and targetVector must have the same length ${metricMatrix.shape[1]} != ${targetVector.size}"
         }
@@ -128,7 +130,8 @@ object DifferentialPredictionModel : IPredictionModel {
             "metricMatrix and targetVector must have the same length ${metricMatrixShifted.shape[0]} != ${targetVectorShifted.size}"
         }
 
-        val coefficients = leastSquaresTikhonov(metricMatrixShifted.transpose(), targetVectorShifted,
+        val coefficients = leastSquaresTikhonov(
+            metricMatrixShifted.transpose(), targetVectorShifted,
             regularization = 1e-6,
             lastIsBias = USE_BIAS
         ).toList()
@@ -141,7 +144,7 @@ object DifferentialPredictionModel : IPredictionModel {
         offset: Int,
         horizon: PredictionHorizon,
     ): Double {
-        if(offset < lookBackOffsets.max()) return 0.0 //QUICKFIX
+        if (offset < lookBackOffsets.max()) return 0.0 //QUICKFIX
 
         require(offset in 0 until input.stepCount())
         require(model != null) { "No model trained, can't perform prediction." }
@@ -152,11 +155,14 @@ object DifferentialPredictionModel : IPredictionModel {
         val inputFeaturesAtOffset = createFeatures(input, offset)
 
         //normalize extrapolations, this is essential for good regression stability
-        val normalizedInputs: D1Array<Double> = mk.ndarray(mk.ndarray(inputFeaturesAtOffset
-            .mapIndexed {index, d ->
-                val distribution = inputDistributions[index]
-                normalizeSingleValue(d, distribution)
-            }).toList() + BIAS_FEATURE)
+        val normalizedInputs: D1Array<Double> = mk.ndarray(
+            mk.ndarray(
+            inputFeaturesAtOffset
+                .mapIndexed { index, d ->
+                    val distribution = inputDistributions[index]
+                    normalizeSingleValue(d, distribution)
+                }).toList() + BIAS_FEATURE
+        )
 
         val weights: List<Double> = perHorizonModel.weights
 
@@ -164,7 +170,8 @@ object DifferentialPredictionModel : IPredictionModel {
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
 
         //TODO: remove this and maybe do normalize target
-        val prediction = mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
+        val prediction =
+            mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
         return prediction//.coerceIn(-0.01, 0.01)
     }
 }
