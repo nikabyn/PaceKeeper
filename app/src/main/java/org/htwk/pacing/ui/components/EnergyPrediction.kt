@@ -44,7 +44,7 @@ fun EnergyPredictionCard(
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
-        val current = Clock.System.now()
+        val current = data.maxByOrNull { it.time }?.time ?: Clock.System.now()
         val start = current - 6.hours
         val end = current + 6.hours
 

@@ -71,7 +71,7 @@ object DifferentialPredictionModel : IPredictionModel {
         }
     }
 
-    fun prepareTargetFeature(target: DoubleArray): DoubleArray {
+    private fun prepareTargetFeature(target: DoubleArray): DoubleArray {
         return target.discreteDerivative().map { x ->
             x.coerceIn(-MAX_CHANGE_PER_STEP, MAX_CHANGE_PER_STEP)
         }.toDoubleArray()
@@ -108,7 +108,7 @@ object DifferentialPredictionModel : IPredictionModel {
     }
 
     //returns coefficients for offset
-    fun trainForHorizon(
+    private fun trainForHorizon(
         metricMatrix: D2Array<Double>,
         targetVector: D1Array<Double>,
         predictionHorizon: PredictionHorizon
@@ -157,17 +157,18 @@ object DifferentialPredictionModel : IPredictionModel {
         //normalize extrapolations, this is essential for good regression stability
         val normalizedInputs: D1Array<Double> = mk.ndarray(
             mk.ndarray(
-            inputFeaturesAtOffset
-                .mapIndexed { index, d ->
-                    val distribution = inputDistributions[index]
-                    normalizeSingleValue(d, distribution)
-                }).toList() + BIAS_FEATURE
+                inputFeaturesAtOffset
+                    .mapIndexed { index, d ->
+                        val distribution = inputDistributions[index]
+                        normalizeSingleValue(d, distribution)
+                    }).toList() + BIAS_FEATURE
         )
 
         val weights: List<Double> = perHorizonModel.weights
 
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
+        println("weights: $weights")
 
         //TODO: remove this and maybe do normalize target
         val prediction =

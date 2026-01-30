@@ -144,7 +144,6 @@ object Predictor {
         //TODO: grab input data from a bit longer than 2 days
 
         val timeSinceLastValidation = timeNow - lastValidatedTime
-
         val stepsSinceLastValidation = (timeSinceLastValidation / TIME_SERIES_STEP_DURATION).toInt()
 
         if (stepsSinceLastValidation <= 0) return PredictedEnergyLevelEntry(
@@ -180,7 +179,6 @@ object Predictor {
     private fun accumulatePredictionsForHorizon(
         startIndex: Int,
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
-        lastValidatedEnergy: Double,
         predictionHorizon: IPredictionModel.PredictionHorizon
     ): Double {
         val rawEnergyDeltas =
@@ -191,6 +189,8 @@ object Predictor {
                     predictionHorizon
                 )
             }.toDoubleArray()
+
+        Log.i(LOGGING_TAG, "Deltas for $predictionHorizon: ${rawEnergyDeltas.joinToString()}")
 
         val smoothedEnergyDeltas = rawEnergyDeltas.causalExponentialMovingAverage(alpha = 0.25)
 

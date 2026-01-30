@@ -11,9 +11,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -43,8 +40,6 @@ import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
-
-import kotlin.time.Duration.Companion.hours
 
 data class EnergyGraphData(
     val entries: List<PredictedEnergyLevelEntry>,
@@ -102,11 +97,14 @@ class HomeViewModel(
             // Choose the correct DAO based on the model setting
             if (model == "MODEL2") {
                 predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
-                    entries.map { PredictedEnergyLevelEntry(
-                        time = it.time,
-                        percentageNow = it.percentageNow,
-                        timeFuture = it.timeFuture,
-                        percentageFuture = it.percentageFuture) }
+                    entries.map {
+                        PredictedEnergyLevelEntry(
+                            time = it.time,
+                            percentageNow = it.percentageNow,
+                            timeFuture = it.timeFuture,
+                            percentageFuture = it.percentageFuture
+                        )
+                    }
                 }
             } else {
                 predictedEnergyLevelDao.getAllLive()
@@ -114,13 +112,13 @@ class HomeViewModel(
         }
         .debounce(200)
         .map { entries ->
-            val now = Clock.System.now()
+            /*val now = Clock.System.now()
             val windowStart = (now - 24.hours).toEpochMilliseconds()
-            val windowEnd = now.toEpochMilliseconds()
+            val windowEnd = now.toEpochMilliseconds()*/
 
             // Filter entries to show last 24 hours
             val filteredEntries = entries.filter {
-                it.time.toEpochMilliseconds() in windowStart..windowEnd
+                true//it.time.toEpochMilliseconds() in windowStart..windowEnd
             }.sortedBy { it.time }
 
             if (filteredEntries.isEmpty()) {
@@ -130,7 +128,7 @@ class HomeViewModel(
             val latestEntry = filteredEntries.last()
 
             EnergyGraphData(
-                    filteredEntries,
+                filteredEntries,
                 latestEntry.percentageNow.toDouble(),
                 latestEntry.percentageFuture.toDouble()
             )
