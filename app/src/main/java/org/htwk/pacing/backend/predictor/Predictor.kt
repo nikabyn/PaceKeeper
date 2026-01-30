@@ -22,7 +22,6 @@ import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTime
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
-import org.htwk.pacing.ui.math.causalExponentialMovingAverage
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -153,7 +152,7 @@ object Predictor {
             percentageFuture = Percentage(lastValidatedEnergy.coerceIn(0.0, 1.0))
         )
 
-        val startIndex = // TODO: add -1 here?
+        val startIndex =
             (multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation).coerceAtLeast(0)
 
         val predictedEnergyNow = lastValidatedEnergy +

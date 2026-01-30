@@ -344,10 +344,11 @@ class PredictorFitbitDataTest {
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
-                "TARGET" to toGenericTimedDataPointList(targ),
-                "PREDICTION1" to toGenericTimedDataPointList(predictions[0]),
-                "PREDICTION2" to toGenericTimedDataPointList(predictions[1]),
-                "PREDICTION3" to toGenericTimedDataPointList(predictions[2]),
+                "TARGET_RAW" to toGenericTimedDataPointList(targ),
+                "PREDICTION_DERIVATIVE" to toGenericTimedDataPointList(predictions[0]),
+                "PREDICTION" to toGenericTimedDataPointList(predictions[1]),
+                "TARGET" to toGenericTimedDataPointList(predictions[2]),
+                "TARGET_DERIVATIVE" to toGenericTimedDataPointList(predictions[3]),
             )
         )
     }
@@ -371,14 +372,14 @@ class PredictorFitbitDataTest {
         println(allEntries.timeStart)
         //iterate with a sliding window to generate predictions
         val predictions = mutableListOf<PredictedEnergyLevelEntry>()
-        var currentWindowEnd = overallStartTime + 1.hours
+        var currentWindowEnd = overallStartTime + 2.hours
 
         val pred_predictor = mutableListOf<PredictedEnergyLevelEntry>()
 
         val featureHistory = mutableMapOf<String, MutableList<GenericTimedDataPoint>>()
 
         while (currentWindowEnd <= overallEndTime) {
-            val currentWindowStart = overallStartTime
+            val currentWindowStart = currentWindowEnd - windowDuration
 
             // a. Create MultiTimeSeriesEntries for the current 2-day window
             val windowEntries = Predictor.MultiTimeSeriesEntries(
