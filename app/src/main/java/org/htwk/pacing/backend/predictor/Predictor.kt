@@ -157,17 +157,17 @@ object Predictor {
         val startIndex = // TODO: add -1 here?
             (multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation).coerceAtLeast(0)
 
-        val predictedEnergyNow =
-            accumulatePredictionsForHorizon(
-                startIndex, multiTimeSeriesDiscrete, lastValidatedEnergy,
-                IPredictionModel.PredictionHorizon.NOW
-            )
+        val predictedEnergyNow = lastValidatedEnergy +
+                accumulatePredictionsForHorizon(
+                    startIndex, multiTimeSeriesDiscrete,
+                    IPredictionModel.PredictionHorizon.NOW
+                )
 
-        val predictedEnergyFuture =
-            accumulatePredictionsForHorizon(
-                startIndex, multiTimeSeriesDiscrete, lastValidatedEnergy,
-                IPredictionModel.PredictionHorizon.FUTURE
-            )
+        val predictedEnergyFuture = lastValidatedEnergy +
+                accumulatePredictionsForHorizon(
+                    startIndex, multiTimeSeriesDiscrete,
+                    IPredictionModel.PredictionHorizon.FUTURE
+                )
 
         return PredictedEnergyLevelEntry(
             time = timeNow + IPredictionModel.PredictionHorizon.NOW.howFar,
@@ -196,7 +196,7 @@ object Predictor {
 
         //integrate delta steps to get absolute change of predicted energy in window
         val predictedEnergyFuture =
-            smoothedEnergyDeltas.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
+            smoothedEnergyDeltas.discreteTrapezoidalIntegral(0.0).last()
         return predictedEnergyFuture
     }
 }
