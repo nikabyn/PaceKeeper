@@ -1,6 +1,7 @@
 package org.htwk.pacing.backend.predictor
 
 import junit.framework.TestCase.assertEquals
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.database.DistanceEntry
 import org.htwk.pacing.backend.database.ElevationGainedEntry
@@ -20,6 +21,7 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.backend.helpers.plotMultiTimeSeriesEntriesWithPython
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.backend.predictor.model.evaluateModel
@@ -27,6 +29,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.FeatureComponent
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.Preprocessor
+import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries.Companion.createDefaultEmpty
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesMetric
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import org.junit.Ignore
@@ -224,14 +227,26 @@ class PredictorFitbitDataTest {
                 duration = maxTime - minTime,
                 distance = distance,
                 elevationGained = elevationGained,
-                heartRate = heartRate,
+                heartRate = heartRate.slice(heartRate.indices step 10),
                 heartRateVariability = heartRateVariability,
                 oxygenSaturation = oxygenSaturation,
                 skinTemperature = skinTemperature,
                 sleepSession = sleepSession,
                 speed = speed,
                 steps = steps,
-            ), validatedEnergyEntries)
+            ), validatedEnergyEntries.sortedBy { it.time }
+                .fold(mutableListOf<ValidatedEnergyLevelEntry>()) { acc, next ->
+                    val last = acc.lastOrNull()
+                    // If the next entry is within 1 hour of the current 'last' entry, average them
+                    if (last != null && (next.time - last.time) < 4.hours) {
+                        acc[acc.lastIndex] = last.copy(
+                            percentage = Percentage((last.percentage.toDouble() + next.percentage.toDouble()) / 2.0)
+                        )
+                    } else {
+                        acc.add(next)
+                    }
+                    acc
+                })
         }
     }
 
@@ -387,7 +402,7 @@ class PredictorFitbitDataTest {
         //1. Get all raw data entries from the CSV helper
         val allEntries = dataFromCSV.first
         val allValidatedEnergy = dataFromCSV.second
-        val windowDuration = Predictor.TIME_SERIES_DURATION * 1.0
+        val windowDuration = Predictor.TIME_SERIES_DURATION
         val stepDuration = Predictor.TIME_SERIES_STEP_DURATION
 
 
@@ -407,6 +422,10 @@ class PredictorFitbitDataTest {
         var predictionResult1 = 0.3
         var predictionResult2 = 0.3
 
+        val pred_predictor = mutableListOf<PredictedEnergyLevelEntry>()
+
+        val featureHistory = mutableMapOf<String, MutableList<GenericTimedDataPoint>>()
+
         while (currentWindowEnd <= overallEndTime) {
             val currentWindowStart = overallStartTime
 
@@ -425,20 +444,21 @@ class PredictorFitbitDataTest {
                 steps = allEntries.steps.filter { it.end in currentWindowStart..currentWindowEnd }
             )
 
-            println("$overallStartTime and $currentWindowEnd duration: ${currentWindowEnd - currentWindowStart}")
+            //println("$overallStartTime and $currentWindowEnd duration: ${currentWindowEnd - currentWindowStart}")
 
             //preprocess this specific window's data
             val windowMTSD = Preprocessor.run(windowEntries, fixedParameters)
 
-            println(i)
+            //println(i)
 
-            val lastValidatedEnergyLevelEntryInWindow = validatedEnergyLevelEntries.
-                filter{it.time in currentWindowStart..currentWindowEnd}
-                .maxByOrNull { it.time }
+            /*val lastValidatedEnergyLevelEntryInWindow = validatedEnergyLevelEntries
+                .filter { it.end in currentWindowStart..currentWindowEnd }.map{it.percentage.toDouble()}.average()*/
+            val lastValidatedEnergyLevelEntryInWindow = validatedEnergyLevelEntries.filter { it.end in currentWindowStart..currentWindowEnd }.maxByOrNull { it.time }
 
+            println(lastValidatedEnergyLevelEntryInWindow)
 
             val lastTime = lastValidatedEnergyLevelEntryInWindow?.time ?: currentWindowStart
-            val lastEnergy = lastValidatedEnergyLevelEntryInWindow?.percentage?.toDouble() ?: -1.0
+            val lastEnergy = lastValidatedEnergyLevelEntryInWindow?.percentage?.toDouble() ?: 0.5
 
             predictionResult1 += DifferentialPredictionModel.predict(
                 input = multiTimeSeriesDiscrete,
@@ -461,9 +481,28 @@ class PredictorFitbitDataTest {
                 )
             predictions.add(entry)
 
-            print("percentage future: ${entry.percentageFuture.toDouble()}")
+            val pred3 = Predictor.predict(multiTimeSeriesDiscrete = windowMTSD,
+                lastValidatedEnergy = lastEnergy,
+                lastValidatedTime = lastTime,
+                timeNow = currentWindowEnd
+            )
+            pred_predictor.add(pred3)
 
-            print(entry.time)
+            windowMTSD.getAllFeatureIDs().forEach { featureID ->
+                // Create a readable name like "HEART_RATE_SQUARED"
+                val key = "${featureID.metric.name}_${featureID.component.name}"
+
+                // Get value at the *current* (last) timestep
+                val value = windowMTSD[featureID, windowMTSD.stepCount() - 1]
+
+                // Add to history
+                featureHistory.getOrPut(key) { mutableListOf() }
+                    .add(GenericTimedDataPoint(currentWindowEnd, value))
+            }
+
+            //println("percentage future: ${entry.percentageFuture.toDouble()}")
+
+            //println(entry.time)
             i++
 
             //slide the window forward one step
@@ -482,10 +521,12 @@ class PredictorFitbitDataTest {
                 //"SLEEP1" to allEntries.sleepSession.map(::GenericTimedDataPoint),
                 "VALIDATED" to allValidatedEnergy.map{it -> GenericTimedDataPoint(it.time, it.percentage.toDouble())},
                 //"SLEEP_LAST" to predictions.map{it -> GenericTimedDataPoint(it.time, it.percentageNow.toDouble()) },
-                "PREDICTED1" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred1[index.coerceAtMost(pred1.size - 1)]) },
-                "PREDICTED2" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred2[index.coerceAtMost(pred2.size - 1)]) }
+                //"PREDICTED_GLOBAL_MTSD" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred1[index.coerceAtMost(pred1.size - 1)]) },
+                //"PREDICTED_LOCAL_MTSD" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred2[index.coerceAtMost(pred2.size - 1)]) },
+                "PREDICTED_NOW_PREDICTOR" to pred_predictor.mapIndexed{index, value -> GenericTimedDataPoint(value.time, value.percentageNow.toDouble()) },
+                "PREDICTED_FUTURE_PREDICTOR" to pred_predictor.mapIndexed{index, value -> GenericTimedDataPoint(value.time + IPredictionModel.PredictionHorizon.FUTURE.howFar, value.percentageFuture.toDouble()) },
 
-            )
+                ) + featureHistory
         )
     }
 

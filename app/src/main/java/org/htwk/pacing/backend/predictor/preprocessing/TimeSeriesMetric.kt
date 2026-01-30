@@ -63,6 +63,7 @@ enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
     /** For values that accumulate over time, like total steps or distance. */
     //we don't need integral, because EWNA averages encodes wanted behaviour better
     AGGREGATED(listOf(FeatureComponent.PROPORTIONAL, FeatureComponent.EWMA)),
+    UNUSED(listOf())
 }
 
 /**

@@ -135,7 +135,7 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
 
     // offset initial value
     val startOffset = target.values.slice(0 until 10).average()
-    val predictions = predictionsDerivative.discreteTrapezoidalIntegral(startOffset)
+    val predictions = centeredMovingAverage(predictionsDerivative.discreteTrapezoidalIntegral(startOffset), window = 64)
 
     println("MSE: ${meanSquaredError(predictions, target.values)}")
     println("R2:  ${r2Score(predictions, target.values)}")
@@ -143,7 +143,7 @@ fun evaluateModel(input: MultiTimeSeriesDiscrete, target: TimeSeriesDiscretizer.
     println("Derivative MSE: ${meanSquaredError(predictionsDerivative, target.values.discreteDerivative())}")
     println("Derivative R2:  ${r2Score(predictionsDerivative, target.values.discreteDerivative())}")
 
-    return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 2).discreteDerivative().map{
+    return listOf(predictions, predictionsDerivative, centeredMovingAverage(target.values, window = 64).discreteDerivative().map{
             x -> x.coerceIn(-0.1, 0.1)
     }.toDoubleArray())
 

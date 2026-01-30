@@ -68,8 +68,12 @@ fun plotMultiTimeSeriesEntriesWithPython(seriesData: Map<String, List<GenericTim
         e.printStackTrace()
     } finally {
         // Cleanup: delete files inside dir, then dir itself, then script
-        dataDir?.listFiles()?.forEach { it.delete() }
-        dataDir?.delete()
+        //dataDir?.listFiles()?.forEach { it.delete() }
+        //dataDir?.delete()
+        if (dataDir != null) {
+            println("CSV FILES SAVED AT: ${dataDir.absolutePath}")
+        }
+
         scriptFile?.delete()
     }
 }

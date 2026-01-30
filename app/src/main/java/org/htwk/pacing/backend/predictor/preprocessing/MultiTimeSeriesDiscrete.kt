@@ -249,7 +249,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          *
          * This allows for efficient, `O(1)` access to a feature's time series data row within the matrix.
          */
-        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
+        val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
             .map { metric ->
                 metric.allComponents.map { component ->
                     FeatureID(metric, component)
