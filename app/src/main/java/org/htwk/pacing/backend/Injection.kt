@@ -15,6 +15,7 @@ import org.htwk.pacing.backend.database.MenstruationPeriodDao
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.PredictedEnergyLevelModell2Dao
 import org.htwk.pacing.backend.database.PredictedHeartRateDao
 import org.htwk.pacing.backend.database.SkinTemperatureDao
 import org.htwk.pacing.backend.database.SleepSessionDao
@@ -24,11 +25,12 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.ui.screens.HomeViewModel
-import org.htwk.pacing.ui.screens.MeasurementsViewModel
-//import org.htwk.pacing.ui.screens.NotificationsViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
 import org.htwk.pacing.ui.screens.UserProfileViewModel
+import org.htwk.pacing.ui.screens.measurements.Measurement
+import org.htwk.pacing.ui.screens.measurements.MeasurementViewModel
+import org.htwk.pacing.ui.screens.measurements.MeasurementsViewModel
 import org.htwk.pacing.ui.screens.settings.ConnectionsAndServicesViewModel
 import org.htwk.pacing.ui.screens.settings.FitbitViewModel
 import org.htwk.pacing.ui.screens.WelcomeViewModel
@@ -74,6 +76,7 @@ val appModule = module {
 
     single<PredictedHeartRateDao> { get<PacingDatabase>().predictedHeartRateDao() }
     single<PredictedEnergyLevelDao> { get<PacingDatabase>().predictedEnergyLevelDao() }
+    single<PredictedEnergyLevelModell2Dao> { get<PacingDatabase>().predictedEnergyLevelModell2Dao() }
 
     single<UserProfileDao> {
         get<PacingDatabase>().userProfileDao()
@@ -82,8 +85,9 @@ val appModule = module {
     single { UserProfileRepository(get()) }
 
 
-    viewModel { HomeViewModel(get(), get()) }
-    viewModel { MeasurementsViewModel(get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(),) }
+    viewModel { MeasurementsViewModel(get()) }
+    viewModel { (measurement: Measurement) -> MeasurementViewModel(measurement, get()) }
     viewModel { SymptomsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { ConnectionsAndServicesViewModel(androidContext(), get()) }

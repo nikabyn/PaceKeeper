@@ -18,7 +18,6 @@ import org.htwk.pacing.ui.components.AnnotatedGraph
 import org.htwk.pacing.ui.components.AxisConfig
 import org.htwk.pacing.ui.components.GraphCard
 import org.htwk.pacing.ui.components.HeartRateGraphCard
-import org.htwk.pacing.ui.components.Series
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,10 +41,12 @@ class HeartRateGraphTest {
     @Test
     fun graphCard_displaysTitleAndGraph() {
         val title = "Test Title"
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
+        val xData = listOf(1.0, 2.0, 3.0)
+        val yData = listOf(1.0, 2.0, 3.0)
+
 
         composeTestRule.setContent {
-            GraphCard(title, series, modifier = Modifier.height(300.dp))
+            GraphCard(title, xData, yData, modifier = Modifier.height(300.dp))
         }
 
         composeTestRule.onNodeWithTag("CardTitle")
@@ -60,12 +61,10 @@ class HeartRateGraphTest {
     @Test
     fun heartRateGraphCard_displaysTitleAndZones() {
         val title = "Heart Rate Zones"
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
-
         composeTestRule.setContent {
             HeartRateGraphCard(
                 title = title,
-                series = series,
+                data = emptyList(),
                 zonesResult = createTestZonesResult(),
                 modifier = Modifier.height(300.dp)
             )
@@ -97,7 +96,7 @@ class HeartRateGraphTest {
         composeTestRule.setContent {
             HeartRateGraphCard(
                 title = "Narrow Zones",
-                series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0)),
+                data = emptyList(),
                 zonesResult = narrowZones,
                 modifier = Modifier.height(250.dp)
             )
@@ -116,7 +115,7 @@ class HeartRateGraphTest {
         composeTestRule.setContent {
             HeartRateGraphCard(
                 title = "Empty Data Zones",
-                series = Series(emptyList(), y = emptyList()),
+                data = emptyList(),
                 zonesResult = createTestZonesResult(),
                 modifier = Modifier.height(200.dp)
             )
@@ -141,12 +140,10 @@ class HeartRateGraphTest {
             exertionZone = 101..150
         )
 
-        val extremeData = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
-
         composeTestRule.setContent {
             HeartRateGraphCard(
                 title = "Extreme Values",
-                series = extremeData,
+                data = emptyList(),
                 zonesResult = extremeZones,
                 modifier = Modifier.height(350.dp)
             )
@@ -163,11 +160,12 @@ class HeartRateGraphTest {
 
     @Test
     fun annotatedGraph_displaysAxisAndGraph() {
-        val series = Series(listOf(1.0, 2.0, 3.0), listOf(1.0, 2.0, 3.0))
+        val xData = listOf(1.0, 2.0, 3.0)
+        val yData = listOf(1.0, 2.0, 3.0)
 
         composeTestRule.setContent {
             AnnotatedGraph(
-                series,
+                xData, yData,
                 modifier = Modifier.height(300.dp),
                 xConfig = AxisConfig(steps = 3u),
                 yConfig = AxisConfig(steps = 4u)

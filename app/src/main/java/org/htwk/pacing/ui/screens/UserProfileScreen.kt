@@ -322,6 +322,26 @@ fun UserProfileScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Mapping between internal values and display labels for prediction model
+        val predictionModelOptions = mapOf(
+            "DEFAULT" to stringResource(R.string.model_default),
+            "MODEL2" to stringResource(R.string.model_heart_rate_only)
+        )
+        val predictionModelDisplayLabels = predictionModelOptions.values.toList()
+        val currentModelLabel = predictionModelOptions[profile.predictionModel] ?: predictionModelOptions["DEFAULT"]!!
+
+        DropdownMenuField(
+            label = stringResource(R.string.title_settings_prediction_model),
+            options = predictionModelDisplayLabels,
+            selectedOption = currentModelLabel,
+            onOptionSelected = { selectedLabel ->
+                // Find internal value for selected label
+                val internalValue = predictionModelOptions.entries
+                    .find { it.value == selectedLabel }?.key ?: "DEFAULT"
+                viewModel.updatePredictionModel(internalValue)
+            }
+        )
+
     }
     if (showUnsavedChangesDialog) {
         AlertDialog(
@@ -428,6 +448,15 @@ class UserProfileViewModel(
         }
     }
 
+    fun updatePredictionModel(model: String) {
+        viewModelScope.launch {
+            _profile.value?.let { currentProfile ->
+                val updatedProfile = currentProfile.copy(predictionModel = model)
+                dao.insertOrUpdate(updatedProfile)
+            }
+        }
+    }
+
     private fun createPlaceholder(): UserProfileEntry {
         return UserProfileEntry(
             userId = "",
@@ -448,7 +477,8 @@ class UserProfileViewModel(
             warningPermit = false,
             restingStart = LocalTime(0, 0),
             restingEnd = LocalTime(0, 0),
-            checkedIn = false
+            checkedIn = false,
+            predictionModel = "DEFAULT"
         )
     }
 }
