@@ -7,6 +7,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipPath
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.ui.components.graph.GraphCanvas
+import org.htwk.pacing.ui.components.graph.graphToPaths
 import org.htwk.pacing.ui.theme.extendedColors
 
 /**
@@ -51,48 +53,44 @@ fun HistogramCard(
             it.bpm.toDouble()
         )
     }.unzip()
+    val xRange = (xData.minOrNull() ?: 0.0)..(xData.maxOrNull() ?: 150.0)
+    val yRange = 0.0..1.0
 
-    Annotation(
-        xData,
-        yData,
-        yConfig = AxisConfig(steps = 5u, formatFunction = { "" }),
-    ) { xRange, yRange ->
-        val heartRateSpan = xRange.endInclusive - xRange.start
-        val zonesToColors = zones.zip(
-            arrayOf(
-                MaterialTheme.extendedColors.cyan,
-                MaterialTheme.extendedColors.green,
-                MaterialTheme.extendedColors.yellow,
-                MaterialTheme.extendedColors.orange,
-                MaterialTheme.extendedColors.red,
-            )
+    val heartRateSpan = xRange.endInclusive - xRange.start
+    val zonesToColors = zones.zip(
+        arrayOf(
+            MaterialTheme.extendedColors.cyan,
+            MaterialTheme.extendedColors.green,
+            MaterialTheme.extendedColors.yellow,
+            MaterialTheme.extendedColors.orange,
+            MaterialTheme.extendedColors.red,
         )
+    )
 
-        GraphCanvas {
-            val paths = graphToPaths(xData, yData, size, xRange, yRange)
+    GraphCanvas {
+        val paths = graphToPaths(xData, yData, size, xRange, yRange)
 
-            onDrawBehind {
-                clipPath(paths.fill) {
-                    for ((zone, color) in zonesToColors) {
+        onDrawBehind {
+            clipPath(paths.fill) {
+                for ((zone, color) in zonesToColors) {
 
-                        val startEdge =
-                            ((zone.start - xRange.start) / heartRateSpan)
-                                .coerceIn(0.0, 1.0)
-                                .toFloat()
-                        val endEdge =
-                            ((zone.endExclusive - xRange.start) / heartRateSpan)
-                                .coerceIn(0.0, 1.0)
-                                .toFloat()
+                    val startEdge =
+                        ((zone.start - xRange.start) / heartRateSpan)
+                            .coerceIn(0.0, 1.0)
+                            .toFloat()
+                    val endEdge =
+                        ((zone.endExclusive - xRange.start) / heartRateSpan)
+                            .coerceIn(0.0, 1.0)
+                            .toFloat()
 
-                        drawRect(
-                            color = color,
-                            topLeft = Offset(startEdge * size.width, 0f),
-                            size = Size(
-                                width = (endEdge * size.width) - (startEdge * size.width),
-                                height = size.height
-                            )
+                    drawRect(
+                        color = color,
+                        topLeft = Offset(startEdge * size.width, 0f),
+                        size = Size(
+                            width = (endEdge * size.width) - (startEdge * size.width),
+                            height = size.height
                         )
-                    }
+                    )
                 }
             }
         }
