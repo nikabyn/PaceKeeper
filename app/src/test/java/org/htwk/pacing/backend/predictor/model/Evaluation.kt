@@ -58,7 +58,7 @@ fun testShiftEquality(
 
     val predictions1 =
         (0 until fullMTSD.stepCount() - Predictor.TIME_SERIES_SAMPLE_COUNT).map { i ->
-            var testSet = MultiTimeSeriesDiscrete.fromSubSlice(
+            var testSet = MultiTimeSeriesDiscrete.Companion.fromSubSlice(
                 fullMTSD,
                 i,
                 i + Predictor.TIME_SERIES_SAMPLE_COUNT
@@ -123,7 +123,7 @@ fun trainingSplit(
     val trainRange = splitIndex until splitIndex2
 
     val trainInput =
-        MultiTimeSeriesDiscrete.fromSubSlice(input, trainRange.first, trainRange.last - 1)
+        MultiTimeSeriesDiscrete.Companion.fromSubSlice(input, trainRange.first, trainRange.last - 1)
     val trainTarget = target.slice(trainRange).toDoubleArray()
 
     return Pair(trainInput, trainTarget)
