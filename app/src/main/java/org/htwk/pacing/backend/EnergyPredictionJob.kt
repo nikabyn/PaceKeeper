@@ -42,7 +42,7 @@ object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
 
     //whether or not to run dummy simulation mode
-    const val SIMULATION_ENABLED = true
+    const val SIMULATION_ENABLED = false
 
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION * 2
     private val maximumTrainingSeriesDuration = 60.days
