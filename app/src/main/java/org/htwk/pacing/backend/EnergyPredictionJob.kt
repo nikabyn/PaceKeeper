@@ -5,8 +5,10 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.EnergyPredictionJob.predictContinuous
 import org.htwk.pacing.backend.EnergyPredictionJob.predictEvery
@@ -40,12 +42,15 @@ import kotlin.time.Duration.Companion.seconds
 object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
 
+    //whether or not to run dummy simulation mode
+    private var simulationEnabled = false
+
     private var count = 0
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION * 2
-    private val maximumTrainingSeriesDuration = 30.days
+    private val maximumTrainingSeriesDuration = 60.days
     private val minimumTrainingSeriesDuration = 3.days
     private val retrainEvery = 1.hours
-    private val predictEvery = 5.seconds//30.minutes
+    private val predictEvery = 30.minutes
 
     /**
      * Core prediction logic to be used by both
@@ -55,11 +60,11 @@ object EnergyPredictionJob {
         db: PacingDatabase,
         timeNow: Instant
     ): PredictedEnergyLevelEntry? {
-        val duration = Predictor.TIME_SERIES_DURATION * 2
+        val duration = predictionSeriesDuration
 
         //fetch "anchor" energy level
         val anchorEntry = db.validatedEnergyLevelDao()
-            .getInRange(timeNow - 14.days, timeNow - 2.hours)
+            .getInRange(timeNow - 14.days, timeNow)
             .maxByOrNull { it.time } ?: return null
 
         //fetch all metrics for the window [timeNow - duration, timeNow]
@@ -112,14 +117,17 @@ object EnergyPredictionJob {
      */
     suspend fun run(db: PacingDatabase) = coroutineScope {
         db.predictedEnergyLevelDao().deleteAll()
-        var count = 0 // Move count here so it resets when job restarts
 
         trainOnce(db)
-        launch { predictContinuous(db) }
+        if (simulationEnabled) {
+            launch { runSimulation(db) }
+        } else {
+            launch { predictContinuous(db) }
 
-        while (true) {
-            delay(retrainEvery)
-            trainOnce(db)
+            while (true) {
+                delay(retrainEvery)
+                trainOnce(db)
+            }
         }
     }
 
@@ -170,76 +178,49 @@ object EnergyPredictionJob {
             userProfile,
             ticker,
         ) {
-            //val earliestEntryTime = db.validatedEnergyLevelDao().getAll().first().time
-
-            val earliestEntryTime = db.validatedEnergyLevelDao().getAll().minBy { it.time }.time
-            val now = earliestEntryTime + 30.minutes * count + 2.days//Clock.System.now()
-            Log.d(TAG, "Now: $now")
-            Log.d(TAG, "earliestEntryTime: $earliestEntryTime")
-            Log.d(TAG, "count: $count")
-            count++
-            /*if (count > 10) {
-                db.predictedEnergyLevelDao().deleteAll()
-                count = 0
-            }*/
-
-            // Fetch the Anchor (Most recent validation)
-            // We look back 14 days to find a valid anchor. If none exists, we can't predict.
-            val anchorEntry = db.validatedEnergyLevelDao()
-                .getInRange(now - 14.days, now - 2.hours)
-                .maxByOrNull { it.time }
-
-            Triple(
-                MultiTimeSeriesEntries(
-                    timeStart = now - duration,
-                    duration = duration,
-                    heartRate = db.heartRateDao().getInRange(now - duration, now),
-                    distance = db.distanceDao().getInRange(now - duration, now),
-                    elevationGained = db.elevationGainedDao().getInRange(now - duration, now),
-                    skinTemperature = db.skinTemperatureDao().getInRange(now - duration, now),
-                    heartRateVariability = db.heartRateVariabilityDao()
-                        .getInRange(now - duration, now),
-                    oxygenSaturation = db.oxygenSaturationDao().getInRange(now - duration, now),
-                    steps = db.stepsDao().getInRange(now - duration, now),
-                    speed = db.speedDao().getInRange(now - duration, now),
-                    sleepSession = db.sleepSessionsDao().getInRange(now - duration, now),
-                ),
-                FixedParameters(
-                    anaerobicThresholdBPM = db.userProfileDao().getProfile()
-                        ?.anaerobicThreshold?.toDouble()
-                        ?: 0.0
-                ),
-                anchorEntry // Pass the anchor downstream
-            )
-        }
-            //.debounce(1.seconds)
-            .collect { (multiSeries, fixedParams, anchorEntry) ->
-
-                // Fallback Logic: If no anchor exists, we cannot predict safely.
-                if (anchorEntry == null) {
-                    Log.i(
+            val now = Clock.System.now()
+            now
+        }.debounce(1.seconds)
+            .collect { simulatedNow ->
+                val prediction = calculatePredictionAt(db, simulatedNow)
+                if (prediction != null) {
+                    Log.d(
                         TAG,
-                        "No validated energy entry found in last 14 days. Skipping prediction."
+                        "Predicted Energy: ${prediction.percentageNow} at ${prediction.time} "
                     )
-                    return@collect
+                    db.predictedEnergyLevelDao().insert(prediction)
+                } else {
+                    Log.e(
+                        TAG,
+                        "No entry to insert, since prediction failed"
+                    )
                 }
+            }
+    }
 
-                val multiTimeSeriesDiscrete = Preprocessor.run(multiSeries, fixedParams)
+    suspend fun runSimulation(db: PacingDatabase) {
+        db.predictedEnergyLevelDao().deleteAll() // Clear old data for a fresh start [cite: 10]
+        val earliestEntryTime = db.validatedEnergyLevelDao().getAll().minBy { it.time }.time
 
-                println("anchor time vs. now: ${anchorEntry.time} vs. ${multiSeries.timeStart + multiSeries.duration}")
-                val timeNow1 = multiSeries.timeStart + multiSeries.duration
+        val latestEntryTime = earliestEntryTime + 10.days
 
-                val prediction = Predictor.predict(
-                    multiTimeSeriesDiscrete = multiTimeSeriesDiscrete,
-                    lastValidatedEnergy = anchorEntry.percentage.toDouble(),
-                    lastValidatedTime = anchorEntry.time,
-                    timeNow = timeNow1
-                )
+        var simCount = 0
 
-                Log.d(TAG, "Predicted: ")
-                Log.d(TAG, "Time: ${prediction.time} Predicted Energy: ${prediction.percentageNow}")
+        while (true) {
+            //increment time in 30-minute steps, matching desired simulation speed
+            val now = earliestEntryTime + Predictor.TIME_SERIES_STEP_DURATION * simCount + 2.days
+
+            // Stop the simulation if it reaches the current real-world time
+            if (now > latestEntryTime) break
+
+            val prediction = calculatePredictionAt(db, now)
+            print("pred: $prediction")
+            if (prediction != null) {
                 db.predictedEnergyLevelDao().insert(prediction)
             }
+            simCount++
+            delay(2000) //small delay to allow the UI to animate the "timelapse"
+        }
     }
 
     /**
