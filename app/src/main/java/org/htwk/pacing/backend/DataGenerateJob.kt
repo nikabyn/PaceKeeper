@@ -93,7 +93,6 @@ object DataGenerateJob {
         db.stepsDao().deleteAll()
         db.predictedEnergyLevelDao().deleteAll()
         db.distanceDao().deleteAll()
-        db.predictedEnergyLevelDao().deleteAll()
         Log.i(TAG, "Datenbank wurde zurückgesetzt")
     }
 
