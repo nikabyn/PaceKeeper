@@ -36,7 +36,7 @@ object DifferentialPredictionModel : IPredictionModel {
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
     private val BIAS_FEATURE = if (USE_BIAS) listOf<Double>(1.0) else listOf<Double>()
-    private val lookBackOffsets = listOf(0, 1, 2, 4, 8, 12, 24, 36, 48)
+    private val lookBackOffsets = listOf(0, 1, 2, 4, 8, 12, 24, 36, 48, 72, 96)
 
     private class PerHorizonModel(val weights: List<Double>)
     private class Model(
@@ -144,7 +144,7 @@ object DifferentialPredictionModel : IPredictionModel {
         offset: Int,
         horizon: PredictionHorizon,
     ): Double {
-        if (offset < lookBackOffsets.max()) return 0.0 //QUICKFIX
+        if (offset < lookBackOffsets.max()) return 0.0
 
         require(offset in 0 until input.stepCount())
         require(model != null) { "No model trained, can't perform prediction." }
@@ -168,11 +168,10 @@ object DifferentialPredictionModel : IPredictionModel {
 
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
-        println("weights: $weights")
 
         //TODO: remove this and maybe do normalize target
         val prediction =
             mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
-        return prediction//.coerceIn(-0.01, 0.01)
+        return prediction
     }
 }
