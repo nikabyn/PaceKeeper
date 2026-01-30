@@ -36,17 +36,17 @@ object DifferentialPredictionModel : IPredictionModel {
     //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
     //baseline vs current for different metrics
     private val BIAS_FEATURE = if (USE_BIAS) listOf<Double>(1.0) else listOf<Double>()
-    val lookBackOffsets = listOf(0, 1, 2, 4, 8, 12, 24, 36, 48)
+    private val lookBackOffsets = listOf(0, 1, 2, 4, 8, 12, 24, 36, 48)
 
-    class PerHorizonModel(val weights: List<Double>)
-    class Model(
+    private class PerHorizonModel(val weights: List<Double>)
+    private class Model(
         val perHorizonModels: Map<PredictionHorizon, PerHorizonModel>,
         val inputDistributions: List<StochasticDistribution>
     )
 
-    var model: Model? = null
+    private var model: Model? = null
 
-    data class TrainingSample(
+    private data class TrainingSample(
         val metricValues: List<Double>,
         val targetValue: Double
     )
