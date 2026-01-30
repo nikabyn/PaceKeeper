@@ -103,8 +103,7 @@ fun centeredMovingAverage(data: DoubleArray, window: Int): DoubleArray {
         if (start < 0) {
             result[i] = data.first()
             continue
-        }
-        else if(end > n) {
+        } else if (end > n) {
             result[i] = data.last()
             continue
         }
@@ -113,4 +112,39 @@ fun centeredMovingAverage(data: DoubleArray, window: Int): DoubleArray {
     }
 
     return result
+}
+
+fun DoubleArray.causalMovingAverage(window: Int): DoubleArray {
+    val smoothed = DoubleArray(size)
+    var sum = 0.0
+    for (i in indices) {
+        sum += this[i]
+        if (i >= window) sum -= this[i - window]
+        smoothed[i] = sum / (i + 1).coerceAtMost(window)
+    }
+    return smoothed
+}
+
+/**
+ * Applies an Exponential Moving Average (Low-Pass Filter).
+ * Reduces lag compared to SMA by weighting recent values higher.
+ * * @param alpha Smoothing factor (0.0 - 1.0).
+ * Higher alpha = Less smoothing, Faster reaction (Less lag).
+ * Lower alpha  = More smoothing, Slower reaction (More lag).
+ * Typical value for "Window 3 equivalent": ~0.5
+ */
+fun DoubleArray.causalExponentialMovingAverage(alpha: Double): DoubleArray {
+    if (isEmpty()) return this
+    val smoothed = DoubleArray(size)
+
+    // Initialize with the first value
+    var currentLevel = this[0]
+    smoothed[0] = currentLevel
+
+    for (i in 1 until size) {
+        // Formula: NewValue = (Raw * Alpha) + (OldSmoothed * (1 - Alpha))
+        currentLevel = (this[i] * alpha) + (currentLevel * (1.0 - alpha))
+        smoothed[i] = currentLevel
+    }
+    return smoothed
 }

@@ -32,23 +32,24 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
 class PredictorFitbitDataTest {
-    private fun cleanValidatedEnergyEntries(validatedEnergyLevelEntries: List<ValidatedEnergyLevelEntry>): List<ValidatedEnergyLevelEntry> {
-        return validatedEnergyLevelEntries.sortedBy { it.time }
-            .fold(mutableListOf<ValidatedEnergyLevelEntry>()) { acc, next ->
-                val last = acc.lastOrNull()
-                //if next entry is close to the current 'last' entry, average them
-                if (last != null && (next.time - last.time) < 4.hours) {
-                    acc[acc.lastIndex] = last.copy(
-                        percentage = Percentage((last.percentage.toDouble() + next.percentage.toDouble()) / 2.0)
-                    )
-                } else {
-                    acc.add(next)
-                }
-                acc
-            }
-    }
 
     class CSVHelper {
+        private fun cleanValidatedEnergyEntries(validatedEnergyLevelEntries: List<ValidatedEnergyLevelEntry>): List<ValidatedEnergyLevelEntry> {
+            return validatedEnergyLevelEntries.sortedBy { it.time }
+                .fold(mutableListOf<ValidatedEnergyLevelEntry>()) { acc, next ->
+                    val last = acc.lastOrNull()
+                    //if next entry is close to the current 'last' entry, average them
+                    if (last != null && (next.time - last.time) < 8.hours) {
+                        acc[acc.lastIndex] = last.copy(
+                            percentage = Percentage((last.percentage.toDouble() + next.percentage.toDouble()) / 2.0)
+                        )
+                    } else {
+                        acc.add(next)
+                    }
+                    acc
+                }
+        }
+
         fun <T> readCSVFileEntries(
             file: File,
             minTime: Instant,
@@ -243,7 +244,8 @@ class PredictorFitbitDataTest {
                     sleepSession = sleepSession,
                     speed = speed,
                     steps = steps,
-                ), validatedEnergyEntries
+                ),
+                cleanValidatedEnergyEntries(validatedEnergyEntries)
             )
 
         }
@@ -403,7 +405,8 @@ class PredictorFitbitDataTest {
             /*val lastValidatedEnergyLevelEntryInWindow = validatedEnergyLevelEntries
                 .filter { it.end in currentWindowStart..currentWindowEnd }.map{it.percentage.toDouble()}.average()*/
             val lastValidatedEnergyLevelEntryInWindow =
-                validatedEnergyLevelEntries.filter { it.end in currentWindowStart..currentWindowEnd }
+                validatedEnergyLevelEntries
+                    .filter { it.end in currentWindowStart..currentWindowEnd }
                     .maxByOrNull { it.time }
 
             println(lastValidatedEnergyLevelEntryInWindow)

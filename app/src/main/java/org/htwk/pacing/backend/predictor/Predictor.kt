@@ -22,6 +22,7 @@ import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTime
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
 import org.htwk.pacing.backend.predictor.preprocessing.ensureData
+import org.htwk.pacing.ui.math.causalExponentialMovingAverage
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -146,38 +147,27 @@ object Predictor {
 
         val stepsSinceLastValidation = (timeSinceLastValidation / TIME_SERIES_STEP_DURATION).toInt()
 
-        if (stepsSinceLastValidation == 0) return PredictedEnergyLevelEntry(
+        if (stepsSinceLastValidation <= 0) return PredictedEnergyLevelEntry(
             time = timeNow,
-            percentageNow = Percentage(lastValidatedEnergy.coerceIn(-1.0, 1.0)),
-            timeFuture = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
-            percentageFuture = Percentage(0.0 + Double.NaN)
+            percentageNow = Percentage(lastValidatedEnergy.coerceIn(0.0, 1.0)),
+            timeFuture = timeNow + IPredictionModel.PredictionHorizon.FUTURE.howFar,
+            percentageFuture = Percentage(lastValidatedEnergy.coerceIn(0.0, 1.0))
         )
 
-        var startIndex = multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation
-
-        //walk through time until now, predicting change in each step, to answer where energy is now
-        val rawDeltasNow = (startIndex until multiTimeSeriesDiscrete.stepCount()).map { i ->
-            DifferentialPredictionModel.predict(
-                multiTimeSeriesDiscrete,
-                i,
-                IPredictionModel.PredictionHorizon.NOW
-            )
-        }.toDoubleArray()
+        val startIndex = // TODO: add -1 here?
+            (multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation).coerceAtLeast(0)
 
         val predictedEnergyNow =
-            rawDeltasNow.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
-
-        val rawDeltasFuture =
-            (startIndex - IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples until multiTimeSeriesDiscrete.stepCount()).map { i ->
-                DifferentialPredictionModel.predict(
-                    multiTimeSeriesDiscrete,
-                    i,
-                    IPredictionModel.PredictionHorizon.FUTURE
-                )
-            }.toDoubleArray()
+            accumulatePredictionsForHorizon(
+                startIndex, multiTimeSeriesDiscrete, lastValidatedEnergy,
+                IPredictionModel.PredictionHorizon.NOW
+            )
 
         val predictedEnergyFuture =
-            rawDeltasFuture.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
+            accumulatePredictionsForHorizon(
+                startIndex, multiTimeSeriesDiscrete, lastValidatedEnergy,
+                IPredictionModel.PredictionHorizon.FUTURE
+            )
 
         return PredictedEnergyLevelEntry(
             time = timeNow + IPredictionModel.PredictionHorizon.NOW.howFar,
@@ -185,6 +175,29 @@ object Predictor {
             timeFuture = timeNow + IPredictionModel.PredictionHorizon.FUTURE.howFar,
             percentageFuture = Percentage(predictedEnergyFuture.coerceIn(0.0, 1.0)),
         )
+    }
+
+    private fun accumulatePredictionsForHorizon(
+        startIndex: Int,
+        multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
+        lastValidatedEnergy: Double,
+        predictionHorizon: IPredictionModel.PredictionHorizon
+    ): Double {
+        val rawEnergyDeltas =
+            (startIndex - predictionHorizon.howFarInSamples until multiTimeSeriesDiscrete.stepCount()).map { i ->
+                DifferentialPredictionModel.predict(
+                    multiTimeSeriesDiscrete,
+                    i,
+                    predictionHorizon
+                )
+            }.toDoubleArray()
+
+        val smoothedEnergyDeltas = rawEnergyDeltas.causalExponentialMovingAverage(alpha = 0.25)
+
+        //integrate delta steps to get absolute change of predicted energy in window
+        val predictedEnergyFuture =
+            smoothedEnergyDeltas.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
+        return predictedEnergyFuture
     }
 }
 
