@@ -24,6 +24,10 @@ import androidx.graphics.shapes.toPath
 import kotlinx.datetime.Clock
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
+import org.htwk.pacing.ui.components.graph.Axis
+import org.htwk.pacing.ui.components.graph.AxisLabelHourMinutes
+import org.htwk.pacing.ui.components.graph.GraphCanvas
+import org.htwk.pacing.ui.components.graph.graphToPaths
 import org.htwk.pacing.ui.screens.measurements.TimeRange
 import org.htwk.pacing.ui.theme.extendedColors
 import kotlin.math.sqrt

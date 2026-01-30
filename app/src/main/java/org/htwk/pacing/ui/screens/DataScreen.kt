@@ -61,18 +61,23 @@ fun DataScreen(
                 }
             }
         }
-        Column {
-            DemoBanner(modeViewModel = modeViewModel)
-            Column(
-                modifier = Modifier
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.large)
-            ) {
-                ImportDataHealthConnect()
 
-                ImportDemoDataHealthConnect()
-                StartEvaluationMode(modeViewModel)
+        Column(
+            modifier = Modifier
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.large)
+        ) {
+            ImportDataHealthConnect()
+            StartEvaluationMode(modeViewModel)
+
+            org.htwk.pacing.ui.components.ZipDataImport_import_temp(
+                heartRateDao = settingsViewModel.db.heartRateDao(),
+                validatedEnergyLevelDao = settingsViewModel.db.validatedEnergyLevelDao()
+            )
+
+
+            ImportDemoDataHealthConnect()
 
 
                 Card(

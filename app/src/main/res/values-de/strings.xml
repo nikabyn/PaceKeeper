@@ -5,11 +5,20 @@
     <string name="current_energy">Aktuelle Energie</string>
     <string name="energy_prediction">Energieprognose</string>
     <string name="currently_no_data_available">Aktuell keine Daten vorhanden!</string>
+    <string name="heart_rate_prediction">Herzfrequenz [bpm], Vorhersage</string>
+    <string name="heart_rate_last_7_days">Herzfrequenz, letzte 7 Tage</string>
+    <string name="heart_rate_last_12_hours">Herzfrequenz, letzte 12 Stunden</string>
+    <string name="heart_rate_histogram_last_24_hours">Herzfrequenz-Histogram, letzte 24 Stunden</string>
     <string name="home">Home</string>
     <string name="measurements">Messungen</string>
     <string name="settings">Einstellungen</string>
     <string name="health_connect_sync">Health Connect Synchronisation</string>
     <string name="collecting_health_data">Sammelt Gesundheitsdaten</string>
+    <string name="heart_rate_24h_bpm">⌀ Herzfrequenz (24h): %1$s bpm</string>
+    <string name="heart_rate_samples">Herzfrequenz-Stichproben:</string>
+    <string name="steps_yesterday">Schritte gestern: %1$s</string>
+    <string name="steps_today">Schritte heute: %1$s</string>
+    <string name="heart_rate_bpm">Herzfrequenz [bpm]</string>
     <string name="skin_temperature_variation">Hauttemperaturschwankung</string>
     <string name="symptoms">Symptome</string>
     <string name="average_today">Durschnitt Heute</string>
@@ -208,5 +217,8 @@
     <string name="health">Gesundheit</string>
     <string name="activity">Aktivität</string>
     <string name="average">Durchschnitt</string>
+    <string name="title_settings_prediction_model">Vorhersagemodell</string>
+    <string name="model_default">Multi-Source (Standard)</string>
+    <string name="model_heart_rate_only">Herzfrequenz (Alternative)</string>
 
 </resources>

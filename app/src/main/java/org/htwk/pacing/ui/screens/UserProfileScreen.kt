@@ -143,16 +143,15 @@ fun UserProfileScreen(
             navController.popBackStack()
         }
     }
-    Column {
-        DemoBanner(modeViewModel = modeViewModel)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.large)
-        ) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.large)
+    ) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -326,33 +325,52 @@ fun UserProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-        }
-        if (showUnsavedChangesDialog) {
-            AlertDialog(
-                onDismissRequest = { showUnsavedChangesDialog = false },
-                title = { Text(stringResource(R.string.dialog_unsaved_title)) },
-                text = { Text(stringResource(R.string.dialog_unsaved_message)) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showUnsavedChangesDialog = false
-                            navController.popBackStack() // Seite verlassen
-                        }
-                    ) {
-                        Text(stringResource(R.string.dialog_unsaved_confirm_leave))
+        // Mapping between internal values and display labels for prediction model
+        val predictionModelOptions = mapOf(
+            "DEFAULT" to stringResource(R.string.model_default),
+            "MODEL2" to stringResource(R.string.model_heart_rate_only)
+        )
+        val predictionModelDisplayLabels = predictionModelOptions.values.toList()
+        val currentModelLabel = predictionModelOptions[profile.predictionModel] ?: predictionModelOptions["DEFAULT"]!!
+
+        DropdownMenuField(
+            label = stringResource(R.string.title_settings_prediction_model),
+            options = predictionModelDisplayLabels,
+            selectedOption = currentModelLabel,
+            onOptionSelected = { selectedLabel ->
+                // Find internal value for selected label
+                val internalValue = predictionModelOptions.entries
+                    .find { it.value == selectedLabel }?.key ?: "DEFAULT"
+                viewModel.updatePredictionModel(internalValue)
+            }
+        )
+
+    }
+    if (showUnsavedChangesDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedChangesDialog = false },
+            title = { Text(stringResource(R.string.dialog_unsaved_title)) },
+            text = { Text(stringResource(R.string.dialog_unsaved_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnsavedChangesDialog = false
+                        navController.popBackStack() // Seite verlassen
                     }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = {
-                            showUnsavedChangesDialog = false
-                        } // Dialog schließen, auf Seite bleiben
-                    ) {
-                        Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
-                    }
+                ) {
+                    Text(stringResource(R.string.dialog_unsaved_confirm_leave))
                 }
-            )
-        }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showUnsavedChangesDialog = false
+                    } // Dialog schließen, auf Seite bleiben
+                ) {
+                    Text(stringResource(R.string.dialog_unsaved_dismiss_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -433,6 +451,15 @@ class UserProfileViewModel(
         }
     }
 
+    fun updatePredictionModel(model: String) {
+        viewModelScope.launch {
+            _profile.value?.let { currentProfile ->
+                val updatedProfile = currentProfile.copy(predictionModel = model)
+                dao.insertOrUpdate(updatedProfile)
+            }
+        }
+    }
+
     private fun createPlaceholder(): UserProfileEntry {
         return UserProfileEntry(
             userId = "",
@@ -453,7 +480,8 @@ class UserProfileViewModel(
             warningPermit = false,
             restingStart = LocalTime(0, 0),
             restingEnd = LocalTime(0, 0),
-            checkedIn = false
+            checkedIn = false,
+            predictionModel = "DEFAULT"
         )
     }
 }
