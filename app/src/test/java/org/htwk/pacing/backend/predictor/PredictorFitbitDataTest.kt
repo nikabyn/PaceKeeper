@@ -375,9 +375,6 @@ class PredictorFitbitDataTest {
 
         var i = 1
 
-        var predictionResult1 = 0.3
-        var predictionResult2 = 0.3
-
         val pred_predictor = mutableListOf<PredictedEnergyLevelEntry>()
 
         val featureHistory = mutableMapOf<String, MutableList<GenericTimedDataPoint>>()
@@ -414,13 +411,13 @@ class PredictorFitbitDataTest {
             val lastTime = lastValidatedEnergyLevelEntryInWindow?.time ?: currentWindowStart
             val lastEnergy = lastValidatedEnergyLevelEntryInWindow?.percentage?.toDouble() ?: 0.5
 
-            predictionResult1 += DifferentialPredictionModel.predict(
+            val predictionResult1 = DifferentialPredictionModel.predict(
                 input = multiTimeSeriesDiscrete,
                 offset = ((currentWindowEnd - overallStartTime) / stepDuration).toInt(),
                 horizon = IPredictionModel.PredictionHorizon.NOW
             )
 
-            predictionResult2 += DifferentialPredictionModel.predict(
+            val predictionResult2 = DifferentialPredictionModel.predict(
                 input = windowMTSD,
                 offset = windowMTSD.stepCount() - 1,
                 horizon = IPredictionModel.PredictionHorizon.NOW
@@ -470,16 +467,13 @@ class PredictorFitbitDataTest {
 
         plotMultiTimeSeriesEntriesWithPython(
             mapOf(
-                //"SLEEP1" to allEntries.sleepSession.map(::GenericTimedDataPoint),
                 "VALIDATED" to allValidatedEnergy.map { it ->
                     GenericTimedDataPoint(
                         it.time,
                         it.percentage.toDouble()
                     )
                 },
-                //"SLEEP_LAST" to predictions.map{it -> GenericTimedDataPoint(it.time, it.percentageNow.toDouble()) },
-                //"PREDICTED_GLOBAL_MTSD" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred1[index.coerceAtMost(pred1.size - 1)]) },
-                //"PREDICTED_LOCAL_MTSD" to predictions.mapIndexed{index, value -> GenericTimedDataPoint(value.time, pred2[index.coerceAtMost(pred2.size - 1)]) },
+
                 "PREDICTED_NOW_PREDICTOR" to pred_predictor.mapIndexed { index, value ->
                     GenericTimedDataPoint(
                         value.time,
@@ -488,7 +482,7 @@ class PredictorFitbitDataTest {
                 },
                 "PREDICTED_FUTURE_PREDICTOR" to pred_predictor.mapIndexed { index, value ->
                     GenericTimedDataPoint(
-                        value.time + IPredictionModel.PredictionHorizon.FUTURE.howFar,
+                        value.time,
                         value.percentageFuture.toDouble()
                     )
                 },

@@ -146,13 +146,12 @@ object Predictor {
 
         val stepsSinceLastValidation = (timeSinceLastValidation / TIME_SERIES_STEP_DURATION).toInt()
 
-        if(stepsSinceLastValidation == 0) return PredictedEnergyLevelEntry(
+        if (stepsSinceLastValidation == 0) return PredictedEnergyLevelEntry(
             time = timeNow,
             percentageNow = Percentage(lastValidatedEnergy.coerceIn(-1.0, 1.0)),
             timeFuture = multiTimeSeriesDiscrete.timeStart + TIME_SERIES_DURATION + IPredictionModel.PredictionHorizon.FUTURE.howFar,
             percentageFuture = Percentage(0.0 + Double.NaN)
         )
-
 
         var startIndex = multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation
 
@@ -165,25 +164,21 @@ object Predictor {
             )
         }.toDoubleArray()
 
-        val predictedEnergyNow = rawDeltasNow.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
+        val predictedEnergyNow =
+            rawDeltasNow.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
 
-        val rawDeltasFuture = (startIndex - IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples until multiTimeSeriesDiscrete.stepCount()).map { i ->
-            DifferentialPredictionModel.predict(
-                multiTimeSeriesDiscrete,
-                i,
-                IPredictionModel.PredictionHorizon.FUTURE
-            )
-        }.toDoubleArray()
+        val rawDeltasFuture =
+            (startIndex - IPredictionModel.PredictionHorizon.FUTURE.howFarInSamples until multiTimeSeriesDiscrete.stepCount()).map { i ->
+                DifferentialPredictionModel.predict(
+                    multiTimeSeriesDiscrete,
+                    i,
+                    IPredictionModel.PredictionHorizon.FUTURE
+                )
+            }.toDoubleArray()
 
-        val predictedEnergyFuture = rawDeltasFuture.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
-        /*DifferentialPredictionModel.predict(
-            multiTimeSeriesDiscrete,
-            IPredictionModel.PredictionHorizon.NOW
-        );*/
-        /*val predictedEnergyFuture = ExtrapolationPredictionModel.predict(
-            multiTimeSeriesDiscrete,
-            IPredictionModel.PredictionHorizon.FUTURE
-        );*/
+        val predictedEnergyFuture =
+            rawDeltasFuture.discreteTrapezoidalIntegral(lastValidatedEnergy).last()
+
         return PredictedEnergyLevelEntry(
             time = timeNow + IPredictionModel.PredictionHorizon.NOW.howFar,
             percentageNow = Percentage(predictedEnergyNow.coerceIn(0.0, 1.0)),
@@ -193,7 +188,12 @@ object Predictor {
     }
 }
 
-fun generateDiscreteTargetSeries(timeStart: Instant, duration: Duration, validatedEnergyLevelEntries: List<ValidatedEnergyLevelEntry>, stepCount: Int): TimeSeriesDiscretizer.SingleDiscreteTimeSeries =
+fun generateDiscreteTargetSeries(
+    timeStart: Instant,
+    duration: Duration,
+    validatedEnergyLevelEntries: List<ValidatedEnergyLevelEntry>,
+    stepCount: Int
+): TimeSeriesDiscretizer.SingleDiscreteTimeSeries =
     TimeSeriesDiscretizer.discretizeTimeSeries(
         ensureData(
             id = 1500,
