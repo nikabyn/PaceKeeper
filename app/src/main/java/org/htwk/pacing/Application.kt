@@ -1,5 +1,6 @@
 package org.htwk.pacing
 
+import android.app.Activity
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -20,12 +21,12 @@ import org.htwk.pacing.backend.ForegroundWorker
 import org.htwk.pacing.backend.appModule
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileEntry
-import org.htwk.pacing.backend.productionModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
+import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -36,6 +37,11 @@ open class ProductionApplication : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
         startInjection()
+        //Debug für Datenbankauswahl
+        val db = getKoin().get<org.htwk.pacing.backend.database.PacingDatabase>()
+        val path = db.openHelper.writableDatabase.path
+        Log.d("DB_PATH", "Aktive DB-Datei: $path")
+
         val wm = getWorkManager(this)
         enqueueForegroundWorker(wm)
         runBlocking {
@@ -49,7 +55,7 @@ open class ProductionApplication : Application(), KoinComponent {
     open fun startInjection() {
         startKoin {
             androidContext(this@ProductionApplication)
-            modules(productionModule, appModule)
+            modules(appModule)
         }
         Log.d("ProductionApplication", "Started Koin for production")
     }
@@ -98,6 +104,40 @@ fun enqueueForegroundWorker(wm: WorkManager) {
         workRequest
     )
     Log.d("PacingApp", "Enqueued ForegroundWorker")
+}
+
+fun hardKillApp(context: Context) {
+    // 1. Alle Worker stoppen
+    val wm = getWorkManager(context)
+    wm.cancelUniqueWork("HealthDataCollection")
+    wm.pruneWork()
+
+    // 2. Alle Activities schließen
+    (context as? Activity)?.finishAffinity()
+
+    // 3. Prozess beenden (hart)
+    android.os.Process.killProcess(android.os.Process.myPid())
+    exitProcess(0)
+}
+
+fun restartApp(context: Context) {
+    // 1. Worker stoppen
+    val wm = getWorkManager(context)
+    wm.cancelUniqueWork("HealthDataCollection")
+    wm.pruneWork()
+
+    // 2. Restart-Intent erzeugen
+    val pm = context.packageManager
+    val launchIntent = pm.getLaunchIntentForPackage(context.packageName)
+        ?: return
+
+    val restartIntent = Intent.makeRestartActivityTask(launchIntent.component)
+
+    // 3. App neu starten
+    context.startActivity(restartIntent)
+
+    // 4. Alten Prozess sicher beenden
+    android.os.Process.killProcess(android.os.Process.myPid())
 }
 
 @Volatile

@@ -19,6 +19,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.htwk.pacing.R
+import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SettingsSubScreen
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.compose.viewmodel.koinViewModel
@@ -32,7 +34,8 @@ enum class ThemeMode {
 @Composable
 fun AppearanceScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel = koinViewModel()
+    viewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     val profile by viewModel.profile.collectAsState()
     val currentThemeMode = profile?.themeMode ?: "AUTO"
@@ -43,85 +46,88 @@ fun AppearanceScreen(
         "DARK" -> ThemeMode.DARK
         else -> ThemeMode.AUTO
     }
-
     SettingsSubScreen(
         title = stringResource(R.string.title_settings_appearance),
         navController = navController,
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.large)
-        ) {
-            Row(
+        Column {
+            DemoBanner(modeViewModel = modeViewModel)
+
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.large)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = (selectedTheme == ThemeMode.LIGHT),
+                            onClick = {
+                                viewModel.updateThemeMode("LIGHT")
+                            },
+                            role = Role.RadioButton
+                        )
+                        .padding(vertical = Spacing.small),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
                         selected = (selectedTheme == ThemeMode.LIGHT),
-                        onClick = {
-                            viewModel.updateThemeMode("LIGHT")
-                        },
-                        role = Role.RadioButton
+                        onClick = null
                     )
-                    .padding(vertical = Spacing.small),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = (selectedTheme == ThemeMode.LIGHT),
-                    onClick = null
-                )
-                Text(
-                    text = stringResource(R.string.settings_appearance_light),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = Spacing.medium)
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
+                    Text(
+                        text = stringResource(R.string.settings_appearance_light),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = Spacing.medium)
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = (selectedTheme == ThemeMode.DARK),
+                            onClick = {
+                                viewModel.updateThemeMode("DARK")
+                            },
+                            role = Role.RadioButton
+                        )
+                        .padding(vertical = Spacing.small),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
                         selected = (selectedTheme == ThemeMode.DARK),
-                        onClick = {
-                            viewModel.updateThemeMode("DARK")
-                        },
-                        role = Role.RadioButton
+                        onClick = null
                     )
-                    .padding(vertical = Spacing.small),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = (selectedTheme == ThemeMode.DARK),
-                    onClick = null
-                )
-                Text(
-                    text = stringResource(R.string.settings_appearance_dark),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = Spacing.medium)
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
+                    Text(
+                        text = stringResource(R.string.settings_appearance_dark),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = Spacing.medium)
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = (selectedTheme == ThemeMode.AUTO),
+                            onClick = {
+                                viewModel.updateThemeMode("AUTO")
+                            },
+                            role = Role.RadioButton
+                        )
+                        .padding(vertical = Spacing.small),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
                         selected = (selectedTheme == ThemeMode.AUTO),
-                        onClick = {
-                            viewModel.updateThemeMode("AUTO")
-                        },
-                        role = Role.RadioButton
+                        onClick = null
                     )
-                    .padding(vertical = Spacing.small),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = (selectedTheme == ThemeMode.AUTO),
-                    onClick = null
-                )
-                Text(
-                    text = stringResource(R.string.settings_appearance_auto),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = Spacing.medium)
-                )
+                    Text(
+                        text = stringResource(R.string.settings_appearance_auto),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = Spacing.medium)
+                    )
+                }
             }
         }
     }

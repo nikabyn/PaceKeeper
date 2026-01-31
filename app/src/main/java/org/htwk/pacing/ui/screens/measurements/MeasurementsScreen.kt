@@ -33,6 +33,8 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.screens.measurements.Measurement.Distance
 import org.htwk.pacing.ui.screens.measurements.Measurement.ElevationGained
 import org.htwk.pacing.ui.screens.measurements.Measurement.HeartRate
@@ -65,6 +67,7 @@ fun MeasurementsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: MeasurementsViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
     var measurements by remember { mutableStateOf(viewModel.initialMeasurementsToday()) }
 
@@ -80,25 +83,32 @@ fun MeasurementsScreen(
             .verticalScroll(rememberScrollState())
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
-        ) {
-            MeasurementsCategory(stringResource(R.string.activity))
-            MeasurementsCard(navController, Steps, measurements)
-            MeasurementsCard(navController, Distance, measurements)
-            MeasurementsCard(navController, ElevationGained, measurements)
-            MeasurementsCard(navController, Speed, measurements)
+        Column {
+            DemoBanner(modeViewModel = modeViewModel)
 
-            Spacer(Modifier.height(Spacing.medium))
-            MeasurementsCategory(stringResource(R.string.health))
-            MeasurementsCard(navController, HeartRate, measurements)
-            MeasurementsCard(navController, Sleep, measurements)
-            MeasurementsCard(navController, Symptoms, measurements)
-            MeasurementsCard(navController, MenstruationPeriod, measurements)
-            MeasurementsCard(navController, OxygenSaturation, measurements)
-            MeasurementsCard(navController, HeartRateVariabilityRmssd, measurements)
-            MeasurementsCard(navController, SkinTemperature, measurements)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
+                modifier = Modifier.padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.extraLarge
+                )
+            ) {
+                MeasurementsCategory(stringResource(R.string.activity))
+                MeasurementsCard(navController, Steps, measurements)
+                MeasurementsCard(navController, Distance, measurements)
+                MeasurementsCard(navController, ElevationGained, measurements)
+                MeasurementsCard(navController, Speed, measurements)
+
+                Spacer(Modifier.height(Spacing.medium))
+                MeasurementsCategory(stringResource(R.string.health))
+                MeasurementsCard(navController, HeartRate, measurements)
+                MeasurementsCard(navController, Sleep, measurements)
+                MeasurementsCard(navController, Symptoms, measurements)
+                MeasurementsCard(navController, MenstruationPeriod, measurements)
+                MeasurementsCard(navController, OxygenSaturation, measurements)
+                MeasurementsCard(navController, HeartRateVariabilityRmssd, measurements)
+                MeasurementsCard(navController, SkinTemperature, measurements)
+            }
         }
     }
 }

@@ -109,8 +109,10 @@ dependencies {
 
     // Room (database)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.graphics.shapes)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.androidx.room.testing)
 
     // Datetime
@@ -145,6 +147,10 @@ dependencies {
     // Multik for Matrix Math
     implementation(libs.multik.kotlin)
     testImplementation(libs.kotlinx.serialization.json)
+
+    // Icons
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended")
 }
 
 val exclusions = listOf(
@@ -220,4 +226,3 @@ tasks.register<JacocoReport>("jacocoDebugAndroidTestReport") {
             include("**/*.ec")
         })
 }
-

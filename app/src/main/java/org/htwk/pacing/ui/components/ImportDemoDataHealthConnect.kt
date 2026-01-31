@@ -55,7 +55,7 @@ fun ImportDemoDataHealthConnect() {
             )
         ) {
             Text(
-                stringResource(R.string.demo_data_button_text),
+                stringResource(R.string.hc_demo_data_button_text),
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(12.dp))
@@ -64,7 +64,7 @@ fun ImportDemoDataHealthConnect() {
                 style = PrimaryButtonStyle,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.demo_data_button_text))
+                Text(stringResource(R.string.hc_demo_data_button_text))
             }
         }
     }

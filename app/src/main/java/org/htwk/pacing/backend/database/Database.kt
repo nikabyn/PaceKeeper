@@ -5,9 +5,9 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalTime
 import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.OAuth2Result
-import kotlinx.datetime.LocalTime
 
 @Database(
     entities = [
@@ -43,6 +43,7 @@ import kotlinx.datetime.LocalTime
     version = 8,
     exportSchema = false,
 )
+
 @TypeConverters(Converters::class)
 abstract class PacingDatabase : RoomDatabase() {
     abstract fun distanceDao(): DistanceDao
@@ -71,7 +72,22 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun readEventDao(): ReadEventDao
 }
 
+
+@Database(
+    entities = [
+        ModeEntry::class,
+    ],
+    version = 1,
+    exportSchema = false,
+)
+
+abstract class ModeDatabase : RoomDatabase() {
+    abstract fun modeDao(): ModeDao
+}
+
+
 class Converters {
+
     @TypeConverter
     fun fromInstant(value: Instant): Long = value.toEpochMilliseconds()
 
