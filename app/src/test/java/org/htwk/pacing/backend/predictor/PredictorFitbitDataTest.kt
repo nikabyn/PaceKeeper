@@ -325,7 +325,7 @@ class PredictorFitbitDataTest {
         )*/
     }
 
-    // @Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun differentialPredictionModelTest() {
         val predictions = evaluateModel(multiTimeSeriesDiscrete, targetTimeSeries).toMutableList()
@@ -355,7 +355,7 @@ class PredictorFitbitDataTest {
         )
     }
 
-    //@Ignore("only for manual validation, not to be run in pipeline")
+    @Ignore("only for manual validation, not to be run in pipeline")
     @Test
     fun differentialPredictionModelTestRawData() {
         //1. Get all raw data entries from the CSV helper

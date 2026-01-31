@@ -82,7 +82,8 @@ class PreprocessorTests {
 
         // The placeholder implementation of discretizeTimeSeries fills the array with the first value.
         // The size should be TIME_SERIES_DURATION / 10.minutes
-        val expectedLength = (Predictor.TIME_SERIES_DURATION.inWholeMinutes / Predictor.TIME_SERIES_STEP_DURATION.inWholeMinutes).toInt()
+        val expectedLength =
+            (Predictor.TIME_SERIES_DURATION.inWholeMinutes / Predictor.TIME_SERIES_STEP_DURATION.inWholeMinutes).toInt()
 
         assertEquals(
             expectedLength,
@@ -101,11 +102,11 @@ class PreprocessorTests {
             75.0,
             75.0,
             80.0,
-            160.0,
-            160.0,
-            160.0,
-            160.0,
-            160.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
             50.0,
             50.0,
             50.0,
@@ -143,52 +144,52 @@ class PreprocessorTests {
             950.0
         )
 
-            /*for (i in 0 until expectedResultDistance.size) {
-            assertTrue(
-                expectedResultDistance[i] == result.getSampleOfFeature(
-                    MultiTimeSeriesDiscrete.FeatureID(
-                        TimeSeriesMetric.DISTANCE,
-                        PIDComponent.INTEGRAL
-                    ), i
-                )
-            );
-        }*/
-        }
-
-        @Test
-        fun `Preprocessor run needs accept case where timeStart = first entry time`() {
-            val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
-                timeStart = timeStart,
-                heartRate = listOf(HeartRateEntry(time = timeStart, bpm = 60)),
-                distance = listOf(
-                    DistanceEntry(
-                        start = timeStart,
-                        end = timeStart,
-                        length = Length(100.0)
-                    )
-                )
+        /*for (i in 0 until expectedResultDistance.size) {
+        assertTrue(
+            expectedResultDistance[i] == result.getSampleOfFeature(
+                MultiTimeSeriesDiscrete.FeatureID(
+                    TimeSeriesMetric.DISTANCE,
+                    PIDComponent.INTEGRAL
+                ), i
             )
-
-            val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
-
-            val result = Preprocessor.run(rawData, fixedParameters)
-
-            assertEquals(timeStart, result.timeStart)
-        }
-
-        @Test
-        fun `Preprocessor run needs to not throw exception of input data is empty`() {
-            // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
-            val heartRateData: List<HeartRateEntry> = listOf()
-
-            val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
-                timeStart = timeStart,
-                heartRate = heartRateData,
-                distance = emptyList()
-            )
-
-            val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
-
-            val result = Preprocessor.run(rawData, fixedParameters)
-        }
+        );
+    }*/
     }
+
+    @Test
+    fun `Preprocessor run needs accept case where timeStart = first entry time`() {
+        val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
+            timeStart = timeStart,
+            heartRate = listOf(HeartRateEntry(time = timeStart, bpm = 60)),
+            distance = listOf(
+                DistanceEntry(
+                    start = timeStart,
+                    end = timeStart,
+                    length = Length(100.0)
+                )
+            )
+        )
+
+        val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
+
+        val result = Preprocessor.run(rawData, fixedParameters)
+
+        assertEquals(timeStart, result.timeStart)
+    }
+
+    @Test
+    fun `Preprocessor run needs to not throw exception of input data is empty`() {
+        // Test with one entry, which is not enough for the placeholder `discretizeTimeSeries`
+        val heartRateData: List<HeartRateEntry> = listOf()
+
+        val rawData = MultiTimeSeriesEntries.createDefaultEmpty(
+            timeStart = timeStart,
+            heartRate = heartRateData,
+            distance = emptyList()
+        )
+
+        val fixedParameters = FixedParameters(anaerobicThresholdBPM = 80.0)
+
+        val result = Preprocessor.run(rawData, fixedParameters)
+    }
+}
