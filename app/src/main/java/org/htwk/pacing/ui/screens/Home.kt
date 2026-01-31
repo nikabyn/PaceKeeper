@@ -34,6 +34,7 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.ui.components.BatteryCard
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
@@ -55,11 +56,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
+
     val energyGraphData by viewModel.predictedEnergyLevel.collectAsState()
     val currentEnergy = energyGraphData.currentValue
-    val minPrediction = energyGraphData.futureValue - 0.1
-    val maxPrediction = energyGraphData.futureValue + 0.1
-    val avgPrediction = energyGraphData.futureValue
 
     val currentTime =
         if (energyGraphData.simulationEnabled and energyGraphData.entries.isNotEmpty()) {
@@ -67,6 +66,14 @@ fun HomeScreen(
         } else {
             Clock.System.now()
         }
+
+    val futureValues = energyGraphData.entries
+        .filter { it.timeFuture in currentTime..(currentTime + IPredictionModel.PredictionHorizon.FUTURE.howFar) }
+        .map { it.percentageFuture.toDouble() }
+
+    val minPrediction = futureValues.minOrNull() ?: currentEnergy
+    val maxPrediction = futureValues.maxOrNull() ?: currentEnergy
+    val avgPrediction = energyGraphData.futureValue
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(
