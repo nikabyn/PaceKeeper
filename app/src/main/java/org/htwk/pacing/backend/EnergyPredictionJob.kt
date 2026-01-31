@@ -60,7 +60,7 @@ object EnergyPredictionJob {
 
         //fetch "anchor" energy level
         val anchorEntry = db.validatedEnergyLevelDao()
-            .getInRange(timeNow - 14.days, timeNow)
+            .getInRange(timeNow - predictionSeriesDuration, timeNow)
             .maxByOrNull { it.time } ?: return null
 
         //fetch all metrics for the window [timeNow - duration, timeNow]
