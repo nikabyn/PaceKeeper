@@ -16,11 +16,9 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.EnergyPredictionJob.predictContinuous
 import org.htwk.pacing.backend.EnergyPredictionJob.predictEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.retrainEvery
-import org.htwk.pacing.backend.EnergyPredictionJob.tryTrainOnce
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
-import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.Predictor.FixedParameters
 import org.htwk.pacing.backend.predictor.Predictor.MultiTimeSeriesEntries
@@ -132,7 +130,7 @@ object EnergyPredictionJob {
 
                     db.predictedEnergyLevelDao().deleteAll()
 
-                    tryTrainOnce(db)
+                    trainOnce(db)
 
                     if (isSimulation) {
                         launch { runSimulation(db) }
@@ -141,7 +139,7 @@ object EnergyPredictionJob {
 
                         while (true) {
                             delay(retrainEvery)
-                            tryTrainOnce(db)
+                            trainOnce(db)
                         }
                     }
                 }
@@ -249,19 +247,24 @@ object EnergyPredictionJob {
      * @param db Used to fetch historical data like heart rate, distance, and the user profile.
      * @throws Exception All exceptions are propagated to the caller.
      */
-    private suspend fun tryTrainOnce(db: PacingDatabase): Boolean {
-
+    private suspend fun trainOnce(db: PacingDatabase) {
         val allValidatedEntries = db.validatedEnergyLevelDao().getAll()
-        if (allValidatedEntries.size <= 2) return false
 
-        //val now = Clock.System.now()
+        val now = Clock.System.now()
 
         //grab latest validation entry, or use time now
-        val latestEnd = allValidatedEntries.maxBy { it.time }.time
+        val earliestValidatedTime = allValidatedEntries.minByOrNull { it.time }?.time ?: now
+        val latestValidatedTime = allValidatedEntries.maxByOrNull { it.time }?.time ?: now
 
-        val oldestEntryTime = allValidatedEntries.maxBy { it.time }.time
-        val oldestStart =
-            minOf(latestEnd - minimumTrainingSeriesDuration, oldestEntryTime)
+        val validationsDuration =
+            maxOf(
+                latestValidatedTime - earliestValidatedTime - predictionSeriesDuration,
+                minimumTrainingSeriesDuration
+            ).coerceAtMost(maximumTrainingSeriesDuration)
+
+        val latestEnd = latestValidatedTime
+
+        val oldestStart = latestEnd - validationsDuration
 
         val heartRate = db.heartRateDao().getInRange(oldestStart, latestEnd)
         val distance = db.distanceDao().getInRange(oldestStart, latestEnd)
@@ -274,27 +277,11 @@ object EnergyPredictionJob {
         val sleepSession = db.sleepSessionsDao().getInRange(oldestStart, latestEnd)
         val validatedEnergyLevel = db.validatedEnergyLevelDao().getInRange(oldestStart, latestEnd)
 
-        val allLists: List<List<TimedEntry>> = listOf(
-            heartRate, distance, elevationGained, skinTemperature, heartRateVariability,
-            oxygenSaturation, steps, speed, sleepSession, validatedEnergyLevel
-        )
-
-        var earliestEntryTime = allLists
-            .mapNotNull { it.minByOrNull { entry -> entry.end }?.end }
-            .minOrNull() ?: oldestStart
-
-        val latestEntryTime = allLists
-            .mapNotNull { it.maxByOrNull { entry -> entry.end }?.end }
-            .maxOrNull() ?: latestEnd
-
-        if (latestEntryTime - earliestEntryTime < minimumTrainingSeriesDuration) {
-            earliestEntryTime = latestEntryTime - minimumTrainingSeriesDuration
-        }
         val userProfile = db.userProfileDao().getProfile()
 
         val multiTimeSeriesEntries = MultiTimeSeriesEntries(
-            timeStart = earliestEntryTime,
-            duration = latestEntryTime - earliestEntryTime,
+            timeStart = oldestStart,
+            duration = validationsDuration,
             heartRate = heartRate,
             distance = distance,
             elevationGained = elevationGained,
@@ -320,6 +307,5 @@ object EnergyPredictionJob {
         )
 
         Predictor.train(multiTimeSeriesDiscrete, targetTimeSeries)
-        return true
     }
 }
