@@ -191,7 +191,8 @@ object Predictor {
 
         Log.i(LOGGING_TAG, "Deltas for $predictionHorizon: ${rawEnergyDeltas.joinToString()}")
 
-        val smoothedEnergyDeltas = rawEnergyDeltas.causalExponentialMovingAverage(alpha = 0.25)
+        //for smoothing, apply .causalExponentialMovingAverage(alpha = 1.0) to this
+        val smoothedEnergyDeltas = rawEnergyDeltas
 
         //integrate delta steps to get absolute change of predicted energy in window
         val predictedEnergyFuture =

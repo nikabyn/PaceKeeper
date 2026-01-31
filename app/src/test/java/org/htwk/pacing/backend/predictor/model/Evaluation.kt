@@ -4,7 +4,7 @@ import androidx.annotation.FloatRange
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
-import org.htwk.pacing.ui.math.centeredMovingAverage
+import org.htwk.pacing.ui.math.causalExponentialMovingAverage
 import org.htwk.pacing.ui.math.discreteDerivative
 import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.math.pow
@@ -133,7 +133,9 @@ fun evaluateModel(
     input: MultiTimeSeriesDiscrete,
     target: TimeSeriesDiscretizer.SingleDiscreteTimeSeries
 ): List<DoubleArray> {
-    val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.0, 0.99)
+
+
+    val (trainingInput, trainingTarget) = trainingSplit(input, target.values, 0.0, 0.66)
 
     DifferentialPredictionModel.train(
         trainingInput,
@@ -145,10 +147,8 @@ fun evaluateModel(
 
     // offset initial value
     val startOffset = target.values.slice(0 until 10).average()
-    val predictions = centeredMovingAverage(
-        predictionsDerivative.discreteTrapezoidalIntegral(startOffset),
-        window = 64
-    )
+    val predictions = predictionsDerivative.causalExponentialMovingAverage(alpha = 0.25)
+        .discreteTrapezoidalIntegral(startOffset)
 
     println("MSE: ${meanSquaredError(predictions, target.values)}")
     println("R2:  ${r2Score(predictions, target.values)}")
@@ -157,6 +157,7 @@ fun evaluateModel(
         "Derivative MSE: ${
             meanSquaredError(
                 predictionsDerivative,
+
                 target.values.discreteDerivative()
             )
         }"
@@ -166,9 +167,8 @@ fun evaluateModel(
     return listOf(
         predictions,
         predictionsDerivative,
-        centeredMovingAverage(target.values, window = 64).discreteDerivative().map { x ->
-            x.coerceIn(-0.1, 0.1)
-        }.toDoubleArray()
+        target.values.causalExponentialMovingAverage(alpha = 0.25),
+        target.values.discreteDerivative(),
     )
 
 }

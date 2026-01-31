@@ -243,7 +243,9 @@ class PredictorFitbitDataTest {
                     speed = speed,
                     steps = steps,
                 ),
-                cleanValidatedEnergyEntries(validatedEnergyEntries)
+                cleanValidatedEnergyEntries(
+                    validatedEnergyEntries
+                )
             )
 
         }
@@ -399,8 +401,6 @@ class PredictorFitbitDataTest {
             //preprocess this specific window's data
             val windowMTSD = Preprocessor.run(windowEntries, fixedParameters)
 
-            /*val lastValidatedEnergyLevelEntryInWindow = validatedEnergyLevelEntries
-                .filter { it.end in currentWindowStart..currentWindowEnd }.map{it.percentage.toDouble()}.average()*/
             val lastValidatedEnergyLevelEntryInWindow =
                 validatedEnergyLevelEntries
                     .filter { it.end in currentWindowStart..currentWindowEnd }
