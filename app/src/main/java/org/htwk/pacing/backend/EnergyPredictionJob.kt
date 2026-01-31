@@ -4,9 +4,12 @@ import android.util.Log
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -40,9 +43,6 @@ import kotlin.time.Duration.Companion.seconds
  */
 object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
-
-    //whether or not to run dummy simulation mode
-    const val SIMULATION_ENABLED = true
 
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION * 2
     private val maximumTrainingSeriesDuration = 60.days
@@ -113,20 +113,39 @@ object EnergyPredictionJob {
      * and store predicted energy levels.
      * @throws Exception Any exceptions thrown during prediction or training are propagated to the caller.
      */
-    suspend fun run(db: PacingDatabase) = coroutineScope {
-        db.predictedEnergyLevelDao().deleteAll()
+    suspend fun run(db: PacingDatabase) {
+        db.userProfileDao().getProfileLive()
+            .map { it?.simulationEnabled ?: false } // Extract the flag
+            .distinctUntilChanged() // Only restart if the value actually changed
+            .collectLatest { isSimulation ->
 
-        tryTrainOnce(db)
-        if (SIMULATION_ENABLED) {
-            launch { runSimulation(db) }
-        } else {
-            launch { predictContinuous(db) }
+                Log.i(
+                    TAG,
+                    "Simulation Toggle set to : $isSimulation - restarting EnergyPredictionJob main logic"
+                )
 
-            while (true) {
-                delay(retrainEvery)
-                tryTrainOnce(db)
+                // We open a coroutineScope here exactly like your original function.
+                // When 'collectLatest' receives a new value, it automatically cancels this scope
+                // and everything running inside it, then restarts the block.
+                coroutineScope {
+                    Log.i(TAG, "Starting Prediction Job. Simulation Mode: $isSimulation")
+
+                    db.predictedEnergyLevelDao().deleteAll()
+
+                    tryTrainOnce(db)
+
+                    if (isSimulation) {
+                        launch { runSimulation(db) }
+                    } else {
+                        launch { predictContinuous(db) }
+
+                        while (true) {
+                            delay(retrainEvery)
+                            tryTrainOnce(db)
+                        }
+                    }
+                }
             }
-        }
     }
 
     /**
