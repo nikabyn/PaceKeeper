@@ -133,4 +133,3 @@ fun DataScreen(
             }
         }
     }
-}
