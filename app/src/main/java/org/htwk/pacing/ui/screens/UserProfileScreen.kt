@@ -328,7 +328,8 @@ fun UserProfileScreen(
             "MODEL2" to stringResource(R.string.model_heart_rate_only)
         )
         val predictionModelDisplayLabels = predictionModelOptions.values.toList()
-        val currentModelLabel = predictionModelOptions[profile.predictionModel] ?: predictionModelOptions["DEFAULT"]!!
+        val currentModelLabel =
+            predictionModelOptions[profile.predictionModel] ?: predictionModelOptions["DEFAULT"]!!
 
         DropdownMenuField(
             label = stringResource(R.string.title_settings_prediction_model),
@@ -339,6 +340,27 @@ fun UserProfileScreen(
                 val internalValue = predictionModelOptions.entries
                     .find { it.value == selectedLabel }?.key ?: "DEFAULT"
                 viewModel.updatePredictionModel(internalValue)
+            }
+        )
+
+        val simulationOptions = mapOf(
+            false to stringResource(R.string.simulation_disabled),
+            true to stringResource(R.string.simulation_enabled)
+        )
+
+        val simulationDisplayLabels = simulationOptions.values.toList()
+        val currentSimulationLabel =
+            simulationOptions[profile.simulationEnabled] ?: simulationOptions[false]!!
+
+        DropdownMenuField(
+            label = stringResource(R.string.title_settings_simulation),
+            options = simulationDisplayLabels,
+            selectedOption = currentSimulationLabel,
+            onOptionSelected = { selectedLabel ->
+                // Find internal value for selected label
+                val internalValue = simulationOptions.entries
+                    .find { it.value == selectedLabel }?.key ?: false
+                viewModel.updateSimulationEnabled(internalValue)
             }
         )
 
@@ -457,6 +479,16 @@ class UserProfileViewModel(
         }
     }
 
+    fun updateSimulationEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            _profile.value?.let { currentProfile ->
+                // Ensure your UserProfileEntry has this field (added in previous step)
+                val updatedProfile = currentProfile.copy(simulationEnabled = enabled)
+                dao.insertOrUpdate(updatedProfile)
+            }
+        }
+    }
+
     private fun createPlaceholder(): UserProfileEntry {
         return UserProfileEntry(
             userId = "",
@@ -478,7 +510,8 @@ class UserProfileViewModel(
             restingStart = LocalTime(0, 0),
             restingEnd = LocalTime(0, 0),
             checkedIn = false,
-            predictionModel = "DEFAULT"
+            predictionModel = "DEFAULT",
+            simulationEnabled = false
         )
     }
 }

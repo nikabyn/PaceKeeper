@@ -215,5 +215,8 @@
     <string name="title_settings_prediction_model">Vorhersagemodell</string>
     <string name="model_default">Multi-Source (Standard)</string>
     <string name="model_heart_rate_only">Herzfrequenz (Alternative)</string>
+    <string name="title_settings_simulation">Prognose-Simulation</string>
+    <string name="simulation_enabled">Simulation an</string>
+    <string name="simulation_disabled">Simulation aus</string>
 
 </resources>

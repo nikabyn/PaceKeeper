@@ -13,7 +13,7 @@ import kotlinx.datetime.Instant
 import org.htwk.pacing.backend.EnergyPredictionJob.predictContinuous
 import org.htwk.pacing.backend.EnergyPredictionJob.predictEvery
 import org.htwk.pacing.backend.EnergyPredictionJob.retrainEvery
-import org.htwk.pacing.backend.EnergyPredictionJob.trainOnce
+import org.htwk.pacing.backend.EnergyPredictionJob.tryTrainOnce
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
@@ -42,11 +42,11 @@ object EnergyPredictionJob {
     const val TAG = "EnergyPredictionJob"
 
     //whether or not to run dummy simulation mode
-    const val SIMULATION_ENABLED = false
+    const val SIMULATION_ENABLED = true
 
     private val predictionSeriesDuration = Predictor.TIME_SERIES_DURATION * 2
     private val maximumTrainingSeriesDuration = 60.days
-    private val minimumTrainingSeriesDuration = 3.days
+    private val minimumTrainingSeriesDuration = predictionSeriesDuration * 2
     private val retrainEvery = 1.hours
     private val predictEvery = Predictor.TIME_SERIES_DURATION//30.minutes
 
@@ -105,7 +105,7 @@ object EnergyPredictionJob {
     /**
      * Entry point for the [EnergyPredictionJob].
      *
-     * - Performs an initial training with [trainOnce].
+     * - Performs an initial training with [tryTrainOnce].
      * - Launches a continuous prediction loop with [predictContinuous].
      * - Retrains the model periodically every [retrainEvery].
      *
@@ -116,7 +116,7 @@ object EnergyPredictionJob {
     suspend fun run(db: PacingDatabase) = coroutineScope {
         db.predictedEnergyLevelDao().deleteAll()
 
-        trainOnce(db)
+        tryTrainOnce(db)
         if (SIMULATION_ENABLED) {
             launch { runSimulation(db) }
         } else {
@@ -124,7 +124,7 @@ object EnergyPredictionJob {
 
             while (true) {
                 delay(retrainEvery)
-                trainOnce(db)
+                tryTrainOnce(db)
             }
         }
     }
@@ -230,10 +230,19 @@ object EnergyPredictionJob {
      * @param db Used to fetch historical data like heart rate, distance, and the user profile.
      * @throws Exception All exceptions are propagated to the caller.
      */
-    private suspend fun trainOnce(db: PacingDatabase) {
-        val latestEnd =
-            db.validatedEnergyLevelDao().getAll().maxBy { it.time }.time//Clock.System.now()
-        val oldestStart = latestEnd - maximumTrainingSeriesDuration
+    private suspend fun tryTrainOnce(db: PacingDatabase): Boolean {
+
+        val allValidatedEntries = db.validatedEnergyLevelDao().getAll()
+        if (allValidatedEntries.size <= 2) return false
+
+        //val now = Clock.System.now()
+
+        //grab latest validation entry, or use time now
+        val latestEnd = allValidatedEntries.maxBy { it.time }.time
+
+        val oldestEntryTime = allValidatedEntries.maxBy { it.time }.time
+        val oldestStart =
+            minOf(latestEnd - minimumTrainingSeriesDuration, oldestEntryTime)
 
         val heartRate = db.heartRateDao().getInRange(oldestStart, latestEnd)
         val distance = db.distanceDao().getInRange(oldestStart, latestEnd)
@@ -292,5 +301,6 @@ object EnergyPredictionJob {
         )
 
         Predictor.train(multiTimeSeriesDiscrete, targetTimeSeries)
+        return true
     }
 }

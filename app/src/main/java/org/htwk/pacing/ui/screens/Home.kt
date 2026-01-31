@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import org.htwk.pacing.backend.EnergyPredictionJob
 import org.htwk.pacing.backend.database.Percentage
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
 import org.htwk.pacing.backend.database.PredictedEnergyLevelEntry
@@ -41,12 +40,12 @@ import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
-import kotlin.time.Duration.Companion.hours
 
 data class EnergyGraphData(
     val entries: List<PredictedEnergyLevelEntry>,
     val currentValue: Double,
-    val futureValue: Double
+    val futureValue: Double,
+    val simulationEnabled: Boolean
 )
 
 @Composable
@@ -63,7 +62,7 @@ fun HomeScreen(
     val avgPrediction = energyGraphData.futureValue
 
     val currentTime =
-        if (EnergyPredictionJob.SIMULATION_ENABLED and energyGraphData.entries.isNotEmpty()) {
+        if (energyGraphData.simulationEnabled and energyGraphData.entries.isNotEmpty()) {
             energyGraphData.entries.last().time
         } else {
             Clock.System.now()
@@ -103,54 +102,43 @@ class HomeViewModel(
 
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = userProfileDao.getProfileLive()
-        .map { profile -> profile?.predictionModel ?: "DEFAULT" }
-        .flatMapLatest { model ->
-            // Choose the correct DAO based on the model setting
-            if (model == "MODEL2") {
+        .flatMapLatest { profile ->
+            // Capture state from profile
+            val model = profile?.predictionModel ?: "DEFAULT"
+            val simulationEnabled = profile?.simulationEnabled == true
+
+            // Switch DAO based on model
+            val daoFlow = if (model == "MODEL2") {
                 predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
                     entries.map {
                         PredictedEnergyLevelEntry(
-                            time = it.time,
-                            percentageNow = it.percentageNow,
-                            timeFuture = it.timeFuture,
-                            percentageFuture = it.percentageFuture
+                            it.time, it.percentageNow, it.timeFuture, it.percentageFuture
                         )
                     }
                 }
             } else {
                 predictedEnergyLevelDao.getAllLive()
             }
+
+            // Map entries to UI State, attaching the simulation flag
+            daoFlow.map { entries ->
+                // No time filtering here - passing raw data to UI
+                val sortedEntries = entries.sortedBy { it.time }
+                val latest = sortedEntries.lastOrNull()
+
+                EnergyGraphData(
+                    entries = sortedEntries,
+                    currentValue = latest?.percentageNow?.toDouble() ?: 0.5,
+                    futureValue = latest?.percentageFuture?.toDouble() ?: 0.5,
+                    simulationEnabled = simulationEnabled
+                )
+            }
         }
         .debounce(200)
-        .map { entries ->
-            //unless in simulation mode, filter entries to show last 24 hours
-            val filteredEntries =
-                if (EnergyPredictionJob.SIMULATION_ENABLED) {
-                    entries
-                } else {
-                    val now = Clock.System.now()
-                    val windowStart = (now - 24.hours).toEpochMilliseconds()
-                    val windowEnd = now.toEpochMilliseconds()
-                    entries.filter { it ->
-                        it.time.toEpochMilliseconds() in windowStart..windowEnd
-                    }.sortedBy { it.time }
-                }
-
-            if (filteredEntries.isEmpty()) {
-                return@map EnergyGraphData(emptyList(), 0.5, 0.5)
-            }
-
-            val latestEntry = filteredEntries.last()
-
-            EnergyGraphData(
-                filteredEntries,
-                latestEntry.percentageNow.toDouble(),
-                latestEntry.percentageFuture.toDouble()
-            )
-        }.stateIn(
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = EnergyGraphData(emptyList(), 0.5, 0.5)
+            initialValue = EnergyGraphData(emptyList(), 0.5, 0.5, false)
         )
 
     fun storeValidatedEnergyLevel(validation: Validation, energy: Double) {

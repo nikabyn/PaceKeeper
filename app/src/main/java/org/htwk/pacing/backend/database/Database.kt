@@ -5,9 +5,9 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalTime
 import kotlinx.serialization.json.Json
 import org.htwk.pacing.backend.OAuth2Result
-import kotlinx.datetime.LocalTime
 
 @Database(
     entities = [
@@ -40,7 +40,7 @@ import kotlinx.datetime.LocalTime
 
         ReadEvent::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
