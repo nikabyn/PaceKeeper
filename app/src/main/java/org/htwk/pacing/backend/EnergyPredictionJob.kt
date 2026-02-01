@@ -49,8 +49,27 @@ object EnergyPredictionJob {
     private val predictEvery = Predictor.TIME_SERIES_STEP_DURATION
 
     /**
-     * Core prediction logic to be used by both
-     * the continuous job and the simulation mode.
+     * Calculates a single energy level prediction at a specific point in time.
+     *
+     * This function serves as the core prediction logic, used by both the continuous
+     * prediction job and the simulation mode. It gathers all necessary data within a
+     * specific time window leading up to `timeNow`, preprocesses it, and then runs
+     * the prediction model.
+     *
+     * The process involves:
+     * 1. Finding the most recent validated energy level entry to use as an "anchor".
+     * 2. Fetching all relevant time-series metrics (e.g., heart rate, steps, speed)
+     *    from the database for the window `[timeNow - predictionSeriesDuration, timeNow]`.
+     * 3. Retrieving fixed parameters, like the anaerobic threshold, from the user's profile.
+     * 4. Running the preprocessor to discretize and normalize the time-series data.
+     * 5. Executing the predictor with the processed data and the anchor energy level.
+     *
+     * @param db The [PacingDatabase] instance used to access all required DAOs for fetching data.
+     * @param timeNow The specific [Instant] for which the energy level prediction is to be calculated.
+     *                This represents the "current" time for the prediction.
+     * @return A [PredictedEnergyLevelEntry] containing the calculated energy level, or `null` if
+     *         prediction is not possible (e.g., no recent anchor energy level is found) or if an
+     *         error occurs during the process.
      */
     suspend fun calculatePredictionAt(
         db: PacingDatabase,
@@ -213,6 +232,25 @@ object EnergyPredictionJob {
             }
     }
 
+    /**
+     * Runs a "timelapse" simulation of the energy prediction process using historical data.
+     *
+     * This function is intended for demonstration and debugging. It iterates through the time range
+     * covered by existing validated energy level entries, generating predictions at discrete time steps.
+     *
+     * The simulation proceeds as follows:
+     * - Clears any existing predicted energy levels to ensure a fresh simulation.
+     * -  Fetches all historical `ValidatedEnergyLevelEntry`s to define the simulation's time boundaries.
+     * -  Iterates from the earliest entry time, advancing in steps of `Predictor.TIME_SERIES_STEP_DURATION`.
+     * -  At each step, it calls `calculatePredictionAt` to generate a new `PredictedEnergyLevelEntry`.
+     * -  The new prediction is inserted into the database.
+     * -  A small `delay` is introduced in each loop to allow the UI to animate the results, creating a
+     *     "timelapse" effect.
+     * -  The simulation stops once the current time step surpasses the time of the latest validated entry.
+     *
+     * @param db The [PacingDatabase] instance used to access historical health metrics, validated
+     *           energy levels, and to store the generated predictions.
+     */
     suspend fun runSimulation(db: PacingDatabase) {
         db.predictedEnergyLevelDao().deleteAll() // Clear old data for a fresh start
 
@@ -244,8 +282,22 @@ object EnergyPredictionJob {
     /**
      * Trains the energy predictor model once using historical data.
      *
-     * @param db Used to fetch historical data like heart rate, distance, and the user profile.
-     * @throws Exception All exceptions are propagated to the caller.
+     * This function fetches a range of historical health metrics and validated energy levels
+     * from the database. The duration of this historical data is determined by the span
+     * of validated energy entries, constrained between `minimumTrainingSeriesDuration`
+     * and `maximumTrainingSeriesDuration`.
+     *
+     * The process involves:
+     * - Determining the time window for training data based on available validated energy levels.
+     * - Fetching various time-series data (e.g., heart rate, distance, sleep) and fixed user
+     *    parameters (e.g., anaerobic threshold) from the database for that window.
+     * - Preprocessing the raw data into a discrete, uniform format using the `Preprocessor`.
+     * - Generating a corresponding discrete target series from the validated energy levels.
+     * - Passing both the preprocessed input data and the target data to `Predictor.train`
+     *    to update the model.
+     *
+     * @param db The [PacingDatabase] instance used to fetch all required historical data.
+     * @throws Exception Propagates any exceptions that occur during data fetching or model training.
      */
     private suspend fun trainOnce(db: PacingDatabase) {
         val allValidatedEntries = db.validatedEnergyLevelDao().getAll()
@@ -253,12 +305,13 @@ object EnergyPredictionJob {
         val now = Clock.System.now()
 
         //grab latest validation entry, or use time now
-        val earliestValidatedTime = allValidatedEntries.minByOrNull { it.time }?.time ?: now
+        val earliestValidatedTime =
+            (allValidatedEntries.minByOrNull { it.time }?.time ?: now) - predictionSeriesDuration
         val latestValidatedTime = allValidatedEntries.maxByOrNull { it.time }?.time ?: now
 
         val validationsDuration =
             maxOf(
-                latestValidatedTime - earliestValidatedTime - predictionSeriesDuration,
+                latestValidatedTime - earliestValidatedTime,
                 minimumTrainingSeriesDuration
             ).coerceAtMost(maximumTrainingSeriesDuration)
 
