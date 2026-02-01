@@ -1,4 +1,4 @@
-package org.htwk.pacing.ui.math
+package org.htwk.pacing.backend.predictor
 
 //SEE: ui#38 comment for explanation on this file
 

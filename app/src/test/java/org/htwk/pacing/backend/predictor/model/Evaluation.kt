@@ -2,11 +2,11 @@ package org.htwk.pacing.backend.predictor.model
 
 import androidx.annotation.FloatRange
 import org.htwk.pacing.backend.predictor.Predictor
+import org.htwk.pacing.backend.predictor.causalExponentialMovingAverage
+import org.htwk.pacing.backend.predictor.discreteDerivative
+import org.htwk.pacing.backend.predictor.discreteTrapezoidalIntegral
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
 import org.htwk.pacing.backend.predictor.preprocessing.TimeSeriesDiscretizer
-import org.htwk.pacing.ui.math.causalExponentialMovingAverage
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
 import kotlin.math.pow
 
 /**

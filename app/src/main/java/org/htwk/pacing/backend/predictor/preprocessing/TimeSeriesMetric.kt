@@ -1,8 +1,8 @@
 package org.htwk.pacing.backend.predictor.preprocessing
 
 import org.htwk.pacing.backend.predictor.Predictor
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
+import org.htwk.pacing.backend.predictor.discreteDerivative
+import org.htwk.pacing.backend.predictor.discreteTrapezoidalIntegral
 
 /**
  * Computes the decaying load of a time series. (EWMA Filter)
@@ -31,6 +31,7 @@ fun DoubleArray.decayingLoad(alpha: Double = 0.1): DoubleArray {
  */
 
 typealias FeatureFunction = (DoubleArray, Predictor.FixedParameters) -> DoubleArray
+
 enum class FeatureComponent(val compute: FeatureFunction) {
     PROPORTIONAL({ data, _ -> data }), //proportional: return the array itself, without changing it
     INTEGRAL({ data, _ -> data.discreteTrapezoidalIntegral() }), //compute integral of input
@@ -41,7 +42,9 @@ enum class FeatureComponent(val compute: FeatureFunction) {
     //square input value, can be used to penalize large values, e.g. heavy heart rate load
     SQUARED({ data, _ -> data.map { it * it }.toDoubleArray() }),
 
-    ADJUST_HR({data, fixedParameters -> data.map{hrBPM -> adjustHR(hrBPM, fixedParameters)}.toDoubleArray()} )
+    ADJUST_HR({ data, fixedParameters ->
+        data.map { hrBPM -> adjustHR(hrBPM, fixedParameters) }.toDoubleArray()
+    })
 }
 
 /**
@@ -55,10 +58,12 @@ enum class FeatureComponent(val compute: FeatureFunction) {
  */
 enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
     /** For values that change continuously over time, like heart rate. */
-    CONTINUOUS(listOf(
-        FeatureComponent.PROPORTIONAL,
-        FeatureComponent.DERIVATIVE,
-    )),
+    CONTINUOUS(
+        listOf(
+            FeatureComponent.PROPORTIONAL,
+            FeatureComponent.DERIVATIVE,
+        )
+    ),
 
     /** For values that accumulate over time, like total steps or distance. */
     //we don't need integral, because EWNA averages encodes wanted behaviour better
@@ -74,8 +79,12 @@ enum class TimeSeriesSignalClass(val components: List<FeatureComponent>) {
  *
  * @property signalClass The signal classification for this metric, determines which PID components will be derived
  */
-enum class TimeSeriesMetric(val signalClass: TimeSeriesSignalClass, val auxiliaryFeatures: List<FeatureComponent> = listOf()) {
-    HEART_RATE(TimeSeriesSignalClass.CONTINUOUS,
+enum class TimeSeriesMetric(
+    val signalClass: TimeSeriesSignalClass,
+    val auxiliaryFeatures: List<FeatureComponent> = listOf()
+) {
+    HEART_RATE(
+        TimeSeriesSignalClass.CONTINUOUS,
         auxiliaryFeatures = listOf(
             FeatureComponent.EWMA,
             FeatureComponent.SQUARED,
