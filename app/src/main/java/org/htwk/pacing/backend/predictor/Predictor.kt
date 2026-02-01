@@ -13,6 +13,7 @@ import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
+import org.htwk.pacing.backend.predictor.Predictor.predict
 import org.htwk.pacing.backend.predictor.Predictor.train
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel
 import org.htwk.pacing.backend.predictor.model.DifferentialPredictionModel.howFarInSamples
@@ -106,8 +107,10 @@ object Predictor {
      *
      * This function preprocesses the provided time series data and uses it to train the underlying
      * prediction model. It must be called with sufficient and representative sample data before
-     * the `predict` function can be used to generate accurate forecasts.
+     * the `predict` function can be used to generate model predictions (forecasts).
      * Calling `train` updates the internal state of the model.
+     *
+     * @see predict The model must be trained before `predict` can be run.
      *
      * @param multiTimeSeriesDiscrete The historical multi-source time series data (e.g., heart rate, distance).
      * @param singleTargetTimeSeries The historical energy target values to train on
@@ -122,15 +125,21 @@ object Predictor {
     /**
      * Runs the prediction model to forecast the energy level.
      *
-     * This function takes historical time series data and fixed user parameters as input,
-     * preprocesses the data, and then feeds it into a prediction model to generate
-     * a future energy level prediction.
+     * This function uses recent time series data to predict the user's current and future
+     * energy levels. It starts from the last known validated energy level and integrates
+     * the model's predicted energy changes over the time since that validation.
      *
-     * @see train train must be called before predict/inference can run
+     * The prediction relies on a model that must be trained beforehand.
      *
-     * @param inputTimeSeries The multi-source time series data (e.g., heart rate) for a defined duration.
-     * @param fixedParameters Static user-specific parameters, such as the anaerobic threshold, that do not change over the time series.
-     * @return A [PredictedEnergyLevelEntry] containing the forecasted energy level percentage and the timestamp for which the prediction is valid.
+     * @see train The model must be trained before `predict` can be run.
+     *
+     * @param multiTimeSeriesDiscrete The multi-source time series data (e.g., heart rate, steps)
+     *                                up to the current time.
+     * @param lastValidatedEnergy The last user-confirmed energy level (as a value between 0.0 and 1.0).
+     * @param lastValidatedTime The timestamp of the last validated energy level.
+     * @param timeNow The current time, serving as the reference point for the prediction.
+     * @return A [PredictedEnergyLevelEntry] containing the forecasted energy level percentage for
+     *         "now" and for a point in the "future", along with their respective timestamps.
      */
     fun predict(
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
@@ -184,6 +193,22 @@ object Predictor {
         )
     }
 
+    /**
+     * Accumulates the predicted changes in energy over a specified time horizon.
+     *
+     * Iterates through a segment of the time series, starting from a given index,
+     * and generates a series of predictions for the change in energy (deltas) at each step.
+     * It then integrates these deltas to calculate the total accumulated energy change
+     * from the start index up to the prediction horizon.
+     *
+     * @param startIndex The starting index in the time series from which to begin accumulating predictions.
+     *                   This corresponds to the timestamp of the last validated energy level.
+     * @param multiTimeSeriesDiscrete The discretized multi-source time series data used for prediction.
+     * @param predictionHorizon An enum specifying the target time horizon for the prediction (e.g., NOW or FUTURE).
+     *                          This determines the look-ahead window for the underlying prediction model.
+     * @return A [Double] representing the total predicted change in energy level over the specified window.
+     *         This value is the sum (integral) of all predicted energy deltas.
+     */
     private fun accumulatePredictionsForHorizon(
         startIndex: Int,
         multiTimeSeriesDiscrete: MultiTimeSeriesDiscrete,
@@ -208,6 +233,19 @@ object Predictor {
     }
 }
 
+/**
+ * Creates a discrete time series for the target variable (validated energy level).
+ *
+ * Uses ensureData to generate random filler values if nothing was entered yet.
+ * This function is abstracted because its behaviour is required at different points in the code
+ * and target data preprocessing should be unified.
+ *
+ * @param timeStart The start time of the desired time series.
+ * @param duration The total duration of the time series.
+ * @param validatedEnergyLevelEntries A list of user-validated energy level entries, which may be sparse.
+ * @param stepCount The number of discrete steps (samples) the final time series should have.
+ * @return A [TimeSeriesDiscretizer.SingleDiscreteTimeSeries] representing the uniformly sampled energy levels.
+ */
 fun generateDiscreteTargetSeries(
     timeStart: Instant,
     duration: Duration,
