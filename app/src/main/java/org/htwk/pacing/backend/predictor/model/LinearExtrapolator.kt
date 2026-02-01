@@ -213,7 +213,7 @@ object LinearExtrapolator {
         NOW_VS_30_MINUTES_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.SinglePoint(3),
+                    SamplingDescriptor.SinglePoint(1),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -221,7 +221,7 @@ object LinearExtrapolator {
         NOW_VS_60_MINUTES_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.SinglePoint(6),
+                    SamplingDescriptor.SinglePoint(2),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -229,7 +229,7 @@ object LinearExtrapolator {
         NOW_VS_90_MINUTES_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.SinglePoint(9),
+                    SamplingDescriptor.SinglePoint(3),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -237,7 +237,7 @@ object LinearExtrapolator {
         NOW_VS_120_MINUTES_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.SinglePoint(12),
+                    SamplingDescriptor.SinglePoint(4),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -246,31 +246,31 @@ object LinearExtrapolator {
         HOURLY_AVG_NOW_VS_1_HOUR_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(12, 6),
-                    SamplingDescriptor.AverageOverRange(6, 0)
+                    SamplingDescriptor.AverageOverRange(4, 2),
+                    SamplingDescriptor.AverageOverRange(2, 0)
                 )
             )
         ),
         HOURLY_AVG_NOW_VS_2_HOURS_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(18, 12),
-                    SamplingDescriptor.AverageOverRange(6, 0)
+                    SamplingDescriptor.AverageOverRange(6, 4),
+                    SamplingDescriptor.AverageOverRange(2, 0)
                 )
             )
         ),
         HOURLY_AVG_NOW_VS_3_HOURS_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(24, 18),
-                    SamplingDescriptor.AverageOverRange(6, 0)
+                    SamplingDescriptor.AverageOverRange(8, 6),
+                    SamplingDescriptor.AverageOverRange(2, 0)
                 )
             )
         ),
         NOW_VS_1_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(6, 0),
+                    SamplingDescriptor.AverageOverRange(2, 0),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -278,7 +278,7 @@ object LinearExtrapolator {
         NOW_VS_3_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(18, 0),
+                    SamplingDescriptor.AverageOverRange(6, 0),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -286,7 +286,7 @@ object LinearExtrapolator {
         NOW_VS_6_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(36, 0),
+                    SamplingDescriptor.AverageOverRange(12, 0),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -294,7 +294,7 @@ object LinearExtrapolator {
         NOW_VS_12_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(72, 0),
+                    SamplingDescriptor.AverageOverRange(24, 0),
                     SamplingDescriptor.SinglePoint(0)
                 )
             )
@@ -302,40 +302,41 @@ object LinearExtrapolator {
         PAST_3_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(36, 18),
-                    SamplingDescriptor.AverageOverRange(18, 0)
+                    SamplingDescriptor.AverageOverRange(12, 6),
+                    SamplingDescriptor.AverageOverRange(6, 0)
                 )
             )
         ),
         PAST_6_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(72, 36),
-                    SamplingDescriptor.AverageOverRange(36, 0)
+                    SamplingDescriptor.AverageOverRange(24, 12),
+                    SamplingDescriptor.AverageOverRange(12, 0)
                 )
             )
         ),
         PAST_12_HOUR_TREND(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(144, 72),
-                    SamplingDescriptor.AverageOverRange(72, 0)
+                    SamplingDescriptor.AverageOverRange(48, 24),
+                    SamplingDescriptor.AverageOverRange(24, 0)
                 )
             )
         ),
         LAST_HOUR_AVERAGE_VS_1_DAY_AGO(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange(150, 144),
-                    SamplingDescriptor.AverageOverRange(6, 0)
+                    SamplingDescriptor.AverageOverRange(50, 48),
+                    SamplingDescriptor.AverageOverRange(2, 0)
                 )
             )
         ),
         YESTERDAY_VS_TODAY(
             ExtrapolationStrategy(
                 Pair(
-                    SamplingDescriptor.AverageOverRange((6 * 48 - 1), (6 * 24 - 1)),
-                    SamplingDescriptor.AverageOverRange((6 * 24), 0)
+                    // 2 steps/hr * 48 hrs = 96; 2 steps/hr * 24 hrs = 48
+                    SamplingDescriptor.AverageOverRange(95, 47),
+                    SamplingDescriptor.AverageOverRange(48, 0)
                 )
             )
         )
