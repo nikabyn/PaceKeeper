@@ -50,8 +50,8 @@ fun EnergyPredictionCard(
     modifier: Modifier = Modifier,
 ) {
     CardWithTitle(title = stringResource(R.string.energy_prediction), modifier) {
-        val start = currentTime - 6.hours
-        val end = currentTime + 6.hours
+        val start = currentTime - 10.hours
+        val end = currentTime + 10.hours
 
         val xRange = TimeRange(start, end).toEpochDoubleRange()
         val yRange = 0.0..1.0
