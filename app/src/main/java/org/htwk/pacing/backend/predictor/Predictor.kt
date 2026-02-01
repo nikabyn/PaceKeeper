@@ -155,17 +155,27 @@ object Predictor {
         val startIndex =
             (multiTimeSeriesDiscrete.stepCount() - stepsSinceLastValidation).coerceAtLeast(0)
 
+        Log.i(LOGGING_TAG, "lastValidatedEnergy: $lastValidatedEnergy")
+        Log.i(LOGGING_TAG, "lastValidatedTime: $lastValidatedTime")
+        Log.i(LOGGING_TAG, "timeNow: $timeNow")
+        Log.i(LOGGING_TAG, "stepsSinceLastValidation: $stepsSinceLastValidation")
+        Log.i(LOGGING_TAG, "startIndex: $startIndex")
+
         val predictedEnergyNow = lastValidatedEnergy +
                 accumulatePredictionsForHorizon(
                     startIndex, multiTimeSeriesDiscrete,
                     IPredictionModel.PredictionHorizon.NOW
                 )
 
+        Log.i(LOGGING_TAG, "predictedEnergyNow: $predictedEnergyNow")
+
         val predictedEnergyFuture = lastValidatedEnergy +
                 accumulatePredictionsForHorizon(
                     startIndex, multiTimeSeriesDiscrete,
                     IPredictionModel.PredictionHorizon.FUTURE
                 )
+
+        Log.i(LOGGING_TAG, "predictedEnergyFuture: $predictedEnergyFuture")
 
         return PredictedEnergyLevelEntry(
             time = timeNow + IPredictionModel.PredictionHorizon.NOW.howFar,
@@ -188,8 +198,6 @@ object Predictor {
                     predictionHorizon
                 )
             }.toDoubleArray()
-
-        Log.i(LOGGING_TAG, "Deltas for $predictionHorizon: ${rawEnergyDeltas.joinToString()}")
 
         //for smoothing, apply .causalExponentialMovingAverage(alpha = 1.0) to this
         val smoothedEnergyDeltas = rawEnergyDeltas
