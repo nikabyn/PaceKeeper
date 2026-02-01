@@ -17,15 +17,28 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
-import org.jetbrains.kotlinx.multik.ndarray.operations.first
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 
+
 /**
- * A linear regression–based prediction model that combines multiple extrapolated time series signals
- * (e.g., heart rate, integrals, derivatives) into a single predicted energy level.
+ * A linear regression–based prediction model that operates on the *discrete derivative* of the target signal.
+ * This model aims to predict the *change* in the target value rather than the absolute value itself.
  *
- * The model learns linear coefficients via Tikhonov regularized least squares regression
- * using preprocessed time-series data provided by an [IPreprocessor].
+ * ### How it works:
+ * 1.  **Feature Creation**: For each time step, it creates a feature vector by looking back at past values of the input time series. The `lookBackOffsets` define how far back in time to look (e.g., current value, 1 step ago, 2 steps ago, etc.). These features from all input series are flattened into a single vector.
+ * 2.  **Target Preparation**: Instead of using the raw target values, it calculates the discrete derivative of the target signal. This derivative is also clamped to a `MAX_CHANGE_PER_STEP` to prevent extreme values from dominating the training process.
+ * 3.  **Training**:
+ *     - It trains a separate set of linear regression weights for each `PredictionHorizon` (e.g., NOW, FUTURE).
+ *     - The training uses Tikhonov-regularized least squares to find the optimal weights that map the feature vectors to the prepared target (the discrete derivative).
+ *     - Input features are normalized before training to improve numerical stability. A bias term can optionally be included.
+ * 4.  **Prediction**:
+ *     - To make a prediction for a given time step and horizon, it first constructs the feature vector for that step.
+ *     - The features are normalized using the distributions calculated during training.
+ *     - The model then performs a dot product between the normalized feature vector and the learned weights corresponding to the specified prediction horizon.
+ *     - The result is the predicted *change* in the target value for the next step.
+ *
+ * This differential approach can make the model more robust to drifts and shifts in the absolute level of the target signal, as it focuses on learning the dynamics of its change.
+ *
  */
 object DifferentialPredictionModel : IPredictionModel {
     private var LOGGING_TAG = "DifferentialPredictionModel"
@@ -33,8 +46,6 @@ object DifferentialPredictionModel : IPredictionModel {
     private const val USE_BIAS = true
     private const val MAX_CHANGE_PER_STEP: Double = 0.05
 
-    //TODO: add sleep score, Anaerobic threshold passed score, ratios of 7-day-
-    //baseline vs current for different metrics
     private val BIAS_FEATURE = if (USE_BIAS) listOf<Double>(1.0) else listOf<Double>()
     private val lookBackOffsets = listOf(0, 1, 2, 4, 8, 12, 24, 36, 48, 72, 96)
 
@@ -51,6 +62,17 @@ object DifferentialPredictionModel : IPredictionModel {
         val targetValue: Double
     )
 
+    /**
+     * Creates a feature vector for a given time step by sampling historical data.
+     *
+     * For the given `offset`, this function looks back into the `input` time series at intervals
+     * defined by `lookBackOffsets`. It collects all features at each of these past time steps
+     * and flattens them into a single list.
+     *
+     * @param input The multi-variate time series data to sample from.
+     * @param offset The current time step index from which to look back.
+     * @return A flattened list of historical feature values.
+     */
     private fun createFeatures(input: MultiTimeSeriesDiscrete, offset: Int): List<Double> {
         return lookBackOffsets.map { horizon ->
             val index = (offset - horizon)
@@ -169,9 +191,7 @@ object DifferentialPredictionModel : IPredictionModel {
         //get extrapolation weights (how much each extrapolation trend affects the prediction)
         val extrapolationWeights: D1Array<Double> = mk.ndarray(weights)
 
-        //TODO: remove this and maybe do normalize target
-        val prediction =
-            mk.ndarray(listOf(mk.linalg.dot(normalizedInputs, extrapolationWeights))).first()
+        val prediction = mk.linalg.dot(normalizedInputs, extrapolationWeights)
         return prediction
     }
 }
