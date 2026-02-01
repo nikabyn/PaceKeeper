@@ -290,6 +290,7 @@ class PredictorFitbitDataTest {
         )
     }
 
+    @Ignore("unused")
     @Test
     fun plotTimeshiftCorrelations() {
         /*var m = multiTimeSeriesDiscrete.getAllFeatureIDs().associateWith { id ->
