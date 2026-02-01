@@ -111,7 +111,6 @@ fun Main() {
         else -> isSystemInDarkTheme()
     }
 
-    Log.d("checkedIn", checkedIn.toString())
     val startDestination = rememberSaveable(checkedIn) {
         when (checkedIn) {
             false -> Route.WELCOME
