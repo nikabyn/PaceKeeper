@@ -528,11 +528,11 @@ open class WelcomeViewModel(
 ) : ViewModel() {
     var termsAccepted by mutableStateOf(false)
 
-    val checkedIn: StateFlow<Boolean> = dao.getCheckedInLive()
+    val checkedIn: StateFlow<Boolean?> = dao.getCheckedInLive()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = true
+            initialValue = null
         )
 
     fun completeOnboarding() {
