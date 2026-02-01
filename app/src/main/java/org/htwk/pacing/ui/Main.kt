@@ -33,7 +33,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -112,9 +111,11 @@ fun Main() {
         else -> isSystemInDarkTheme()
     }
 
-    val startDestination = when (checkedIn) {
-        true -> Route.WELCOME
-        else -> Route.MAIN_NAV
+    val startDestination = rememberSaveable(checkedIn) {
+        when (checkedIn) {
+            false -> Route.WELCOME
+            else -> Route.MAIN_NAV
+        }
     }
 
     PacingTheme(darkTheme = darkTheme) {
@@ -250,28 +251,15 @@ fun AppNavHost(
 
         composable(Route.WELCOME) {
             val viewModel: WelcomeViewModel = koinViewModel()
-            val checkedIn by viewModel.checkedIn.collectAsState()
-
-            LaunchedEffect(checkedIn) {
-                if (checkedIn) {
+            WelcomeScreen(
+                onFinished = {
+                    viewModel.completeOnboarding()
                     navController.navigate(Route.MAIN_NAV) {
                         popUpTo(Route.WELCOME) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
-            }
-
-            if (!checkedIn) {
-                WelcomeScreen(
-                    onFinished = {
-                        viewModel.completeOnboarding()
-                        navController.navigate(Route.MAIN_NAV) {
-                            popUpTo(Route.WELCOME) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                )
-            }
+            )
         }
 
         navigation(route = Route.MAIN_NAV, startDestination = Route.HOME) {
