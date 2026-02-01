@@ -53,85 +53,11 @@ import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.ManualSymptomEntry
 import org.htwk.pacing.backend.database.Symptom
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.SymptomSelectionCard
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
-
-/**
- * Overlay screen that allows the user to select and create new symptoms
- * to be associated with how they feel at a point in time.
- */
-@Composable
-fun SymptomScreen(
-    navController: NavController,
-    feeling: Feeling,
-    viewModel: SymptomsViewModel = koinViewModel(),
-) {
-    var openDialog by remember { mutableStateOf(false) }
-    val symptoms by viewModel.symptoms.collectAsState()
-
-    LaunchedEffect(symptoms) {
-        viewModel.defaultSymptoms(symptoms)
-    }
-
-    val symptomWithStrength = remember { mutableStateMapOf<String, Int>() }
-
-    Scaffold(
-        modifier = Modifier.testTag("SymptomsScreen"),
-        topBar = {
-            TopBar(navController, onApply = {
-                viewModel.storeEntry(
-                    feeling,
-                    symptomWithStrength.map {
-                        Symptom(it.key, it.value)
-                    }.toList()
-                )
-            })
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { openDialog = true },
-                modifier = Modifier.testTag("SymptomsScreenAddButton")
-            ) {
-                Icon(Icons.Filled.Add, "Floating action button.")
-            }
-        }) { contentPadding ->
-
-        Column(
-            modifier = Modifier
-                .padding(
-                    horizontal = Spacing.large,
-                    vertical = contentPadding.calculateTopPadding()
-                )
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .testTag("SymptomsScreenCheckboxes")
-        ) {
-            symptoms?.forEach { s ->
-                SymptomSelectionCard(
-                    name = s.name,
-                    strength = symptomWithStrength[s.name] ?: s.strength,
-                    onStrengthChange = { newStrength ->
-                        symptomWithStrength[s.name] = newStrength
-                    }
-                )
-            }
-        }
-
-        if (openDialog) {
-            AddSymptomDialog(
-                onCancel = {
-                    openDialog = false
-                },
-                onConfirm = { newSymptom ->
-                    openDialog = false
-                    viewModel.storeSymptom(newSymptom)
-                },
-                symptoms,
-            )
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -278,5 +204,86 @@ class SymptomsViewModel(
 
         val defaults = listOf("fatigue", "headache", "brain_fog")
         defaults.forEach { storeSymptom(it) }
+    }
+}
+
+
+/**
+ * Overlay screen that allows the user to select and create new symptoms
+ * to be associated with how they feel at a point in time.
+ */
+@Composable
+fun SymptomScreen(
+    navController: NavController,
+    feeling: Feeling,
+    viewModel: SymptomsViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
+) {
+    var openDialog by remember { mutableStateOf(false) }
+    val symptoms by viewModel.symptoms.collectAsState()
+
+    LaunchedEffect(symptoms) {
+        viewModel.defaultSymptoms(symptoms)
+    }
+
+    val symptomWithStrength = remember { mutableStateMapOf<String, Int>() }
+
+    Scaffold(
+        modifier = Modifier.testTag("SymptomsScreen"),
+        topBar = {
+            TopBar(navController, onApply = {
+                viewModel.storeEntry(
+                    feeling,
+                    symptomWithStrength.map {
+                        Symptom(it.key, it.value)
+                    }.toList()
+                )
+            })
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { openDialog = true },
+                modifier = Modifier.testTag("SymptomsScreenAddButton")
+            ) {
+                Icon(Icons.Filled.Add, "Floating action button.")
+            }
+        }) { contentPadding ->
+        Column {
+            DemoBanner(modeViewModel = modeViewModel)
+
+            Column(
+                modifier = Modifier
+                    .padding(
+                        horizontal = Spacing.large,
+                        vertical = contentPadding.calculateTopPadding()
+                    )
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .testTag("SymptomsScreenCheckboxes")
+            ) {
+                symptoms?.forEach { s ->
+                    SymptomSelectionCard(
+                        name = s.name,
+                        strength = symptomWithStrength[s.name] ?: s.strength,
+                        onStrengthChange = { newStrength ->
+                            symptomWithStrength[s.name] = newStrength
+                        }
+                    )
+                }
+            }
+
+            if (openDialog) {
+                AddSymptomDialog(
+                    onCancel = {
+                        openDialog = false
+                    },
+                    onConfirm = { newSymptom ->
+                        openDialog = false
+                        viewModel.storeSymptom(newSymptom)
+                    },
+                    symptoms,
+                )
+            }
+        }
     }
 }

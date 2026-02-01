@@ -4,11 +4,9 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.time.Duration
 
-interface TimedSeries<E : TimedEntry> {
+sealed interface TimedSeries<E : TimedEntry> {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(entry: E)
 
@@ -28,14 +26,11 @@ interface TimedSeries<E : TimedEntry> {
      */
     fun getChangeTrigger(): Flow<Int?>
 
-    fun getLastLive(duration: Duration): Flow<List<E>> =
-        getChangeTrigger().map {
-            val now = Clock.System.now()
-            getInRange(now.minus(duration), now)
-        }
+    fun getInRangeLive(begin: Instant, end: Instant): Flow<List<E>> =
+        getChangeTrigger().map { getInRange(begin, end) }
 }
 
-interface TimedEntry {
+sealed interface TimedEntry {
     val start: Instant
     val end: Instant
 }

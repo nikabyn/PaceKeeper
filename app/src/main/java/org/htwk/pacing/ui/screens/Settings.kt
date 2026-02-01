@@ -25,83 +25,94 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.export.exportAllAsZip
 import org.htwk.pacing.ui.Route
+import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.UniversalSettingsCard
 import org.htwk.pacing.ui.components.UserProfileCard
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.koin.androidx.compose.koinViewModel
 
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
-    Box(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Column(
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
-        ) {
-            UserProfileCard(navController = navController)
+    Column {
+        DemoBanner(modeViewModel = modeViewModel)
+        Box(modifier = modifier.verticalScroll(rememberScrollState())) {
 
-            Spacer(modifier = Modifier.height(Spacing.large))
-            Spacer(modifier = Modifier.height(Spacing.large))
+            Column(
+                modifier = Modifier.padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.extraLarge
+                )
+            ) {
+                UserProfileCard(navController = navController)
 
-            UniversalSettingsCard(
-                route = Route.CONNECTIONS_AND_SERVICES,
-                name = stringResource(R.string.title_settings_services),
-                description = stringResource(R.string.subtitle_settings_services),
-                iconRes = R.drawable.settings_services,
-                navController = navController,
-                style = CardStyle.shapeFirstInGroup
-            )
+                Spacer(modifier = Modifier.height(Spacing.large))
+                Spacer(modifier = Modifier.height(Spacing.large))
 
-            UniversalSettingsCard(
-                route = Route.DATA,
-                name = stringResource(R.string.title_settings_data),
-                description = stringResource(R.string.subtitle_settings_data),
-                iconRes = R.drawable.settings_data,
-                navController = navController,
-                style = CardStyle.shapeInGroup
-            )
+                UniversalSettingsCard(
+                    route = Route.CONNECTIONS_AND_SERVICES,
+                    name = stringResource(R.string.title_settings_services),
+                    description = stringResource(R.string.subtitle_settings_services),
+                    iconRes = R.drawable.settings_services,
+                    navController = navController,
+                    style = CardStyle.shapeFirstInGroup
+                )
 
-            UniversalSettingsCard(
-                route = Route.NOTIFICATIONS,
-                name = stringResource(R.string.title_settings_notifications),
-                description = stringResource(R.string.subtitle_settings_notifications),
-                iconRes = R.drawable.settings_notifications,
-                navController = navController,
-                style = CardStyle.shapeInGroup
-            )
+                UniversalSettingsCard(
+                    route = Route.DATA,
+                    name = stringResource(R.string.title_settings_data),
+                    description = stringResource(R.string.subtitle_settings_data),
+                    iconRes = R.drawable.settings_data,
+                    navController = navController,
+                    style = CardStyle.shapeInGroup
+                )
 
-            UniversalSettingsCard(
-                route = Route.APPEARANCE,
-                name = stringResource(R.string.title_settings_appearance),
-                description = stringResource(R.string.subtitle_settings_appearance),
-                iconRes = R.drawable.settings_appereance,
-                navController = navController,
-                style = CardStyle.shapeInGroup
-            )
+                UniversalSettingsCard(
+                    route = Route.NOTIFICATIONS,
+                    name = stringResource(R.string.title_settings_notifications),
+                    description = stringResource(R.string.subtitle_settings_notifications),
+                    iconRes = R.drawable.settings_notifications,
+                    navController = navController,
+                    style = CardStyle.shapeInGroup
+                )
 
-            UniversalSettingsCard(
-                route = Route.INFORMATION,
-                name = stringResource(R.string.title_settings_information),
-                description = stringResource(R.string.subtitle_settings_information),
-                iconRes = R.drawable.settings_information,
-                navController = navController,
-                style = CardStyle.shapeLastInGroup
-            )
-            Spacer(modifier = Modifier.height(Spacing.large))
+                UniversalSettingsCard(
+                    route = Route.APPEARANCE,
+                    name = stringResource(R.string.title_settings_appearance),
+                    description = stringResource(R.string.subtitle_settings_appearance),
+                    iconRes = R.drawable.settings_appereance,
+                    navController = navController,
+                    style = CardStyle.shapeInGroup
+                )
 
-            UniversalSettingsCard(
-                route = Route.FEEDBACK,
-                name = stringResource(R.string.title_settings_feedback),
-                description = stringResource(R.string.subtitle_settings_feedback),
-                icon = Icons.Filled.Settings,
-                navController = navController,
-                style = CardStyle.shape
-            )
+                UniversalSettingsCard(
+                    route = Route.INFORMATION,
+                    name = stringResource(R.string.title_settings_information),
+                    description = stringResource(R.string.subtitle_settings_information),
+                    iconRes = R.drawable.settings_information,
+                    navController = navController,
+                    style = CardStyle.shapeLastInGroup
+                )
+                Spacer(modifier = Modifier.height(Spacing.large))
+
+                UniversalSettingsCard(
+                    route = Route.FEEDBACK,
+                    name = stringResource(R.string.title_settings_feedback),
+                    description = stringResource(R.string.subtitle_settings_feedback),
+                    icon = Icons.Filled.Settings,
+                    navController = navController,
+                    style = CardStyle.shape
+                )
+            }
+
+
         }
-
-
     }
 }
 

@@ -43,6 +43,7 @@ import org.htwk.pacing.backend.OAuth2Result
     version = 9,
     exportSchema = false,
 )
+
 @TypeConverters(Converters::class)
 abstract class PacingDatabase : RoomDatabase() {
     abstract fun distanceDao(): DistanceDao
@@ -71,7 +72,22 @@ abstract class PacingDatabase : RoomDatabase() {
     abstract fun readEventDao(): ReadEventDao
 }
 
+
+@Database(
+    entities = [
+        ModeEntry::class,
+    ],
+    version = 1,
+    exportSchema = false,
+)
+
+abstract class ModeDatabase : RoomDatabase() {
+    abstract fun modeDao(): ModeDao
+}
+
+
 class Converters {
+
     @TypeConverter
     fun fromInstant(value: Instant): Long = value.toEpochMilliseconds()
 

@@ -63,5 +63,18 @@ enum class SleepStage(private val stage: Int) {
                     "Invalid value `$value` for SleepStage, must be in range 0..=7"
                 )
             }
+
+        fun fromString(value: String): SleepStage =
+            when (value.lowercase()) {
+                "unknown" -> Unknown
+                "awake" -> Awake
+                "sleeping" -> Sleeping
+                "outofbed" -> OutOfBed
+                "light" -> Light
+                "deep" -> Deep
+                "rem" -> REM
+                "awakeinbed" -> AwakeInBed
+                else -> Unknown
+            }
     }
 }

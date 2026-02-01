@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.datetime.LocalTime
 import org.htwk.pacing.R
+import org.htwk.pacing.ui.components.DemoBanner
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.components.NotificationPermitCard
 import org.htwk.pacing.ui.components.RestingHoursCard
 import org.koin.androidx.compose.koinViewModel
@@ -66,7 +68,8 @@ fun String.parseTime(): LocalTime? {
 fun NotificationScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    userProfileViewModel: UserProfileViewModel = koinViewModel()
+    userProfileViewModel: UserProfileViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
 
     // Hol die UserProfile-Daten
@@ -101,67 +104,70 @@ fun NotificationScreen(
             )
         }
     ) { innerPadding ->
+        Column {
+            DemoBanner(modeViewModel = modeViewModel)
 
-        Column(
-            modifier = modifier
-                .padding(innerPadding)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
+            Column(
+                modifier = modifier
+                    .padding(innerPadding)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
 
-            NotificationPermitCard(
-                warningPermit = warningPermit,
-                onWarningChange = { enabled ->
-                    warningPermit = enabled
-                    profile?.let {
-                        userProfileViewModel.saveProfile(it.copy(warningPermit = enabled))
-                    }
-                },
-            )
-
-            Spacer(modifier = Modifier.padding(top = 20.dp))
-
-            profile?.let {
-                RestingHoursCard(
-                    restingStart = profile?.restingStart?.formatTime() ?: "22:00",
-                    restingEnd = profile?.restingEnd?.formatTime() ?: "06:00",
-                    onEditClick = { showDialog = true }
+                NotificationPermitCard(
+                    warningPermit = warningPermit,
+                    onWarningChange = { enabled ->
+                        warningPermit = enabled
+                        profile?.let {
+                            userProfileViewModel.saveProfile(it.copy(warningPermit = enabled))
+                        }
+                    },
                 )
-            } ?: run {
-                // Fallback
-                RestingHoursCard(
-                    restingStart = "22:00",
-                    restingEnd = "06:00",
-                    onEditClick = { showDialog = true }
-                )
-            }
-        }
-    }
 
-    // dialog for editing personal resting hours
-    if (showDialog) {
-
-        RestingHoursDialog(
-            currentStart = profile?.restingStart?.formatTime() ?: "22:00",
-            currentEnd = profile?.restingEnd?.formatTime() ?: "06:00",
-            onDismiss = { showDialog = false },
-            onConfirm = { newStartStr, newEndStr ->
-                // Verwende parseTime()
-                val newStart = newStartStr.parseTime() ?: LocalTime(22, 0)
-                val newEnd = newEndStr.parseTime() ?: LocalTime(6, 0)
+                Spacer(modifier = Modifier.padding(top = 20.dp))
 
                 profile?.let {
-                    userProfileViewModel.saveProfile(
-                        it.copy(
-                            restingStart = newStart,
-                            restingEnd = newEnd
-                        )
+                    RestingHoursCard(
+                        restingStart = profile?.restingStart?.formatTime() ?: "22:00",
+                        restingEnd = profile?.restingEnd?.formatTime() ?: "06:00",
+                        onEditClick = { showDialog = true }
+                    )
+                } ?: run {
+                    // Fallback
+                    RestingHoursCard(
+                        restingStart = "22:00",
+                        restingEnd = "06:00",
+                        onEditClick = { showDialog = true }
                     )
                 }
-                showDialog = false
             }
-        )
+        }
+
+        // dialog for editing personal resting hours
+        if (showDialog) {
+
+            RestingHoursDialog(
+                currentStart = profile?.restingStart?.formatTime() ?: "22:00",
+                currentEnd = profile?.restingEnd?.formatTime() ?: "06:00",
+                onDismiss = { showDialog = false },
+                onConfirm = { newStartStr, newEndStr ->
+                    // Verwende parseTime()
+                    val newStart = newStartStr.parseTime() ?: LocalTime(22, 0)
+                    val newEnd = newEndStr.parseTime() ?: LocalTime(6, 0)
+
+                    profile?.let {
+                        userProfileViewModel.saveProfile(
+                            it.copy(
+                                restingStart = newStart,
+                                restingEnd = newEnd
+                            )
+                        )
+                    }
+                    showDialog = false
+                }
+            )
+        }
     }
 }
 

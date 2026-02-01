@@ -18,6 +18,7 @@ import kotlinx.coroutines.supervisorScope
 import org.htwk.pacing.R
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_CHANNEL_ID
 import org.htwk.pacing.backend.NotificationIds.FOREGROUND_NOTIFICATION_ID
+import org.htwk.pacing.backend.database.ModeDatabase
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.UserProfileRepository
 import kotlin.time.Duration.Companion.hours
@@ -42,6 +43,7 @@ class ForegroundWorker(
     private val context: Context,
     workerParams: WorkerParameters,
     private val db: PacingDatabase,
+    private val modeDb: ModeDatabase,
     val userProfileRepository: UserProfileRepository
 ) : CoroutineWorker(context, workerParams) {
     private companion object {
@@ -63,8 +65,18 @@ class ForegroundWorker(
         setForeground(getForegroundInfo())
 
         supervisorScope {
-            launchRepeating(HealthConnectJob.TAG) {
-                HealthConnectJob.run(context = applicationContext, db = db)
+            val isInDemo = modeDb.modeDao().getMode()?.demo ?: false
+            Log.d("ForegroundWorker", "Demo-Modus aktiv: $isInDemo")
+            if (isInDemo) {
+                Log.d("ForegroundWorker", "Starte DataGenerateJob (Demo CSV)")
+                launchRepeating(DataGenerateJob.TAG) {
+                    DataGenerateJob.run(context = applicationContext, db = db)
+                }
+            } else {
+                Log.d("ForegroundWorker", "Starte HealthConnectJob (Normalbetrieb)")
+                launchRepeating(HealthConnectJob.TAG) {
+                    HealthConnectJob.run(context = applicationContext, db = db)
+                }
             }
             launch {
                 // Prediction Job Manager

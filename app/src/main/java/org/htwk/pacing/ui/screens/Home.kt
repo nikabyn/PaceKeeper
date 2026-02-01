@@ -36,9 +36,11 @@ import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
 import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.ui.components.BatteryCard
+import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.EnergyPredictionCard
 import org.htwk.pacing.ui.components.FeelingSelectionCard
 import org.htwk.pacing.ui.components.LabelCard
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
@@ -55,6 +57,7 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
+    modeViewModel: ModeViewModel = koinViewModel()
 ) {
 
     val energyGraphData by viewModel.predictedEnergyLevel.collectAsState()
@@ -76,26 +79,33 @@ fun HomeScreen(
     val avgPrediction = energyGraphData.futureValue
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.extraLarge)
-        ) {
-            EnergyPredictionCard(
-                data = energyGraphData.entries,
-                currentEnergy = currentEnergy.toFloat(),
-                minPrediction = minPrediction.toFloat(),
-                avgPrediction = avgPrediction.toFloat(),
-                maxPrediction = maxPrediction.toFloat(),
-                modifier = Modifier.height(300.dp),
-                currentTime = currentTime
-            )
-            LabelCard(energy = currentEnergy)
-            BatteryCard(
-                energy = currentEnergy,
-                viewModel = viewModel,
-                snackbarHostState = snackbarHostState,
-            )
-            FeelingSelectionCard(navController)
+        Column {
+
+            DemoBanner(modeViewModel = modeViewModel)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.largeIncreased),
+                modifier = Modifier.padding(
+                    horizontal = Spacing.large,
+                    vertical = Spacing.extraLarge
+                )
+            ) {
+                EnergyPredictionCard(
+                    data = energyGraphData.entries,
+                    currentEnergy = currentEnergy.toFloat(),
+                    minPrediction = minPrediction.toFloat(),
+                    avgPrediction = avgPrediction.toFloat(),
+                    maxPrediction = maxPrediction.toFloat(),
+                    modifier = Modifier.height(300.dp),
+                    currentTime = currentTime
+                )
+                LabelCard(energy = currentEnergy)
+                BatteryCard(
+                    energy = currentEnergy,
+                    viewModel = viewModel,
+                    snackbarHostState = snackbarHostState,
+                )
+                FeelingSelectionCard(navController)
+            }
         }
     }
 }
@@ -110,11 +120,11 @@ class HomeViewModel(
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = userProfileDao.getProfileLive()
         .flatMapLatest { profile ->
-            // Capture state from profile
+            //capture state from profile, to know which model to use and whether to show simulation
             val model = profile?.predictionModel ?: "DEFAULT"
             val simulationEnabled = profile?.simulationEnabled == true
 
-            // Switch DAO based on model
+            //switch DAO based on model selection
             val daoFlow = if (model == "MODEL2") {
                 predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
                     entries.map {
@@ -127,9 +137,8 @@ class HomeViewModel(
                 predictedEnergyLevelDao.getAllLive()
             }
 
-            // Map entries to UI State, attaching the simulation flag
+            //map entries to UI State, also pass simulation flag
             daoFlow.map { entries ->
-                // No time filtering here - passing raw data to UI
                 val sortedEntries = entries.sortedBy { it.time }
                 val latest = sortedEntries.lastOrNull()
 

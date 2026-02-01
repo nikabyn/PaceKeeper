@@ -47,9 +47,8 @@ import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
 import org.htwk.pacing.backend.database.TimedEntry
-import org.htwk.pacing.ui.components.Graph
-import org.htwk.pacing.ui.components.GraphCanvas
-import org.htwk.pacing.ui.components.graphToPaths
+import org.htwk.pacing.ui.components.graph.GraphCanvas
+import org.htwk.pacing.ui.components.graph.graphToPaths
 import org.htwk.pacing.ui.screens.measurements.Measurement.Distance
 import org.htwk.pacing.ui.screens.measurements.Measurement.ElevationGained
 import org.htwk.pacing.ui.screens.measurements.Measurement.HeartRate
@@ -132,7 +131,7 @@ fun TinyGraphPreview(
     measurement: Measurement,
     entries: List<TimedEntry>,
     range: TimeRange,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colorLine = MaterialTheme.colorScheme.primary
     val colorAwake = MaterialTheme.colorScheme.error
@@ -145,11 +144,22 @@ fun TinyGraphPreview(
             measurement,
             entries,
             range,
-            colorLine,
-            colorAwake,
-            colorREM,
-            colorLightSleep,
-            colorDeepSleep,
+            drawLine = { measurement, entries, range ->
+                drawLine(measurement, entries, range, colorLine)
+            },
+            drawHeartRate = { entries, range ->
+                drawLine(measurement, entries, range, colorLine)
+            },
+            drawSleep = { entries, range ->
+                drawSleepPreview(
+                    entries,
+                    range,
+                    colorAwake,
+                    colorREM,
+                    colorLightSleep,
+                    colorDeepSleep,
+                )
+            }
         )
     }
 }
@@ -242,7 +252,7 @@ enum class Measurement {
     }
 
     @Composable
-    fun ySteps(yRange: ClosedRange<Double>): List<String> {
+    fun ySteps(yRange: ClosedRange<Double>): List<Pair<Double, String>> {
         val stepSize = stepSize() ?: 0.0
         val ySteps = when (this) {
             Steps,
@@ -261,22 +271,28 @@ enum class Measurement {
 
                 (0..stepCount).map { i ->
                     val value = start + i * stepSize
-                    if (stepSize < 1.0)
+                    val label = if (stepSize < 1.0)
                         "%.2f".format(value)
                     else
                         value.toInt().toString()
+                    Pair(value, label)
                 }
             }
 
             MenstruationPeriod -> emptyList()
 
-            Sleep -> listOf("Deep", "Light", "REM", "Awake")
+            Sleep -> listOf(
+                Pair(3.0, "Deep"),
+                Pair(2.0, "Light"),
+                Pair(1.0, "REM"),
+                Pair(0.0, "Awake"),
+            )
 
             Symptoms -> listOf(
-                stringResource(R.string.very_bad),
-                stringResource(R.string.bad),
-                stringResource(R.string.good),
-                stringResource(R.string.very_good),
+                Pair(3.0, stringResource(R.string.very_bad)),
+                Pair(2.0, stringResource(R.string.bad)),
+                Pair(1.0, stringResource(R.string.good)),
+                Pair(0.0, stringResource(R.string.very_good)),
             )
         }
 
@@ -330,42 +346,42 @@ fun CacheDrawScope.drawMeasurement(
     measurement: Measurement,
     entries: List<TimedEntry>,
     range: TimeRange,
-    colorLine: Color,
-    colorAwake: Color,
-    colorREM: Color,
-    colorLightSleep: Color,
-    colorDeepSleep: Color,
+    drawLine: (
+        measurement: Measurement,
+        entries: List<TimedEntry>,
+        range: TimeRange,
+    ) -> DrawResult,
+    drawHeartRate: (
+        entries: List<HeartRateEntry>,
+        range: TimeRange,
+    ) -> DrawResult,
+    drawSleep: (
+        entries: List<SleepSessionEntry>,
+        range: TimeRange,
+    ) -> DrawResult,
 ): DrawResult {
-    if (entries.isEmpty()) return onDrawBehind { }
-
     return when (measurement) {
         Steps,
         Distance,
         ElevationGained,
         Speed,
-        HeartRate -> drawMeasurementLine(
-            measurement,
-            entries,
-            range,
-            colorLine,
-        )
-
-        Sleep -> drawMeasurementSleep(
-            // Safety: We just checked that the measurement is Sleep
-            @Suppress("UNCHECKED_CAST") (entries as List<SleepSessionEntry>),
-            range,
-            colorAwake,
-            colorREM,
-            colorLightSleep,
-            colorDeepSleep,
-        )
-
-        // We don't have enough data to draw sensible graphs for these
         Symptoms,
         MenstruationPeriod,
         OxygenSaturation,
         HeartRateVariabilityRmssd,
-        SkinTemperature -> onDrawBehind { }
+        SkinTemperature -> drawLine(measurement, entries, range)
+
+        HeartRate -> drawHeartRate(
+            // Safety: We just checked that the measurement is Sleep
+            @Suppress("UNCHECKED_CAST") (entries as List<HeartRateEntry>),
+            range,
+        )
+
+        Sleep -> drawSleep(
+            // Safety: We just checked that the measurement is Sleep
+            @Suppress("UNCHECKED_CAST") (entries as List<SleepSessionEntry>),
+            range,
+        )
     }
 }
 
@@ -379,11 +395,12 @@ fun CacheDrawScope.drawMeasurement(
  * @param entries Timed entries for the measurement.
  * @param strokeColor Color used for the graph line.
  */
-private fun CacheDrawScope.drawMeasurementLine(
+fun CacheDrawScope.drawLine(
     measurement: Measurement,
     entries: List<TimedEntry>,
     range: TimeRange,
     strokeColor: Color,
+    strokeWidth: Float = 3f,
 ): DrawResult {
     val xData = entries.fastMap { measurement.entryToXValue(it) }
     val yData = entries.fastMap { measurement.entryToYValue(it) }
@@ -396,7 +413,7 @@ private fun CacheDrawScope.drawMeasurementLine(
         drawPath(
             path,
             color = strokeColor,
-            style = Graph.defaultStrokeStyle(),
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
     }
 }
@@ -413,7 +430,7 @@ private fun CacheDrawScope.drawMeasurementLine(
  * @param colorLightSleep Color used for light sleep.
  * @param colorDeepSleep Color used for deep sleep.
  */
-private fun CacheDrawScope.drawMeasurementSleep(
+fun CacheDrawScope.drawSleepPreview(
     entries: List<SleepSessionEntry>,
     xRange: TimeRange,
     colorAwake: Color,

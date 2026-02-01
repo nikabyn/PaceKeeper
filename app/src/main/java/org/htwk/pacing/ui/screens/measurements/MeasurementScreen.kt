@@ -46,7 +46,6 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.cachedIn
-import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,13 +61,17 @@ import org.htwk.pacing.R
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.TimedEntry
 import org.htwk.pacing.backend.database.TimedSeries
-import org.htwk.pacing.ui.components.AxisLabel
+import org.htwk.pacing.backend.database.UserProfileEntry
+import org.htwk.pacing.backend.heuristics.HeartRateZones
 import org.htwk.pacing.ui.components.CardWithTitle
-import org.htwk.pacing.ui.components.GraphCanvas
-import org.htwk.pacing.ui.components.GraphLayout
-import org.htwk.pacing.ui.components.drawLines
+import org.htwk.pacing.ui.components.drawHeartRateGraph
+import org.htwk.pacing.ui.components.graph.AxisLabel
+import org.htwk.pacing.ui.components.graph.GraphCanvas
+import org.htwk.pacing.ui.components.graph.GraphLayout
+import org.htwk.pacing.ui.components.graph.drawLines
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.Spacing
+import org.htwk.pacing.ui.theme.extendedColors
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.hours
 
@@ -80,8 +83,8 @@ fun MeasurementScreen(
     viewModel: MeasurementViewModel = MeasurementViewModel(measurement, koinInject()),
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val entriesToday by viewModel.entriesToday.collectAsState()
-    val lazyPagingItems = viewModel.pagedItems.collectAsLazyPagingItems()
+    var expandedRange by remember { mutableStateOf(TimeRange.today()) }
+    var expandedEntries by remember { mutableStateOf<List<TimedEntry>>(emptyList()) }
 
     AnimatedContent(
         targetState = expanded,
@@ -90,17 +93,21 @@ fun MeasurementScreen(
         if (isExpanded) {
             FullscreenGraphOverlay(
                 measurement,
-                entriesToday,
-                TimeRange.today(),
-                onDismiss = { expanded = false }
+                expandedEntries,
+                expandedRange,
+                onDismiss = { expanded = false },
+                viewModel,
             )
         } else {
             DefaultScreen(
                 navController,
                 measurement,
-                entriesToday,
-                lazyPagingItems,
-                toggleOverlay = { expanded = true },
+                viewModel,
+                toggleOverlay = { entries, range ->
+                    expanded = true
+                    expandedRange = range
+                    expandedEntries = entries
+                },
             )
         }
     }
@@ -110,10 +117,12 @@ fun MeasurementScreen(
 private fun DefaultScreen(
     navController: NavController,
     measurement: Measurement,
-    entries: List<TimedEntry>,
-    listItems: LazyPagingItems<ListItem>,
-    toggleOverlay: () -> Unit,
+    viewModel: MeasurementViewModel,
+    toggleOverlay: (entries: List<TimedEntry>, range: TimeRange) -> Unit,
 ) {
+    val entriesToday by viewModel.entriesToday.collectAsState()
+    val rangeToday = remember(entriesToday) { TimeRange.today() }
+    val lazyPagingItems = viewModel.pagedItems.collectAsLazyPagingItems()
 
     SubScreen(
         title = measurement.title(),
@@ -134,18 +143,29 @@ private fun DefaultScreen(
                 item {
                     LargeGraphPreview(
                         measurement,
-                        entries,
-                        onClick = toggleOverlay,
+                        entriesToday,
+                        onClick = {
+                            toggleOverlay(
+                                entriesToday,
+                                rangeToday
+                            )
+                        },
+                        viewModel,
                         modifier = Modifier.height(350.dp)
                     )
                 }
 
                 items(
-                    listItems.itemCount,
-                    key = listItems.itemKey { it.key }
+                    lazyPagingItems.itemCount,
+                    key = lazyPagingItems.itemKey { it.key }
                 ) { index ->
-                    val item = listItems[index] ?: return@items
-                    PreviewCard(measurement, item, onClick = {})
+                    val item = lazyPagingItems[index] ?: return@items
+                    PreviewCard(measurement, item, onClick = {
+                        toggleOverlay(
+                            item.entries,
+                            item.range,
+                        )
+                    })
                 }
             }
         }
@@ -188,6 +208,7 @@ private fun LargeGraphPreview(
     measurement: Measurement,
     entries: List<TimedEntry>,
     onClick: () -> Unit,
+    viewModel: MeasurementViewModel,
     modifier: Modifier = Modifier,
 ) {
     val entriesPreview = remember(entries) {
@@ -201,10 +222,20 @@ private fun LargeGraphPreview(
     val xRange = TimeRange.today()
 
     val colorLine = MaterialTheme.colorScheme.primary
+    val colorGridLine = MaterialTheme.colorScheme.outlineVariant
+
     val colorAwake = MaterialTheme.colorScheme.error
     val colorREM = MaterialTheme.colorScheme.tertiary
     val colorLightSleep = MaterialTheme.colorScheme.primary
     val colorDeepSleep = MaterialTheme.colorScheme.secondary
+
+    val zoneColors = arrayOf(
+        MaterialTheme.extendedColors.green, // green: healthZone
+        MaterialTheme.extendedColors.cyan, // cyan: recoveryZone
+        MaterialTheme.extendedColors.yellow, // yellow: exertionZone
+        MaterialTheme.extendedColors.red  // red: area above threshold
+    )
+    val zonesResult by viewModel.heartRateZones.collectAsState()
 
     CardWithTitle(
         title = stringResource(R.string.today),
@@ -220,25 +251,42 @@ private fun LargeGraphPreview(
                 }
             },
             yLabels = {
-                ySteps.fastForEachReversed {
-                    AxisLabel(it)
+                ySteps.fastForEachReversed { (value, label) ->
+                    AxisLabel(label)
                 }
             }
         ) {
             GraphCanvas(
                 Modifier
                     .padding(Spacing.small)
-                    .drawLines(ySteps.size)
+                    .drawLines(ySteps.size, colorGridLine)
             ) {
                 drawMeasurement(
                     measurement,
                     entriesPreview,
                     xRange,
-                    colorLine,
-                    colorAwake,
-                    colorREM,
-                    colorLightSleep,
-                    colorDeepSleep,
+                    drawLine = { measurement, entries, range ->
+                        drawLine(measurement, entries, range, colorLine)
+                    },
+                    drawSleep = { entries, range ->
+                        drawSleepPreview(
+                            entries,
+                            range,
+                            colorAwake,
+                            colorREM,
+                            colorLightSleep,
+                            colorDeepSleep,
+                        )
+                    },
+                    drawHeartRate = { entries, range ->
+                        drawHeartRateGraph(
+                            entries,
+                            range,
+                            zoneColors,
+                            zonesResult,
+                            colorLine,
+                        )
+                    }
                 )
             }
         }
@@ -252,9 +300,30 @@ fun FullscreenGraphOverlay(
     entries: List<TimedEntry>,
     range: TimeRange,
     onDismiss: () -> Unit,
+    viewModel: MeasurementViewModel,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    val zoneRanges by viewModel.heartRateZones.collectAsState()
+
+    val yDataToday = entries.fastMap { measurement.entryToYValue(it) }
+    val yRange = measurement.yRange(yDataToday)
+    val ySteps = measurement.ySteps(yRange)
+
+    val colorLine = MaterialTheme.colorScheme.primary
+    val colorGridLine = MaterialTheme.colorScheme.outlineVariant
+
+    val colorAwake = MaterialTheme.colorScheme.error
+    val colorREM = MaterialTheme.colorScheme.tertiary
+    val colorLightSleep = MaterialTheme.colorScheme.primary
+    val colorDeepSleep = MaterialTheme.colorScheme.secondary
+
+    val zoneColors = arrayOf(
+        MaterialTheme.extendedColors.green, // green: healthZone
+        MaterialTheme.extendedColors.cyan, // cyan: recoveryZone
+        MaterialTheme.extendedColors.yellow, // yellow: exertionZone
+        MaterialTheme.extendedColors.red  // red: area above threshold
+    )
 
     SubScreen(
         title = measurement.title(),
@@ -272,31 +341,51 @@ fun FullscreenGraphOverlay(
                     }
                 }
         ) {
-            val yDataToday = entries.fastMap { measurement.entryToYValue(it) }
-            val yRange = measurement.yRange(yDataToday)
-            val ySteps = measurement.ySteps(yRange)
-
-            val colorLine = MaterialTheme.colorScheme.primary
-            val colorAwake = MaterialTheme.colorScheme.error
-            val colorREM = MaterialTheme.colorScheme.tertiary
-            val colorLightSleep = MaterialTheme.colorScheme.primary
-            val colorDeepSleep = MaterialTheme.colorScheme.secondary
-
-            GraphCanvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .drawLines(ySteps.size)
+            GraphLayout(
+                xLabels = {
+                    for (i in 0..24 step 4) {
+                        AxisLabel(i.toString())
+                    }
+                },
+                yLabels = {
+                    ySteps.fastForEachReversed { (value, label) ->
+                        AxisLabel(label)
+                    }
+                }
             ) {
-                drawMeasurement(
-                    measurement,
-                    entries,
-                    range,
-                    colorLine,
-                    colorAwake,
-                    colorREM,
-                    colorLightSleep,
-                    colorDeepSleep,
-                )
+                GraphCanvas(
+                    Modifier
+                        .padding(Spacing.small)
+                        .drawLines(ySteps.size, colorGridLine)
+                ) {
+                    drawMeasurement(
+                        measurement,
+                        entries,
+                        range,
+                        drawLine = { measurement, entries, range ->
+                            drawLine(measurement, entries, range, colorLine)
+                        },
+                        drawSleep = { entries, range ->
+                            drawSleepPreview(
+                                entries,
+                                range,
+                                colorAwake,
+                                colorREM,
+                                colorLightSleep,
+                                colorDeepSleep,
+                            )
+                        },
+                        drawHeartRate = { entries, range ->
+                            drawHeartRateGraph(
+                                entries,
+                                range,
+                                zoneColors,
+                                zoneRanges,
+                                colorLine,
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -336,6 +425,35 @@ fun SubScreen(
 
 class MeasurementViewModel(val measurement: Measurement, val db: PacingDatabase) : ViewModel() {
     private val dao = measurement.dao(db)
+
+    val heartRateZones = db.userProfileDao()
+        .getProfileLive()
+        .map {
+            val birthYear = it?.birthYear ?: 1990
+            val currentYear = Clock.System.now()
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+                .year
+            val age = currentYear - birthYear
+
+            val sex = when (it?.sex ?: UserProfileEntry.Sex.UNSPECIFIED) {
+                UserProfileEntry.Sex.MALE -> HeartRateZones.Sex.MALE
+                UserProfileEntry.Sex.UNSPECIFIED,
+                UserProfileEntry.Sex.OTHER,
+                UserProfileEntry.Sex.FEMALE -> HeartRateZones.Sex.FEMALE
+            }
+
+            val restingHeartRate = it?.restingHeartRateBpm ?: 60
+
+            HeartRateZones.calculateZones(
+                HeartRateZones.HeartRateInput(age, sex, restingHeartRate)
+            )
+        }.stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = HeartRateZones.calculateZones(
+                HeartRateZones.HeartRateInput(30, HeartRateZones.Sex.FEMALE, 60)
+            )
+        )
 
     val entriesToday = dao.getChangeTrigger()
         .map {

@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.room.Room
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.runBlocking
 import org.htwk.pacing.backend.data_collection.fitbit.Fitbit
 import org.htwk.pacing.backend.database.DistanceDao
 import org.htwk.pacing.backend.database.ElevationGainedDao
@@ -12,6 +13,9 @@ import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateVariabilityDao
 import org.htwk.pacing.backend.database.ManualSymptomDao
 import org.htwk.pacing.backend.database.MenstruationPeriodDao
+import org.htwk.pacing.backend.database.ModeDao
+import org.htwk.pacing.backend.database.ModeDatabase
+import org.htwk.pacing.backend.database.ModeEntry
 import org.htwk.pacing.backend.database.OxygenSaturationDao
 import org.htwk.pacing.backend.database.PacingDatabase
 import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
@@ -24,6 +28,7 @@ import org.htwk.pacing.backend.database.StepsDao
 import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.UserProfileRepository
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
+import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.screens.HomeViewModel
 import org.htwk.pacing.ui.screens.SettingsViewModel
 import org.htwk.pacing.ui.screens.SymptomsViewModel
@@ -42,24 +47,34 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.ext.getFullName
 
-val testModule = module {
-    single<PacingDatabase> {
-        Room.inMemoryDatabaseBuilder(androidContext(), PacingDatabase::class.java)
-            .allowMainThreadQueries()
-            .fallbackToDestructiveMigration(dropAllTables = true)
-            .build()
-    }
-}
-
-val productionModule = module {
-    single<PacingDatabase> {
-        Room.databaseBuilder(androidContext(), PacingDatabase::class.java, "pacing.db")
-            .fallbackToDestructiveMigration(dropAllTables = true)
-            .build()
-    }
-}
-
 val appModule = module {
+
+    single {
+        Room.databaseBuilder(androidContext(), ModeDatabase::class.java, "mode.db")
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
+    //run blocking ist evtl. nicht korrekt
+    single<PacingDatabase> {
+        val modeDB = get<ModeDatabase>()
+        val mode = runBlocking { modeDB.modeDao().getMode() }
+
+        // set default mode
+        if (mode == null) {
+            runBlocking {
+                modeDB.modeDao().setMode(ModeEntry(demo = false))
+            }
+        }
+        val dbName = runBlocking {
+            val modeEntry = modeDB.modeDao().getMode()
+            if (modeEntry?.demo == true) "demo.db" else "pacing.db"
+        }
+        Log.d("DB_INJECTION", "PacingDatabase wird geladen mit Datei: $dbName")
+        Room.databaseBuilder(androidContext(), PacingDatabase::class.java, dbName)
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
+    }
+
     single<DistanceDao> { get<PacingDatabase>().distanceDao() }
     single<ElevationGainedDao> { get<PacingDatabase>().elevationGainedDao() }
     single<HeartRateDao> { get<PacingDatabase>().heartRateDao() }
@@ -71,6 +86,7 @@ val appModule = module {
     single<SleepSessionDao> { get<PacingDatabase>().sleepSessionsDao() }
     single<SpeedDao> { get<PacingDatabase>().speedDao() }
     single<StepsDao> { get<PacingDatabase>().stepsDao() }
+    single<ModeDao> { get<ModeDatabase>().modeDao() }
 
     single<ValidatedEnergyLevelDao> { get<PacingDatabase>().validatedEnergyLevelDao() }
 
@@ -94,12 +110,13 @@ val appModule = module {
     viewModel { FitbitViewModel(get(), get(qualifier = named(Fitbit.TAG))) }
     viewModel { UserProfileViewModel(get()) }
     viewModel { WelcomeViewModel(get()) }
+    viewModel { ModeViewModel(get(), modeDao = get()) }
 
     /**
      * koin sets up the dependencies for the worker class instance here,
      * the actual execution/scheduling is handled in Application.kt
      */
-    worker { context, params -> ForegroundWorker(context, params, get(), get()) }
+    worker { context, params -> ForegroundWorker(context, params, get(), get(), get()) }
 }
 
 /**
