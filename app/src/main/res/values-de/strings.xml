@@ -138,7 +138,7 @@
     <string name="label_diagnosis">Diagnose</string>
     <string name="label_fatigue_sensitivity">Müdigkeitsempfindlichkeit</string>
     <string name="label_activity_baseline">Aktivitäts-Baseline</string>
-    <string name="label_anaerobic_threshold">Anaerobische Schwelle</string>
+    <string name="label_anaerobic_threshold">Anaerobe Schwelle</string>
     <string name="label_bell_scale">Bell-Skala</string>
     <string name="label_fitness_tracker">Fitness-Tracker</string>
     <string name="option_none">Keine</string>
@@ -220,5 +220,8 @@
     <string name="title_settings_prediction_model">Vorhersagemodell</string>
     <string name="model_default">Multi-Source (Standard)</string>
     <string name="model_heart_rate_only">Herzfrequenz (Alternative)</string>
+    <string name="title_settings_simulation">Prognose-Simulation</string>
+    <string name="simulation_enabled">Simulation an</string>
+    <string name="simulation_disabled">Simulation aus</string>
 
 </resources>

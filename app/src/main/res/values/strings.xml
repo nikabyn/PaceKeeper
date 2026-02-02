@@ -220,4 +220,7 @@
     <string name="title_settings_prediction_model">Prediction Model</string>
     <string name="model_default">Multi-Source (Standard)</string>
     <string name="model_heart_rate_only">Heart Rate (Alternative)</string>
+    <string name="title_settings_simulation">Prediction Simulation</string>
+    <string name="simulation_enabled">Simulation on</string>
+    <string name="simulation_disabled">Simulation off</string>
 </resources>

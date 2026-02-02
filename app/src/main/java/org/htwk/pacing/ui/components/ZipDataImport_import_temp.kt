@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,32 +28,58 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.htwk.pacing.R
+import org.htwk.pacing.backend.database.DistanceDao
+import org.htwk.pacing.backend.database.DistanceEntry
+import org.htwk.pacing.backend.database.ElevationGainedDao
+import org.htwk.pacing.backend.database.ElevationGainedEntry
 import org.htwk.pacing.backend.database.HeartRateDao
 import org.htwk.pacing.backend.database.HeartRateEntry
+import org.htwk.pacing.backend.database.HeartRateVariabilityDao
+import org.htwk.pacing.backend.database.HeartRateVariabilityEntry
+import org.htwk.pacing.backend.database.Length
+import org.htwk.pacing.backend.database.MenstruationPeriodDao
+import org.htwk.pacing.backend.database.MenstruationPeriodEntry
+import org.htwk.pacing.backend.database.OxygenSaturationDao
+import org.htwk.pacing.backend.database.OxygenSaturationEntry
 import org.htwk.pacing.backend.database.Percentage
+import org.htwk.pacing.backend.database.PredictedEnergyLevelDao
+import org.htwk.pacing.backend.database.SkinTemperatureDao
+import org.htwk.pacing.backend.database.SkinTemperatureEntry
+import org.htwk.pacing.backend.database.SleepSessionDao
+import org.htwk.pacing.backend.database.SleepSessionEntry
+import org.htwk.pacing.backend.database.SleepStage
+import org.htwk.pacing.backend.database.SpeedDao
+import org.htwk.pacing.backend.database.SpeedEntry
+import org.htwk.pacing.backend.database.StepsDao
+import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.Temperature
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
+import org.htwk.pacing.backend.database.Velocity
 import org.htwk.pacing.ui.theme.CardStyle
 import org.htwk.pacing.ui.theme.PrimaryButtonStyle
 import org.htwk.pacing.ui.theme.Spacing
-import java.io.BufferedReader
-import java.io.InputStream
-import java.io.InputStreamReader
 import java.util.zip.ZipInputStream
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
-/**
- * Component to import Heart Rate and Validated Energy Level from a single ZIP file.
- * Automatically shifts timestamps so that the last complete day in source data becomes "yesterday" (effectively simulating that the data ends today).
- */
 @Composable
 fun ZipDataImport_import_temp(
     heartRateDao: HeartRateDao,
-    validatedEnergyLevelDao: ValidatedEnergyLevelDao
+    validatedEnergyLevelDao: ValidatedEnergyLevelDao,
+    distanceDao: DistanceDao,
+    elevationGainedDao: ElevationGainedDao,
+    predictedEnergyLevelDao: PredictedEnergyLevelDao,
+    heartRateVariabilityDao: HeartRateVariabilityDao,
+    menstruationPeriodDao: MenstruationPeriodDao,
+    oxygenSaturationDao: OxygenSaturationDao,
+    skinTemperatureDao: SkinTemperatureDao,
+    sleepSessionsDao: SleepSessionDao,
+    speedDao: SpeedDao,
+    stepsDao: StepsDao
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -66,7 +93,6 @@ fun ZipDataImport_import_temp(
         onResult = { resultUri ->
             if (resultUri != null) {
                 uri = resultUri
-                // Basic cleanup of file name display
                 name = resultUri.path?.substringAfterLast("/") ?: "Selected File"
                 status = ""
             }
@@ -90,14 +116,23 @@ fun ZipDataImport_import_temp(
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                "Importiert HR und Energy Level aus einer ZIP, synchronisiert auf heute.",
+                "Importiert alle Daten aus einer ZIP-Datei.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(12.dp))
-            Button(onClick = { launcher.launch(arrayOf("application/zip", "application/x-zip-compressed")) },
+            Button(
+                onClick = {
+                    launcher.launch(
+                        arrayOf(
+                            "application/zip",
+                            "application/x-zip-compressed"
+                        )
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
-                style = PrimaryButtonStyle) {
+                colors = PrimaryButtonStyle.colors
+            ) {
                 Text(stringResource(R.string.select_file))
             }
             if (name.isNotEmpty()) Text(name, Modifier.padding(top = 8.dp))
@@ -108,21 +143,36 @@ fun ZipDataImport_import_temp(
                         isImporting = true
                         status = "Importing..."
                         scope.launch(Dispatchers.IO) {
-                           val resultMsg = try {
-                               importZipData(context, uri!!, heartRateDao, validatedEnergyLevelDao)
-                           } catch (e: Exception) {
-                               Log.e("ZipImport", "Error", e)
-                               "Error: ${e.message}"
-                           }
+                            val resultMsg = try {
+                                importZipData(
+                                    context,
+                                    uri!!,
+                                    heartRateDao,
+                                    validatedEnergyLevelDao,
+                                    distanceDao,
+                                    elevationGainedDao,
+                                    predictedEnergyLevelDao,
+                                    heartRateVariabilityDao,
+                                    menstruationPeriodDao,
+                                    oxygenSaturationDao,
+                                    skinTemperatureDao,
+                                    sleepSessionsDao,
+                                    speedDao,
+                                    stepsDao
+                                )
+                            } catch (e: Exception) {
+                                Log.e("ZipImport", "Error", e)
+                                "Error: ${e.message}"
+                            }
                             status = resultMsg
                             isImporting = false
                         }
                     }
                 },
-                style = PrimaryButtonStyle,
+                colors = PrimaryButtonStyle.colors,
                 enabled = uri != null && !isImporting
             ) {
-                Text(if(isImporting) "Import läuft..." else stringResource(R.string.import_start))
+                Text(if (isImporting) "Import läuft..." else stringResource(R.string.import_start))
             }
             if (status.isNotEmpty()) Text(status, Modifier.padding(top = 12.dp))
         }
@@ -133,12 +183,38 @@ private suspend fun importZipData(
     context: android.content.Context,
     uri: Uri,
     hrDao: HeartRateDao,
-    energyDao: ValidatedEnergyLevelDao
+    validatedEnergyDao: ValidatedEnergyLevelDao,
+    distanceDao: DistanceDao,
+    elevationDao: ElevationGainedDao,
+    predictedEnergyDao: PredictedEnergyLevelDao,
+    hrvDao: HeartRateVariabilityDao,
+    menstruationDao: MenstruationPeriodDao,
+    oxygenDao: OxygenSaturationDao,
+    skinTempDao: SkinTemperatureDao,
+    sleepDao: SleepSessionDao,
+    speedDao: SpeedDao,
+    stepsDao: StepsDao
 ): String {
     val contentResolver = context.contentResolver
-    
+
+    // Lists for all data types
     val hrList = mutableListOf<TempHeartRate>()
-    val energyList = mutableListOf<TempEnergy>()
+    val validatedEnergyList = mutableListOf<TempValidatedEnergy>()
+    val distanceList = mutableListOf<TempDistance>()
+    val elevationList = mutableListOf<TempElevation>()
+    val predictedEnergyList = mutableListOf<TempPredictedEnergy>()
+    val hrvList = mutableListOf<TempHrv>()
+    val menstruationList = mutableListOf<TempMenstruation>()
+    val oxygenList = mutableListOf<TempOxygen>()
+    val skinTempList = mutableListOf<TempSkinTemp>()
+    val sleepList = mutableListOf<TempSleep>()
+    val speedList = mutableListOf<TempSpeed>()
+    val stepsList = mutableListOf<TempSteps>()
+    val allLists = listOf(
+        hrList, validatedEnergyList, distanceList, elevationList, predictedEnergyList, hrvList,
+        menstruationList, oxygenList, skinTempList, sleepList, speedList, stepsList
+    )
+    val allTimestamps = mutableListOf<Instant>()
 
     // 1. Read ZIP
     contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -147,25 +223,41 @@ private suspend fun importZipData(
             while (entry != null) {
                 if (!entry.isDirectory) {
                     val filename = entry.name.lowercase()
-                    // Determine file type by name or content heuristic could be added
-                    // Here we rely on simple naming or trying to parse
-                    val bytes = zipStream.readBytes()
-                    val text = String(bytes)
-                    
-                    if (filename.contains("energy") || text.contains("percentage") || text.contains("Correct") || text.contains("Validation")) {
-                        // Parse Energy first because its signatures are more specific
-                        // and HR generic timestamp check might false-positive on it.
-                        val lines = text.lines()
-                        val parsed = parseEnergyCSV(lines)
-                        if (parsed.isNotEmpty()) {
-                            energyList.addAll(parsed)
-                        }
-                    } else if (filename.contains("heart") || text.contains(",bpm") || 
-                              (text.lines().take(5).any { it.contains("Z,") && !it.contains("percentage") && !it.contains("Correct") })
-                    ) {
-                         // Parse HR
-                         val lines = text.lines()
-                         hrList.addAll(parseHeartRateCSV(lines))
+                    val lines = String(zipStream.readBytes()).lines().drop(1)
+
+                    when {
+                        filename == "heart_rate.csv" -> hrList.addAll(parseHeartRateCSV(lines))
+                        filename == "validated_energy_level.csv" -> validatedEnergyList.addAll(
+                            parseValidatedEnergyCSV(lines)
+                        )
+
+                        filename == "distance.csv" -> distanceList.addAll(parseDistanceCSV(lines))
+                        filename == "elevation.csv" -> elevationList.addAll(parseElevationCSV(lines))
+                        filename == "energy_level.csv" -> predictedEnergyList.addAll(
+                            parsePredictedEnergyCSV(lines)
+                        )
+
+                        filename == "heart_rate_variability.csv" -> hrvList.addAll(parseHrvCSV(lines))
+                        filename == "menstruation.csv" -> menstruationList.addAll(
+                            parseMenstruationCSV(lines)
+                        )
+
+                        filename == "oxygen_saturation.csv" -> oxygenList.addAll(
+                            parseOxygenSaturationCSV(lines)
+                        )
+
+                        filename == "skin_temperature.csv" -> skinTempList.addAll(
+                            parseSkinTemperatureCSV(lines)
+                        )
+
+                        filename == "sleep_sessions.csv" -> sleepList.addAll(
+                            parseSleepSessionsCSV(
+                                lines
+                            )
+                        )
+
+                        filename == "speed.csv" -> speedList.addAll(parseSpeedCSV(lines))
+                        filename == "steps.csv" -> stepsList.addAll(parseStepsCSV(lines))
                     }
                 }
                 zipStream.closeEntry()
@@ -174,132 +266,278 @@ private suspend fun importZipData(
         }
     }
 
-    if (hrList.isEmpty() && energyList.isEmpty()) {
-        return "Keine gültigen Daten gefunden."
+    if (allLists.all { it.isEmpty() }) {
+        return "Keine gültigen Daten in der ZIP-Datei gefunden."
     }
 
     // 2. Calculate Time Shift
-    // Find latest timestamp across all data
-    val maxHrTime = hrList.maxOfOrNull { it.timestamp }
-    val maxEnergyTime = energyList.maxOfOrNull { it.timestamp }
-    
-    val maxSourceInstant = when {
-        maxHrTime != null && maxEnergyTime != null -> if (maxHrTime > maxEnergyTime) maxHrTime else maxEnergyTime
-        maxHrTime != null -> maxHrTime
-        else -> maxEnergyTime!!
-    }
+    allTimestamps.addAll(hrList.map { it.timestamp })
+    allTimestamps.addAll(validatedEnergyList.map { it.timestamp })
+    allTimestamps.addAll(distanceList.map { it.start })
+    allTimestamps.addAll(elevationList.map { it.start })
+    allTimestamps.addAll(predictedEnergyList.map { it.timestamp })
+    allTimestamps.addAll(hrvList.map { it.timestamp })
+    allTimestamps.addAll(menstruationList.map { it.start })
+    allTimestamps.addAll(oxygenList.map { it.timestamp })
+    allTimestamps.addAll(skinTempList.map { it.timestamp })
+    allTimestamps.addAll(sleepList.map { it.start })
+    allTimestamps.addAll(speedList.map { it.timestamp })
+    allTimestamps.addAll(stepsList.map { it.start })
 
-    // Determine "last complete day" in source
-    // Simple heuristic: The day of the max timestamp is "today" in source context.
-    // If we want the "last complete day" to map to "today", we might need to shift differently.
-    // User request: "der tag heute soll der tag aus den daten sein, die als letztes vollständig vorlagen"
-    // Interpretation: If data goes up to 2025-12-19 23:59, then 2025-12-19 is the last complete day.
-    // We map 2025-12-19 to Today (e.g. 2024-XX-XX).
-    // So the offset is: Today.StartOfDay - SourceMax.StartOfDay.
-    // This preserves the time of day.
-    
+    val maxSourceInstant = allTimestamps.maxOrNull() ?: return "Keine Zeitstempel gefunden."
+
     val timeZone = TimeZone.currentSystemDefault()
     val sourceDate = maxSourceInstant.toLocalDateTime(timeZone).date
     val todayDate = Clock.System.now().toLocalDateTime(timeZone).date
-    
-    // We want SourceDate to become TodayDate
-    // But wait, if source is "last complete day", usually implies the day BEFORE the max timestamp if max timestamp is essentially "now".
-    // However, if the user provides a dataset that ends on a specific day, they usually treat that whole day as data.
-    // Let's align SourceDate -> TodayDate.
-    
-    // Calculate offset in milliseconds
-    // Since we are dealing with Instants, simpler way:
-    // Offset = TodayNoon - SourceNoon (to avoid DST edge cases slightly)
-    val sourceNoon = kotlinx.datetime.LocalDateTime(sourceDate, kotlinx.datetime.LocalTime(12,0)).toInstant(timeZone)
-    val todayNoon = kotlinx.datetime.LocalDateTime(todayDate, kotlinx.datetime.LocalTime(12,0)).toInstant(timeZone)
-    
+    val sourceNoon = kotlinx.datetime.LocalDateTime(sourceDate, kotlinx.datetime.LocalTime(12, 0))
+        .toInstant(timeZone)
+    val todayNoon = kotlinx.datetime.LocalDateTime(todayDate, kotlinx.datetime.LocalTime(12, 0))
+        .toInstant(timeZone)
     val offset = todayNoon - sourceNoon
-    
-    // 3. Shift and Insert
-    var countHr = 0
-    var countEnergy = 0
-    
-    val newHrEntries = hrList.map { 
-        HeartRateEntry(
-            time = it.timestamp + offset,
-            bpm = it.bpm
-        )
-    }
-    
-    val newEnergyEntries = energyList.map {
-        ValidatedEnergyLevelEntry(
-            time = it.timestamp + offset,
-            validation = it.validation,
-            percentage = it.percentage
-        )
-    }
-    
-    // Insert in DB
-    newHrEntries.forEach { hrDao.insert(it); countHr++ }
-    newEnergyEntries.forEach { energyDao.insert(it); countEnergy++ }
 
-    return "Import erfolgreich. Zeitverschiebung: ${offset.inWholeDays} Tage.\nHR: $countHr, Energy: $countEnergy"
+    // 3. Shift and Insert
+    hrList.forEach { hrDao.insert(HeartRateEntry(time = it.timestamp + offset, bpm = it.bpm)) }
+    validatedEnergyList.forEach {
+        validatedEnergyDao.insert(
+            ValidatedEnergyLevelEntry(
+                time = it.timestamp + offset,
+                validation = it.validation,
+                percentage = it.percentage
+            )
+        )
+    }
+    distanceList.forEach {
+        distanceDao.insert(
+            DistanceEntry(
+                start = it.start + offset,
+                end = it.start + offset + 1.seconds,
+                length = Length(it.distanceMeters)
+            )
+        )
+    }
+    elevationList.forEach {
+        elevationDao.insert(
+            ElevationGainedEntry(
+                start = it.start + offset,
+                end = it.start + offset + 1.seconds,
+                length = Length(it.elevationMeters)
+            )
+        )
+    }
+
+    hrvList.forEach {
+        hrvDao.insert(
+            HeartRateVariabilityEntry(
+                time = it.timestamp + offset,
+                variability = it.variability
+            )
+        )
+    }
+    menstruationList.forEach {
+        menstruationDao.insert(
+            MenstruationPeriodEntry(
+                start = it.start + offset,
+                end = it.end + offset
+            )
+        )
+    }
+    oxygenList.forEach {
+        oxygenDao.insert(
+            OxygenSaturationEntry(
+                time = it.timestamp + offset,
+                percentage = Percentage(it.saturation),
+            )
+        )
+    }
+    skinTempList.forEach {
+        skinTempDao.insert(
+            SkinTemperatureEntry(
+                time = it.timestamp + offset,
+                temperature = Temperature(it.tempCelsius)
+            )
+        )
+    }
+    sleepList.forEach {
+        sleepDao.insert(
+            SleepSessionEntry(
+                start = it.start + offset,
+                end = it.end + offset,
+                stage = it.stage
+            )
+        )
+    }
+    speedList.forEach {
+        speedDao.insert(
+            SpeedEntry(
+                time = it.timestamp + offset,
+                velocity = Velocity(it.speed)
+            )
+        )
+    }
+    stepsList.forEach {
+        stepsDao.insert(
+            StepsEntry(
+                start = it.start + offset,
+                end = it.end + offset,
+                count = it.count
+            )
+        )
+    }
+
+    val summary = listOf(
+        "HR" to hrList.size,
+        "ValidatedEnergy" to validatedEnergyList.size,
+        "Distance" to distanceList.size,
+        "Elevation" to elevationList.size,
+        "PredictedEnergy" to predictedEnergyList.size,
+        "HRV" to hrvList.size,
+        "Menstruation" to menstruationList.size,
+        "Oxygen" to oxygenList.size,
+        "SkinTemp" to skinTempList.size,
+        "Sleep" to sleepList.size,
+        "Speed" to speedList.size,
+        "Steps" to stepsList.size
+    ).filter { it.second > 0 }.joinToString("\n") { "${it.first}: ${it.second}" }
+
+    return "Import erfolgreich. Zeitverschiebung: ${offset.inWholeDays} Tage.\n$summary"
 }
+
+// ---- Temporary Data Classes ----
+private data class TempHeartRate(val timestamp: Instant, val bpm: Long)
+private data class TempValidatedEnergy(
+    val timestamp: Instant,
+    val percentage: Percentage,
+    val validation: Validation
+)
+
+private data class TempDistance(val start: Instant, val distanceMeters: Double)
+private data class TempElevation(val start: Instant, val elevationMeters: Double)
+private data class TempPredictedEnergy(val timestamp: Instant, val energyLevel: Double)
+private data class TempHrv(val timestamp: Instant, val variability: Double)
+private data class TempMenstruation(val start: Instant, val end: Instant)
+private data class TempOxygen(val timestamp: Instant, val saturation: Double)
+private data class TempSkinTemp(val timestamp: Instant, val tempCelsius: Double)
+private data class TempSleep(val start: Instant, val end: Instant, val stage: SleepStage)
+private data class TempSpeed(val timestamp: Instant, val speed: Double)
+private data class TempSteps(val start: Instant, val end: Instant, val count: Long)
 
 // ---- Parsers ----
+private fun parseHeartRateCSV(lines: List<String>): List<TempHeartRate> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p -> TempHeartRate(Instant.parse(p[0]), p[1].toLong()) }
+    } catch (e: Exception) {
+        null
+    }
+}
 
-private data class TempHeartRate(val timestamp: Instant, val bpm: Long)
-private data class TempEnergy(val timestamp: Instant, val percentage: Percentage, val validation: Validation)
-
-private fun parseHeartRateCSV(lines: List<String>): List<TempHeartRate> {
-    return lines.mapNotNull { line ->
-        // Format: timestamp,bpm
-        // 2025-12-19T00:00:00Z,60
-        val parts = line.split(",")
-        if (parts.size < 2) return@mapNotNull null
-        
+private fun parseValidatedEnergyCSV(lines: List<String>): List<TempValidatedEnergy> =
+    lines.mapNotNull { line ->
         try {
-            // Trim and clean
-            val tsString = parts[0].trim()
-            val bpmString = parts[1].trim()
-            
-            // Skip header
-            if (tsString.lowercase().contains("timestamp")) return@mapNotNull null
-            
-            val timestamp = Instant.parse(tsString)
-            val bpm = bpmString.toDouble().toLong() // handle 60.0 if present
-            
-            TempHeartRate(timestamp, bpm)
+            line.split(",").let { p ->
+                val pctVal = p[2].trimEnd('%').toDouble() / 100.0
+                val validation =
+                    if (p[1].equals("Adjusted", true)) Validation.Adjusted else Validation.Correct
+                TempValidatedEnergy(Instant.parse(p[0]), Percentage(pctVal), validation)
+            }
         } catch (e: Exception) {
             null
         }
     }
+
+private fun parseDistanceCSV(lines: List<String>): List<TempDistance> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p -> TempDistance(Instant.parse(p[0]), p[1].toDouble()) }
+    } catch (e: Exception) {
+        null
+    }
 }
 
-private fun parseEnergyCSV(lines: List<String>): List<TempEnergy> {
-    return lines.mapNotNull { line ->
-        // Format: timestamp,percentage,validation
-         // 2025-12-19T10:28:18.059Z,47.22656394845787%,Correct
-        val parts = line.split(",")
-        if (parts.size < 2) return@mapNotNull null
+private fun parseElevationCSV(lines: List<String>): List<TempElevation> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p -> TempElevation(Instant.parse(p[0]), p[1].toDouble()) }
+    } catch (e: Exception) {
+        null
+    }
+}
 
+private fun parsePredictedEnergyCSV(lines: List<String>): List<TempPredictedEnergy> =
+    lines.mapNotNull { line ->
         try {
-             val tsString = parts[0].trim()
-             if (tsString.lowercase().contains("timestamp")) return@mapNotNull null
-             
-             val timestamp = Instant.parse(tsString)
-             var pctString = parts[1].trim()
-             if (pctString.endsWith("%")) pctString = pctString.dropLast(1)
-             val pctVal = pctString.toDouble() / 100.0 // "47.22" usually implies percent if valid DB stores 0.0-1.0?
-             // Actually database Percentage class handles 0.0 - 1.0 mostly.
-             // If string was "47.22%", it means 0.4722.
-             // If string was "0.47", it means 0.47.
-             // Let's assume if > 1.0 it is percentage 0-100, else ratio.
-             // But here we explicitly divide by 100 because user said "47.22%".
-             
-             val percentage = Percentage(pctVal.coerceIn(0.0, 1.0))
-             
-             val validationStr = if (parts.size > 2) parts[2].trim() else "Correct"
-             val validation = if (validationStr.equals("Adjusted", ignoreCase = true)) Validation.Adjusted else Validation.Correct
-             
-             TempEnergy(timestamp, percentage, validation)
+            line.split(",").let { p -> TempPredictedEnergy(Instant.parse(p[0]), p[1].toDouble()) }
         } catch (e: Exception) {
             null
         }
+    }
+
+private fun parseHrvCSV(lines: List<String>): List<TempHrv> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p -> TempHrv(Instant.parse(p[0]), p[1].toDouble()) }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun parseMenstruationCSV(lines: List<String>): List<TempMenstruation> =
+    lines.mapNotNull { line ->
+        try {
+            line.split(",").let { p ->
+                TempMenstruation(
+                    Instant.parse(p[0]),
+                    Instant.fromEpochMilliseconds(p[1].toLong())
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+private fun parseOxygenSaturationCSV(lines: List<String>): List<TempOxygen> =
+    lines.mapNotNull { line ->
+        try {
+            line.split(",").let { p -> TempOxygen(Instant.parse(p[0]), p[1].toDouble()) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+private fun parseSkinTemperatureCSV(lines: List<String>): List<TempSkinTemp> =
+    lines.mapNotNull { line ->
+        try {
+            line.split(",").let { p -> TempSkinTemp(Instant.parse(p[0]), p[1].toDouble()) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+private fun parseSleepSessionsCSV(lines: List<String>): List<TempSleep> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p ->
+            val stage = SleepStage.valueOf(p[2])
+            TempSleep(Instant.parse(p[0]), Instant.fromEpochMilliseconds(p[1].toLong()), stage)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun parseSpeedCSV(lines: List<String>): List<TempSpeed> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p -> TempSpeed(Instant.parse(p[0]), p[1].toDouble()) }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun parseStepsCSV(lines: List<String>): List<TempSteps> = lines.mapNotNull { line ->
+    try {
+        line.split(",").let { p ->
+            TempSteps(
+                Instant.parse(p[0]),
+                Instant.fromEpochMilliseconds(p[1].toLong()),
+                p[2].toLong()
+            )
+        }
+    } catch (e: Exception) {
+        null
     }
 }

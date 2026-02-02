@@ -1,9 +1,6 @@
-package org.htwk.pacing.math
+package org.htwk.pacing.backend.predictor
 
-import org.htwk.pacing.ui.math.discreteDerivative
-import org.htwk.pacing.ui.math.discreteTrapezoidalIntegral
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Test
 import kotlin.math.PI
 import kotlin.math.cos
@@ -21,14 +18,14 @@ class DiscreteCalculusTest {
         val input = doubleArrayOf(2.0, 5.0)
         val expected = doubleArrayOf(3.0, 3.0)
         val result = input.discreteDerivative()
-        assertArrayEquals(expected, result, 1e-9)
+        Assert.assertArrayEquals(expected, result, 1e-9)
     }
 
     @Test
     fun testDerivativeConstantSignal() {
         val input = doubleArrayOf(1.0, 1.0, 1.0, 1.0)
         val result = input.discreteDerivative()
-        result.forEach { assertEquals(0.0, it, 1e-9) }
+        result.forEach { Assert.assertEquals(0.0, it, 1e-9) }
     }
 
     @Test
@@ -36,7 +33,7 @@ class DiscreteCalculusTest {
         // y = 2x -> derivative (unnormalized) = 4, since the function does not divide by 2
         val input = doubleArrayOf(0.0, 2.0, 4.0, 6.0, 8.0)
         val result = input.discreteDerivative()
-        result.forEach { assertEquals(4.0, it, 1e-9) }
+        result.forEach { Assert.assertEquals(4.0, it, 1e-9) }
     }
 
     @Test
@@ -44,7 +41,7 @@ class DiscreteCalculusTest {
         val input = doubleArrayOf(1.0, 1.0, 1.0, 1.0)
         val expected = doubleArrayOf(0.0, 1.0, 2.0, 3.0)
         val result = input.discreteTrapezoidalIntegral()
-        assertArrayEquals(expected, result, 1e-9)
+        Assert.assertArrayEquals(expected, result, 1e-9)
     }
 
     @Test
@@ -52,7 +49,7 @@ class DiscreteCalculusTest {
         val input = doubleArrayOf(1.0, 1.0, 1.0)
         val expected = doubleArrayOf(5.0, 6.0, 7.0)
         val result = input.discreteTrapezoidalIntegral(initialOffset = 5.0)
-        assertArrayEquals(expected, result, 1e-9)
+        Assert.assertArrayEquals(expected, result, 1e-9)
     }
 
     @Test
@@ -60,7 +57,7 @@ class DiscreteCalculusTest {
         val input = doubleArrayOf(0.0, 1.0, 2.0, 3.0)
         val expected = doubleArrayOf(0.0, 0.5, 2.0, 4.5)
         val result = input.discreteTrapezoidalIntegral()
-        assertArrayEquals(expected, result, 1e-9)
+        Assert.assertArrayEquals(expected, result, 1e-9)
     }
 
     @Test
@@ -86,7 +83,7 @@ class DiscreteCalculusTest {
         //explanation: doing a discrete derivative always leads an initial offset, because we can't
         //know the derivative at the first point, the discreteDerivate() tries to estimate it, but we need to leave a little error margin
         //also: we observed that the error doesn't accumulate over time, there's simply a small initial offset
-        assertArrayEquals(expected, result, 0.02)
+        Assert.assertArrayEquals(expected, result, 0.02)
     }
 
     @Test
@@ -104,6 +101,6 @@ class DiscreteCalculusTest {
         val expected = sinValues
 
         val result = input.discreteTrapezoidalIntegral()
-        assertArrayEquals(expected, result, 0.02)
+        Assert.assertArrayEquals(expected, result, 0.02)
     }
 }

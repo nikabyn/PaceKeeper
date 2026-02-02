@@ -46,7 +46,8 @@ data class UserProfileEntry(
 
     val themeMode: String = "AUTO", // LIGHT, DARK, or AUTO
     val checkedIn: Boolean,
-    val predictionModel: String = "DEFAULT"
+    val predictionModel: String = "DEFAULT",
+    val simulationEnabled: Boolean = false
 ) {
     enum class Sex { MALE, FEMALE, OTHER, UNSPECIFIED }
 
@@ -102,6 +103,7 @@ data class UserProfileEntry(
                 themeMode = "AUTO",
                 checkedIn = false,
                 predictionModel = "DEFAULT",
+                simulationEnabled = false
             )
         }
     }

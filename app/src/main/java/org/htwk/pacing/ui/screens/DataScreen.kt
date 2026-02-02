@@ -29,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.htwk.pacing.R
 import org.htwk.pacing.ui.components.Button
-import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.ImportDataHealthConnect
 import org.htwk.pacing.ui.components.ImportDemoDataHealthConnect
 import org.htwk.pacing.ui.components.ModeViewModel
@@ -73,63 +72,71 @@ fun DataScreen(
 
             org.htwk.pacing.ui.components.ZipDataImport_import_temp(
                 heartRateDao = settingsViewModel.db.heartRateDao(),
-                validatedEnergyLevelDao = settingsViewModel.db.validatedEnergyLevelDao()
+                validatedEnergyLevelDao = settingsViewModel.db.validatedEnergyLevelDao(),
+                distanceDao = settingsViewModel.db.distanceDao(),
+                elevationGainedDao = settingsViewModel.db.elevationGainedDao(),
+                predictedEnergyLevelDao = settingsViewModel.db.predictedEnergyLevelDao(),
+                heartRateVariabilityDao = settingsViewModel.db.heartRateVariabilityDao(),
+                menstruationPeriodDao = settingsViewModel.db.menstruationPeriodDao(),
+                oxygenSaturationDao = settingsViewModel.db.oxygenSaturationDao(),
+                skinTemperatureDao = settingsViewModel.db.skinTemperatureDao(),
+                sleepSessionsDao = settingsViewModel.db.sleepSessionsDao(),
+                speedDao = settingsViewModel.db.speedDao(),
+                stepsDao = settingsViewModel.db.stepsDao()
             )
-
 
             ImportDemoDataHealthConnect()
 
-
-                Card(
-                    colors = CardStyle.colors,
-                    shape = CardStyle.shape,
-                    modifier = Modifier.fillMaxWidth()
+            Card(
+                colors = CardStyle.colors,
+                shape = CardStyle.shape,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = Spacing.large,
+                        vertical = Spacing.largeIncreased
+                    )
                 ) {
-                    Column(
-                        modifier = Modifier.padding(
-                            horizontal = Spacing.large,
-                            vertical = Spacing.largeIncreased
-                        )
-                    ) {
-                        Text(
-                            stringResource(R.string.stored_data),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                    Text(
+                        stringResource(R.string.stored_data),
+                        style = MaterialTheme.typography.titleMedium
+                    )
 
-                        var showDialog by remember { mutableStateOf(false) }
-                        Button(
-                            onClick = { showDialog = true },
-                            style = PrimaryButtonStyle,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.export_data_to_zip_archive))
-                        }
-                        Spacer(modifier = Modifier.height(Spacing.large))
-                        if (showDialog) {
-                            AlertDialog(
-                                onDismissRequest = { showDialog = false },
-                                title = { Text(stringResource(R.string.data_protection_notice)) },
-                                text = {
-                                    Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
-                                },
-                                confirmButton = {
-                                    TextButton(
-                                        onClick = {
-                                            showDialog = false
-                                            launcher.launch("pacing_export.zip")
-                                        }) {
-                                        Text(stringResource(R.string.agree))
-                                    }
-                                },
-                                dismissButton = {
-                                    TextButton(onClick = { showDialog = false }) {
-                                        Text(stringResource(R.string.cancel))
-                                    }
+                    var showDialog by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = { showDialog = true },
+                        style = PrimaryButtonStyle,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.export_data_to_zip_archive))
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.large))
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDialog = false },
+                            title = { Text(stringResource(R.string.data_protection_notice)) },
+                            text = {
+                                Text(stringResource(R.string.personalised_data_will_be_stored_by_exporting_please_consent_to_the_processing))
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        showDialog = false
+                                        launcher.launch("pacing_export.zip")
+                                    }) {
+                                    Text(stringResource(R.string.agree))
                                 }
-                            )
-                        }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDialog = false }) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                            }
+                        )
                     }
                 }
             }
         }
     }
+}

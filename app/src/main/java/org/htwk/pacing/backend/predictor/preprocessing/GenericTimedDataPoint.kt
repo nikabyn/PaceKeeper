@@ -11,7 +11,11 @@ import org.htwk.pacing.backend.database.SleepSessionEntry
 import org.htwk.pacing.backend.database.SleepStage
 import org.htwk.pacing.backend.database.SpeedEntry
 import org.htwk.pacing.backend.database.StepsEntry
+import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
+import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.preprocessing.GenericTimedDataPointTimeSeries.GenericTimedDataPoint
+import kotlin.math.pow
+import kotlin.math.sign
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -34,12 +38,13 @@ fun ensureData(id: Int, genericTS: GenericTimedDataPointTimeSeries): GenericTime
     if (genericTS.data.size >= 2) {
         return genericTS //TODO: handle case where data exists at near one of the edges, but otherwise
     }
-    val random: Random = Random(id)
 
-    val steps = genericTS.duration.inWholeHours.toInt()
-    val stepDuration = 1.hours
+    val random = Random(id)
 
-    val data = List<GenericTimedDataPoint>(steps) { index ->
+    val stepDuration = Predictor.TIME_SERIES_STEP_DURATION
+    val steps = (genericTS.duration / stepDuration).toInt() // Recalculate count
+
+    val data: List<GenericTimedDataPoint> = List(steps) { index ->
         GenericTimedDataPoint(
             time = genericTS.timeStart + stepDuration * index,
             value = random.nextDouble(0.0, 1.0)

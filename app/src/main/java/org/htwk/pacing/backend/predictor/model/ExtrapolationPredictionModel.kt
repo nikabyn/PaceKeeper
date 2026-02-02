@@ -1,14 +1,14 @@
 
 package org.htwk.pacing.backend.predictor.model
 
-import android.util.Log
+//import android.util.Log
+import org.htwk.pacing.backend.predictor.Log
 import org.htwk.pacing.backend.predictor.Predictor
 import org.htwk.pacing.backend.predictor.linalg.LinearAlgebraSolver.leastSquaresTikhonov
 import org.htwk.pacing.backend.predictor.model.IPredictionModel.PredictionHorizon
 import org.htwk.pacing.backend.predictor.preprocessing.MultiTimeSeriesDiscrete
-import org.htwk.pacing.backend.predictor.preprocessing.PIDComponent
+import org.htwk.pacing.backend.predictor.preprocessing.FeatureComponent
 import org.htwk.pacing.backend.predictor.stats.StochasticDistribution
-import org.htwk.pacing.backend.predictor.stats.denormalize
 import org.htwk.pacing.backend.predictor.stats.normalize
 import org.htwk.pacing.backend.predictor.stats.normalizeSingleValue
 import org.jetbrains.kotlinx.multik.api.linalg.dot
@@ -31,8 +31,8 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.toList
  * The model learns linear coefficients via Tikhonov regularized least squares regression
  * using preprocessed time-series data provided by an [IPreprocessor].
  */
-object LinearCombinationPredictionModel : IPredictionModel {
-    private var LOGGING_TAG = "LinearCombinationPredictionModel"
+object ExtrapolationPredictionModel : IPredictionModel {
+    private var LOGGING_TAG = "ExtrapolationPredictionModel"
 
     //stores "learned" / regressed linear coefficients per Horizon
     private data class PerHorizonModel(
@@ -124,7 +124,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
             extrapolations.map { (_, line) ->
                 val result = line.getExtrapolationResult()
-                if (featureID.component == PIDComponent.INTEGRAL) result - timeSeries.first() else result
+                if (featureID.component == FeatureComponent.INTEGRAL) result - timeSeries.first() else result
             }
         }
 
@@ -153,7 +153,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
             (allExtrapolationsMatrix[i] as D1Array<Double>).normalize()
         }
 
-        val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector).toList()
+        val coefficients = leastSquaresTikhonov(allExtrapolationsMatrix.transpose(), allExpectedFutureValuesVector, lastIsBias = true).toList()
 
         val bias = coefficients.last()
 
@@ -165,12 +165,12 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @param input The [MultiTimeSeriesDiscrete] object containing the preprocessed
      *              time series data, such as heart rate.
-     * @param targetTimeSeriesDiscrete The target energy level data used for training.
+     * @param trainTarget The target energy level data used for training.
      */
-    fun train(input: MultiTimeSeriesDiscrete, targetTimeSeriesDiscrete: DoubleArray) {
+    override fun train(input: MultiTimeSeriesDiscrete, trainTarget: DoubleArray) {
         Log.i(LOGGING_TAG, "input duration: ${input.getDuration()}")
         //Also normalize the target variable and store its distribution
-        val targetArray = mk.ndarray(targetTimeSeriesDiscrete)
+        val targetArray = mk.ndarray(trainTarget)
         val targetStochasticDistribution = targetArray.normalize()
 
         Log.i(LOGGING_TAG, "target data distribution: (mean:" +
@@ -210,20 +210,21 @@ object LinearCombinationPredictionModel : IPredictionModel {
      *
      * @param input The [MultiTimeSeriesDiscrete] object containing the preprocessed
      *              time series data, such as heart rate.
-     * @param predictionHorizon The prediction horizon for which to make the prediction.
+     * @param horizon The prediction horizon for which to make the prediction.
      * @return A [Double] representing the predicted energy level.
      */
     override fun predict(
         input: MultiTimeSeriesDiscrete,
-        predictionHorizon: PredictionHorizon
+        offset: Int,
+        horizon: PredictionHorizon
     ): Double {
         require(model != null) { "No model trained, can't perform prediction." }
 
-        val perHorizonModel = model!!.perHorizonModels[predictionHorizon]!!
+        val perHorizonModel = model!!.perHorizonModels[horizon]!!
 
         //drop last element, because it is the bias, normalizing it is useless anyways
         val flattenedExtrapolations =
-            generateFlattenedMultiExtrapolationResults(input, 0, predictionHorizon).dropLast(1)
+            generateFlattenedMultiExtrapolationResults(input, 0, horizon).dropLast(1)
 
         Log.i(LOGGING_TAG, "prediction extrapolations: " + flattenedExtrapolations.joinToString(", ") { "%.2e".format(it) })
 
@@ -238,7 +239,7 @@ object LinearCombinationPredictionModel : IPredictionModel {
 
         val prediction = mk.ndarray(listOf(mk.linalg.dot(extrapolationsVector, extrapolationWeights) + perHorizonModel.bias))
         //denormalize prediction out of normalized spaces
-        prediction.denormalize(model!!.targetStochasticDistribution)
+        //prediction.denormalize(model!!.targetStochasticDistribution)
 
         Log.i(LOGGING_TAG, "prediction result: ${prediction.first()}")
 

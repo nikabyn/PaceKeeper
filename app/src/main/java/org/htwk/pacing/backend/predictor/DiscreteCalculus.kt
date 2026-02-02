@@ -1,4 +1,4 @@
-package org.htwk.pacing.ui.math
+package org.htwk.pacing.backend.predictor
 
 //SEE: ui#38 comment for explanation on this file
 
@@ -81,4 +81,70 @@ fun DoubleArray.discreteTrapezoidalIntegral(initialOffset: Double = 0.0): Double
         out[i] = cumSum
     }
     return out
+}
+
+fun centeredMovingAverage(data: DoubleArray, window: Int): DoubleArray {
+    require(window > 0 && window % 2 == 0) {
+        "Window must be a positive even number for centered average"
+    }
+
+    val n = data.size
+    val half = window / 2
+    val result = DoubleArray(n)
+
+    // Prefix sums
+    val prefix = DoubleArray(n + 1)
+    for (i in 0 until n) prefix[i + 1] = prefix[i] + data[i]
+
+    for (i in 0 until n) {
+        val start = i - half
+        val end = start + window
+
+        if (start < 0) {
+            result[i] = data.first()
+            continue
+        } else if (end > n) {
+            result[i] = data.last()
+            continue
+        }
+
+        result[i] = (prefix[end] - prefix[start]) / window
+    }
+
+    return result
+}
+
+fun DoubleArray.causalMovingAverage(window: Int): DoubleArray {
+    val smoothed = DoubleArray(size)
+    var sum = 0.0
+    for (i in indices) {
+        sum += this[i]
+        if (i >= window) sum -= this[i - window]
+        smoothed[i] = sum / (i + 1).coerceAtMost(window)
+    }
+    return smoothed
+}
+
+/**
+ * Applies an Exponential Moving Average (Low-Pass Filter).
+ * Reduces lag compared to SMA by weighting recent values higher.
+ * * @param alpha Smoothing factor (0.0 - 1.0).
+ * Higher alpha = Less smoothing, Faster reaction (Less lag).
+ * Lower alpha  = More smoothing, Slower reaction (More lag).
+ * Typical value for "Window 3 equivalent": ~0.5
+ */
+fun DoubleArray.causalExponentialMovingAverage(alpha: Double): DoubleArray {
+    if (isEmpty()) return this
+    val smoothed = DoubleArray(size)
+
+    // Initialize with the first value
+    var currentLevel = this[0]
+    smoothed[0] = currentLevel
+
+    for (i in 1 until size) {
+        // Formula: NewValue = (Raw * Alpha) + (OldSmoothed * (1 - Alpha))
+        currentLevel = (this[i] * alpha) + (currentLevel * (1.0 - alpha))
+        smoothed[i] = currentLevel
+    }
+    return smoothed
 }

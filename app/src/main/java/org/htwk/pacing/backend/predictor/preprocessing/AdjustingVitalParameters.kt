@@ -17,7 +17,8 @@ fun adjustHR(
     hr: Double,
     fixedParameters: Predictor.FixedParameters
 ): Double {
-    val threshold = fixedParameters.anaerobicThresholdBPM
+    //clamp to 50.0 bpm to prevent zero div. and get the value to a somewhat sensible range
+    val threshold = fixedParameters.anaerobicThresholdBPM.coerceAtLeast(50.0)
     val overload = ((hr - threshold) / threshold).coerceAtLeast(0.0)
 
     val intensityFactor =

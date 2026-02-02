@@ -11,9 +11,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -37,6 +34,7 @@ import org.htwk.pacing.backend.database.UserProfileDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelDao
 import org.htwk.pacing.backend.database.ValidatedEnergyLevelEntry
 import org.htwk.pacing.backend.database.Validation
+import org.htwk.pacing.backend.predictor.model.IPredictionModel
 import org.htwk.pacing.ui.components.BatteryCard
 import org.htwk.pacing.ui.components.DemoBanner
 import org.htwk.pacing.ui.components.EnergyPredictionCard
@@ -46,12 +44,11 @@ import org.htwk.pacing.ui.components.ModeViewModel
 import org.htwk.pacing.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
-import kotlin.time.Duration.Companion.hours
-
 data class EnergyGraphData(
     val entries: List<PredictedEnergyLevelEntry>,
     val currentValue: Double,
-    val futureValue: Double
+    val futureValue: Double,
+    val simulationEnabled: Boolean
 )
 
 @Composable
@@ -62,10 +59,23 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     modeViewModel: ModeViewModel = koinViewModel()
 ) {
+
     val energyGraphData by viewModel.predictedEnergyLevel.collectAsState()
     val currentEnergy = energyGraphData.currentValue
-    val minPrediction = energyGraphData.futureValue - 0.1
-    val maxPrediction = energyGraphData.futureValue + 0.1
+
+    val currentTime =
+        if (energyGraphData.simulationEnabled and energyGraphData.entries.isNotEmpty()) {
+            energyGraphData.entries.last().time
+        } else {
+            Clock.System.now()
+        }
+
+    val futureValues = energyGraphData.entries
+        .filter { it.timeFuture in currentTime..(currentTime + IPredictionModel.PredictionHorizon.FUTURE.howFar) }
+        .map { it.percentageFuture.toDouble() }
+
+    val minPrediction = futureValues.minOrNull() ?: currentEnergy
+    val maxPrediction = futureValues.maxOrNull() ?: currentEnergy
     val avgPrediction = energyGraphData.futureValue
 
     Box(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -85,7 +95,8 @@ fun HomeScreen(
                     minPrediction = minPrediction.toFloat(),
                     avgPrediction = avgPrediction.toFloat(),
                     maxPrediction = maxPrediction.toFloat(),
-                    modifier = Modifier.height(300.dp)
+                    modifier = Modifier.height(300.dp),
+                    currentTime = currentTime
                 )
                 LabelCard(energy = currentEnergy)
                 BatteryCard(
@@ -105,49 +116,45 @@ class HomeViewModel(
     private val validatedEnergyLevelDao: ValidatedEnergyLevelDao,
     private val userProfileDao: UserProfileDao,
 ) : ViewModel() {
+
     @OptIn(FlowPreview::class)
     val predictedEnergyLevel = userProfileDao.getProfileLive()
-        .map { profile -> profile?.predictionModel ?: "DEFAULT" }
-        .flatMapLatest { model ->
-            // Choose the correct DAO based on the model setting
-            if (model == "MODEL2") {
+        .flatMapLatest { profile ->
+            //capture state from profile, to know which model to use and whether to show simulation
+            val model = profile?.predictionModel ?: "DEFAULT"
+            val simulationEnabled = profile?.simulationEnabled == true
+
+            //switch DAO based on model selection
+            val daoFlow = if (model == "MODEL2") {
                 predictedEnergyLevelModell2Dao.getAllLive().map { entries ->
-                    entries.map { PredictedEnergyLevelEntry(
-                        time = it.time,
-                        percentageNow = it.percentageNow,
-                        timeFuture = it.timeFuture,
-                        percentageFuture = it.percentageFuture) }
+                    entries.map {
+                        PredictedEnergyLevelEntry(
+                            it.time, it.percentageNow, it.timeFuture, it.percentageFuture
+                        )
+                    }
                 }
             } else {
                 predictedEnergyLevelDao.getAllLive()
             }
+
+            //map entries to UI State, also pass simulation flag
+            daoFlow.map { entries ->
+                val sortedEntries = entries.sortedBy { it.time }
+                val latest = sortedEntries.lastOrNull()
+
+                EnergyGraphData(
+                    entries = sortedEntries,
+                    currentValue = latest?.percentageNow?.toDouble() ?: 0.5,
+                    futureValue = latest?.percentageFuture?.toDouble() ?: 0.5,
+                    simulationEnabled = simulationEnabled
+                )
+            }
         }
         .debounce(200)
-        .map { entries ->
-            val now = Clock.System.now()
-            val windowStart = (now - 24.hours).toEpochMilliseconds()
-            val windowEnd = now.toEpochMilliseconds()
-
-            // Filter entries to show last 24 hours
-            val filteredEntries = entries.filter {
-                it.time.toEpochMilliseconds() in windowStart..windowEnd
-            }.sortedBy { it.time }
-
-            if (filteredEntries.isEmpty()) {
-                return@map EnergyGraphData(emptyList(), 0.5, 0.5)
-            }
-
-            val latestEntry = filteredEntries.last()
-
-            EnergyGraphData(
-                    filteredEntries,
-                latestEntry.percentageNow.toDouble(),
-                latestEntry.percentageFuture.toDouble()
-            )
-        }.stateIn(
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = EnergyGraphData(emptyList(), 0.5, 0.5)
+            initialValue = EnergyGraphData(emptyList(), 0.5, 0.5, false)
         )
 
     fun storeValidatedEnergyLevel(validation: Validation, energy: Double) {

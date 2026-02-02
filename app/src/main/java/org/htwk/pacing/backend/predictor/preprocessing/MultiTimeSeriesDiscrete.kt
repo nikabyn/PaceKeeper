@@ -63,13 +63,13 @@ import kotlin.time.Duration
  * This allows efficient appending without constantly reallocating memory.
  *
  * Each feature is identified by a [FeatureID], which is a combination of
- * a [TimeSeriesMetric] and a [PIDComponent].
+ * a [TimeSeriesMetric] and a [FeatureComponent].
  *
  * @param timeStart The timestamp of timestep 0 for all contained time series.
  * @param initialCapacityInSteps Initial internal storage capacity (column count) before reallocation is needed.
  */
 class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: Int = 512) {
-    data class FeatureID(val metric: TimeSeriesMetric, val component: PIDComponent)
+    data class FeatureID(val metric: TimeSeriesMetric, val component: FeatureComponent)
 
     // ---- internal state tracking ----
     private var stepCount: Int = 0
@@ -238,7 +238,7 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          * This map is a critical lookup table for quickly finding the correct row for a given
          * metric (e.g., `HEART_RATE`) and component (e.g., `P`). It is initialized once by
          * iterating through all defined [TimeSeriesMetric] entries and their associated
-         * [PIDComponent]s, assigning a unique, sequential integer index to each combination.
+         * [FeatureComponent]s, assigning a unique, sequential integer index to each combination.
          *
          * For example:
          * - `FeatureID(HEART_RATE, P)` -> `0`
@@ -249,17 +249,28 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
          *
          * This allows for efficient, `O(1)` access to a feature's time series data row within the matrix.
          */
-        private val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
+        val featureIndexMap: Map<FeatureID, Int> = TimeSeriesMetric.entries
             .map { metric ->
-                metric.signalClass.components.map { component ->
-                    FeatureID(
-                        metric,
-                        component
-                    )
+                metric.allComponents.map { component ->
+                    FeatureID(metric, component)
                 }
             }.flatten().mapIndexed { index, featureID -> featureID to index }.toMap()
 
         private val featureCount: Int = featureIndexMap.size
+
+        fun fromSubSlice(input: MultiTimeSeriesDiscrete, indexStart: Int, indexEnd: Int) : MultiTimeSeriesDiscrete {
+            require(indexStart >= 0 && indexEnd < input.stepCount)
+
+            val newSteps: Int = (indexEnd - indexStart)
+
+            val newMTSD = MultiTimeSeriesDiscrete(timeStart = input.timeStart, initialCapacityInSteps = newSteps)
+            newMTSD.stepCount = newSteps
+
+            newMTSD.featureMatrix =
+                (input.featureMatrix[0 until featureCount, indexStart until indexEnd] as D2Array<Double>)
+
+            return newMTSD
+        }
 
         /**
          * Creates a [MultiTimeSeriesDiscrete] instance from raw, continuous time series data.
@@ -296,8 +307,9 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
             val metricCounts = mutableMapOf<TimeSeriesMetric, Int>()
 
             TimeSeriesMetric.entries.forEach { metric ->
+                //IDEA: save another copy by passing a reference to the internal matrix to discretizeTimeSeries
 
-                val discreteProportional = discretizeTimeSeries(
+                val singleDiscreteTimeSeries = discretizeTimeSeries(
                     ensureData(
                         id = metric.ordinal,
                         buildGenericTimeSeries(metric, raw)
@@ -306,14 +318,24 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                                 metricCounts[metric] = series.data.size
                             }
                     ),
-                    targetLength = stepCount
+                    targetLength = stepCount,
+                    //we have to use constant interpolation to prevent data leakage
+                    //see comment in InterpolationMode definition
+                    interpolationMode = TimeSeriesDiscretizer.InterpolationMode.CONSTANT
                 )
 
-                require(discreteProportional.size == stepCount)
+                val discreteProportional = singleDiscreteTimeSeries.values
 
-                metric.signalClass.components.forEach { component ->
+                //daily standard curve
+                /*for(i in 0 until discreteProportional.size) {
+                    discreteProportional[i % 48] += discreteProportional[i]
+                }*/
+
+                require(discreteProportional.size == stepCount);
+
+                metric.allComponents.forEach { component ->
                     val featureID = FeatureID(metric, component)
-                    val componentData = featureID.component.compute(discreteProportional)
+                    val componentData = featureID.component.compute(discreteProportional, fixedParameters)
                     val featureView = multiTimeSeriesDiscrete.getMutableRow(featureID)
 
                     componentData.forEachIndexed { index, value ->
@@ -329,19 +351,6 @@ class MultiTimeSeriesDiscrete(val timeStart: Instant, initialCapacityInSteps: In
                 }
 
             println("per-metric input entry counts (before ensureData): $debug")
-
-            val mutableHeartRateArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE,
-                PIDComponent.PROPORTIONAL))
-
-            val mutableHRVArray = multiTimeSeriesDiscrete.getMutableRow(FeatureID(TimeSeriesMetric.HEART_RATE_VARIABILITY,
-                PIDComponent.PROPORTIONAL))
-
-            mutableHeartRateArray.indices.forEach { i ->
-                val hr = mutableHeartRateArray[i]
-                val hrv = mutableHRVArray[i]
-                mutableHeartRateArray[i] = adjustHR(hr, fixedParameters)
-                mutableHRVArray[i] = adjustHRV(hr, hrv, fixedParameters)
-            }
 
             return multiTimeSeriesDiscrete
         }

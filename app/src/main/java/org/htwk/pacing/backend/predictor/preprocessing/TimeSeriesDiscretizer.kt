@@ -5,6 +5,24 @@ import org.htwk.pacing.backend.predictor.Predictor
 import java.util.SortedMap
 
 object TimeSeriesDiscretizer {
+
+    enum class InterpolationMode {
+        /*assume constant continuation from last known value
+        e.g. to prevent data leakage by allowing the model to look into interpolated slopes
+        depending on future values when training. the only case where we want this is the validated
+        energy level since this one is not a model input and we care about its derivative */
+        CONSTANT,
+
+        /* linear interpolation, not to be used for model input metrics, only for training target to
+        receive stable, less noisy predictions */
+        LINEAR
+    }
+
+    class SingleDiscreteTimeSeries (
+        val values: DoubleArray,
+        val buckets: SortedMap<Int, Double>
+    )
+
     /**
      * Converts an [Instant] to a discrete time step.
      * @param instant The [Instant] to discretize.
@@ -81,7 +99,8 @@ object TimeSeriesDiscretizer {
      */
     private fun discreteInterpolateBetweenBuckets(
         timeBucketAverages: SortedMap<Int, Double>,
-        discreteTimeSeries: DoubleArray
+        discreteTimeSeries: DoubleArray,
+        interpolationMode: InterpolationMode
     ) {
         for ((startPoint, endPoint) in timeBucketAverages.entries.zipWithNext()) {
             val (x0, y0) = startPoint
@@ -89,7 +108,8 @@ object TimeSeriesDiscretizer {
 
             val intervalSteps = (x1 - x0)
             if (intervalSteps > 1) {
-                val slope = (y1 - y0) / intervalSteps.toDouble()
+                var slope = (y1 - y0) / intervalSteps.toDouble()
+                if(interpolationMode == InterpolationMode.CONSTANT) slope = 0.0 //just fill forward
                 for (i in 1 until intervalSteps) {
                     val index = x0 + i
                     if (index in discreteTimeSeries.indices) {
@@ -109,6 +129,7 @@ object TimeSeriesDiscretizer {
     private fun bucketsToDiscreteTimeSeries(
         timeBucketAverages: SortedMap<Int, Double>,
         doInterpolateBetweenBuckets: Boolean,
+        interpolationMode: InterpolationMode,
         targetLength: Int
     ): DoubleArray {
         //resulting time series, with interpolated, discrete values
@@ -121,7 +142,7 @@ object TimeSeriesDiscretizer {
         if (!doInterpolateBetweenBuckets) return discreteTimeSeries
 
         //add interpolation steps between those points
-        discreteInterpolateBetweenBuckets(timeBucketAverages, discreteTimeSeries)
+        discreteInterpolateBetweenBuckets(timeBucketAverages, discreteTimeSeries, interpolationMode)
 
         return discreteTimeSeries
 
@@ -163,8 +184,9 @@ object TimeSeriesDiscretizer {
      */
     fun discretizeTimeSeries(
         input: GenericTimedDataPointTimeSeries,
-        targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt()
-    ): DoubleArray {
+        targetLength: Int = (input.duration / Predictor.TIME_SERIES_STEP_DURATION).toInt(),
+        interpolationMode: InterpolationMode //do CONSTANT, unless target metric (explanation above)
+    ): SingleDiscreteTimeSeries {
         val timeBucketAverages = calculateTimeBucketAverages(input)
 
         //optionally pin the first and last known value to the borders so that we don't get missing
@@ -178,9 +200,10 @@ object TimeSeriesDiscretizer {
             bucketsToDiscreteTimeSeries(
                 timeBucketAverages,
                 doInterpolateBetweenBuckets = input.isContinuous,
-                targetLength = targetLength
+                targetLength = targetLength,
+                interpolationMode = interpolationMode
             )
 
-        return discreteTimeSeries
+        return SingleDiscreteTimeSeries(discreteTimeSeries, timeBucketAverages.toSortedMap())
     }
 }

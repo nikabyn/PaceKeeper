@@ -236,7 +236,8 @@ object LinearAlgebraSolver {
     fun leastSquaresTikhonov(
         A: D2Array<Double>,
         b: D1Array<Double>,
-        regularization: Double = 1e-6
+        regularization: Double = 1e-6,
+        lastIsBias: Boolean
     ): D1Array<Double> {
         require(A.shape[0] == b.shape[0]) { "Matrix and vector for least squares must have same number of rows (observations)." }
 
@@ -250,8 +251,11 @@ object LinearAlgebraSolver {
 
         //do ridge regularization for all features except the last one, which is a constant bias
         val P = mk.identity<Double>(matrixAtA.shape[0])
-        val unregularizedIndex = matrixAtA.shape[0] - 1
-        P[unregularizedIndex, unregularizedIndex] = 0.0
+        if(lastIsBias) {
+            //don't regularize bias
+            val unregularizedIndex = matrixAtA.shape[0] - 1
+            P[unregularizedIndex, unregularizedIndex] = 0.0
+        }
 
         val regularizedAtA = matrixAtA + P * regularization
 
